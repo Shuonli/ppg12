@@ -18,6 +18,10 @@ class PHCompositeNode;
 class CaloEvalStack;
 class CaloRawClusterEval;
 class CaloTruthEval;
+namespace HepMC
+{
+class GenEvent;
+}
 
 class CaloAna24 : public SubsysReco {
 public:
@@ -65,6 +69,7 @@ private:
   int mbdsouthhit{0};
   float vertexz_truth{-9999};
   int m_pythiaid{-9999};
+  float particlepTmin{6};
   static const int nparticlesmax = 10000;
   int nparticles{0};
   float particle_E[nparticlesmax] = {0};
@@ -73,7 +78,7 @@ private:
   float particle_Phi[nparticlesmax] = {0};
   int particle_pid[nparticlesmax] = {0};
   int particle_trkid[nparticlesmax] = {0};
-  int particle_isprompt_photon[nparticlesmax] = {0};
+  int particle_photonclass[nparticlesmax] = {0};
   float particle_truth_iso_02[nparticlesmax] = {0};
   float particle_truth_iso_03[nparticlesmax] = {0};
   float particle_truth_iso_04[nparticlesmax] = {0};
@@ -83,6 +88,7 @@ private:
   std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
   static const int nclustercontainer = 1;
   //cluster wise stuff
+  float clusterpTmin{7};
   static const int nclustermax = 10000;
   int ncluster[nclustercontainer] = {0};
   float cluster_E[nclustercontainer][nclustermax] = {0};
@@ -117,6 +123,8 @@ private:
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
 
+  int photon_type(int barcode);
+
   float DeltaR(TLorentzVector photon1, TLorentzVector photon2) {
     float deta = photon1.PseudoRapidity() - photon2.PseudoRapidity();
     float dphi = abs(photon1.Phi() - photon2.Phi());
@@ -130,6 +138,7 @@ private:
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};
+  HepMC::GenEvent *singal_event{nullptr};
 };
 
 #endif // CALOANA24_H
