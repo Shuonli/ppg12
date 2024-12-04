@@ -61,6 +61,9 @@ private:
   int nlivetrigger[32] = {0};
 
   float vertexz{-9999};
+  int mbdnorthhit{0};
+  int mbdsouthhit{0};
+  float vertexz_truth{-9999};
   int m_pythiaid{-9999};
   static const int nparticlesmax = 10000;
   int nparticles{0};
@@ -88,6 +91,7 @@ private:
   float cluster_Phi[nclustercontainer][nclustermax] = {0};
   float cluster_prob[nclustercontainer][nclustermax] = {0};
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
+  int cluster_pid[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
