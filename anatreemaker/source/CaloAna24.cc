@@ -103,7 +103,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("particle_Phi", particle_Phi, "particle_Phi[nparticles]/F");
   slimtree->Branch("particle_pid", particle_pid, "particle_pid[nparticles]/I");
   slimtree->Branch("particle_trkid", particle_trkid, "particle_trkid[nparticles]/I");
-  slimtree->Branch("particle_isprompt_photon", particle_isprompt_photon, "particle_isprompt_photon[nparticles]/I");
+  slimtree->Branch("particle_photonclass", particle_photonclass, "particle_photonclass[nparticles]/I");
   slimtree->Branch("particle_truth_iso_02", particle_truth_iso_02, "particle_truth_iso_02[nparticles]/F");
   slimtree->Branch("particle_truth_iso_03", particle_truth_iso_03, "particle_truth_iso_03[nparticles]/F");
   slimtree->Branch("particle_truth_iso_04", particle_truth_iso_04, "particle_truth_iso_04[nparticles]/F");
@@ -212,8 +212,10 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     for (PHHepMCGenEventMap::Iter iter = genevtmap->begin(); iter != genevtmap->end(); ++iter)
     {
       PHHepMCGenEvent *genevt = iter->second;
-      std::cout<<"event embedded: "<<genevt->get_embedding_id()<<std::endl;
+      std::cout << "event embedded: " << genevt->get_embedding_id() << std::endl;
       HepMC::GenEvent *event = genevt->getEvent();
+      // need to add the part to fish out the signal event
+      singal_event = event;
       if (!event)
       {
         std::cout << PHWHERE << " no evt pointer under HEPMC Node found" << std::endl;
@@ -235,7 +237,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
     MbdPmtContainer *mbdtow = findNode::getClass<MbdPmtContainer>(topNode, "MbdPmtContainer");
 
-    //bool mbdevent = false;
+    // bool mbdevent = false;
     if (mbdtow)
     {
       int northhit = 0;
@@ -249,17 +251,14 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
         mbenrgy[i] = mbdhit->get_q();
         // std::cout<<mbenrgy[i]<<std::endl;
-        if (mbenrgy[i] > 0.33 && i < 64)
+        if (mbenrgy[i] > 0.5 && i < 64)
           northhit += 1;
-        if (mbenrgy[i] > 0.33 && i > 63)
+        if (mbenrgy[i] > 0.5 && i > 63)
           southhit += 1;
       }
       mbdnorthhit = northhit;
       mbdsouthhit = southhit;
-
     }
-
-
   }
 
   float m_vertex = -9999;
@@ -293,274 +292,279 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   }
 
   vertexz = m_vertex;
-   // set of primary particles
+  // set of primary particles
   std::set<PHG4Particle *> primary_particles;
   std::set<PHG4Particle *> primary_photon_candidates;
   std::set<PHG4Particle *> photonsfrompi0;
   std::set<PHG4Particle *> photonsfrometa;
   std::set<PHG4Particle *> badphotons;
   std::map<PHG4Particle *, std::vector<float>> photontruthiso;
-if(isMC)
-{
-
-
-  CaloEvalStack caloevalstack(topNode, "CEMC");
-  clustereval = caloevalstack.get_rawcluster_eval();
-  clustereval->set_usetowerinfo(true);
-  clustereval->next_event(topNode);
-  trutheval = caloevalstack.get_truth_eval();
-  //CaloRawTowerEval *towereval = caloevalstack.get_rawtower_eval();
-  // clustereval->next_event(topNode);
-  //CaloTruthEval *trutheval = m_caloevalstack->get_truth_eval();
-  std::cout << "trutheval: " << trutheval << " clustereval: " << clustereval << std::endl;
-  // trutheval->next_event(topNode);
-  
-  PHG4TruthInfoContainer *truthinfo =
-      findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
-  if (!truthinfo)
+  if (isMC)
   {
-    std::cout << PHWHERE
-              << "PHG4TruthInfoContainer node is missing, can't collect "
-                 "some true information"
-              << std::endl;
-    return Fun4AllReturnCodes::ABORTEVENT;
-  }
-  //std::cout<<"truthinfo: "<<truthinfo<<std::endl;
+
+    CaloEvalStack caloevalstack(topNode, "CEMC");
+    clustereval = caloevalstack.get_rawcluster_eval();
+    clustereval->set_usetowerinfo(true);
+    clustereval->next_event(topNode);
+    trutheval = caloevalstack.get_truth_eval();
+    // CaloRawTowerEval *towereval = caloevalstack.get_rawtower_eval();
+    //  clustereval->next_event(topNode);
+    // CaloTruthEval *trutheval = m_caloevalstack->get_truth_eval();
+    std::cout << "trutheval: " << trutheval << " clustereval: " << clustereval << std::endl;
+    // trutheval->next_event(topNode);
+
+    PHG4TruthInfoContainer *truthinfo =
+        findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
+    if (!truthinfo)
+    {
+      std::cout << PHWHERE
+                << "PHG4TruthInfoContainer node is missing, can't collect "
+                   "some true information"
+                << std::endl;
+      return Fun4AllReturnCodes::ABORTEVENT;
+    }
+    // std::cout<<"truthinfo: "<<truthinfo<<std::endl;
 
     int primaryvtxid = truthinfo->GetPrimaryVertexIndex();
-  PHG4VtxPoint *primaryvtx = truthinfo->GetVtx(primaryvtxid);
-  if(!primaryvtx){
-    std::cout<<"primaryvtx is missing"<<std::endl;
-    return Fun4AllReturnCodes::ABORTEVENT;
-  }
-  vertexz_truth = primaryvtx->get_z();
-
-
-
-  //  loop over truth primary particles
-  PHG4TruthInfoContainer::ConstRange range =
-      truthinfo->GetPrimaryParticleRange();
- 
-  for (PHG4TruthInfoContainer::ConstIterator truth_itr = range.first;
-       truth_itr != range.second; ++truth_itr)
-  {
-    PHG4Particle *truth = truth_itr->second;
-    // std::cout<<trutheval->get_embed(truth)<<std::endl;
-    if (trutheval->get_embed(truth) < 1)
-      continue;
-    primary_particles.insert(truth);
-    int pid = truth->get_pid();
-    // std::cout<<"truth pid: "<<pid<<std::endl;
-    if (pid == 22)
+    PHG4VtxPoint *primaryvtx = truthinfo->GetVtx(primaryvtxid);
+    if (!primaryvtx)
     {
-      primary_photon_candidates.insert(truth);
+      std::cout << "primaryvtx is missing" << std::endl;
+      return Fun4AllReturnCodes::ABORTEVENT;
     }
-  }
+    vertexz_truth = primaryvtx->get_z();
 
-  std::cout<<"primary_photon_candidates.size(): "<<primary_photon_candidates.size()<<std::endl;
-  for (auto truth_photon : primary_photon_candidates)
-  {
-    int trackid1 = truth_photon->get_track_id();
-    // std::cout<<"trackid1: "<<trackid1<<std::endl;
-    // check if the photon is from pi0 or eta
-    if (photonsfrompi0.find(truth_photon) != photonsfrompi0.end())
-      continue;
-    if (photonsfrometa.find(truth_photon) != photonsfrometa.end())
-      continue;
+    //  loop over truth primary particles
+    PHG4TruthInfoContainer::ConstRange range =
+        truthinfo->GetPrimaryParticleRange();
 
-    TLorentzVector photon1;
-    photon1.SetPxPyPzE(truth_photon->get_px(), truth_photon->get_py(), truth_photon->get_pz(), truth_photon->get_e());
-    for (auto truth_photon_2 : primary_photon_candidates)
+    for (PHG4TruthInfoContainer::ConstIterator truth_itr = range.first;
+         truth_itr != range.second; ++truth_itr)
     {
-      int trackid2 = truth_photon_2->get_track_id();
-      // std::cout<<"trackid2: "<<trackid2<<std::endl;
-      if (truth_photon == truth_photon_2)
+      PHG4Particle *truth = truth_itr->second;
+      // std::cout<<trutheval->get_embed(truth)<<std::endl;
+      if (trutheval->get_embed(truth) < 1)
         continue;
-      if (trackid1 == trackid2)
-        continue;
-      TLorentzVector photon2;
-      photon2.SetPxPyPzE(truth_photon_2->get_px(), truth_photon_2->get_py(), truth_photon_2->get_pz(), truth_photon_2->get_e());
+      primary_particles.insert(truth);
+      int pid = truth->get_pid();
+      // std::cout<<"truth pid: "<<pid<<std::endl;
+      if (pid == 22)
+      {
+        primary_photon_candidates.insert(truth);
+      }
+    }
 
-      TLorentzVector diphoton = photon1 + photon2;
-      float mass = diphoton.M();
-      // std::cout<<"mass: "<<mass<<std::endl;
-      // print the four momentum of the diphoton
-      float pi0mass = 0.1349799931; // get from the print back
-      float etamass = 0.5478500128;
-
-      if (abs(mass - pi0mass) < 1E-8)
-      {
-        photonsfrompi0.insert(truth_photon);
-        photonsfrompi0.insert(truth_photon_2);
-        // h_pi0ET->Fill(diphoton.Et());
-        // print with more precision
-        // std::cout.precision(10);
-        // std::cout<<"mass: "<<mass<<std::endl;
-        break;
-      }
-      if (abs(mass - etamass) < 1E-8)
-      {
-        photonsfrometa.insert(truth_photon);
-        photonsfrometa.insert(truth_photon_2);
-        // std::cout.precision(10);
-        // std::cout<<"mass: "<<mass<<std::endl;
-        break;
-      }
-    }
-    // this part check for pair conversion
-    int trackid = truth_photon->get_track_id();
-    if (abs(photon1.Eta()) > 1.1)
-      continue;
-    if (photon1.Et() < 5)
-      continue;
-    // get PHG4Shower
-    PHG4Shower *shower = truthinfo->GetShower(trackid);
-    // std::cout<<"shower: "<<shower<<std::endl;
-    if (!shower)
-      continue;
-    // loop over particles in the shower
-    auto g4particle_ids = shower->g4particle_ids();
-    for (auto g4particle_id : g4particle_ids)
+    std::cout << "primary_photon_candidates.size(): " << primary_photon_candidates.size() << std::endl;
+    for (auto truth_photon : primary_photon_candidates)
     {
-      PHG4Particle *g4particle = truthinfo->GetParticle(g4particle_id);
-      if (!g4particle)
+      //int trackid1 = truth_photon->get_track_id();
+      // std::cout<<"trackid1: "<<trackid1<<std::endl;
+      // check if the photon is from pi0 or eta
+      if (photonsfrompi0.find(truth_photon) != photonsfrompi0.end())
         continue;
-      int vertexid = g4particle->get_vtx_id();
-      PHG4VtxPoint *vtx = truthinfo->GetVtx(vertexid);
-      if (!vtx)
+      if (photonsfrometa.find(truth_photon) != photonsfrometa.end())
         continue;
-      float vertexr = sqrt(vtx->get_x() * vtx->get_x() + vtx->get_y() * vtx->get_y());
-      if (vertexr < 93)
-      {
-        float momentum = sqrt(g4particle->get_px() * g4particle->get_px() + g4particle->get_py() * g4particle->get_py() + g4particle->get_pz() * g4particle->get_pz());
-        if (momentum > 0.4 * photon1.E())
-        {
-          badphotons.insert(truth_photon);
-        }
-        h_tracking_radiograph->Fill(vtx->get_x(), vtx->get_y(), vtx->get_z(), momentum);
-      }
-    }
-  }
-  nparticles = 0;
-  float merger = 0.001;
-  float isor[3] = {0.2, 0.3, 0.4};
-  // calculate truth iso
-  for (auto truth : primary_particles)
-  {
-    // std::cout<<truth<<std::endl;
-    float isoET[3] = {0, 0, 0};
-    float clusterET = 0;
-    int pid = truth->get_pid();
-    int trackid = truth->get_track_id();
-
-    TLorentzVector p1 = TLorentzVector(truth->get_px(), truth->get_py(), truth->get_pz(), truth->get_e());
-    // skip for soft stuff
-    if (p1.E() < 1)
-      continue;
-    // cut on eta
-    if (abs(p1.Eta()) > 1.1)
-      continue;
-    bool verbosephoton = false;
-    bool ispromptphoton = false;
-    if (pid == 22)
-    {
-      verbosephoton = true;
-      ispromptphoton = true;
-      if (photonsfrompi0.find(truth) != photonsfrompi0.end())
-      {
-        verbosephoton = false;
-        ispromptphoton = false;
-      }
-      if (photonsfrometa.find(truth) != photonsfrometa.end())
-      {
-        verbosephoton = false;
-        ispromptphoton = false;
-      }
-    }
-    if (verbosephoton)
-    {
-      std::cout << "truth photon pid: " << pid << " eta: " << p1.Eta() << " phi: " << p1.Phi() << "ET: " << p1.Et() << std::endl;
-    }
-    for (auto truth2 : primary_particles)
-    {
-      // want to correlate with the same particle for clusterET
-      // if(truth == truth2) continue;
-      TLorentzVector p2 = TLorentzVector(truth2->get_px(), truth2->get_py(), truth2->get_pz(), truth2->get_e());
+      // if we get the HEPMC tracking working we don't need the inv mass check
+      
+      TLorentzVector photon1;
+      photon1.SetPxPyPzE(truth_photon->get_px(), truth_photon->get_py(), truth_photon->get_pz(), truth_photon->get_e());
       /*
-      int p2pid = truth2->get_pid();
-      //if not eta, pi0 photon neuron anti-neutron, apply a 0.5 pT cut
+      for (auto truth_photon_2 : primary_photon_candidates)
+      {
+        int trackid2 = truth_photon_2->get_track_id();
+        // std::cout<<"trackid2: "<<trackid2<<std::endl;
+        if (truth_photon == truth_photon_2)
+          continue;
+        if (trackid1 == trackid2)
+          continue;
+        TLorentzVector photon2;
+        photon2.SetPxPyPzE(truth_photon_2->get_px(), truth_photon_2->get_py(), truth_photon_2->get_pz(), truth_photon_2->get_e());
 
-      if (p2pid != 22 && p2pid != 111 && p2pid != -2112 && p2pid != 2112 ) {
-        if(p2.Pt() < 1) continue;
+        TLorentzVector diphoton = photon1 + photon2;
+        float mass = diphoton.M();
+        // std::cout<<"mass: "<<mass<<std::endl;
+        // print the four momentum of the diphoton
+        float pi0mass = 0.1349799931; // get from the print back
+        float etamass = 0.5478500128;
+
+        if (abs(mass - pi0mass) < 1E-8)
+        {
+          photonsfrompi0.insert(truth_photon);
+          photonsfrompi0.insert(truth_photon_2);
+          // h_pi0ET->Fill(diphoton.Et());
+          // print with more precision
+          // std::cout.precision(10);
+          // std::cout<<"mass: "<<mass<<std::endl;
+          break;
+        }
+        if (abs(mass - etamass) < 1E-8)
+        {
+          photonsfrometa.insert(truth_photon);
+          photonsfrometa.insert(truth_photon_2);
+          // std::cout.precision(10);
+          // std::cout<<"mass: "<<mass<<std::endl;
+          break;
+        }
       }
       */
-      float dr = p1.DeltaR(p2);
+      // this part check for pair conversion
+      int trackid = truth_photon->get_track_id();
+      if (abs(photon1.Eta()) > 1.1)
+        continue;
+      if (photon1.Et() < 5)
+        continue;
+      // get PHG4Shower
+      PHG4Shower *shower = truthinfo->GetShower(trackid);
+      // std::cout<<"shower: "<<shower<<std::endl;
+      if (!shower)
+        continue;
+      // loop over particles in the shower
+      auto g4particle_ids = shower->g4particle_ids();
+      for (auto g4particle_id : g4particle_ids)
+      {
+        PHG4Particle *g4particle = truthinfo->GetParticle(g4particle_id);
+        if (!g4particle)
+          continue;
+        int vertexid = g4particle->get_vtx_id();
+        PHG4VtxPoint *vtx = truthinfo->GetVtx(vertexid);
+        if (!vtx)
+          continue;
+        float vertexr = sqrt(vtx->get_x() * vtx->get_x() + vtx->get_y() * vtx->get_y());
+        if (vertexr < 93)
+        {
+          float momentum = sqrt(g4particle->get_px() * g4particle->get_px() + g4particle->get_py() * g4particle->get_py() + g4particle->get_pz() * g4particle->get_pz());
+          if (momentum > 0.4 * photon1.E())
+          {
+            badphotons.insert(truth_photon);
+          }
+          h_tracking_radiograph->Fill(vtx->get_x(), vtx->get_y(), vtx->get_z(), momentum);
+        }
+      }
+    }
+    nparticles = 0;
+    float merger = 0.001;
+    float isor[3] = {0.2, 0.3, 0.4};
+    // calculate truth iso
+    for (auto truth : primary_particles)
+    {
+      // std::cout<<truth<<std::endl;
+      float isoET[3] = {0, 0, 0};
+      float clusterET = 0;
+      int pid = truth->get_pid();
+      int trackid = truth->get_track_id();
+
+      TLorentzVector p1 = TLorentzVector(truth->get_px(), truth->get_py(), truth->get_pz(), truth->get_e());
+      // skip for soft stuff
+      if (p1.E() < particlepTmin)
+        continue;
+      // cut on eta
+      if (abs(p1.Eta()) > 1.1)
+        continue;
+      int barcode = truth->get_barcode();
+
+      bool verbosephoton = false;
+      //bool ispromptphoton = false;
+      int photonclass = 0;
+      if (pid == 22)
+      {
+        verbosephoton = true;
+        //ispromptphoton = true;
+        /*
+        if (photonsfrompi0.find(truth) != photonsfrompi0.end())
+        {
+          verbosephoton = false;
+          ispromptphoton = false;
+        }
+        if (photonsfrometa.find(truth) != photonsfrometa.end())
+        {
+          verbosephoton = false;
+          ispromptphoton = false;
+        }
+        */
+        photonclass = photon_type(barcode);
+        if (photonclass <= 2)
+          verbosephoton = true;
+      }
+      if (verbosephoton)
+      {
+        std::cout << "truth photon pid: " << pid << " eta: " << p1.Eta() << " phi: " << p1.Phi() << "ET: " << p1.Et() << std::endl;
+      }
+      for (auto truth2 : primary_particles)
+      {
+        // want to correlate with the same particle for clusterET
+        // if(truth == truth2) continue;
+        TLorentzVector p2 = TLorentzVector(truth2->get_px(), truth2->get_py(), truth2->get_pz(), truth2->get_e());
+        /*
+        int p2pid = truth2->get_pid();
+        //if not eta, pi0 photon neuron anti-neutron, apply a 0.5 pT cut
+
+        if (p2pid != 22 && p2pid != 111 && p2pid != -2112 && p2pid != 2112 ) {
+          if(p2.Pt() < 1) continue;
+        }
+        */
+        float dr = p1.DeltaR(p2);
+        for (int i = 0; i < 3; i++)
+        {
+          if (dr < isor[i])
+          {
+            isoET[i] += p2.Et();
+          }
+        }
+
+        if (dr < merger)
+        {
+          clusterET += p2.Et();
+        }
+      }
       for (int i = 0; i < 3; i++)
       {
-        if (dr < isor[i])
+        isoET[i] -= clusterET;
+      }
+
+      // bool isisophoton = false;
+      // if photon, electron pi0, positron, eta
+      // if (pid == 22 || pid == 11 || pid == -11 || pid == 111 || pid == 221) {
+      if (pid != 0)
+      {
+
+        if (photonsfrompi0.find(truth) != photonsfrompi0.end())
         {
-          isoET[i] += p2.Et();
+          pid = 111;
+        }
+        if (photonsfrometa.find(truth) != photonsfrometa.end())
+        {
+          pid = 221;
+        }
+        if (p1.E() > 5)
+        {
+          int converted = false;
+          if (badphotons.find(truth) != badphotons.end())
+          {
+            converted = true;
+          }
+          // std::cout<<"nparticles: "<<nparticles<<std::endl;
+          // std::cout<<"nparticles: "<<nparticles<<" E: "<<p1.E()<<" Pt: "<<p1.Pt()<<" Eta: "<<p1.Eta()<<" Phi: "<<p1.Phi()<<" pid: "<<pid<<" trackid: "<<trackid<<" converted: "<<converted<<" isoET: "<<isoET[0]<<" "<<isoET[1]<<" "<<isoET[2]<<std::endl;
+          particle_E[nparticles] = p1.E();
+          particle_Pt[nparticles] = p1.Pt();
+          particle_Eta[nparticles] = p1.Eta();
+          particle_Phi[nparticles] = p1.Phi();
+          particle_pid[nparticles] = pid;
+          particle_trkid[nparticles] = trackid;
+          particle_photonclass[nparticles] = photonclass;
+          particle_converted[nparticles] = converted;
+          particle_truth_iso_02[nparticles] = isoET[0];
+          particle_truth_iso_03[nparticles] = isoET[1];
+          particle_truth_iso_04[nparticles] = isoET[2];
+          nparticles++;
+          if (nparticles > nparticlesmax)
+          {
+            std::cout << "nparticles exceed the max range: " << nparticles << std::endl;
+            return Fun4AllReturnCodes::ABORTEVENT;
+          }
         }
       }
-
-      if (dr < merger)
-      {
-        clusterET += p2.Et();
-      }
     }
-    for (int i = 0; i < 3; i++)
-    {
-      isoET[i] -= clusterET;
-    }
-
-    // bool isisophoton = false;
-    // if photon, electron pi0, positron, eta
-    // if (pid == 22 || pid == 11 || pid == -11 || pid == 111 || pid == 221) {
-    if (pid != 0)
-    {
-
-      if (photonsfrompi0.find(truth) != photonsfrompi0.end())
-      {
-        pid = 111;
-      }
-      if (photonsfrometa.find(truth) != photonsfrometa.end())
-      {
-        pid = 221;
-      }
-      if (p1.E() > 5)
-      {
-        int converted = false;
-        if (badphotons.find(truth) != badphotons.end())
-        {
-          converted = true;
-        }
-        // std::cout<<"nparticles: "<<nparticles<<std::endl;
-        // std::cout<<"nparticles: "<<nparticles<<" E: "<<p1.E()<<" Pt: "<<p1.Pt()<<" Eta: "<<p1.Eta()<<" Phi: "<<p1.Phi()<<" pid: "<<pid<<" trackid: "<<trackid<<" converted: "<<converted<<" isoET: "<<isoET[0]<<" "<<isoET[1]<<" "<<isoET[2]<<std::endl;
-        particle_E[nparticles] = p1.E();
-        particle_Pt[nparticles] = p1.Pt();
-        particle_Eta[nparticles] = p1.Eta();
-        particle_Phi[nparticles] = p1.Phi();
-        particle_pid[nparticles] = pid;
-        particle_trkid[nparticles] = trackid;
-        particle_isprompt_photon[nparticles] = ispromptphoton;
-        particle_converted[nparticles] = converted;
-        particle_truth_iso_02[nparticles] = isoET[0];
-        particle_truth_iso_03[nparticles] = isoET[1];
-        particle_truth_iso_04[nparticles] = isoET[2];
-        nparticles++;
-        if (nparticles > nparticlesmax)
-        {
-          std::cout << "nparticles exceed the max range: " << nparticles << std::endl;
-          return Fun4AllReturnCodes::ABORTEVENT;
-        }
-      }
-    
-
-    }
-
   }
-}
-
 
   std::cout << "size of photonsfrompi0: " << photonsfrompi0.size() << std::endl;
   for (int i = 0; i < nclustercontainer; i++)
@@ -600,7 +604,7 @@ if(isMC)
       if (abs(eta) > 1.0)
         continue;
       // if (ET > 1) h_ET->Fill(ET);
-      if (ET < 1)
+      if (ET < clusterpTmin)
         continue;
 
       // Array for storing the isolation energy for different radii
@@ -610,7 +614,7 @@ if(isMC)
       for (int i = 0; i < nRadii; ++i)
       {
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
-        //std::cout << "clusteriso: " << clusteriso[i] << std::endl;
+        // std::cout << "clusteriso: " << clusteriso[i] << std::endl;
       }
 
       if (ET > maxclusterpt)
@@ -620,62 +624,60 @@ if(isMC)
       int trackid = -1;
       float clusterE = E_vec_cluster_Full.mag();
       int pid = 0;
-      if(isMC){
-      PHG4Particle *maxPrimary = clustereval->max_truth_primary_particle_by_energy(recoCluster);
-      if(ET > 5) std::cout << "maxPrimary: " << maxPrimary << std::endl;
+      if (isMC)
+      {
+        PHG4Particle *maxPrimary = clustereval->max_truth_primary_particle_by_energy(recoCluster);
+        if (ET > 5)
+          std::cout << "maxPrimary: " << maxPrimary << std::endl;
 
-      
-        if(!maxPrimary) continue;
-        if(trutheval->get_embed(maxPrimary) != 1) continue;
+        if (!maxPrimary)
+          continue;
+        if (trutheval->get_embed(maxPrimary) != 1)
+          continue;
         pid = maxPrimary->get_pid();
         trackid = maxPrimary->get_track_id();
         float bestprimaryenergy = maxPrimary->get_e();
         float bestprimaryincluster = clustereval->get_energy_contribution(recoCluster, maxPrimary);
 
-        //if from pi0 or eta
+        // if from pi0 or eta
         if (photonsfrompi0.find(maxPrimary) != photonsfrompi0.end())
           pid = 111;
         if (photonsfrometa.find(maxPrimary) != photonsfrometa.end())
           pid = 221;
-        
-        if(ET > 5)
-        std::cout << "pid: " << pid << " bestprimaryenergy: " << bestprimaryenergy
-                  << " bestprimaryincluster: " << bestprimaryincluster << " clusterE: " << clusterE << std::endl;
 
+        if (ET > 5)
+          std::cout << "pid: " << pid << " bestprimaryenergy: " << bestprimaryenergy
+                    << " bestprimaryincluster: " << bestprimaryincluster << " clusterE: " << clusterE << std::endl;
       }
-        
-        std::vector<float> showershape = recoCluster->get_shower_shapes(0.070);
 
-        
-        cluster_E[i][ncluster[i]] = E;
-        cluster_Et[i][ncluster[i]] = ET;
-        cluster_Eta[i][ncluster[i]] = eta;
-        cluster_Phi[i][ncluster[i]] = phi;
-        cluster_prob[i][ncluster[i]] = prob;
-        cluster_truthtrkID[i][ncluster[i]] = trackid;
-        cluster_pid[i][ncluster[i]] = pid;
-        cluster_iso_02[i][ncluster[i]] = clusteriso[0];
-        cluster_iso_03[i][ncluster[i]] = clusteriso[1];
-        cluster_iso_04[i][ncluster[i]] = clusteriso[2];
-        cluster_e1[i][ncluster[i]] = showershape[0];
-        cluster_e2[i][ncluster[i]] = showershape[1];
-        cluster_e3[i][ncluster[i]] = showershape[2];
-        cluster_e4[i][ncluster[i]] = showershape[3];
-        cluster_et1[i][ncluster[i]] = showershape[8];
-        cluster_et2[i][ncluster[i]] = showershape[9];
-        cluster_et3[i][ncluster[i]] = showershape[10];
-        cluster_et4[i][ncluster[i]] = showershape[11];
-        ncluster[i]++;
-        if (ncluster[i] > nclustermax)
-        {
-          std::cout << "ncluster exceed the max range: " << ncluster[i] << std::endl;
-          return Fun4AllReturnCodes::ABORTEVENT;
-        }
+      std::vector<float> showershape = recoCluster->get_shower_shapes(0.070);
 
+      cluster_E[i][ncluster[i]] = E;
+      cluster_Et[i][ncluster[i]] = ET;
+      cluster_Eta[i][ncluster[i]] = eta;
+      cluster_Phi[i][ncluster[i]] = phi;
+      cluster_prob[i][ncluster[i]] = prob;
+      cluster_truthtrkID[i][ncluster[i]] = trackid;
+      cluster_pid[i][ncluster[i]] = pid;
+      cluster_iso_02[i][ncluster[i]] = clusteriso[0];
+      cluster_iso_03[i][ncluster[i]] = clusteriso[1];
+      cluster_iso_04[i][ncluster[i]] = clusteriso[2];
+      cluster_e1[i][ncluster[i]] = showershape[0];
+      cluster_e2[i][ncluster[i]] = showershape[1];
+      cluster_e3[i][ncluster[i]] = showershape[2];
+      cluster_e4[i][ncluster[i]] = showershape[3];
+      cluster_et1[i][ncluster[i]] = showershape[8];
+      cluster_et2[i][ncluster[i]] = showershape[9];
+      cluster_et3[i][ncluster[i]] = showershape[10];
+      cluster_et4[i][ncluster[i]] = showershape[11];
+      ncluster[i]++;
+      if (ncluster[i] > nclustermax)
+      {
+        std::cout << "ncluster exceed the max range: " << ncluster[i] << std::endl;
+        return Fun4AllReturnCodes::ABORTEVENT;
+      }
 
-        //std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
-
-
+      // std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
     }
     std::cout << "done with cluster container: " << clusternamelist[i] << std::endl;
   }
@@ -698,6 +700,124 @@ if(isMC)
   // delete trutheval;
 
   return Fun4AllReturnCodes::EVENT_OK;
+}
+
+int CaloAna24::photon_type(int barcode)
+{
+  // check if the Genevent is null
+  if (!singal_event)
+  {
+    std::cout << "Genevent is null" << std::endl;
+    return -1;
+  }
+  HepMC::GenParticle *particle = singal_event->barcode_to_particle(barcode);
+  // check if pid is 22
+  if (particle->pdg_id() != 22)
+  {
+    std::cout << "particle is not photon" << std::endl;
+    return -1;
+  }
+  // find the production vertex
+  HepMC::GenVertex *vertex = particle->production_vertex();
+  if (!vertex)
+  {
+    std::cout << "vertex is null" << std::endl;
+    return -1;
+  }
+  // find the incoming particles
+  HepMC::GenVertex::particles_in_const_iterator inItr = vertex->particles_in_const_begin();
+  std::vector<HepMC::GenParticle *> incoming_particles;
+  for (; inItr != vertex->particles_in_const_end(); ++inItr)
+  {
+    incoming_particles.push_back(*inItr);
+  }
+  // check if there is only one incoming particle and pid is 22, noticed that in pythia there are vertex with photon in and photon out
+  while (incoming_particles.size() == 1 && incoming_particles[0]->pdg_id() == 22)
+  {
+    // find the production vertex
+    vertex = incoming_particles[0]->production_vertex();
+    if (!vertex)
+    {
+      std::cout << "vertex is null" << std::endl;
+      return -1;
+    }
+    // find the incoming particles
+    inItr = vertex->particles_in_const_begin();
+    incoming_particles.clear();
+    for (; inItr != vertex->particles_in_const_end(); ++inItr)
+    {
+      incoming_particles.push_back(*inItr);
+    }
+  }
+  std::vector<HepMC::GenParticle *> outgoing_particles;
+  // find the outgoing particles
+  HepMC::GenVertex::particles_out_const_iterator outItr = vertex->particles_out_const_begin();
+  for (; outItr != vertex->particles_out_const_end(); ++outItr)
+  {
+    outgoing_particles.push_back(*outItr);
+  }
+  // direct photon:1, fragmentation photon:2 , decayed photon:3, can't identify: 0;
+  int photonclass = 0;
+  std::set<int> outgoing_pid;
+  for (auto particle : outgoing_particles)
+  {
+    outgoing_pid.insert(abs(particle->pdg_id()));
+  }
+  // make sure there is photon in it
+  if (outgoing_pid.find(22) == outgoing_pid.end())
+  {
+    std::cout << "no photon in the outgoing particles" << std::endl;
+    return -1;
+  }
+
+  // direct photon 2->2 both incoming are quark or gluons
+  if (incoming_particles.size() == 2 && outgoing_particles.size() == 2)
+  {
+    if (abs(incoming_particles.at(0)->pdg_id()) <= 22 && abs(incoming_particles.at(1)->pdg_id()) <= 22)
+    {
+      if (abs(outgoing_particles.at(0)->pdg_id()) <= 22 && abs(outgoing_particles.at(1)->pdg_id()) <= 22)
+      {
+        photonclass = 1;
+      }
+    }
+  }
+  // fragmentation photon and  decayed photon should only have one incoming
+  else if (incoming_particles.size() == 1)
+  {
+    // fragmentation photon 1->2
+    if (abs(incoming_particles.at(0)->pdg_id()) <= 11 && outgoing_particles.size() == 2)
+    {
+
+      // both 22 and incoming pid should be in
+      if (outgoing_pid.find((incoming_particles.at(0)->pdg_id())) != outgoing_pid.end())
+      {
+        photonclass = 2;
+      }
+    }
+    if (abs(incoming_particles.at(0)->pdg_id()) > 37)
+    {
+      photonclass = 3;
+    }
+  }
+
+  if (photonclass == 0)
+  {
+    std::cout << "can't identify the photon type" << std::endl;
+    // debug print
+    std::cout << "incoming particles: ";
+    for (auto particle : incoming_particles)
+    {
+      std::cout << particle->pdg_id() << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "outgoing particles: ";
+    for (auto particle : outgoing_particles)
+    {
+      std::cout << particle->pdg_id() << " ";
+    }
+    std::cout << std::endl;
+  }
+  return photonclass;
 }
 
 //____________________________________________________________________________..
