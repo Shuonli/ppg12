@@ -89,7 +89,10 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   fout = new TFile("caloana.root", "RECREATE");
 
   slimtree = new TTree("slimtree", "slimtree");
+  slimtree->Branch("mbdnorthhit", &mbdnorthhit, "mbdnorthhit/I");
+  slimtree->Branch("mbdsouthhit", &mbdsouthhit, "mbdsouthhit/I");
   slimtree->Branch("vertexz", &vertexz, "vertexz/F");
+  slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
 
   // particle level
@@ -114,6 +117,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_Phi_%s", clusternamelist[i].c_str()), cluster_Phi[i], Form("cluster_Phi_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_prob_%s", clusternamelist[i].c_str()), cluster_prob[i], Form("cluster_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_truthtrkID_%s", clusternamelist[i].c_str()), cluster_truthtrkID[i], Form("cluster_truthtrkID_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_pid_%s", clusternamelist[i].c_str()), cluster_pid[i], Form("cluster_pid_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_%s", clusternamelist[i].c_str()), cluster_iso_03[i], Form("cluster_iso_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_%s", clusternamelist[i].c_str()), cluster_iso_04[i], Form("cluster_iso_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -208,6 +212,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     for (PHHepMCGenEventMap::Iter iter = genevtmap->begin(); iter != genevtmap->end(); ++iter)
     {
       PHHepMCGenEvent *genevt = iter->second;
+      std::cout<<"event embedded: "<<genevt->get_embedding_id()<<std::endl;
       HepMC::GenEvent *event = genevt->getEvent();
       if (!event)
       {
@@ -230,7 +235,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
     MbdPmtContainer *mbdtow = findNode::getClass<MbdPmtContainer>(topNode, "MbdPmtContainer");
 
-    bool mbdevent = false;
+    //bool mbdevent = false;
     if (mbdtow)
     {
       int northhit = 0;
@@ -245,22 +250,16 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         mbenrgy[i] = mbdhit->get_q();
         // std::cout<<mbenrgy[i]<<std::endl;
         if (mbenrgy[i] > 0.33 && i < 64)
-          northhit = 1;
+          northhit += 1;
         if (mbenrgy[i] > 0.33 && i > 63)
-          southhit = 1;
+          southhit += 1;
       }
-      // if(_debug) cout << "n/s: " << northhit << "/" << southhit << endl;
-      if (northhit && southhit)
-      {
-        mbdevent = true;
-        // if(_debug) cout << "MBD event" << endl;
-      }
+      mbdnorthhit = northhit;
+      mbdsouthhit = southhit;
+
     }
 
-    if (!mbdevent)
-    {
-      return Fun4AllReturnCodes::EVENT_OK;
-    }
+
   }
 
   float m_vertex = -9999;
@@ -280,10 +279,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       m_vertex = vtx->get_z();
       // std::cout<<m_vertex<<std::endl;
       //  if nan return
+      /*
       if (m_vertex != m_vertex)
         return Fun4AllReturnCodes::EVENT_OK;
       if (abs(m_vertex) > 300)
         return Fun4AllReturnCodes::EVENT_OK;
+      */
     }
     else
     {
@@ -325,6 +326,14 @@ if(isMC)
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   //std::cout<<"truthinfo: "<<truthinfo<<std::endl;
+
+    int primaryvtxid = truthinfo->GetPrimaryVertexIndex();
+  PHG4VtxPoint *primaryvtx = truthinfo->GetVtx(primaryvtxid);
+  if(!primaryvtx){
+    std::cout<<"primaryvtx is missing"<<std::endl;
+    return Fun4AllReturnCodes::ABORTEVENT;
+  }
+  vertexz_truth = primaryvtx->get_z();
 
 
 
@@ -446,10 +455,10 @@ if(isMC)
 
     TLorentzVector p1 = TLorentzVector(truth->get_px(), truth->get_py(), truth->get_pz(), truth->get_e());
     // skip for soft stuff
-    if (p1.E() < 8)
+    if (p1.E() < 1)
       continue;
     // cut on eta
-    if (abs(p1.Eta()) > 1.0)
+    if (abs(p1.Eta()) > 1.1)
       continue;
     bool verbosephoton = false;
     bool ispromptphoton = false;
@@ -588,10 +597,10 @@ if(isMC)
       float phi = E_vec_cluster_Full.phi();
       float eta = E_vec_cluster_Full.eta();
       // std::cout<<E<<" "<<ET<<" "<<eta<<" "<<phi<<std::endl;
-      if (abs(eta) > 0.6)
+      if (abs(eta) > 1.0)
         continue;
       // if (ET > 1) h_ET->Fill(ET);
-      if (ET < 8)
+      if (ET < 1)
         continue;
 
       // Array for storing the isolation energy for different radii
@@ -601,7 +610,7 @@ if(isMC)
       for (int i = 0; i < nRadii; ++i)
       {
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
-        std::cout << "clusteriso: " << clusteriso[i] << std::endl;
+        //std::cout << "clusteriso: " << clusteriso[i] << std::endl;
       }
 
       if (ET > maxclusterpt)
@@ -610,6 +619,7 @@ if(isMC)
       }
       int trackid = -1;
       float clusterE = E_vec_cluster_Full.mag();
+      int pid = 0;
       if(isMC){
       PHG4Particle *maxPrimary = clustereval->max_truth_primary_particle_by_energy(recoCluster);
       if(ET > 5) std::cout << "maxPrimary: " << maxPrimary << std::endl;
@@ -617,12 +627,18 @@ if(isMC)
       
         if(!maxPrimary) continue;
         if(trutheval->get_embed(maxPrimary) != 1) continue;
-        int pid = maxPrimary->get_pid();
+        pid = maxPrimary->get_pid();
         trackid = maxPrimary->get_track_id();
         float bestprimaryenergy = maxPrimary->get_e();
         float bestprimaryincluster = clustereval->get_energy_contribution(recoCluster, maxPrimary);
-        
 
+        //if from pi0 or eta
+        if (photonsfrompi0.find(maxPrimary) != photonsfrompi0.end())
+          pid = 111;
+        if (photonsfrometa.find(maxPrimary) != photonsfrometa.end())
+          pid = 221;
+        
+        if(ET > 5)
         std::cout << "pid: " << pid << " bestprimaryenergy: " << bestprimaryenergy
                   << " bestprimaryincluster: " << bestprimaryincluster << " clusterE: " << clusterE << std::endl;
 
@@ -637,6 +653,7 @@ if(isMC)
         cluster_Phi[i][ncluster[i]] = phi;
         cluster_prob[i][ncluster[i]] = prob;
         cluster_truthtrkID[i][ncluster[i]] = trackid;
+        cluster_pid[i][ncluster[i]] = pid;
         cluster_iso_02[i][ncluster[i]] = clusteriso[0];
         cluster_iso_03[i][ncluster[i]] = clusteriso[1];
         cluster_iso_04[i][ncluster[i]] = clusteriso[2];
@@ -656,7 +673,7 @@ if(isMC)
         }
 
 
-        std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
+        //std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
 
 
     }
