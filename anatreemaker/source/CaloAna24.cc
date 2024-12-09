@@ -136,7 +136,6 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_detamax_%s", clusternamelist[i].c_str()), cluster_detamax[i], Form("cluster_detamax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_dphimax_%s", clusternamelist[i].c_str()), cluster_dphimax[i], Form("cluster_dphimax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
 
-    
     /*
     float cluster_e11[nclustercontainer][nclustermax] = {0};
   float cluster_e22[nclustercontainer][nclustermax] = {0};
@@ -180,7 +179,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_e32_%s", clusternamelist[i].c_str()), cluster_e32[i], Form("cluster_e32_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_w72_%s", clusternamelist[i].c_str()), cluster_w72[i], Form("cluster_w72_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e72_%s", clusternamelist[i].c_str()), cluster_e72[i], Form("cluster_e72_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
-   
+
     /*
       float cluster_ihcal_et[nclustercontainer][nclustermax] = {0};
   float cluster_ohcal_et[nclustercontainer][nclustermax] = {0};
@@ -362,6 +361,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   }
 
   vertexz = m_vertex;
+  std::cout << "vertexz: " << vertexz << std::endl;
   // set of primary particles
   std::set<PHG4Particle *> primary_particles;
   std::set<PHG4Particle *> primary_photon_candidates;
@@ -372,18 +372,18 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   if (isMC)
   {
 
-    CaloEvalStack caloevalstack(topNode, "CEMC");
-    clustereval = caloevalstack.get_rawcluster_eval();
+    caloevalstack = new CaloEvalStack(topNode, "CEMC");
+    clustereval = caloevalstack->get_rawcluster_eval();
     clustereval->set_usetowerinfo(true);
     clustereval->next_event(topNode);
-    trutheval = caloevalstack.get_truth_eval();
+    trutheval = caloevalstack->get_truth_eval();
     // CaloRawTowerEval *towereval = caloevalstack.get_rawtower_eval();
     //  clustereval->next_event(topNode);
     // CaloTruthEval *trutheval = m_caloevalstack->get_truth_eval();
     std::cout << "trutheval: " << trutheval << " clustereval: " << clustereval << std::endl;
     // trutheval->next_event(topNode);
 
-    PHG4TruthInfoContainer *truthinfo =
+    truthinfo =
         findNode::getClass<PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
     if (!truthinfo)
     {
@@ -605,7 +605,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         {
           pid = 221;
         }
-        if (p1.E() > 5)
+        if (p1.Pt() > particlepTmin)
         {
           int converted = false;
           if (badphotons.find(truth) != badphotons.end())
@@ -717,12 +717,13 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float clusteriso[nRadii];
 
       // Loop to calculate the isolation energy for each radius
+      // std::cout<<"nRadii: "<<nRadii<<std::endl;
       for (int i = 0; i < nRadii; ++i)
       {
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
         // std::cout << "clusteriso: " << clusteriso[i] << std::endl;
       }
-
+      // std::cout<<"clusteriso: "<<clusteriso[0]<<std::endl;
       if (ET > maxclusterpt)
       {
         maxclusterpt = ET;
@@ -732,9 +733,17 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       int pid = 0;
       if (isMC)
       {
+        // std::cout << clustereval << std::endl;
+        // trutheval = caloevalstack->get_truth_eval();
+        // PHG4Shower* max_shower = clustereval->max_truth_primary_shower_by_energy(recoCluster);
+        // std::cout<<"max_shower: "<<max_shower<<std::endl;
+        // int parentid = max_shower->get_parent_particle_id();
+        // std::cout<<"parentid: "<<parentid<<std::endl;
+        // PHG4Particle* showerparticle = truthinfo->GetParticle(parentid);
+        // std::cout<<"showerparticle: "<<showerparticle<<std::endl;
         PHG4Particle *maxPrimary = clustereval->max_truth_primary_particle_by_energy(recoCluster);
-        if (ET > 5)
-          std::cout << "maxPrimary: " << maxPrimary << std::endl;
+        // if (ET > 1)
+        std::cout << "maxPrimary: " << maxPrimary << std::endl;
 
         if (!maxPrimary)
           continue;
@@ -760,16 +769,16 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       std::pair<int, int> leadtowerindex = recoCluster->get_lead_tower();
       //-------------------------------------------------------------------------------------
       // filling the 7x7 matrix
+      std::cout << "finding showershapes in 7x7" << std::endl;
       int maxieta = leadtowerindex.first;
       int maxiphi = leadtowerindex.second;
-            //to find the 
-      float avg_eta = showershape[4];
-      float avg_phi = showershape[5];
-      //don't use max tower use the center of the cluster
+      // to find the
+      float avg_eta = showershape[4]+0.5;
+      float avg_phi = showershape[5]+0.5;
+      // don't use max tower use the center of the cluster
       maxieta = std::floor(avg_eta);
       maxiphi = std::floor(avg_phi);
 
-   
       // here skip if we are too close to the edge +-3
       if (maxieta < 3 || maxieta > 92)
         continue;
@@ -779,17 +788,26 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       {
         for (int iphi = maxiphi - 3; iphi < maxiphi + 4; iphi++)
         {
+          int temp_ieta = ieta;
+          int temp_iphi = iphi;
           shift_tower_index(ieta, iphi, 96, 256);
+
           unsigned int towerinfokey = TowerInfoDefs::encode_emcal(ieta, iphi);
+          ieta = temp_ieta;
+          iphi = temp_iphi;
+          if (ieta < 0 || ieta > 95)
+            continue;
           TowerInfo *towerinfo = emcTowerContainer->get_tower_at_key(towerinfokey);
+
           if (!towerinfo)
           {
-            
+
             // should not happen
             std::cout << "No towerinfo for tower key " << towerinfokey << std::endl;
             std::cout << "ieta: " << ieta << " iphi: " << iphi << std::endl;
             continue;
           }
+
           E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy();
         }
       }
@@ -813,14 +831,13 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float e57 = 0;
       float e75 = 0;
       float e77 = 0;
-         // here also need to calculate second moment in eta for e32 and e72
+      // here also need to calculate second moment in eta for e32 and e72
       float w32 = 0;
       float e32 = 0;
       float w72 = 0;
       float e72 = 0;
 
       int signphi = (avg_phi - std::floor(avg_phi)) > 0.5 ? 1 : -1;
-
 
       for (int i = 0; i < 7; i++)
       {
@@ -830,12 +847,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           int dj = abs(j - 3);
 
           e77 += E77[i][j];
-          if (di <= 1 && (dj == 0 || j == (3 + signphi) ))
+          if (di <= 1 && (dj == 0 || j == (3 + signphi)))
           {
             w32 += E77[i][j] * (i - 3) * (i - 3);
             e32 += E77[i][j];
           }
-          if (di <= 3 && (dj == 0 || j == (3 + signphi) ))
+          if (di <= 3 && (dj == 0 || j == (3 + signphi)))
           {
             w72 += E77[i][j] * (i - 3) * (i - 3);
             e72 += E77[i][j];
@@ -906,10 +923,10 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
       w32 = sqrt(w32);
       w72 = sqrt(w72);
-      
 
       //-------------------------------------------------------------------------------------
       // for detamax and dphimax
+      std::cout << "for detamax and dphimax" << std::endl;
       int detamax = 0;
       int dphimax = 0;
       // loop over all towers in the cluster
@@ -945,9 +962,9 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
       //-------------------------------------------------------------------------------------
       // finding the ihcal ohcal energy behind the cluster
-
-      std::vector<int> ihcal_tower = find_closest_hcal_tower(eta, phi, geomIH, ihcalTowerContainer, vertexz);
-      std::vector<int> ohcal_tower = find_closest_hcal_tower(eta, phi, geomOH, ohcalTowerContainer, vertexz);
+      std::cout << "finding the ihcal ohcal energy behind the cluster" << std::endl;
+      std::vector<int> ihcal_tower = find_closest_hcal_tower(eta, phi, geomIH, ihcalTowerContainer, vertexz, true);
+      std::vector<int> ohcal_tower = find_closest_hcal_tower(eta, phi, geomOH, ohcalTowerContainer, vertexz, false);
 
       float ihcal_et = 0;
       float ohcal_et = 0;
@@ -964,56 +981,87 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       int ohcal_iphi = ohcal_tower[1];
       float ohcalEt33[3][3] = {0};
 
-      //need to calculate ET from eta, sin(theta) =  sech(eta)
+      // need to calculate ET from eta, sin(theta) =  sech(eta)
+      std::cout << "ihcal_eta: " << ihcal_tower[0] << " ihcal_phi: " << ihcal_tower[1] << std::endl;
+
       for (int ieta = ihcal_ieta - 1; ieta <= ihcal_ieta + 1; ieta++)
       {
         for (int iphi = ihcal_iphi - 1; iphi <= ihcal_iphi + 1; iphi++)
         {
+          int temp_ieta = ieta;
+          int temp_iphi = iphi;
           shift_tower_index(ieta, iphi, 24, 64);
+          // std::cout<<"ieta: "<<ieta<<" iphi: "<<iphi<<std::endl;
+          if (ieta < 0)
+          {
+            ieta = temp_ieta;
+            iphi = temp_iphi;
+            continue;
+          }
           unsigned int towerinfokey = TowerInfoDefs::encode_hcal(ieta, iphi);
           TowerInfo *towerinfo = ihcalTowerContainer->get_tower_at_key(towerinfokey);
+          const RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALIN, ieta, iphi);
+
+          ieta = temp_ieta;
+          iphi = temp_iphi;
           if (!towerinfo)
           {
             std::cout << "No towerinfo for tower key " << towerinfokey << std::endl;
             std::cout << "ieta: " << ieta << " iphi: " << iphi << std::endl;
             continue;
           }
-          const RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALIN, ieta, iphi);
+          if (!(towerinfo->get_isGood()))
+            continue;
           RawTowerGeom *tower_geom = geomIH->get_tower_geometry(key);
+          if (!tower_geom)
+          {
+            std::cout << "No tower geometry for tower key " << key << std::endl;
+            continue;
+          }
           float energy = towerinfo->get_energy();
           float eta = getTowerEta(tower_geom, 0, 0, m_vertex);
           float sintheta = 1 / cosh(eta);
           float Et = energy * sintheta;
+
           ihcalEt33[ieta - ihcal_ieta + 1][iphi - ihcal_iphi + 1] = Et;
- 
         }
       }
-
+      std::cout << "ohcal_eta: " << ohcal_tower[0] << " ohcal_phi: " << ohcal_tower[1] << std::endl;
       for (int ieta = ohcal_ieta - 1; ieta <= ohcal_ieta + 1; ieta++)
       {
         for (int iphi = ohcal_iphi - 1; iphi <= ohcal_iphi + 1; iphi++)
         {
+          int temp_ieta = ieta;
+          int temp_iphi = iphi;
           shift_tower_index(ieta, iphi, 24, 64);
+          if (ieta < 0)
+          {
+            ieta = temp_ieta;
+            iphi = temp_iphi;
+            continue;
+          }
           unsigned int towerinfokey = TowerInfoDefs::encode_hcal(ieta, iphi);
           TowerInfo *towerinfo = ohcalTowerContainer->get_tower_at_key(towerinfokey);
+          const RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALOUT, ieta, iphi);
+          ieta = temp_ieta;
+          iphi = temp_iphi;
           if (!towerinfo)
           {
             std::cout << "No towerinfo for tower key " << towerinfokey << std::endl;
             std::cout << "ieta: " << ieta << " iphi: " << iphi << std::endl;
             continue;
           }
-          if(!(towerinfo->get_isGood()))
-            continue;
-          const RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALOUT, ieta, iphi);
+
           RawTowerGeom *tower_geom = geomOH->get_tower_geometry(key);
           float energy = towerinfo->get_energy();
           float eta = getTowerEta(tower_geom, 0, 0, m_vertex);
           float sintheta = 1 / cosh(eta);
           float Et = energy * sintheta;
+
           ohcalEt33[ieta - ohcal_ieta + 1][iphi - ohcal_iphi + 1] = Et;
         }
       }
-
+      // std::cout<<"ihcal_et33: "<<ihcalEt33[1][1]<<" ohcal_et33: "<<ohcalEt33[1][1]<<std::endl;
       ihcal_et = ihcalEt33[1][1];
       ohcal_et = ohcalEt33[1][1];
 
@@ -1023,17 +1071,20 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         {
           ihcal_et33 += ihcalEt33[i][j];
           ohcal_et33 += ohcalEt33[i][j];
-          if(i==1 || j==1+ihcal_tower[2]){
-            if(j==1 || i==1+ihcal_tower[3]){
+          if (i == 1 || j == 1 + ihcal_tower[2])
+          {
+            if (j == 1 || i == 1 + ihcal_tower[3])
+            {
               ihcal_et22 += ihcalEt33[i][j];
             }
           }
-          if(i==1 || j==1+ohcal_tower[2]){
-            if(j==1 || i==1+ohcal_tower[3]){
+          if (i == 1 || j == 1 + ohcal_tower[2])
+          {
+            if (j == 1 || i == 1 + ohcal_tower[3])
+            {
               ohcal_et22 += ohcalEt33[i][j];
             }
           }
-
         }
       }
 
@@ -1047,20 +1098,20 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_02[i][ncluster[i]] = clusteriso[0];
       cluster_iso_03[i][ncluster[i]] = clusteriso[1];
       cluster_iso_04[i][ncluster[i]] = clusteriso[2];
-      cluster_e1[i][ncluster[i]] = showershape[0];
-      cluster_e2[i][ncluster[i]] = showershape[1];
-      cluster_e3[i][ncluster[i]] = showershape[2];
-      cluster_e4[i][ncluster[i]] = showershape[3];
+      cluster_e1[i][ncluster[i]] = showershape[8];
+      cluster_e2[i][ncluster[i]] = showershape[9];
+      cluster_e3[i][ncluster[i]] = showershape[10];
+      cluster_e4[i][ncluster[i]] = showershape[11];
       cluster_ietacent[i][ncluster[i]] = showershape[4];
       cluster_iphicent[i][ncluster[i]] = showershape[5];
       cluster_weta[i][ncluster[i]] = showershape[6];
       cluster_wphi[i][ncluster[i]] = showershape[7];
       cluster_detamax[i][ncluster[i]] = detamax;
       cluster_dphimax[i][ncluster[i]] = dphimax;
-      cluster_et1[i][ncluster[i]] = showershape[8];
-      cluster_et2[i][ncluster[i]] = showershape[9];
-      cluster_et3[i][ncluster[i]] = showershape[10];
-      cluster_et4[i][ncluster[i]] = showershape[11];
+      cluster_et1[i][ncluster[i]] = showershape[0];
+      cluster_et2[i][ncluster[i]] = showershape[1];
+      cluster_et3[i][ncluster[i]] = showershape[2];
+      cluster_et4[i][ncluster[i]] = showershape[3];
       cluster_e11[i][ncluster[i]] = e11;
       cluster_e22[i][ncluster[i]] = e22;
       cluster_e13[i][ncluster[i]] = e13;
@@ -1092,7 +1143,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_ihcal_iphi[i][ncluster[i]] = ihcal_iphi;
       cluster_ohcal_ieta[i][ncluster[i]] = ohcal_ieta;
       cluster_ohcal_iphi[i][ncluster[i]] = ohcal_iphi;
-  
+
       ncluster[i]++;
       if (ncluster[i] > nclustermax)
       {
@@ -1100,7 +1151,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         return Fun4AllReturnCodes::ABORTEVENT;
       }
 
-      // std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
+      std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
     }
     std::cout << "done with cluster container: " << clusternamelist[i] << std::endl;
   }
@@ -1125,7 +1176,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
-std::vector<int> CaloAna24::find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *geom, TowerInfoContainer *towerContainer, float vertex_z)
+std::vector<int> CaloAna24::find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *geom, TowerInfoContainer *towerContainer, float vertex_z, bool isihcal)
 {
   int matchedieta = -1;
   int matchediphi = -1;
@@ -1146,7 +1197,11 @@ std::vector<int> CaloAna24::find_closest_hcal_tower(float eta, float phi, RawTow
 
     int ieta = towerContainer->getTowerEtaBin(towerkey);
     int iphi = towerContainer->getTowerPhiBin(towerkey);
-    const RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALIN, ieta, iphi);
+    RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALIN, ieta, iphi);
+    if (!isihcal)
+    {
+      key = RawTowerDefs::encode_towerid(RawTowerDefs::CalorimeterId::HCALOUT, ieta, iphi);
+    }
     RawTowerGeom *tower_geom = geom->get_tower_geometry(key);
     double this_phi = tower_geom->get_phi();
     double this_eta = getTowerEta(tower_geom, 0, 0, vertex_z);
