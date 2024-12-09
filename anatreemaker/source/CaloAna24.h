@@ -21,6 +21,8 @@ class CaloTruthEval;
 class RawTowerGeom;
 class RawTowerGeomContainer;
 class TowerInfoContainer;
+class PHG4TruthInfoContainer;
+class CaloEvalStack;
 namespace HepMC
 {
   class GenEvent;
@@ -73,7 +75,7 @@ private:
   int mbdsouthhit{0};
   float vertexz_truth{-9999};
   int m_pythiaid{-9999};
-  float particlepTmin{6};
+  float particlepTmin{1};
   static const int nparticlesmax = 10000;
   int nparticles{0};
   float particle_E[nparticlesmax] = {0};
@@ -92,7 +94,7 @@ private:
   std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
   static const int nclustercontainer = 1;
   // cluster wise stuff
-  float clusterpTmin{7};
+  float clusterpTmin{1};
   static const int nclustermax = 10000;
   int ncluster[nclustercontainer] = {0};
   float cluster_E[nclustercontainer][nclustermax] = {0};
@@ -170,7 +172,6 @@ private:
       ieta = -1;
     if (ieta >= maxeta)
       ieta = -1;
-    ieta = 40;
     if (iphi < 0)
       iphi += maxphi;
     if (iphi >= maxphi)
@@ -179,7 +180,7 @@ private:
 
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
 
-  std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z);
+  std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
   inline /*const*/ float deltaR(float eta1, float eta2, float phi1, float phi2)
   {
@@ -207,6 +208,8 @@ private:
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};
   HepMC::GenEvent *singal_event{nullptr};
+  PHG4TruthInfoContainer *truthinfo{nullptr};
+  CaloEvalStack *caloevalstack{nullptr};
 };
 
 #endif // CALOANA24_H
