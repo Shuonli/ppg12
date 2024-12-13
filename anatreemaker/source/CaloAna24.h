@@ -85,6 +85,7 @@ private:
   int particle_pid[nparticlesmax] = {0};
   int particle_trkid[nparticlesmax] = {0};
   int particle_photonclass[nparticlesmax] = {0};
+  int particle_photon_mother_pid[nparticlesmax] = {0};
   float particle_truth_iso_02[nparticlesmax] = {0};
   float particle_truth_iso_03[nparticlesmax] = {0};
   float particle_truth_iso_04[nparticlesmax] = {0};
@@ -164,7 +165,7 @@ private:
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
 
-  int photon_type(int barcode);
+  std::pair<int,int> photon_type(int barcode);
 
   void shift_tower_index(int &ieta, int &iphi, int maxeta, int maxphi)
   {
