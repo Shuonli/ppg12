@@ -122,6 +122,10 @@ private:
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_hcalout[nclustercontainer][nclustermax] = {0};
+
   // shower shapes
   float cluster_e1[nclustercontainer][nclustermax] = {0};
   float cluster_e2[nclustercontainer][nclustermax] = {0};
@@ -194,6 +198,8 @@ private:
   }
 
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
+
+  float calculateET(float eta, float phi, float dR, int layer); // layer: 0 EMCal, 1 IHCal, 2 OHCal
 
   std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
