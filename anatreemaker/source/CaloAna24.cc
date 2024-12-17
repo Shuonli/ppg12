@@ -139,7 +139,6 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_detamax_%s", clusternamelist[i].c_str()), cluster_detamax[i], Form("cluster_detamax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_dphimax_%s", clusternamelist[i].c_str()), cluster_dphimax[i], Form("cluster_dphimax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
 
-
     slimtree->Branch(Form("cluster_e11_%s", clusternamelist[i].c_str()), cluster_e11[i], Form("cluster_e11_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e22_%s", clusternamelist[i].c_str()), cluster_e22[i], Form("cluster_e22_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e13_%s", clusternamelist[i].c_str()), cluster_e13[i], Form("cluster_e13_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -246,7 +245,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     }
   }
 
-  if (isMC)
+  if (isMC && !isSingleParticle)
   {
     // hepmc record
     PHHepMCGenEventMap *genevtmap = findNode::getClass<PHHepMCGenEventMap>(topNode, "PHHepMCGenEventMap");
@@ -306,33 +305,35 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
   float m_vertex = -9999;
   std::vector<TLorentzVector> goodcluster;
-  //GlobalVertexMap *vertexmap =
-  //    findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
-
-  MbdVertexMap *vertexmap = findNode::getClass<MbdVertexMap>(topNode,"MbdVertexMap");
-
-  if (!vertexmap)
+  // GlobalVertexMap *vertexmap =
+  //     findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
+  if (!isSingleParticle)
   {
-    std::cout << "GlobalVertexMap node is missing" << std::endl;
-  }
-  if (vertexmap && !vertexmap->empty())
-  {
-    MbdVertex *vtx = vertexmap->begin()->second;
-    if (vtx)
+    MbdVertexMap *vertexmap = findNode::getClass<MbdVertexMap>(topNode, "MbdVertexMap");
+
+    if (!vertexmap)
     {
-      m_vertex = vtx->get_z();
-      // std::cout<<m_vertex<<std::endl;
-      //  if nan return
-      /*
-      if (m_vertex != m_vertex)
-        return Fun4AllReturnCodes::EVENT_OK;
-      if (abs(m_vertex) > 300)
-        return Fun4AllReturnCodes::EVENT_OK;
-      */
+      std::cout << "GlobalVertexMap node is missing" << std::endl;
     }
-    else
+    if (vertexmap && !vertexmap->empty())
     {
-      return Fun4AllReturnCodes::EVENT_OK;
+      MbdVertex *vtx = vertexmap->begin()->second;
+      if (vtx)
+      {
+        m_vertex = vtx->get_z();
+        // std::cout<<m_vertex<<std::endl;
+        //  if nan return
+        /*
+        if (m_vertex != m_vertex)
+          return Fun4AllReturnCodes::EVENT_OK;
+        if (abs(m_vertex) > 300)
+          return Fun4AllReturnCodes::EVENT_OK;
+        */
+      }
+      else
+      {
+        return Fun4AllReturnCodes::EVENT_OK;
+      }
     }
   }
 
@@ -484,7 +485,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           {
             int g4particlepid = g4particle->get_pid();
             badphotons.insert(truth_photon);
-            if(abs(g4particlepid) == 11) convertedphotons.insert(truth_photon);
+            if (abs(g4particlepid) == 11)
+              convertedphotons.insert(truth_photon);
           }
           h_tracking_radiograph->Fill(vtx->get_x(), vtx->get_y(), vtx->get_z(), momentum);
         }
@@ -533,7 +535,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         */
         photonclass = photon_type(barcode).first;
         photonmotherpid = photon_type(barcode).second;
-        
+
         if (photonclass <= 2)
           verbosephoton = true;
       }
@@ -593,7 +595,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           if (badphotons.find(truth) != badphotons.end())
           {
             converted = 2;
-            if(convertedphotons.find(truth) != convertedphotons.end()) converted = 1;
+            if (convertedphotons.find(truth) != convertedphotons.end())
+              converted = 1;
           }
           // std::cout<<"nparticles: "<<nparticles<<std::endl;
           // std::cout<<"nparticles: "<<nparticles<<" E: "<<p1.E()<<" Pt: "<<p1.Pt()<<" Eta: "<<p1.Eta()<<" Phi: "<<p1.Phi()<<" pid: "<<pid<<" trackid: "<<trackid<<" converted: "<<converted<<" isoET: "<<isoET[0]<<" "<<isoET[1]<<" "<<isoET[2]<<std::endl;
@@ -624,6 +627,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   RawTowerGeomContainer *geomEM = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_CEMC");
   RawTowerGeomContainer *geomIH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALIN");
   RawTowerGeomContainer *geomOH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALOUT");
+
+  int IHCALsize = 1;
+  for (int i = 0; i < IHCALsize; i++) {
+   
+
+    const RawTowerDefs::keytype key = TowerInfoDefs::get_hcalin_geokey_at_channel(i);
+    float tower_phi = geomIH->get_tower_geometry(key)->get_phi();
+    std::cout<<"tower_phi: "<<tower_phi<<std::endl;
+  }
 
   std::string towerNodeName = "TOWERINFO_CALIB_CEMC";
   TowerInfoContainer *emcTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, towerNodeName);
@@ -691,8 +703,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float phi = E_vec_cluster_Full.phi();
       float eta = E_vec_cluster_Full.eta();
       // std::cout<<E<<" "<<ET<<" "<<eta<<" "<<phi<<std::endl;
-      //if (abs(eta) > 1.0)
-        //continue;
+      // if (abs(eta) > 1.0)
+      // continue;
       // if (ET > 1) h_ET->Fill(ET);
       if (ET < clusterpTmin)
         continue;
@@ -757,8 +769,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       int maxieta = leadtowerindex.first;
       int maxiphi = leadtowerindex.second;
       // to find the
-      float avg_eta = showershape[4]+0.5;
-      float avg_phi = showershape[5]+0.5;
+      float avg_eta = showershape[4] + 0.5;
+      float avg_phi = showershape[5] + 0.5;
       // don't use max tower use the center of the cluster
       maxieta = std::floor(avg_eta);
       maxiphi = std::floor(avg_phi);
@@ -1213,10 +1225,10 @@ std::vector<int> CaloAna24::find_closest_hcal_tower(float eta, float phi, RawTow
   return result;
 }
 
-std::pair<int,int> CaloAna24::photon_type(int barcode)
+std::pair<int, int> CaloAna24::photon_type(int barcode)
 {
   // check if the Genevent is null
-  std::pair <int,int> photonclasspair = {-1,-1};
+  std::pair<int, int> photonclasspair = {-1, -1};
   if (!singal_event)
   {
     std::cout << "Genevent is null" << std::endl;
@@ -1273,7 +1285,7 @@ std::pair<int,int> CaloAna24::photon_type(int barcode)
   std::set<int> outgoing_pid;
   for (auto particle : outgoing_particles)
   {
-    outgoing_pid.insert(abs(particle->pdg_id()));
+    outgoing_pid.insert(particle->pdg_id());
   }
   // make sure there is photon in it
   if (outgoing_pid.find(22) == outgoing_pid.end())
@@ -1282,8 +1294,8 @@ std::pair<int,int> CaloAna24::photon_type(int barcode)
     return photonclasspair;
   }
   int incoming_pid = 0;
-  if(incoming_particles.size()>0)
-    incoming_pid = abs(incoming_particles.at(0)->pdg_id());
+  if (incoming_particles.size() > 0)
+    incoming_pid = incoming_particles.at(0)->pdg_id();
 
   // direct photon 2->2 both incoming are quark or gluons
   if (incoming_particles.size() == 2 && outgoing_particles.size() == 2)

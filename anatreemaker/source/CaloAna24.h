@@ -54,6 +54,12 @@ public:
 
   void set_isMC(bool isMC_) { isMC = isMC_; }
 
+  void set_isSingleParticle(bool isSingleParticle_)
+  {
+    isSingleParticle = isSingleParticle_;
+    isMC = true;
+  }
+
 private:
   int ievent = 0;
   TFile *fout;
@@ -61,6 +67,7 @@ private:
   TTree *slimtree;
 
   bool isMC{true};
+  bool isSingleParticle{false};
   int m_scaledtrigger[32] = {0};
   bool initilized = false;
   long long initscaler[32][3] = {0};
@@ -165,7 +172,7 @@ private:
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
 
-  std::pair<int,int> photon_type(int barcode);
+  std::pair<int, int> photon_type(int barcode);
 
   void shift_tower_index(int &ieta, int &iphi, int maxeta, int maxphi)
   {
