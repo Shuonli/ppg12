@@ -6465,7 +6465,7 @@ void PlotCombinedHistograms(
     const std::string& outputDirectory,
     const std::vector<std::string>& combinedRootFiles,
     const std::map<std::string, std::vector<int>>& combinationToValidRuns,
-    const std::string& fitFunctionType = "sigmoid", bool fitOnly = false, const std::string& histogramType = "8x8") {
+    const std::string& fitFunctionType = "sigmoid", bool fitOnly = false, const std::string& histogramType = "maxEcore") {
     
     std::string histPrefix;
     std::string xAxisTitle;
