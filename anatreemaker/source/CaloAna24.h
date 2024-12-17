@@ -5,6 +5,8 @@
 
 #include <fun4all/SubsysReco.h>
 
+#include <phool/onnxlib.h>
+
 #include <TFile.h>
 #include <TH3.h>
 #include <TH2.h>
@@ -23,6 +25,7 @@ class RawTowerGeomContainer;
 class TowerInfoContainer;
 class PHG4TruthInfoContainer;
 class CaloEvalStack;
+
 namespace HepMC
 {
   class GenEvent;
@@ -62,6 +65,9 @@ public:
 
 private:
   int ievent = 0;
+  Ort::Session *onnxmodule{nullptr};
+  std::string m_modelPath{"/sphenix/u/shuhang98/core_patch/coresoftware/offline/packages/CaloReco/functional_model_single.onnx"};
+
   TFile *fout;
 
   TTree *slimtree;
@@ -110,6 +116,7 @@ private:
   float cluster_Eta[nclustercontainer][nclustermax] = {0};
   float cluster_Phi[nclustercontainer][nclustermax] = {0};
   float cluster_prob[nclustercontainer][nclustermax] = {0};
+  float cluster_CNN_prob[nclustercontainer][nclustermax] = {0};
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
   int cluster_pid[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
@@ -218,6 +225,14 @@ private:
   HepMC::GenEvent *singal_event{nullptr};
   PHG4TruthInfoContainer *truthinfo{nullptr};
   CaloEvalStack *caloevalstack{nullptr};
+
+  RawTowerGeomContainer *geomEM{nullptr};
+  RawTowerGeomContainer *geomIH{nullptr};
+  RawTowerGeomContainer *geomOH{nullptr};
+
+  TowerInfoContainer *emcTowerContainer{nullptr};
+  TowerInfoContainer *ihcalTowerContainer{nullptr};
+  TowerInfoContainer *ohcalTowerContainer{nullptr};
 };
 
 #endif // CALOANA24_H
