@@ -88,6 +88,7 @@ CaloAna24::~CaloAna24()
 //____________________________________________________________________________..
 int CaloAna24::Init(PHCompositeNode *topNode)
 {
+  onnxmodule = onnxSession(m_modelPath);
   fout = new TFile("caloana.root", "RECREATE");
 
   slimtree = new TTree("slimtree", "slimtree");
@@ -119,6 +120,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_Eta_%s", clusternamelist[i].c_str()), cluster_Eta[i], Form("cluster_Eta_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_Phi_%s", clusternamelist[i].c_str()), cluster_Phi[i], Form("cluster_Phi_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_prob_%s", clusternamelist[i].c_str()), cluster_prob[i], Form("cluster_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_CNN_prob_%s", clusternamelist[i].c_str()), cluster_CNN_prob[i], Form("cluster_CNN_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_truthtrkID_%s", clusternamelist[i].c_str()), cluster_truthtrkID[i], Form("cluster_truthtrkID_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_pid_%s", clusternamelist[i].c_str()), cluster_pid[i], Form("cluster_pid_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -184,6 +186,7 @@ int CaloAna24::InitRun(PHCompositeNode *topNode)
   std::cout
       << "CaloAna24::InitRun(PHCompositeNode *topNode) Initializing for Run XXX"
       << std::endl;
+
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -624,28 +627,28 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   }
 
   // geom nodes:
-  RawTowerGeomContainer *geomEM = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_CEMC");
-  RawTowerGeomContainer *geomIH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALIN");
-  RawTowerGeomContainer *geomOH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALOUT");
+  geomEM = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_CEMC");
+  geomIH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALIN");
+  geomOH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALOUT");
 
   int IHCALsize = 1;
-  for (int i = 0; i < IHCALsize; i++) {
-   
+  for (int i = 0; i < IHCALsize; i++)
+  {
 
     const RawTowerDefs::keytype key = TowerInfoDefs::get_hcalin_geokey_at_channel(i);
     float tower_phi = geomIH->get_tower_geometry(key)->get_phi();
-    std::cout<<"tower_phi: "<<tower_phi<<std::endl;
+    std::cout << "tower_phi: " << tower_phi << std::endl;
   }
 
   std::string towerNodeName = "TOWERINFO_CALIB_CEMC";
-  TowerInfoContainer *emcTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, towerNodeName);
+  emcTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, towerNodeName);
   if (!emcTowerContainer)
   {
     std::cout << "RawClusterCNNClassifier::process_event Could not locate tower node " << towerNodeName << std::endl;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   std::string ihcalTowerNodeName = "TOWERINFO_CALIB_HCALIN";
-  TowerInfoContainer *ihcalTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, ihcalTowerNodeName);
+  ihcalTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, ihcalTowerNodeName);
   if (!ihcalTowerContainer)
   {
     std::cout << "RawClusterCNNClassifier::process_event Could not locate tower node " << ihcalTowerNodeName << std::endl;
@@ -653,7 +656,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   }
 
   std::string ohcalTowerNodeName = "TOWERINFO_CALIB_HCALOUT";
-  TowerInfoContainer *ohcalTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, ohcalTowerNodeName);
+  ohcalTowerContainer = findNode::getClass<TowerInfoContainer>(topNode, ohcalTowerNodeName);
   if (!ohcalTowerContainer)
   {
     std::cout << "RawClusterCNNClassifier::process_event Could not locate tower node " << ohcalTowerNodeName << std::endl;
@@ -768,6 +771,58 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       std::cout << "finding showershapes in 7x7" << std::endl;
       int maxieta = leadtowerindex.first;
       int maxiphi = leadtowerindex.second;
+
+      int maxtowerieta = maxieta;
+      int maxtoweriphi = maxiphi;
+      float CNNprob = -1;
+      std::vector<float> input;
+      const int inputDimx = 5;
+      const int inputDimy = 5;
+      const int inputDimz = 1;
+      const int outputDim = 1;
+      // resize to inputDimx * inputDimy
+      int vectorSize = inputDimx * inputDimy;
+      input.resize(vectorSize, 0);
+      // loop for classification
+      if (ET > 0)
+      {
+        int xlength = int((inputDimx - 1) / 2);
+        int ylength = int((inputDimy - 1) / 2);
+        if (maxtowerieta - ylength < 0 || maxtowerieta + ylength >= 96)
+        {
+          continue;
+        }
+        for (int ieta = maxtowerieta - ylength; ieta <= maxtowerieta + ylength; ieta++)
+        {
+          for (int iphi = maxtoweriphi - xlength; iphi <= maxtoweriphi + xlength; iphi++)
+          {
+            int mappediphi = iphi;
+
+            if (mappediphi < 0)
+            {
+              mappediphi += 256;
+            }
+            if (mappediphi > 255)
+            {
+              mappediphi -= 256;
+            }
+            unsigned int towerinfokey = TowerInfoDefs::encode_emcal(ieta, mappediphi);
+            TowerInfo *towerinfo = emcTowerContainer->get_tower_at_key(towerinfokey);
+            if (!towerinfo)
+            {
+              // should not happen
+              std::cout << "No towerinfo for tower key " << towerinfokey << std::endl;
+              std::cout << "ieta: " << ieta << " iphi: " << mappediphi << std::endl;
+              continue;
+            }
+            int index = (ieta - maxtowerieta + ylength) * inputDimx + iphi - maxtoweriphi + xlength;
+            input.at(index) = towerinfo->get_energy();
+          }
+        }
+      }
+      std::vector<float> probresult = onnxInference(onnxmodule, input, 1, inputDimx, inputDimy, inputDimz, outputDim);
+
+      CNNprob = probresult[0];
       // to find the
       float avg_eta = showershape[4] + 0.5;
       float avg_phi = showershape[5] + 0.5;
@@ -1089,6 +1144,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_Eta[i][ncluster[i]] = eta;
       cluster_Phi[i][ncluster[i]] = phi;
       cluster_prob[i][ncluster[i]] = prob;
+      cluster_CNN_prob[i][ncluster[i]] = CNNprob;
       cluster_truthtrkID[i][ncluster[i]] = trackid;
       cluster_pid[i][ncluster[i]] = pid;
       cluster_iso_02[i][ncluster[i]] = clusteriso[0];
