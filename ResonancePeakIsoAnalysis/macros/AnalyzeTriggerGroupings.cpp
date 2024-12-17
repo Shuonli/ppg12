@@ -22,7 +22,7 @@
 #define CYAN    "\033[36m"      /* Cyan */
 #define BOLD    "\033[1m"
 
-bool enableFits = true; // Set to true if you want to enable the fits
+bool enableFits = false; // Set to true if you want to enable the fits
 
 
 std::map<std::tuple<
@@ -2071,15 +2071,34 @@ DataStructures::CutCombinationData processCutCombination(
                 result.pTCentersPi0.push_back(pTCenter);
                 result.meanPi0Values.push_back(selectedData.meanPi0);
                 result.meanPi0Errors.push_back(selectedData.meanPi0Error);
-                result.triggersUsedPi0.push_back(triggerToUse); // Track the trigger used
+                result.sigmaPi0Values.push_back(selectedData.sigmaPi0);
+                result.sigmaPi0Errors.push_back(selectedData.sigmaPi0Error);
+                result.resolutionPi0Values.push_back(selectedData.pi0FitResolution);
+                result.resolutionPi0Errors.push_back(selectedData.pi0FitResolutionError);
+                result.signalToBackgroundPi0Ratios.push_back(selectedData.signalToBackgroundPi0Ratio);
+                result.signalToBackgroundPi0Errors.push_back(selectedData.signalToBackgroundPi0Error);
+                result.pi0YieldValues.push_back(selectedData.signalPi0Yield);
+                result.pi0YieldErrors.push_back(selectedData.signalPi0Error);
+
+                result.triggersUsedPi0.push_back(triggerToUse);
             }
 
             if (validEta) {
                 result.pTCentersEta.push_back(pTCenter);
                 result.meanEtaValues.push_back(selectedData.meanEta);
                 result.meanEtaErrors.push_back(selectedData.meanEtaError);
-                result.triggersUsedEta.push_back(triggerToUse); // Track the trigger used
+                result.sigmaEtaValues.push_back(selectedData.sigmaEta);
+                result.sigmaEtaErrors.push_back(selectedData.sigmaEtaError);
+                result.resolutionEtaValues.push_back(selectedData.etaFitResolution);
+                result.resolutionEtaErrors.push_back(selectedData.etaFitResolutionError);
+                result.signalToBackgroundEtaRatios.push_back(selectedData.signalToBackgroundEtaRatio);
+                result.signalToBackgroundEtaErrors.push_back(selectedData.signalToBackgroundEtaError);
+                result.etaYieldValues.push_back(selectedData.signalEtaYield);
+                result.etaYieldErrors.push_back(selectedData.signalEtaError);
+
+                result.triggersUsedEta.push_back(triggerToUse);
             }
+
         } else {
             std::cout << RED << "Warning: Data not found for pT bin [" << pTMin << ", " << pTMax << "] and trigger " << triggerToUse << RESET << std::endl;
             // Debugging output: List available triggers for this pT bin
@@ -2094,12 +2113,10 @@ DataStructures::CutCombinationData processCutCombination(
             result.triggersInData.insert(tDataPair.first);
         }
 
-        // Collect data for overlay plots
         for (const auto& tDataPair : triggerDataMap) {
             const std::string& triggerName = tDataPair.first;
             const DataStructures::HistogramData& data = tDataPair.second;
 
-            // Validate meanPi0 and meanEta before adding
             bool validPi0 = data.meanPi0 > 0.0 && data.meanPi0 < 0.4;
             bool validEta = data.meanEta > 0.3 && data.meanEta < 1.0;
 
@@ -2107,12 +2124,28 @@ DataStructures::CutCombinationData processCutCombination(
                 result.triggerToPtCentersPi0[triggerName].push_back(pTCenter);
                 result.triggerToMeanPi0Values[triggerName].push_back(data.meanPi0);
                 result.triggerToMeanPi0Errors[triggerName].push_back(data.meanPi0Error);
+                result.triggerToSigmaPi0Values[triggerName].push_back(data.sigmaPi0);
+                result.triggerToSigmaPi0Errors[triggerName].push_back(data.sigmaPi0Error);
+                result.triggerToResolutionPi0Values[triggerName].push_back(data.pi0FitResolution);
+                result.triggerToResolutionPi0Errors[triggerName].push_back(data.pi0FitResolutionError);
+                result.triggerToSignalToBackgroundPi0Ratios[triggerName].push_back(data.signalToBackgroundPi0Ratio);
+                result.triggerToSignalToBackgroundPi0Errors[triggerName].push_back(data.signalToBackgroundPi0Error);
+                result.triggerToPi0YieldValues[triggerName].push_back(data.signalPi0Yield);
+                result.triggerToPi0YieldErrors[triggerName].push_back(data.signalPi0Error);
             }
 
             if (validEta) {
                 result.triggerToPtCentersEta[triggerName].push_back(pTCenter);
                 result.triggerToMeanEtaValues[triggerName].push_back(data.meanEta);
                 result.triggerToMeanEtaErrors[triggerName].push_back(data.meanEtaError);
+                result.triggerToSigmaEtaValues[triggerName].push_back(data.sigmaEta);
+                result.triggerToSigmaEtaErrors[triggerName].push_back(data.sigmaEtaError);
+                result.triggerToResolutionEtaValues[triggerName].push_back(data.etaFitResolution);
+                result.triggerToResolutionEtaErrors[triggerName].push_back(data.etaFitResolutionError);
+                result.triggerToSignalToBackgroundEtaRatios[triggerName].push_back(data.signalToBackgroundEtaRatio);
+                result.triggerToSignalToBackgroundEtaErrors[triggerName].push_back(data.signalToBackgroundEtaError);
+                result.triggerToEtaYieldValues[triggerName].push_back(data.signalEtaYield);
+                result.triggerToEtaYieldErrors[triggerName].push_back(data.signalEtaError);
             }
         }
     }
@@ -2122,21 +2155,21 @@ DataStructures::CutCombinationData processCutCombination(
 
 void generateOverlayInvariantMassPlot(
     const std::map<std::string, std::vector<double>>& triggerToPtCenters,
-    const std::map<std::string, std::vector<double>>& triggerToMeanValues,
-    const std::map<std::string, std::vector<double>>& triggerToMeanErrors,
+    const std::map<std::string, std::vector<double>>& triggerToYValues,
+    const std::map<std::string, std::vector<double>>& triggerToYErrors,
     const std::set<std::string>& triggersInData,
     const std::vector<std::pair<double, double>>& pT_bins,
-    const std::string& mesonName, // e.g., "#pi^{0}" or "#eta"
-    const std::string& yAxisTitle, // e.g., "Mean #pi^{0} Mass [GeV]"
-    const double yBufferFraction, // e.g., 0.1 for 10% buffer
+    const std::string& mesonName,  // e.g., "#pi^{0}" or "#eta"
+    const std::string& yAxisTitle, // e.g., "Mean #pi^{0} Mass [GeV]" or "Yield"
+    const double yBufferFraction,
     const double pTExclusionMax,
     const std::string& outputFilePath,
     const std::string& plotDirectory,
     const std::string& cutCombination,
     const DataStructures::CutCombinationData& cutData,
     const std::map<std::string, int>& triggerColorMap,
-    const std::map<std::string, std::string>& triggerNameMap) {
-
+    const std::map<std::string, std::string>& triggerNameMap)
+{
     if (triggerToPtCenters.empty()) {
         std::cout << "No data to plot." << std::endl;
         return;
@@ -2154,9 +2187,15 @@ void generateOverlayInvariantMassPlot(
         binEdges.push_back(bin.first);
     }
     // Add the upper edge of the last included bin
-    binEdges.push_back(pT_bins[binEdges.size() - 1].second);
+    if (!binEdges.empty()) {
+        binEdges.push_back(pT_bins[binEdges.size()-1].second);
+    } else {
+        // If no bins are valid, we can't plot
+        std::cerr << "No valid pT bins for plotting." << std::endl;
+        return;
+    }
 
-    int nBins = binEdges.size() - 1;
+    int nBins = (int)binEdges.size() - 1;
     double* binEdgesArray = &binEdges[0];
 
     // Create a dummy histogram to set up the axes
@@ -2165,40 +2204,35 @@ void generateOverlayInvariantMassPlot(
     hFrame->GetXaxis()->SetTitle("Leading Cluster p_{T} [GeV]");
     hFrame->GetYaxis()->SetTitle(yAxisTitle.c_str());
 
-    // Remove x-axis labels and ticks
+    // Remove x-axis labels and ticks (we will draw custom labels)
     hFrame->GetXaxis()->SetLabelOffset(999);
     hFrame->GetXaxis()->SetTickLength(0);
 
     // Draw the frame
     hFrame->Draw();
 
-    // Declare legend pointer outside the conditional blocks
+    // Configure legend position and style
     TLegend* legend = nullptr;
-
     if (mesonName == "#pi^{0}") {
-        // Create legend with specific coordinates for #pi^{0}
+        // Legend for pi0
         legend = new TLegend(0.2, 0.2, 0.4, 0.4);
         legend->SetTextSize(0.03);
     } else {
-        // Create legend with specific coordinates for other meson names
+        // Legend for eta or others
         legend = new TLegend(0.2, 0.2, 0.4, 0.4);
         legend->SetTextSize(0.03);
     }
 
-    // Keep track of graphs to delete later
     std::vector<TGraphErrors*> graphs;
 
     // Variables to adjust y-axis range
     double yMinData = std::numeric_limits<double>::max();
     double yMaxData = std::numeric_limits<double>::lowest();
 
-    // Convert triggersInData to a vector for indexing
+    // Determine offsets for multiple triggers
     std::vector<std::string> triggerNames(triggersInData.begin(), triggersInData.end());
-    int numTriggers = triggerNames.size();
+    int numTriggers = (int)triggerNames.size();
 
-    /*
-     ADJUST OFFSET VALUE AS NECESSARY
-     */
     double offsetValue;
     if (mesonName == "#eta") {
         offsetValue = 0.098;
@@ -2206,7 +2240,6 @@ void generateOverlayInvariantMassPlot(
         offsetValue = 0.08;
     }
 
-    // Calculate offsets based on the number of triggers
     std::vector<double> offsets;
     if (numTriggers == 1) {
         offsets.push_back(0.0);
@@ -2235,48 +2268,48 @@ void generateOverlayInvariantMassPlot(
         }
     }
 
-    // Loop over triggers with indexing
+    // Loop over triggers and plot
     for (size_t triggerIndex = 0; triggerIndex < triggerNames.size(); ++triggerIndex) {
         const std::string& triggerName = triggerNames[triggerIndex];
         double xOffset = offsets[triggerIndex];
 
-        // Get the data
+        // Retrieve data for this trigger
         auto it_pT = triggerToPtCenters.find(triggerName);
-        auto it_meanValues = triggerToMeanValues.find(triggerName);
-        auto it_meanErrors = triggerToMeanErrors.find(triggerName);
+        auto it_yValues = triggerToYValues.find(triggerName);
+        auto it_yErrors = triggerToYErrors.find(triggerName);
 
-        if (it_pT == triggerToPtCenters.end() || it_meanValues == triggerToMeanValues.end() || it_meanErrors == triggerToMeanErrors.end()) {
+        if (it_pT == triggerToPtCenters.end() || it_yValues == triggerToYValues.end() || it_yErrors == triggerToYErrors.end()) {
             continue;
         }
 
         const std::vector<double>& pTCenters = it_pT->second;
-        const std::vector<double>& meanValues = it_meanValues->second;
-        const std::vector<double>& meanErrors = it_meanErrors->second;
+        const std::vector<double>& values = it_yValues->second;
+        const std::vector<double>& errors = it_yErrors->second;
 
         if (pTCenters.empty()) {
-            continue; // Skip if no data for this trigger
+            continue; // No data for this trigger
         }
 
         TGraphErrors* graph = new TGraphErrors();
 
         for (size_t i = 0; i < pTCenters.size(); ++i) {
             double pT = pTCenters[i];
-            double mean = meanValues[i];
-            double meanError = meanErrors[i];
+            double val = values[i];
+            double err = errors[i];
 
             // Exclude points beyond pTExclusionMax
             if (pT >= pTExclusionMax) {
                 continue;
             }
 
-            // Find the bin corresponding to this pT
+            // Find the bin
             int binIndex = -1;
             for (size_t j = 0; j < pT_bins.size(); ++j) {
                 if (pT_bins[j].first >= pTExclusionMax) {
                     break;
                 }
                 if (pT >= pT_bins[j].first && pT < pT_bins[j].second) {
-                    binIndex = j;
+                    binIndex = (int)j;
                     break;
                 }
             }
@@ -2284,21 +2317,18 @@ void generateOverlayInvariantMassPlot(
                 continue;
             }
 
-            // Calculate the bin center
             double binLowEdge = pT_bins[binIndex].first;
             double binUpEdge = pT_bins[binIndex].second;
             double binCenter = (binLowEdge + binUpEdge) / 2.0;
 
-            // Apply xOffset
             double xPos = binCenter + xOffset;
-
             int pointIndex = graph->GetN();
-            graph->SetPoint(pointIndex, xPos, mean);
-            graph->SetPointError(pointIndex, 0, meanError); // No x errors
+            graph->SetPoint(pointIndex, xPos, val);
+            graph->SetPointError(pointIndex, 0, err); // No x errors
 
             // Update y-axis range
-            if (mean - meanError < yMinData) yMinData = mean - meanError;
-            if (mean + meanError > yMaxData) yMaxData = mean + meanError;
+            if (val - err < yMinData) yMinData = val - err;
+            if (val + err > yMaxData) yMaxData = val + err;
         }
 
         if (graph->GetN() == 0) {
@@ -2314,13 +2344,8 @@ void generateOverlayInvariantMassPlot(
             markerColor = it_color->second;
         }
         graph->SetMarkerStyle(markerStyle);
-        double markerSize;
-        if (mesonName == "#eta") {
-            markerSize = 0.72;
-        } else {
-            markerSize = 0.85;
-        }
-        graph->SetMarkerSize(markerSize); // Adjust marker size if needed
+        double markerSize = (mesonName == "#eta") ? 0.72 : 0.85;
+        graph->SetMarkerSize(markerSize);
         graph->SetLineWidth(2);
         graph->SetMarkerColor(markerColor);
         graph->SetLineColor(markerColor);
@@ -2335,13 +2360,12 @@ void generateOverlayInvariantMassPlot(
         }
         legend->AddEntry(graph, displayTriggerName.c_str(), "p");
 
-        // Store the graph for cleanup
         graphs.push_back(graph);
     }
 
-    // Adjust y-axis range with buffer
+    // Adjust y-axis range
     if (yMinData >= yMaxData) {
-        // If no valid data points were found, set default y-axis range
+        // If no valid data points were found
         yMinData = 0.0;
         yMaxData = 1.0;
     }
@@ -2351,6 +2375,7 @@ void generateOverlayInvariantMassPlot(
     double yMax = yMaxData + yBuffer;
 
     if (mesonName == "#eta") {
+        // If you want to force a specific range for eta, adjust here:
         hFrame->GetYaxis()->SetRangeUser(0.4, 0.75);
     } else {
         hFrame->GetYaxis()->SetRangeUser(yMin, yMax);
@@ -2365,17 +2390,16 @@ void generateOverlayInvariantMassPlot(
     double yAxisMin = hFrame->GetMinimum();
     double yAxisMax = hFrame->GetMaximum();
 
-    double tickSize = (yAxisMax - yAxisMin) * 0.02; // Adjust as needed
-    double labelOffset = (yAxisMax - yAxisMin) * 0.05; // Adjust as needed
+    double tickSize = (yAxisMax - yAxisMin) * 0.02;
+    double labelOffset = (yAxisMax - yAxisMin) * 0.05;
     TLatex latex;
     latex.SetTextSize(0.035);
-    latex.SetTextAlign(22); // Center alignment
+    latex.SetTextAlign(22);
 
     // Draw x-axis line
     TLine xAxisLine(xMin, yAxisMin, xMax, yAxisMin);
     xAxisLine.Draw();
 
-    // Draw ticks and labels at bin edges
     for (size_t i = 0; i < binEdges.size(); ++i) {
         double xPos = binEdges[i];
         double yPos = yAxisMin;
@@ -2384,22 +2408,18 @@ void generateOverlayInvariantMassPlot(
         TLine* tick = new TLine(xPos, yPos, xPos, yPos - tickSize);
         tick->Draw();
 
-        // Get pT value for label
+        // Label
         double pTValue = binEdges[i];
-
-        // Format label to show one decimal place
         std::ostringstream labelStream;
         labelStream << std::fixed << std::setprecision(1) << pTValue;
         std::string label = labelStream.str();
 
-        // Draw label
         latex.DrawLatex(xPos, yPos - labelOffset, label.c_str());
     }
 
-    // Redraw the axes to ensure labels are on top
     canvas.RedrawAxis();
 
-    // Add cut combination information to the canvas
+    // Add cut combination information
     TLatex labelText;
     labelText.SetNDC();
     labelText.SetTextSize(0.032);
@@ -2408,23 +2428,28 @@ void generateOverlayInvariantMassPlot(
     valueText.SetNDC();
     valueText.SetTextSize(0.028);
 
-    // Use cutData to get the values
     labelText.DrawLatex(0.2, 0.87, "#font[62]{ECore #geq}");
-    std::ostringstream eCoreWithUnit;
-    eCoreWithUnit << cutData.clusECore << "   GeV";
-    valueText.DrawLatex(0.32, 0.87, eCoreWithUnit.str().c_str());
+    {
+        std::ostringstream eCoreWithUnit;
+        eCoreWithUnit << cutData.clusECore << "   GeV";
+        valueText.DrawLatex(0.32, 0.87, eCoreWithUnit.str().c_str());
+    }
 
     labelText.DrawLatex(0.2, 0.82, "#font[62]{#chi^{2} <}");
-    std::ostringstream chiStr;
-    chiStr << cutData.chi;
-    valueText.DrawLatex(0.27, 0.82, chiStr.str().c_str());
+    {
+        std::ostringstream chiStr;
+        chiStr << cutData.chi;
+        valueText.DrawLatex(0.27, 0.82, chiStr.str().c_str());
+    }
 
     labelText.DrawLatex(0.2, 0.77, "#font[62]{Asymmetry <}");
-    std::ostringstream asymmetryStr;
-    asymmetryStr << cutData.asymmetry;
-    valueText.DrawLatex(0.37, 0.77, asymmetryStr.str().c_str());
+    {
+        std::ostringstream asymmetryStr;
+        asymmetryStr << cutData.asymmetry;
+        valueText.DrawLatex(0.37, 0.77, asymmetryStr.str().c_str());
+    }
 
-    // Ensure the directory exists
+    // Ensure directory
     gSystem->mkdir((plotDirectory + "/" + cutCombination).c_str(), true);
 
     // Save plot
@@ -2539,11 +2564,10 @@ void ProcessMesonMassVsPt(
             std::cout << "No valid η data to plot for cut combination " << cutCombination << std::endl;
         }
         // Proceed with the overlay plots using cutData.triggerToPtCentersPi0, etc.
-
         if (!cutData.triggerToPtCentersPi0.empty()) {
             double pTExclusionMaxPi0 = 8.0; // For π⁰
+          
             std::string outputFilePath = plotDirectory + "/" + cutCombination + "/meanPi0_vs_pT_Overlay.png";
-
             generateOverlayInvariantMassPlot(
                 cutData.triggerToPtCentersPi0,
                 cutData.triggerToMeanPi0Values,
@@ -2561,6 +2585,65 @@ void ProcessMesonMassVsPt(
                 TriggerConfig::triggerColorMap,
                 TriggerConfig::triggerNameMap
             );
+            
+            std::string outputFilePathSigma = plotDirectory + "/" + cutCombination + "/sigmaPi0_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersPi0,
+                cutData.triggerToSigmaPi0Values,
+                cutData.triggerToSigmaPi0Errors,
+                cutData.triggersInData,
+                pT_bins,
+                "#pi^{0}",
+                "#sigma_{#pi 0}",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                                             outputFilePathSigma,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
+            
+            std::string outputFilePathSb = plotDirectory + "/" + cutCombination + "/sbRatioPi0_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersPi0,
+                cutData.triggerToSignalToBackgroundPi0Ratios,
+                cutData.triggerToSignalToBackgroundPi0Errors,
+                cutData.triggersInData,
+                pT_bins,
+                "#pi^{0}",
+                "Signal-to-Background Ratio",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                outputFilePathSb,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
+            std::string outputFilePathResolution = plotDirectory + "/" + cutCombination + "/resolutionPi0_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersPi0,
+                cutData.triggerToResolutionPi0Values,
+                cutData.triggerToResolutionPi0Errors,
+                cutData.triggersInData,
+                pT_bins,
+                "#pi^{0}",
+                "#pi^{0} Fit Resolution",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                                             outputFilePathResolution,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
         } else {
             std::cout << "No valid π⁰ data to plot for cut combination " << cutCombination << std::endl;
         }
@@ -2570,7 +2653,6 @@ void ProcessMesonMassVsPt(
         if (!cutData.triggerToPtCentersEta.empty()) {
             double pTExclusionMaxEta = 20.0; // For η
             std::string outputFilePath = plotDirectory + "/" + cutCombination + "/meanEta_vs_pT_Overlay.png";
-
             generateOverlayInvariantMassPlot(
                 cutData.triggerToPtCentersEta,
                 cutData.triggerToMeanEtaValues,
@@ -2582,6 +2664,64 @@ void ProcessMesonMassVsPt(
                 yBufferFractionEta,
                 pTExclusionMaxEta,
                 outputFilePath,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
+            std::string outputFilePathSigma = plotDirectory + "/" + cutCombination + "/sigmaEta_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersEta,
+                cutData.triggerToSigmaEtaValues,
+                cutData.triggerToSigmaEtaErrors,
+                cutData.triggersInData,
+                pT_bins,
+                "#eta",
+                "#sigma_{#eta}",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                                             outputFilePathSigma,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
+            
+            std::string outputFilePathSb = plotDirectory + "/" + cutCombination + "/sbRatioEta_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersEta,
+                cutData.triggerToSignalToBackgroundEtaRatios,
+                cutData.triggerToSignalToBackgroundEtaErrors,
+                cutData.triggersInData,
+                pT_bins,
+                "#eta",
+                "Signal-to-Background Ratio",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                outputFilePathSb,
+                plotDirectory,
+                cutCombination,
+                cutData,
+                TriggerConfig::triggerColorMap,
+                TriggerConfig::triggerNameMap
+            );
+            
+            std::string outputFilePathResolution = plotDirectory + "/" + cutCombination + "/resolutionEta_vs_pT_Overlay.png";
+            generateOverlayInvariantMassPlot(
+                cutData.triggerToPtCentersEta,
+                cutData.triggerToResolutionEtaValues,
+                cutData.triggerToResolutionEtaErrors,
+                cutData.triggersInData,
+                pT_bins,
+                "#eta",
+                "#eta Fit Resolution",
+                0.1,  // yBufferFraction
+                8.0,  // pTExclusionMax
+                                             outputFilePathResolution,
                 plotDirectory,
                 cutCombination,
                 cutData,
@@ -6325,8 +6465,29 @@ void PlotCombinedHistograms(
     const std::string& outputDirectory,
     const std::vector<std::string>& combinedRootFiles,
     const std::map<std::string, std::vector<int>>& combinationToValidRuns,
-    const std::string& fitFunctionType = "sigmoid", bool fitOnly = false) {
+    const std::string& fitFunctionType = "sigmoid", bool fitOnly = false, const std::string& histogramType = "8x8") {
     
+    std::string histPrefix;
+    std::string xAxisTitle;
+    std::string xAxisTitleTurnOn;
+    if (histogramType == "maxEcore") {
+        // Use max Ecore histograms
+        histPrefix = "hCluster_maxECore_";
+        xAxisTitle = "Maximum Cluster E_{core} [GeV]";
+        xAxisTitleTurnOn = "Maximum Cluster E_{core} [GeV]";
+    } else {
+        // Default behavior: use h8x8 Tower Energy histograms
+        histPrefix = "h8by8TowerEnergySum_";
+        xAxisTitle = "Maximum 8x8 EMCal Tower Energy Sum (EMCal) [GeV]";
+        xAxisTitleTurnOn = "Maximum 8x8 Energy Sum [GeV]";
+    }
+    
+      // Remove trailing underscore from histPrefix for file naming
+    std::string histPrefixForFile = histPrefix;
+    if (!histPrefixForFile.empty() && histPrefixForFile.back() == '_') {
+        histPrefixForFile.pop_back();
+    }
+       
     // List of all triggers
     const std::vector<std::string>& allTriggers = TriggerConfig::allTriggers;
     const std::vector<std::string>& photonTriggers = TriggerConfig::photonTriggers;
@@ -6418,7 +6579,7 @@ void PlotCombinedHistograms(
         runNumbersLatex.DrawLatex(0.42, 0.9, headerText.str().c_str());
 
         // Skip plotting run numbers for specific size
-        if (runNumbers.size() == 257 || runNumbers.size() == 251 || runNumbers.size() == 102 || runNumbers.size() == 101 || runNumbers.size() == 240 || runNumbers.size() == 142 || runNumbers.size() == 440 || runNumbers.size() == 443 || runNumbers.size() == 725 || runNumbers.size() == 100 || runNumbers.size() == 250 || runNumbers.size() == 141 || runNumbers.size() == 254) {
+        if (runNumbers.size() == 257 || runNumbers.size() == 251 || runNumbers.size() == 102 || runNumbers.size() == 101 || runNumbers.size() == 240 || runNumbers.size() == 142 || runNumbers.size() == 440 || runNumbers.size() == 443 || runNumbers.size() == 725 || runNumbers.size() == 100 || runNumbers.size() == 250 || runNumbers.size() == 141 || runNumbers.size() == 254 || runNumbers.size() == 416 || runNumbers.size() == 291 || runNumbers.size() == 326 || runNumbers.size() == 723 || runNumbers.size() == 382 || runNumbers.size() == 347) {
             std::cout << "[INFO] Skipping run number plotting for runNumbers.size() = 692." << std::endl;
             return;
         }
@@ -6529,7 +6690,7 @@ void PlotCombinedHistograms(
                 std::cerr << "Trigger directory '" << trigger << "' not found in file " << rootFileName << std::endl;
                 continue;
             }
-            std::string histName = "h8by8TowerEnergySum_" + trigger;
+            std::string histName = histPrefix + trigger;
 
             TH1* hist = (TH1*)triggerDir->Get(histName.c_str());
             if (!hist) {
@@ -6549,8 +6710,8 @@ void PlotCombinedHistograms(
             histClone->SetLineWidth(2);
 
             histClone->SetTitle(("Overlay for " + combinationName).c_str());
-            histClone->GetXaxis()->SetTitle("Maximum 8x8 EMCal Tower Energy Sum [GeV]");
-            histClone->GetYaxis()->SetTitle("Events");
+            histClone->GetXaxis()->SetTitle(xAxisTitle.c_str());
+            histClone->GetYaxis()->SetTitle("Prescaled Counts");
 
             if (firstDraw) {
                 histClone->Draw("HIST");
@@ -6590,7 +6751,7 @@ void PlotCombinedHistograms(
         canvas->Update();
 
         // Save the canvas
-        std::string outputFileName = plotDirectory + "/h8by8TowerEnergySum_Overlay.png";
+        std::string outputFileName = plotDirectory + "/" + histPrefixForFile + "_Overlay.png";
         canvas->SaveAs(outputFileName.c_str());
         std::cout << "Saved plot to " << outputFileName << std::endl;
 
@@ -6612,7 +6773,7 @@ void PlotCombinedHistograms(
                 std::cerr << "Warning: Minbias directory 'MBD_NandS_geq_1' not found in file " << rootFileName << std::endl;
             } else {
                 // Get the minbias histogram
-                std::string minbiasHistName = "h8by8TowerEnergySum_MBD_NandS_geq_1";
+                std::string minbiasHistName = histPrefix + "MBD_NandS_geq_1";
                 TH1* minbiasHist = (TH1*)minbiasDir->Get(minbiasHistName.c_str());
                 if (!minbiasHist) {
                     std::cerr << "Warning: Minbias histogram " << minbiasHistName << " not found in file " << rootFileName << std::endl;
@@ -6632,7 +6793,7 @@ void PlotCombinedHistograms(
                             continue;
                         }
                         // Get the photon trigger histogram
-                        std::string photonHistName = "h8by8TowerEnergySum_" + photonTrigger;
+                        std::string photonHistName = histPrefix + photonTrigger;
                         TH1* photonHist = (TH1*)photonDir->Get(photonHistName.c_str());
                         if (!photonHist) {
                             std::cerr << "Warning: Histogram " << photonHistName << " not found in file " << rootFileName << std::endl;
@@ -6658,8 +6819,8 @@ void PlotCombinedHistograms(
                         ratioHist->SetLineColor(color);
                         
                         ratioHist->SetTitle(("Turn-On Curve for " + combinationName).c_str());
-                        ratioHist->GetXaxis()->SetTitle("Maximum 8x8 Energy Sum (EMCal) [GeV]");
-                        ratioHist->GetYaxis()->SetTitle("Ratio to Minbias");
+                        ratioHist->GetXaxis()->SetTitle(xAxisTitleTurnOn.c_str());
+                        ratioHist->GetYaxis()->SetTitle("Ratio to MBD NS #geq 1");
                         ratioHist->GetYaxis()->SetRangeUser(0, 2.0);
                         
                         if (firstDrawTurnOn) {
@@ -6848,7 +7009,7 @@ void PlotCombinedHistograms(
                     canvasTurnOn->Update();
                     
                     // Save the canvas
-                    std::string outputTurnOnFileName = plotDirectory + "/h8by8TowerEnergySum_TurnOn.png";
+                    std::string outputTurnOnFileName = plotDirectory + "/" + histPrefixForFile + "_TurnOn.png";
                     canvasTurnOn->SaveAs(outputTurnOnFileName.c_str());
                     std::cout << "Saved turn-on plot to " << outputTurnOnFileName << std::endl;
                     
@@ -7334,7 +7495,393 @@ void AnalyzeTriggerGroupings(std::string specificCombinationName = "") {
     std::map<int, std::map<std::string, std::string>> overrideTriggerStatus; // Empty map
     
     overrideTriggerStatus[46697]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
-
+    
+//    overrideTriggerStatus[47375]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47375]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47375]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48455]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48455]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48455]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48656]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48656]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48656]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48657]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48657]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48657]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48721]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48721]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48721]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48100]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48100]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48100]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47777]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47777]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47777]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47807]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47807]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47807]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47846]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47846]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47846]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47848]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47848]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47848]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47867]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47867]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47867]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48100]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48100]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48100]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48338]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48338]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48338]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48422]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48422]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48422]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48454]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48454]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48454]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48459]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48459]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48459]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48859]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48859]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48859]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48861]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48861]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48861]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48894]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48894]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48894]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48896]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48896]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48896]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48936]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48936]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48936]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49047]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49047]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49047]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49052]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49233]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49233]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49233]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49247]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49247]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49247]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49269]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49269]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49269]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49336]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49336]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49336]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49377]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49377]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49377]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49458]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49458]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49458]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49458]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49458]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49458]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[50507]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[50507]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[50507]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[50655]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[50655]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[50655]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47634]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47634]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47634]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47715]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47715]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47715]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47732]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47732]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47732]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47662]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47662]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47662]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47377]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47377]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47377]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48918]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48918]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48918]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48935]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48935]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48935]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48936]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48936]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48936]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48981]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48981]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48981]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48987]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48987]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48987]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49052]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    //for weird peak in photon 5
+//    overrideTriggerStatus[47638]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47323]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47332]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47375]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48409]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48410]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48412]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48417]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48423]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48461]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48462]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48638]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48645]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48656]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48658]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48660]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48701]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48720]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48722]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48725]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48726]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48727]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48730]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48734]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48742]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48801]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48805]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48807]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48859]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48868]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48884]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48903]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48984]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48986]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48991]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49023]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49028]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49029]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49053]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49061]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49133]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49138]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49219]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49250]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49263]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49264]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49266]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49317]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49329]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49336]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49363]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49433]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49434]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49435]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49439]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48868]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49263]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49264]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49248]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49249]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49270]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49337]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49329]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49434]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49023]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49312]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48073]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48080]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48180]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48181]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48233]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48234]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48237]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48233]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48234]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48237]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48239]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48240]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48245]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48253]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48255]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48256]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48257]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48258]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48260]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48261]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48262]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48263]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48265]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48287]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48291]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48293]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48294]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48295]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48307]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48318]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48337]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48338]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48342]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48343]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48346]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48347]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48348]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48349]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48359]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[48859]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48859]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48859]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48861]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48861]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48861]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[48352]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48352]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48352]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48356]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48356]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48356]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48357]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48357]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48357]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48358]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48358]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48358]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[49052]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49052]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49381]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49381]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49381]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[48341]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48341]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[48341]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[49448]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49448]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49448]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[49449]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49449]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49449]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49750]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49750]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49750]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[49760]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49760]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49760]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[49761]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49761]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[49761]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47716]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47716]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47716]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47720]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47720]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47720]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47722]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47722]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47722]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47723]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47723]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47723]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47724]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47724]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47724]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47725]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47725]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47725]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    overrideTriggerStatus[47727]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47727]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47727]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47729]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47729]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47729]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    
+//    
+//    overrideTriggerStatus[47769]["Photon_3_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47769]["Photon_4_GeV_plus_MBD_NS_geq_1"] = "OFF";
+//    overrideTriggerStatus[47769]["Photon_5_GeV_plus_MBD_NS_geq_1"] = "OFF";
+    
+    
     // Get the map of trigger combinations to run numbers
     std::map<std::set<std::string>, DataStructures::RunInfo> combinationToRuns = AnalyzeWhatTriggerGroupsAvailable(csvFilePath, debugMode, overrideTriggerStatus);
 
