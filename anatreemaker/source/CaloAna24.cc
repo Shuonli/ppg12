@@ -126,6 +126,9 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_%s", clusternamelist[i].c_str()), cluster_iso_03[i], Form("cluster_iso_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_%s", clusternamelist[i].c_str()), cluster_iso_04[i], Form("cluster_iso_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_04_emcal_%s", clusternamelist[i].c_str()), cluster_iso_04_emcal[i], Form("cluster_iso_04_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_04_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_04_hcalin[i], Form("cluster_iso_04_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_04_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_04_hcalout[i], Form("cluster_iso_04_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e1_%s", clusternamelist[i].c_str()), cluster_e1[i], Form("cluster_e1_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e2_%s", clusternamelist[i].c_str()), cluster_e2[i], Form("cluster_e2_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e3_%s", clusternamelist[i].c_str()), cluster_e3[i], Form("cluster_e3_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -713,6 +716,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         continue;
 
       // Array for storing the isolation energy for different radii
+      
       float clusteriso[nRadii];
 
       // Loop to calculate the isolation energy for each radius
@@ -720,9 +724,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       for (int i = 0; i < nRadii; ++i)
       {
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
-        // std::cout << "clusteriso: " << clusteriso[i] << std::endl;
       }
-      // std::cout<<"clusteriso: "<<clusteriso[0]<<std::endl;
+      
+      float emcalET_04 = calculateET(eta, phi, 0.4, 0);
+      float ihcalET_04 = calculateET(eta, phi, 0.4, 1);
+      float ohcalET_04 = calculateET(eta, phi, 0.4, 2);
+
       if (ET > maxclusterpt)
       {
         maxclusterpt = ET;
@@ -1150,6 +1157,9 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_02[i][ncluster[i]] = clusteriso[0];
       cluster_iso_03[i][ncluster[i]] = clusteriso[1];
       cluster_iso_04[i][ncluster[i]] = clusteriso[2];
+      cluster_iso_04_emcal[i][ncluster[i]] = emcalET_04 - ET;
+      cluster_iso_04_hcalin[i][ncluster[i]] = ihcalET_04;
+      cluster_iso_04_hcalout[i][ncluster[i]] = ohcalET_04;
       cluster_e1[i][ncluster[i]] = showershape[8];
       cluster_e2[i][ncluster[i]] = showershape[9];
       cluster_e3[i][ncluster[i]] = showershape[10];
@@ -1203,7 +1213,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         return Fun4AllReturnCodes::ABORTEVENT;
       }
 
-      std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
+      // std::cout << "prob: " << prob << " clusteriso: " << clusteriso[0] << " ET: " << ET << std::endl;
     }
     std::cout << "done with cluster container: " << clusternamelist[i] << std::endl;
   }
@@ -1445,4 +1455,61 @@ double CaloAna24::getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, do
     r = -log(tan(theta / 2.));
   }
   return r;
+}
+
+float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer: 0 EMCal, 1 IHCal, 2 OHCal
+{
+  float ET = 0;
+  RawTowerGeomContainer *geomcontainer = nullptr;
+  TowerInfoContainer *towercontainer = nullptr;
+  RawTowerDefs::CalorimeterId caloid = RawTowerDefs::CalorimeterId::CEMC;
+
+  if (layer == 0)
+  {
+    geomcontainer = geomEM;
+    towercontainer = emcTowerContainer;
+    caloid = RawTowerDefs::CalorimeterId::CEMC;
+  }
+  else if (layer == 1)
+  {
+    geomcontainer = geomIH;
+    towercontainer = ihcalTowerContainer;
+    caloid = RawTowerDefs::CalorimeterId::HCALIN;
+  }
+  else if (layer == 2)
+  {
+    geomcontainer = geomOH;
+    towercontainer = ohcalTowerContainer;
+    caloid = RawTowerDefs::CalorimeterId::HCALOUT;
+  }
+  else
+  {
+    std::cout << "Invalid layer" << std::endl;
+    return ET;
+  }
+  float ntowers = towercontainer->size();
+  for (unsigned int channel = 0; channel < ntowers; channel++)
+  {
+    TowerInfo *tower = towercontainer->get_tower_at_channel(channel);
+    if (!tower)
+    {
+      continue;
+    }
+    if (tower->get_isGood() == false)
+    {
+      continue;
+    }
+    unsigned int towerkey = towercontainer->encode_key(channel);
+    int ieta = towercontainer->getTowerEtaBin(towerkey);
+    int iphi = towercontainer->getTowerPhiBin(towerkey);
+    RawTowerDefs::keytype key = RawTowerDefs::encode_towerid(caloid, ieta, iphi);
+    RawTowerGeom *tower_geom = geomcontainer->get_tower_geometry(key);
+    double this_phi = tower_geom->get_phi();
+    double this_eta = getTowerEta(tower_geom, 0, 0, vertexz);
+    if (deltaR(eta, this_eta, phi, this_phi) < dR)
+    {
+      ET += tower->get_energy();
+    }
+  }
+  return ET;
 }

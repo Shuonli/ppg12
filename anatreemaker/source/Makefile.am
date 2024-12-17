@@ -30,6 +30,7 @@ libCaloAna24_la_SOURCES = \
 libCaloAna24_la_LIBADD = \
   -lphool \
   -lmbd_io \
+  -lsph_onnx \
   -lSubsysReco
 
 BUILT_SOURCES = testexternals.cc
