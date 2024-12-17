@@ -5,6 +5,8 @@
 
 #include <fun4all/SubsysReco.h>
 
+#include <phool/onnxlib.h>
+
 #include <TFile.h>
 #include <TH3.h>
 #include <TH2.h>
@@ -23,6 +25,7 @@ class RawTowerGeomContainer;
 class TowerInfoContainer;
 class PHG4TruthInfoContainer;
 class CaloEvalStack;
+
 namespace HepMC
 {
   class GenEvent;
@@ -54,13 +57,23 @@ public:
 
   void set_isMC(bool isMC_) { isMC = isMC_; }
 
+  void set_isSingleParticle(bool isSingleParticle_)
+  {
+    isSingleParticle = isSingleParticle_;
+    isMC = true;
+  }
+
 private:
   int ievent = 0;
+  Ort::Session *onnxmodule{nullptr};
+  std::string m_modelPath{"/sphenix/u/shuhang98/core_patch/coresoftware/offline/packages/CaloReco/functional_model_single.onnx"};
+
   TFile *fout;
 
   TTree *slimtree;
 
   bool isMC{true};
+  bool isSingleParticle{false};
   int m_scaledtrigger[32] = {0};
   bool initilized = false;
   long long initscaler[32][3] = {0};
@@ -85,6 +98,7 @@ private:
   int particle_pid[nparticlesmax] = {0};
   int particle_trkid[nparticlesmax] = {0};
   int particle_photonclass[nparticlesmax] = {0};
+  int particle_photon_mother_pid[nparticlesmax] = {0};
   float particle_truth_iso_02[nparticlesmax] = {0};
   float particle_truth_iso_03[nparticlesmax] = {0};
   float particle_truth_iso_04[nparticlesmax] = {0};
@@ -102,11 +116,16 @@ private:
   float cluster_Eta[nclustercontainer][nclustermax] = {0};
   float cluster_Phi[nclustercontainer][nclustermax] = {0};
   float cluster_prob[nclustercontainer][nclustermax] = {0};
+  float cluster_CNN_prob[nclustercontainer][nclustermax] = {0};
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
   int cluster_pid[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_hcalout[nclustercontainer][nclustermax] = {0};
+
   // shower shapes
   float cluster_e1[nclustercontainer][nclustermax] = {0};
   float cluster_e2[nclustercontainer][nclustermax] = {0};
@@ -164,7 +183,7 @@ private:
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
 
-  int photon_type(int barcode);
+  std::pair<int, int> photon_type(int barcode);
 
   void shift_tower_index(int &ieta, int &iphi, int maxeta, int maxphi)
   {
@@ -179,6 +198,8 @@ private:
   }
 
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
+
+  float calculateET(float eta, float phi, float dR, int layer); // layer: 0 EMCal, 1 IHCal, 2 OHCal
 
   std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
@@ -210,6 +231,14 @@ private:
   HepMC::GenEvent *singal_event{nullptr};
   PHG4TruthInfoContainer *truthinfo{nullptr};
   CaloEvalStack *caloevalstack{nullptr};
+
+  RawTowerGeomContainer *geomEM{nullptr};
+  RawTowerGeomContainer *geomIH{nullptr};
+  RawTowerGeomContainer *geomOH{nullptr};
+
+  TowerInfoContainer *emcTowerContainer{nullptr};
+  TowerInfoContainer *ihcalTowerContainer{nullptr};
+  TowerInfoContainer *ohcalTowerContainer{nullptr};
 };
 
 #endif // CALOANA24_H
