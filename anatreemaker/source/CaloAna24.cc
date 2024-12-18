@@ -114,12 +114,15 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("particle_converted", particle_converted, "particle_converted[nparticles]/I");
 
   //daughter level
-  slimtree->Branch("ndaughter", ndaughter, "ndaughter/I");
+  slimtree->Branch("ndaughter", &ndaughter, "ndaughter/I");
   slimtree->Branch("daughter_pid", daughter_pid, "daughter_pid[ndaughter]/I");
   slimtree->Branch("daughter_E", daughter_E, "daughter_E[ndaughter]/F");
   slimtree->Branch("daughter_Pt", daughter_Pt, "daughter_Pt[ndaughter]/F");
   slimtree->Branch("daughter_Eta", daughter_Eta, "daughter_Eta[ndaughter]/F");
   slimtree->Branch("daughter_Phi", daughter_Phi, "daughter_Phi[ndaughter]/F");
+  slimtree->Branch("daughter_vtx_x", daughter_vtx_x, "daughter_vtx_x[ndaughter]/F");
+  slimtree->Branch("daughter_vtx_y", daughter_vtx_y, "daughter_vtx_y[ndaughter]/F");
+  slimtree->Branch("daughter_vtx_z", daughter_vtx_z, "daughter_vtx_z[ndaughter]/F");
 
   for (int i = 0; i < nclustercontainer; i++)
   {
@@ -658,8 +661,20 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       PHG4Particle *truth = truth_itr->second;
       int pid = truth->get_pid();
       int parentid = truth->get_parent_id();
+      
       if(parentid < 0) continue;
+      std::cout << "truth pid: " << pid << " parentid: " << parentid << std::endl;
       TLorentzVector p1 = TLorentzVector(truth->get_px(), truth->get_py(), truth->get_pz(), truth->get_e());
+
+      int vtxid = truth->get_vtx_id();
+
+      PHG4VtxPoint *vtx = truthinfo->GetVtx(vtxid);
+
+      if (!vtx)
+      {
+        std::cout << "vtx is missing" << std::endl;
+        continue;
+      }
 
       daughter_E[ndaughter] = p1.E();
       daughter_Pt[ndaughter] = p1.Pt();
@@ -667,7 +682,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       daughter_Phi[ndaughter] = p1.Phi();
       daughter_pid[ndaughter] = pid;
       daughter_parent_trackid[ndaughter] = parentid;
+      daughter_vtx_x[ndaughter] = vtx->get_x();
+      daughter_vtx_y[ndaughter] = vtx->get_y();
+      daughter_vtx_z[ndaughter] = vtx->get_z();
       ndaughter++;
+     
       if (ndaughter > ndaughtermax)
       {
         std::cout << "ndaughter exceed the max range: " << ndaughter << std::endl;
@@ -1274,9 +1293,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       saveevent = true;
   }
   if (nparticles > 0)
+  {
     saveevent = true;
+  }
   if (saveevent)
   {
+     std::cout << "ndaughter: " << ndaughter << std::endl;
     slimtree->Fill();
   }
 
