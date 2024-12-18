@@ -60,7 +60,7 @@ public:
   void set_isSingleParticle(bool isSingleParticle_)
   {
     isSingleParticle = isSingleParticle_;
-    isMC = true;
+    if(isSingleParticle)isMC = true;
   }
 
 private:
@@ -113,6 +113,10 @@ private:
   float daughter_Pt[ndaughtermax] = {0};
   float daughter_Eta[ndaughtermax] = {0};
   float daughter_Phi[ndaughtermax] = {0};
+  float daughter_vtx_x[ndaughtermax] = {0};
+  float daughter_vtx_y[ndaughtermax] = {0};
+  float daughter_vtx_z[ndaughtermax] = {0};
+  
 
 
   std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
