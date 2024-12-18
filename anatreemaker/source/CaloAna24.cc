@@ -112,6 +112,15 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("particle_truth_iso_03", particle_truth_iso_03, "particle_truth_iso_03[nparticles]/F");
   slimtree->Branch("particle_truth_iso_04", particle_truth_iso_04, "particle_truth_iso_04[nparticles]/F");
   slimtree->Branch("particle_converted", particle_converted, "particle_converted[nparticles]/I");
+
+  //daughter level
+  slimtree->Branch("ndaughter", ndaughter, "ndaughter/I");
+  slimtree->Branch("daughter_pid", daughter_pid, "daughter_pid[ndaughter]/I");
+  slimtree->Branch("daughter_E", daughter_E, "daughter_E[ndaughter]/F");
+  slimtree->Branch("daughter_Pt", daughter_Pt, "daughter_Pt[ndaughter]/F");
+  slimtree->Branch("daughter_Eta", daughter_Eta, "daughter_Eta[ndaughter]/F");
+  slimtree->Branch("daughter_Phi", daughter_Phi, "daughter_Phi[ndaughter]/F");
+
   for (int i = 0; i < nclustercontainer; i++)
   {
     slimtree->Branch(Form("ncluster_%s", clusternamelist[i].c_str()), &ncluster[i], Form("ncluster_%s/I", clusternamelist[i].c_str()));
@@ -388,6 +397,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     }
     vertexz_truth = primaryvtx->get_z();
 
+    if (isSingleParticle)
+    {
+      vertexz = vertexz_truth;
+      m_vertex = vertexz_truth;
+    }
+
     //  loop over truth primary particles
     PHG4TruthInfoContainer::ConstRange range =
         truthinfo->GetPrimaryParticleRange();
@@ -539,9 +554,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           ispromptphoton = false;
         }
         */
-        photonclass = photon_type(barcode).first;
-        photonmotherpid = photon_type(barcode).second;
-
+        if (!isSingleParticle)
+        {
+          photonclass = photon_type(barcode).first;
+          photonmotherpid = photon_type(barcode).second;
+        }
         if (photonclass <= 2)
           verbosephoton = true;
       }
@@ -629,6 +646,37 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     }
   }
 
+  //only for single particles, get the first daughters from the primary 
+  if (isSingleParticle)
+  {
+    ndaughter = 0;
+    PHG4TruthInfoContainer::ConstRange range =
+        truthinfo->GetSecondaryParticleRange();
+    for (PHG4TruthInfoContainer::ConstIterator truth_itr = range.first;
+         truth_itr != range.second; ++truth_itr)
+    {
+      PHG4Particle *truth = truth_itr->second;
+      int pid = truth->get_pid();
+      int parentid = truth->get_parent_id();
+      if(parentid < 0) continue;
+      TLorentzVector p1 = TLorentzVector(truth->get_px(), truth->get_py(), truth->get_pz(), truth->get_e());
+
+      daughter_E[ndaughter] = p1.E();
+      daughter_Pt[ndaughter] = p1.Pt();
+      daughter_Eta[ndaughter] = p1.Eta();
+      daughter_Phi[ndaughter] = p1.Phi();
+      daughter_pid[ndaughter] = pid;
+      daughter_parent_trackid[ndaughter] = parentid;
+      ndaughter++;
+      if (ndaughter > ndaughtermax)
+      {
+        std::cout << "ndaughter exceed the max range: " << ndaughter << std::endl;
+        return Fun4AllReturnCodes::ABORTEVENT;
+      }
+
+    }
+  }
+
   // geom nodes:
   geomEM = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_CEMC");
   geomIH = findNode::getClass<RawTowerGeomContainer>(topNode, "TOWERGEOM_HCALIN");
@@ -701,6 +749,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float prob = recoCluster->get_prob();
 
       CLHEP::Hep3Vector vertex(0, 0, m_vertex);
+
       CLHEP::Hep3Vector E_vec_cluster_Full = RawClusterUtility::GetEVec(*recoCluster, vertex);
 
       float ecalib = 1.00;
@@ -716,16 +765,17 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         continue;
 
       // Array for storing the isolation energy for different radii
-      
-      float clusteriso[nRadii];
 
-      // Loop to calculate the isolation energy for each radius
-      // std::cout<<"nRadii: "<<nRadii<<std::endl;
-      for (int i = 0; i < nRadii; ++i)
-      {
-        clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
-      }
+        float clusteriso[nRadii];
+
+        // Loop to calculate the isolation energy for each radius
+        // std::cout<<"nRadii: "<<nRadii<<std::endl;
+        for (int i = 0; i < nRadii; ++i)
+        {
+          clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
+        }
       
+
       float emcalET_04 = calculateET(eta, phi, 0.4, 0);
       float ihcalET_04 = calculateET(eta, phi, 0.4, 1);
       float ohcalET_04 = calculateET(eta, phi, 0.4, 2);
@@ -1508,7 +1558,7 @@ float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer
     double this_eta = getTowerEta(tower_geom, 0, 0, vertexz);
     if (deltaR(eta, this_eta, phi, this_phi) < dR)
     {
-      ET += tower->get_energy();
+      ET += tower->get_energy()/cosh(this_eta);
     }
   }
   return ET;

@@ -105,6 +105,16 @@ private:
 
   int particle_converted[nparticlesmax] = {0};
 
+  static const int ndaughtermax = 100;
+  int ndaughter{0};
+  int daughter_pid[ndaughtermax] = {0};
+  int daughter_parent_trackid[ndaughtermax] = {0};
+  float daughter_E[ndaughtermax] = {0};
+  float daughter_Pt[ndaughtermax] = {0};
+  float daughter_Eta[ndaughtermax] = {0};
+  float daughter_Phi[ndaughtermax] = {0};
+
+
   std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
   static const int nclustercontainer = 1;
   // cluster wise stuff
