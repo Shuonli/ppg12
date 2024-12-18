@@ -1558,7 +1558,7 @@ float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer
     double this_eta = getTowerEta(tower_geom, 0, 0, vertexz);
     if (deltaR(eta, this_eta, phi, this_phi) < dR)
     {
-      ET += tower->get_energy();
+      ET += tower->get_energy()/cosh(this_eta);
     }
   }
   return ET;
