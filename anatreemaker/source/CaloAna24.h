@@ -34,7 +34,7 @@ namespace HepMC
 class CaloAna24 : public SubsysReco
 {
 public:
-  CaloAna24(const std::string &name = "CaloAna24");
+  CaloAna24(const std::string &name = "CaloAna24", const std::string &filename = "caloana.root");
 
   ~CaloAna24() override;
 
@@ -67,6 +67,8 @@ private:
   int ievent = 0;
   Ort::Session *onnxmodule{nullptr};
   std::string m_modelPath{"/sphenix/u/shuhang98/core_patch/coresoftware/offline/packages/CaloReco/functional_model_single.onnx"};
+  std::string m_outputFileName{"caloana.root"};  
+
 
   TFile *fout;
 
@@ -122,7 +124,7 @@ private:
   std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
   static const int nclustercontainer = 1;
   // cluster wise stuff
-  float clusterpTmin{1};
+  float clusterpTmin{8};
   static const int nclustermax = 10000;
   int ncluster[nclustercontainer] = {0};
   float cluster_E[nclustercontainer][nclustermax] = {0};
@@ -175,6 +177,8 @@ private:
   float cluster_e77[nclustercontainer][nclustermax] = {0};
   float cluster_w32[nclustercontainer][nclustermax] = {0};
   float cluster_e32[nclustercontainer][nclustermax] = {0};
+  float cluster_w52[nclustercontainer][nclustermax] = {0};
+  float cluster_e52[nclustercontainer][nclustermax] = {0};
   float cluster_w72[nclustercontainer][nclustermax] = {0};
   float cluster_e72[nclustercontainer][nclustermax] = {0};
 
