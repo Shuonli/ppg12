@@ -73,10 +73,10 @@
 #include <HepMC/GenVertex.h> // for GenVertex, GenVertex::part...
 #pragma GCC diagnostic pop
 //____________________________________________________________________________..
-CaloAna24::CaloAna24(const std::string &name) : SubsysReco(name)
-{
+CaloAna24::CaloAna24(const std::string &name, const std::string &filename): SubsysReco(name) {
   std::cout << "CaloAna24::CaloAna24(const std::string &name) Calling ctor"
             << std::endl;
+  m_outputFileName = filename;
 }
 
 //____________________________________________________________________________..
@@ -89,7 +89,7 @@ CaloAna24::~CaloAna24()
 int CaloAna24::Init(PHCompositeNode *topNode)
 {
   onnxmodule = onnxSession(m_modelPath);
-  fout = new TFile("caloana.root", "RECREATE");
+  fout = new TFile(m_outputFileName.c_str(), "RECREATE");
 
   slimtree = new TTree("slimtree", "slimtree");
   slimtree->Branch("mbdnorthhit", &mbdnorthhit, "mbdnorthhit/I");
@@ -97,6 +97,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("vertexz", &vertexz, "vertexz/F");
   slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
+  slimtree->Branch("scaledtrigger", scaledtrigger, "scaledtrigger[32]/O");
+  slimtree->Branch("livetrigger", livetrigger, "livetrigger[32]/O");
 
   // particle level
   slimtree->Branch("nparticles", &nparticles, "nparticles/I");
@@ -175,6 +177,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_e77_%s", clusternamelist[i].c_str()), cluster_e77[i], Form("cluster_e77_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_w32_%s", clusternamelist[i].c_str()), cluster_w32[i], Form("cluster_w32_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e32_%s", clusternamelist[i].c_str()), cluster_e32[i], Form("cluster_e32_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_w52_%s", clusternamelist[i].c_str()), cluster_w52[i], Form("cluster_w52_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_e52_%s", clusternamelist[i].c_str()), cluster_e52[i], Form("cluster_e52_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_w72_%s", clusternamelist[i].c_str()), cluster_w72[i], Form("cluster_w72_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e72_%s", clusternamelist[i].c_str()), cluster_e72[i], Form("cluster_e72_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
 
@@ -796,6 +800,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       
 
       float emcalET_04 = calculateET(eta, phi, 0.4, 0);
+      std::cout << "emcalET_04: " << emcalET_04 << std::endl;
       float ihcalET_04 = calculateET(eta, phi, 0.4, 1);
       float ohcalET_04 = calculateET(eta, phi, 0.4, 2);
 
@@ -935,7 +940,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
             continue;
           }
 
-          E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy();
+          E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy() > 0 ? towerinfo->get_energy() : 0;
         }
       }
       //-------------------------------------------------------------------------------------
@@ -961,6 +966,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       // here also need to calculate second moment in eta for e32 and e72
       float w32 = 0;
       float e32 = 0;
+      float w52 = 0;
+      float e52 = 0;
       float w72 = 0;
       float e72 = 0;
 
@@ -972,12 +979,19 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         {
           int di = abs(i - 3);
           int dj = abs(j - 3);
+          // safe gard
+          if(E77[i][j] < 0) E77[i][j] = 0;
 
           e77 += E77[i][j];
           if (di <= 1 && (dj == 0 || j == (3 + signphi)))
           {
             w32 += E77[i][j] * (i - 3) * (i - 3);
             e32 += E77[i][j];
+          }
+          if (di <= 2 && (dj == 0 || j == (3 + signphi)))
+          {
+            w52 += E77[i][j] * (i - 3) * (i - 3);
+            e52 += E77[i][j];
           }
           if (di <= 3 && (dj == 0 || j == (3 + signphi)))
           {
@@ -1046,10 +1060,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         }
       }
       w32 = e32 > 0 ? w32 / e32 : 0;
+      w52 = e52 > 0 ? w52 / e52 : 0;
       w72 = e72 > 0 ? w72 / e72 : 0;
 
-      w32 = sqrt(w32);
-      w72 = sqrt(w72);
+      w32 = w32 > 0 ? sqrt(w32) : 0;
+      w52 = w52 > 0 ? sqrt(w52) : 0;
+      w72 = w72 > 0 ? sqrt(w72) : 0;
+
+      //w32 = sqrt(w32);
+      //w72 = sqrt(w72);
 
       //-------------------------------------------------------------------------------------
       // for detamax and dphimax
@@ -1262,6 +1281,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_e77[i][ncluster[i]] = e77;
       cluster_w32[i][ncluster[i]] = w32;
       cluster_e32[i][ncluster[i]] = e32;
+      cluster_w52[i][ncluster[i]] = w52;
+      cluster_e52[i][ncluster[i]] = e52;
       cluster_w72[i][ncluster[i]] = w72;
       cluster_e72[i][ncluster[i]] = e72;
       cluster_ihcal_et[i][ncluster[i]] = ihcal_et;
@@ -1581,6 +1602,11 @@ float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer
     if (deltaR(eta, this_eta, phi, this_phi) < dR)
     {
       ET += tower->get_energy()/cosh(this_eta);
+      /*
+      if(layer==0) {
+        if(tower->get_chi2()>10)std::cout<<"energy: "<<tower->get_energy()<<" chi2: "<<tower->get_chi2()<<" ieta: "<<ieta<<" iphi: "<<iphi<<" eta: "<<this_eta<<" phi: "<<this_phi<<std::endl;
+      }
+      */
     }
   }
   return ET;
