@@ -94,11 +94,18 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree = new TTree("slimtree", "slimtree");
   slimtree->Branch("mbdnorthhit", &mbdnorthhit, "mbdnorthhit/I");
   slimtree->Branch("mbdsouthhit", &mbdsouthhit, "mbdsouthhit/I");
+  slimtree->Branch("mbdnorthq", mbdnorthq, "mbdnorthq[64]/F");
+  slimtree->Branch("mbdsouthq", mbdsouthq, "mbdsouthq[64]/F");
+  slimtree->Branch("mbdnorthqsum", &mbdnorthqsum, "mbdnorthqsum/F");
+  slimtree->Branch("mbdsouthqsum", &mbdsouthqsum, "mbdsouthqsum/F");
   slimtree->Branch("vertexz", &vertexz, "vertexz/F");
   slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
   slimtree->Branch("scaledtrigger", scaledtrigger, "scaledtrigger[32]/O");
   slimtree->Branch("livetrigger", livetrigger, "livetrigger[32]/O");
+  slimtree->Branch("currentscaler_raw", currentscaler_raw, "currentscaler_raw[32]/L");
+  slimtree->Branch("currentscaler_live", currentscaler_live, "currentscaler_live[32]/L");
+  slimtree->Branch("currentscaler_scaled", currentscaler_scaled, "currentscaler_scaled[32]/L");
 
   // particle level
   slimtree->Branch("nparticles", &nparticles, "nparticles/I");
@@ -158,6 +165,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_detamax_%s", clusternamelist[i].c_str()), cluster_detamax[i], Form("cluster_detamax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_dphimax_%s", clusternamelist[i].c_str()), cluster_dphimax[i], Form("cluster_dphimax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
 
+    slimtree->Branch(Form("cluster_e_array_%s", clusternamelist[i].c_str()), cluster_e_array[i], Form("cluster_e_array_%s[ncluster_%s][%d]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
+    slimtree->Branch(Form("cluster_e_array_idx_%s", clusternamelist[i].c_str()), cluster_e_array_idx[i], Form("cluster_e_array_idx_%s[ncluster_%s][%d]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
     slimtree->Branch(Form("cluster_e11_%s", clusternamelist[i].c_str()), cluster_e11[i], Form("cluster_e11_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e22_%s", clusternamelist[i].c_str()), cluster_e22[i], Form("cluster_e22_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e13_%s", clusternamelist[i].c_str()), cluster_e13[i], Form("cluster_e13_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -258,6 +267,13 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           for (int j = 0; j < 3; j++)
           {
             currentscaler[i][j] = gl1PacketInfo->lValue(i, j);
+            if(j==0)
+              currentscaler_raw[j] = currentscaler[i][j];
+            if(j==1)
+              currentscaler_live[j] = currentscaler[i][j];
+            if(j==2)
+              currentscaler_scaled[j] = currentscaler[i][j];
+
           }
         }
 
@@ -297,6 +313,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     // if(ispromptphoton) return Fun4AllReturnCodes::EVENT_OK;
     std::cout << "ngenevents: " << ngenevents << std::endl;
 
+    
+  }
+
+  float m_vertex = -9999;
+  std::vector<TLorentzVector> goodcluster;
+  // GlobalVertexMap *vertexmap =
+  //     findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
+  if (!isSingleParticle)
+  {
     // mbd trigger
 
     MbdPmtContainer *mbdtow = findNode::getClass<MbdPmtContainer>(topNode, "MbdPmtContainer");
@@ -308,6 +333,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       int southhit = 0;
       int sectormb = 128; // mbdtow->get_npmt();
       float mbenrgy[128] = {0};
+      mbdnorthqsum = 0;
+      mbdsouthqsum = 0;
       // if(_debug) cout << "Got " << sectormb << " mbd sectors in sim." << endl;
       for (int i = 0; i < sectormb; ++i)
       {
@@ -319,18 +346,22 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           northhit += 1;
         if (mbenrgy[i] > 0.4 && i > 63)
           southhit += 1;
+        if(i<64){
+          mbdnorthq[i] = mbenrgy[i];
+          mbdnorthqsum += mbenrgy[i];
+        }
+        if(i>63){
+          mbdsouthq[i-64] = mbenrgy[i];
+          mbdsouthqsum += mbenrgy[i];
+        }
+        
       }
       mbdnorthhit = northhit;
       mbdsouthhit = southhit;
     }
-  }
 
-  float m_vertex = -9999;
-  std::vector<TLorentzVector> goodcluster;
-  // GlobalVertexMap *vertexmap =
-  //     findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
-  if (!isSingleParticle)
-  {
+
+
     MbdVertexMap *vertexmap = findNode::getClass<MbdVertexMap>(topNode, "MbdVertexMap");
 
     if (!vertexmap)
@@ -922,7 +953,14 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         {
           int temp_ieta = ieta;
           int temp_iphi = iphi;
+
+          int deta = ieta - maxieta + 3;
+          int dphi = iphi - maxiphi + 3;
+
+          int arraykey = deta * 7 + dphi;
           shift_tower_index(ieta, iphi, 96, 256);
+          cluster_e_array_idx[i][ncluster[i]][arraykey] = TowerInfoDefs::encode_emcal(ieta, iphi);
+          cluster_e_array[i][ncluster[i]][arraykey] = 0;
 
           unsigned int towerinfokey = TowerInfoDefs::encode_emcal(ieta, iphi);
           ieta = temp_ieta;
@@ -939,8 +977,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
             std::cout << "ieta: " << ieta << " iphi: " << iphi << std::endl;
             continue;
           }
+          //check the isgood flag
+          
+          if (towerinfo->get_isGood() == false)
+          {
+            continue;
+          }
 
           E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy() > 0 ? towerinfo->get_energy() : 0;
+          cluster_e_array[i][ncluster[i]][arraykey] = towerinfo->get_energy();
         }
       }
       //-------------------------------------------------------------------------------------
