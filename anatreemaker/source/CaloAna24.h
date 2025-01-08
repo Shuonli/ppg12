@@ -63,6 +63,11 @@ public:
     if(isSingleParticle)isMC = true;
   }
 
+  void set_using_trigger_bits(std::vector<int> trigger_bits)
+  {
+    using_trigger_bits = trigger_bits;
+  }
+
 private:
   int ievent = 0;
   Ort::Session *onnxmodule{nullptr};
@@ -80,6 +85,9 @@ private:
   bool initilized = false;
   long long initscaler[32][3] = {0};
   long long currentscaler[32][3] = {0};
+  long long currentscaler_raw[32] = {0};
+  long long currentscaler_live[32] = {0};
+  long long currentscaler_scaled[32] = {0};
   bool scaledtrigger[32] = {false};
   bool livetrigger[32] = {false};
   int nscaledtrigger[32] = {0};
@@ -88,6 +96,10 @@ private:
   float vertexz{-9999};
   int mbdnorthhit{0};
   int mbdsouthhit{0};
+  float mbdnorthq[64] = {0};
+  float mbdsouthq[64] = {0};
+  float mbdnorthqsum{0};
+  float mbdsouthqsum{0};
   float vertexz_truth{-9999};
   int m_pythiaid{-9999};
   float particlepTmin{1};
@@ -142,7 +154,10 @@ private:
   float cluster_iso_04_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_hcalout[nclustercontainer][nclustermax] = {0};
 
+  static const int arrayntower = 49;
   // shower shapes
+  float cluster_e_array[nclustercontainer][nclustermax][arrayntower] = {0};
+  int cluster_e_array_idx[nclustercontainer][nclustermax][arrayntower] = {0};
   float cluster_e1[nclustercontainer][nclustermax] = {0};
   float cluster_e2[nclustercontainer][nclustermax] = {0};
   float cluster_e3[nclustercontainer][nclustermax] = {0};
@@ -242,7 +257,7 @@ private:
     float dr = sqrt(deta * deta + dphi * dphi);
     return dr;
   }
-
+  std::vector<int> using_trigger_bits{10,12,24, 25,26,27};
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};
