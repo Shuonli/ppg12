@@ -68,6 +68,10 @@ public:
     using_trigger_bits = trigger_bits;
   }
 
+  void set_clusterpTmin(float pTmin) { clusterpTmin = pTmin; }
+
+  void set_particlepTmin(float pTmin) { particlepTmin = pTmin; }
+
 private:
   int ievent = 0;
   Ort::Session *onnxmodule{nullptr};
@@ -78,6 +82,8 @@ private:
   TFile *fout;
 
   TTree *slimtree;
+
+  int runnumber{0};
 
   bool isMC{true};
   bool isSingleParticle{false};
@@ -92,6 +98,7 @@ private:
   bool livetrigger[32] = {false};
   int nscaledtrigger[32] = {0};
   int nlivetrigger[32] = {0};
+  int m_eventnumber{0};
 
   float vertexz{-9999};
   int mbdnorthhit{0};
@@ -102,6 +109,7 @@ private:
   float mbdsouthqsum{0};
   float vertexz_truth{-9999};
   int m_pythiaid{-9999};
+  float m_energyscale{-1.0};
   float particlepTmin{1};
   static const int nparticlesmax = 10000;
   int nparticles{0};
@@ -133,10 +141,10 @@ private:
   
 
 
-  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC"};
-  static const int nclustercontainer = 1;
+  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC", "TOPOCLUSTER_EMCAL", "TOPOCLUSTER_EMCAL_SPLIT", "CLUSTERINFO_CEMC_NO_SPLIT"};
+  static const int nclustercontainer = 4;
   // cluster wise stuff
-  float clusterpTmin{8};
+  float clusterpTmin{5};
   static const int nclustermax = 10000;
   int ncluster[nclustercontainer] = {0};
   float cluster_E[nclustercontainer][nclustermax] = {0};
@@ -157,7 +165,10 @@ private:
   static const int arrayntower = 49;
   // shower shapes
   float cluster_e_array[nclustercontainer][nclustermax][arrayntower] = {0};
+  float cluster_adc_array[nclustercontainer][nclustermax][arrayntower] = {0};
+  float cluster_time_array[nclustercontainer][nclustermax][arrayntower] = {0};
   int cluster_e_array_idx[nclustercontainer][nclustermax][arrayntower] = {0};
+  int cluster_status_array[nclustercontainer][nclustermax][arrayntower] = {0};
   float cluster_e1[nclustercontainer][nclustermax] = {0};
   float cluster_e2[nclustercontainer][nclustermax] = {0};
   float cluster_e3[nclustercontainer][nclustermax] = {0};
@@ -172,6 +183,7 @@ private:
   float cluster_wphi[nclustercontainer][nclustermax] = {0};
   int cluster_detamax[nclustercontainer][nclustermax] = {0};
   int cluster_dphimax[nclustercontainer][nclustermax] = {0};
+  int cluster_nsaturated[nclustercontainer][nclustermax] = {0};
 
   float cluster_e11[nclustercontainer][nclustermax] = {0};
   float cluster_e22[nclustercontainer][nclustermax] = {0};
@@ -208,6 +220,20 @@ private:
   int cluster_ohcal_ieta[nclustercontainer][nclustermax] = {0};
   int cluster_ohcal_iphi[nclustercontainer][nclustermax] = {0};
   // Number of radii
+
+  static const int njetmax = 10000;
+  int njet{0};
+  float jet_E[njetmax] = {0};
+  float jet_Et[njetmax] = {0};
+  float jet_Pt[njetmax] = {0};
+  float jet_Eta[njetmax] = {0};
+  float jet_Phi[njetmax] = {0};
+
+  float jet_emcal_calo_E[njetmax] = {0};
+  float jet_ihcal_calo_E[njetmax] = {0};
+  float jet_ohcal_calo_E[njetmax] = {0};
+
+
   static const int nRadii = 3;
 
   TH3F *h_tracking_radiograph;
@@ -270,8 +296,13 @@ private:
   RawTowerGeomContainer *geomOH{nullptr};
 
   TowerInfoContainer *emcTowerContainer{nullptr};
+  TowerInfoContainer *emcRawTowerContainer{nullptr};  
   TowerInfoContainer *ihcalTowerContainer{nullptr};
+  TowerInfoContainer *ihcalRawTowerContainer{nullptr};
   TowerInfoContainer *ohcalTowerContainer{nullptr};
+  TowerInfoContainer *ohcalRawTowerContainer{nullptr};
+
+  PHCompositeNode *topNodeptr{nullptr};
 };
 
 #endif // CALOANA24_H
