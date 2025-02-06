@@ -141,8 +141,8 @@ private:
   
 
 
-  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC", "TOPOCLUSTER_EMCAL", "TOPOCLUSTER_EMCAL_SPLIT", "CLUSTERINFO_CEMC_NO_SPLIT"};
-  static const int nclustercontainer = 4;
+  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC_NO_SPLIT"};
+  static const int nclustercontainer = 1;
   // cluster wise stuff
   float clusterpTmin{5};
   static const int nclustermax = 10000;
@@ -152,6 +152,7 @@ private:
   float cluster_Eta[nclustercontainer][nclustermax] = {0};
   float cluster_Phi[nclustercontainer][nclustermax] = {0};
   float cluster_prob[nclustercontainer][nclustermax] = {0};
+  float cluster_merged_prob[nclustercontainer][nclustermax] = {0};
   float cluster_CNN_prob[nclustercontainer][nclustermax] = {0};
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
   int cluster_pid[nclustercontainer][nclustermax] = {0};
@@ -169,6 +170,7 @@ private:
   float cluster_time_array[nclustercontainer][nclustermax][arrayntower] = {0};
   int cluster_e_array_idx[nclustercontainer][nclustermax][arrayntower] = {0};
   int cluster_status_array[nclustercontainer][nclustermax][arrayntower] = {0};
+  int cluster_ownership_array[nclustercontainer][nclustermax][arrayntower] = {0};
   float cluster_e1[nclustercontainer][nclustermax] = {0};
   float cluster_e2[nclustercontainer][nclustermax] = {0};
   float cluster_e3[nclustercontainer][nclustermax] = {0};
@@ -181,6 +183,10 @@ private:
   float cluster_iphicent[nclustercontainer][nclustermax] = {0};
   float cluster_weta[nclustercontainer][nclustermax] = {0};
   float cluster_wphi[nclustercontainer][nclustermax] = {0};
+  float cluster_weta_cog[nclustercontainer][nclustermax] = {0};
+  float cluster_wphi_cog[nclustercontainer][nclustermax] = {0};
+  float cluster_weta_cogx[nclustercontainer][nclustermax] = {0};
+  float cluster_wphi_cogx[nclustercontainer][nclustermax] = {0};
   int cluster_detamax[nclustercontainer][nclustermax] = {0};
   int cluster_dphimax[nclustercontainer][nclustermax] = {0};
   int cluster_nsaturated[nclustercontainer][nclustermax] = {0};
@@ -238,6 +244,8 @@ private:
 
   TH3F *h_tracking_radiograph;
 
+  TH1I *h_sim_cross_counting;
+
   const int truthisocut = 4;
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
@@ -283,8 +291,10 @@ private:
     float dr = sqrt(deta * deta + dphi * dphi);
     return dr;
   }
-  std::vector<int> using_trigger_bits{10,12,24, 25,26,27};
+  std::vector<int> using_trigger_bits{24, 25,26,27};
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
+  float m_vertex_cut{30.0};
+  float m_shower_shape_min_tower_E{0.07};
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};
   HepMC::GenEvent *singal_event{nullptr};
