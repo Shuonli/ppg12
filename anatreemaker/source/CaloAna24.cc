@@ -15,6 +15,8 @@
 #include <phool/getClass.h>
 #include <phool/phool.h>
 
+#include <phhepmc/PHGenIntegral.h>
+
 // ROOT stuff
 #include <TFile.h>
 #include <TH1F.h>
@@ -148,6 +150,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_Eta_%s", clusternamelist[i].c_str()), cluster_Eta[i], Form("cluster_Eta_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_Phi_%s", clusternamelist[i].c_str()), cluster_Phi[i], Form("cluster_Phi_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_prob_%s", clusternamelist[i].c_str()), cluster_prob[i], Form("cluster_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_merged_prob_%s", clusternamelist[i].c_str()), cluster_merged_prob[i], Form("cluster_merged_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_CNN_prob_%s", clusternamelist[i].c_str()), cluster_CNN_prob[i], Form("cluster_CNN_prob_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_truthtrkID_%s", clusternamelist[i].c_str()), cluster_truthtrkID[i], Form("cluster_truthtrkID_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_pid_%s", clusternamelist[i].c_str()), cluster_pid[i], Form("cluster_pid_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -167,6 +170,10 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_et4_%s", clusternamelist[i].c_str()), cluster_et4[i], Form("cluster_et4_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_weta_%s", clusternamelist[i].c_str()), cluster_weta[i], Form("cluster_weta_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_wphi_%s", clusternamelist[i].c_str()), cluster_wphi[i], Form("cluster_wphi_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_weta_cog_%s", clusternamelist[i].c_str()), cluster_weta_cog[i], Form("cluster_weta_cog_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_wphi_cog_%s", clusternamelist[i].c_str()), cluster_wphi_cog[i], Form("cluster_wphi_cog_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_weta_cogx_%s", clusternamelist[i].c_str()), cluster_weta_cogx[i], Form("cluster_weta_cogx_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_wphi_cogx_%s", clusternamelist[i].c_str()), cluster_wphi_cogx[i], Form("cluster_wphi_cogx_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_ietacent_%s", clusternamelist[i].c_str()), cluster_ietacent[i], Form("cluster_ietacent_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iphicent_%s", clusternamelist[i].c_str()), cluster_iphicent[i], Form("cluster_iphicent_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_detamax_%s", clusternamelist[i].c_str()), cluster_detamax[i], Form("cluster_detamax_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -178,6 +185,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_time_array_%s", clusternamelist[i].c_str()), cluster_time_array[i], Form("cluster_time_array_%s[ncluster_%s][%d]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
     slimtree->Branch(Form("cluster_e_array_idx_%s", clusternamelist[i].c_str()), cluster_e_array_idx[i], Form("cluster_e_array_idx_%s[ncluster_%s][%d]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
     slimtree->Branch(Form("cluster_status_array_%s", clusternamelist[i].c_str()), cluster_status_array[i], Form("cluster_status_array_%s[ncluster_%s][%d]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
+    slimtree->Branch(Form("cluster_ownership_array_%s", clusternamelist[i].c_str()), cluster_ownership_array[i], Form("cluster_ownership_array_%s[ncluster_%s][%d]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str(), arrayntower));
     slimtree->Branch(Form("cluster_e11_%s", clusternamelist[i].c_str()), cluster_e11[i], Form("cluster_e11_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e22_%s", clusternamelist[i].c_str()), cluster_e22[i], Form("cluster_e22_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e13_%s", clusternamelist[i].c_str()), cluster_e13[i], Form("cluster_e13_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -225,6 +233,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("jet_ihcal_calo_E", jet_ihcal_calo_E, "jet_ihcal_calo_E[njet]/F");
   slimtree->Branch("jet_ohcal_calo_E", jet_ohcal_calo_E, "jet_ohcal_calo_E[njet]/F");
 
+  // bin 1 for generated event, bin 2 for accepted event
+  h_sim_cross_counting = new TH1I("sim_cross_counting", "sim_cross_counting", 2, 0, 2);
 
   h_tracking_radiograph = new TH3F("tracking_radiograph", "tracking_radiograph", 200, -100, 100, 200, -100, 100, 400, -200, 200);
 
@@ -324,6 +334,28 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     if (eventheader->isValid())
     {
       m_eventnumber = eventheader->get_EvtSequence();
+      // check the event number and runumber
+      if (runnumber == 51576 && m_eventnumber == 2261368)
+        return Fun4AllReturnCodes::EVENT_OK;
+      if (runnumber == 51909 && m_eventnumber == 11450906)
+        return Fun4AllReturnCodes::EVENT_OK;
+      // so that we get it for every segment
+      if (m_eventnumber == 1)
+      {
+        if (isMC)
+        {
+          PHGenIntegral *IntegralNode = findNode::getClass<PHGenIntegral>(topNode, "PHGenIntegral");
+          if (!IntegralNode)
+          {
+            std::cout << PHWHERE << "PHGenIntegral node is missing, can't find cross section info" << std::endl;
+          }
+          else
+          {
+            h_sim_cross_counting->Fill(0.5, IntegralNode->get_N_Generator_Accepted_Event());
+            h_sim_cross_counting->Fill(1.5, IntegralNode->get_N_Processed_Event());
+          }
+        }
+      }
     }
   }
   else
@@ -422,12 +454,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         m_vertex = vtx->get_z();
         // std::cout<<m_vertex<<std::endl;
         //  if nan return
-        /*
+
         if (m_vertex != m_vertex)
           return Fun4AllReturnCodes::EVENT_OK;
-        if (abs(m_vertex) > 300)
+        if (abs(m_vertex) > m_vertex_cut)
           return Fun4AllReturnCodes::EVENT_OK;
-        */
       }
       else
       {
@@ -859,6 +890,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       RawCluster *recoCluster = clusterIter->second;
       // std::cout<<"recoCluster: "<<recoCluster<<std::endl;
       float prob = recoCluster->get_prob();
+      float merged_prob = recoCluster->get_merged_cluster_prob();
 
       CLHEP::Hep3Vector vertex(0, 0, m_vertex);
 
@@ -995,6 +1027,62 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       std::vector<float> probresult = onnxInference(onnxmodule, input, 1, inputDimx, inputDimy, inputDimz, outputDim);
 
       CNNprob = probresult[0];
+
+      //-------------------------------------------------------------------------------------
+      // for detamax and dphimax
+      std::cout << "for detamax and dphimax" << std::endl;
+      int detamax = 0;
+      int dphimax = 0;
+      int nsaturated = 0;
+      std::set<unsigned int> towers_in_cluster;
+      // loop over all towers in the cluster
+      const RawCluster::TowerMap tower_map =
+          recoCluster->get_towermap();
+      for (auto tower_iter : tower_map)
+      {
+        RawTowerDefs::keytype tower_key = tower_iter.first;
+        // get ieta iphi
+        float eta = RawTowerDefs::decode_index1(tower_key);
+        float phi = RawTowerDefs::decode_index2(tower_key);
+
+        unsigned int towerinfokey = TowerInfoDefs::encode_emcal(
+            eta, phi);
+        TowerInfo *towerinfo =
+            emcTowerContainer->get_tower_at_key(towerinfokey);
+        towers_in_cluster.insert(towerinfokey);
+
+        if (towerinfo)
+        {
+          if (towerinfo->get_isSaturated())
+          {
+            nsaturated++;
+          }
+        }
+
+        // get the tower here
+
+        int totalphibins = 256;
+        auto dphiwrap = [totalphibins](float towerphi, float maxiphi)
+        {
+          float idphi = towerphi - maxiphi;
+          float idphiwrap = totalphibins - std::abs(idphi);
+          if (std::abs(idphiwrap) < std::abs(idphi))
+          {
+            return (idphi > 0) ? -idphiwrap : idphiwrap;
+          }
+          return idphi;
+        };
+
+        float deta = eta - maxieta;
+        float dphi = dphiwrap(phi, maxiphi);
+
+        if (abs(deta) > detamax)
+          detamax = abs(deta);
+        if (abs(dphi) > dphimax)
+          dphimax = abs(dphi);
+      }
+      //-------------------------------------------------------------------------------------
+
       // to find the
       float avg_eta = showershape[4] + 0.5;
       float avg_phi = showershape[5] + 0.5;
@@ -1006,6 +1094,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       if (maxieta < 3 || maxieta > 92)
         continue;
       float E77[7][7] = {0};
+      int E77_ownership[7][7] = {0};
       // loop over 7 by 7 around it
       for (int ieta = maxieta - 3; ieta < maxieta + 4; ieta++)
       {
@@ -1023,10 +1112,19 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           cluster_e_array[i][ncluster[i]][arraykey] = 0;
           cluster_adc_array[i][ncluster[i]][arraykey] = 0;
           cluster_time_array[i][ncluster[i]][arraykey] = 0;
+          cluster_ownership_array[i][ncluster[i]][arraykey] = 0;
 
           unsigned int towerinfokey = TowerInfoDefs::encode_emcal(ieta, iphi);
+
           ieta = temp_ieta;
           iphi = temp_iphi;
+
+          // check if the key is in the cluster
+          if (towers_in_cluster.find(towerinfokey) != towers_in_cluster.end())
+          {
+            cluster_ownership_array[i][ncluster[i]][arraykey] = 1;
+            E77_ownership[ieta - maxieta + 3][iphi - maxiphi + 3] = 1;
+          }
           if (ieta < 0 || ieta > 95)
             continue;
           TowerInfo *towerinfo = emcTowerContainer->get_tower_at_key(towerinfokey);
@@ -1052,7 +1150,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
             continue;
           }
 
-          E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy() > 0 ? towerinfo->get_energy() : 0;
+          E77[ieta - maxieta + 3][iphi - maxiphi + 3] = towerinfo->get_energy() > m_shower_shape_min_tower_E ? towerinfo->get_energy() : 0;
         }
       }
       //-------------------------------------------------------------------------------------
@@ -1083,6 +1181,23 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float w72 = 0;
       float e72 = 0;
 
+      float weta = 0;
+      float wphi = 0;
+
+      float weta_cog = 0;
+      float wphi_cog = 0;
+
+      float weta_cogx = 0;
+      float wphi_cogx = 0;
+
+      float Eetaphi = 0;
+
+      float shift_eta = avg_eta - std::floor(avg_eta) - 0.5;
+      float shift_phi = avg_phi - std::floor(avg_phi) - 0.5;
+
+      float cog_eta = 3 + shift_eta;
+      float cog_phi = 3 + shift_phi;
+
       int signphi = (avg_phi - std::floor(avg_phi)) > 0.5 ? 1 : -1;
 
       for (int i = 0; i < 7; i++)
@@ -1091,9 +1206,31 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         {
           int di = abs(i - 3);
           int dj = abs(j - 3);
-          // safe gard
-          if (E77[i][j] < 0)
+
+          float di_float = i - cog_eta;
+          float dj_float = j - cog_phi;
+
+          
+          // safe gard, we already did this while populating the matrix
+          if (E77[i][j] < m_shower_shape_min_tower_E)
             E77[i][j] = 0;
+          
+          //if owned by the tower
+          if (E77_ownership[i][j] == 1)
+          {
+            weta += E77[i][j] * di * di;
+            wphi += E77[i][j] * dj * dj;
+
+            weta_cog += E77[i][j] * di_float * di_float;
+            wphi_cog += E77[i][j] * dj_float * dj_float;
+            Eetaphi += E77[i][j];
+            if(i!=3 || j!=3){
+              weta_cogx += E77[i][j] * di_float * di_float;
+              wphi_cogx += E77[i][j] * dj_float * dj_float;
+            }
+
+
+          }
 
           e77 += E77[i][j];
           if (di <= 1 && (dj == 0 || j == (3 + signphi)))
@@ -1176,64 +1313,21 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       w52 = e52 > 0 ? w52 / e52 : 0;
       w72 = e72 > 0 ? w72 / e72 : 0;
 
-      w32 = w32 > 0 ? sqrt(w32) : 0;
-      w52 = w52 > 0 ? sqrt(w52) : 0;
-      w72 = w72 > 0 ? sqrt(w72) : 0;
+      weta = Eetaphi > 0 ? weta / Eetaphi : 0;
+      wphi = Eetaphi > 0 ? wphi / Eetaphi : 0;
+
+      weta_cog = Eetaphi > 0 ? weta_cog / Eetaphi : 0;
+      wphi_cog = Eetaphi > 0 ? wphi_cog / Eetaphi : 0;
+
+      weta_cogx = Eetaphi > 0 ? weta_cogx / Eetaphi : 0;
+      wphi_cogx = Eetaphi > 0 ? wphi_cogx / Eetaphi : 0;
+
+      //w32 = w32 > 0 ? sqrt(w32) : 0;
+      //w52 = w52 > 0 ? sqrt(w52) : 0;
+      //w72 = w72 > 0 ? sqrt(w72) : 0;
 
       // w32 = sqrt(w32);
       // w72 = sqrt(w72);
-
-      //-------------------------------------------------------------------------------------
-      // for detamax and dphimax
-      std::cout << "for detamax and dphimax" << std::endl;
-      int detamax = 0;
-      int dphimax = 0;
-      int nsaturated = 0;
-      // loop over all towers in the cluster
-      const RawCluster::TowerMap tower_map =
-          recoCluster->get_towermap();
-      for (auto tower_iter : tower_map)
-      {
-        RawTowerDefs::keytype tower_key = tower_iter.first;
-        // get ieta iphi
-        float eta = RawTowerDefs::decode_index1(tower_key);
-        float phi = RawTowerDefs::decode_index2(tower_key);
-
-        unsigned int towerinfokey = TowerInfoDefs::encode_emcal(
-            eta, phi);
-        TowerInfo *towerinfo =
-            emcTowerContainer->get_tower_at_key(towerinfokey);
-        if (towerinfo)
-        {
-          if (towerinfo->get_isSaturated())
-          {
-            nsaturated++;
-          }
-        }
-
-        // get the tower here
-
-        int totalphibins = 256;
-        auto dphiwrap = [totalphibins](float towerphi, float maxiphi)
-        {
-          float idphi = towerphi - maxiphi;
-          float idphiwrap = totalphibins - std::abs(idphi);
-          if (std::abs(idphiwrap) < std::abs(idphi))
-          {
-            return (idphi > 0) ? -idphiwrap : idphiwrap;
-          }
-          return idphi;
-        };
-
-        float deta = eta - maxieta;
-        float dphi = dphiwrap(phi, maxiphi);
-
-        if (abs(deta) > detamax)
-          detamax = abs(deta);
-        if (abs(dphi) > dphimax)
-          dphimax = abs(dphi);
-      }
-      //-------------------------------------------------------------------------------------
 
       //-------------------------------------------------------------------------------------
       // finding the ihcal ohcal energy behind the cluster
@@ -1368,6 +1462,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_Eta[i][ncluster[i]] = eta;
       cluster_Phi[i][ncluster[i]] = phi;
       cluster_prob[i][ncluster[i]] = prob;
+      cluster_merged_prob[i][ncluster[i]] = merged_prob;
       cluster_CNN_prob[i][ncluster[i]] = CNNprob;
       cluster_truthtrkID[i][ncluster[i]] = trackid;
       cluster_pid[i][ncluster[i]] = pid;
@@ -1383,8 +1478,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_e4[i][ncluster[i]] = showershape[11];
       cluster_ietacent[i][ncluster[i]] = showershape[4];
       cluster_iphicent[i][ncluster[i]] = showershape[5];
-      cluster_weta[i][ncluster[i]] = sqrt(showershape[6]);
-      cluster_wphi[i][ncluster[i]] = sqrt(showershape[7]);
+      cluster_weta[i][ncluster[i]] = weta;
+      cluster_wphi[i][ncluster[i]] = wphi;
+      cluster_weta_cog[i][ncluster[i]] = weta_cog;
+      cluster_wphi_cog[i][ncluster[i]] = wphi_cog;
+      cluster_weta_cogx[i][ncluster[i]] = weta_cogx;
+      cluster_wphi_cogx[i][ncluster[i]] = wphi_cogx;
       cluster_detamax[i][ncluster[i]] = detamax;
       cluster_dphimax[i][ncluster[i]] = dphimax;
       cluster_nsaturated[i][ncluster[i]] = nsaturated;
@@ -1437,83 +1536,88 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     }
     std::cout << "done with cluster container: " << clusternamelist[i] << std::endl;
   }
-
-
-  std::cout << "done with cluster, now start with jets" << std::endl;
-
-  // simply with one jet
-  std::string nodename = "AntiKt_unsubtracted_r04";
-
-  JetContainer *_jets = findNode::getClass<JetContainer>(topNode, nodename);
-
-  if (!_jets)
+  if (!isSingleParticle)
   {
-    std::cout << "Could not locate Jet node " << nodename << std::endl;
-    return Fun4AllReturnCodes::ABORTEVENT;
-  }
+    std::cout << "done with cluster, now start with jets" << std::endl;
 
-  TowerInfoContainer *_emcal_towers = nullptr;
-  TowerInfoContainer *_ihcal_towers = nullptr;
-  TowerInfoContainer *_ohcal_towers = nullptr;
+    // simply with one jet
+    std::string nodename = "AntiKt_unsubtracted_r04";
+
+    JetContainer *_jets = findNode::getClass<JetContainer>(topNode, nodename);
+
+    if (!_jets)
+    {
+      std::cout << "Could not locate Jet node " << nodename << std::endl;
+      return Fun4AllReturnCodes::ABORTEVENT;
+    }
+
+    TowerInfoContainer *_emcal_towers = nullptr;
+    TowerInfoContainer *_ihcal_towers = nullptr;
+    TowerInfoContainer *_ohcal_towers = nullptr;
 
     _emcal_towers = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_CEMC_RETOWER");
     _ihcal_towers = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALIN");
     _ohcal_towers = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALOUT");
-  
-  // reset
-  njet = 0;
-  for (auto _jet : *_jets)
-  {
-    if (_jet->get_pt() < 5)
-      continue; // Skip jets with pt less than 3 GeV. (same cut in jet reconstruction)
-    jet_E[njet] = _jet->get_e();
-    jet_Et[njet] = _jet->get_et();
-    jet_Pt[njet] = _jet->get_pt();
-    jet_Eta[njet] = _jet->get_eta();
-    jet_Phi[njet] = _jet->get_phi();
 
-    int ncomponent_emcal = 0;
-    int ncomponent_ihcal = 0;
-    int ncomponent_ohcal = 0;
-    float emcal_calo_e = 0;
-    float ihcal_calo_e = 0;
-    float ohcal_calo_e = 0;
-
-    for (auto comp: _jet->get_comp_vec()) {
-	    unsigned int channel = comp.second;
-      if (comp.first == 14 || comp.first == 29 || comp.first == 25 || comp.first == 28) {
-        TowerInfo *_tower = _emcal_towers->get_tower_at_channel(channel);
-	      float jet_tower_e = _tower->get_energy();
-        ncomponent_emcal++;
-        emcal_calo_e += jet_tower_e;
-        //std::cout << "  EMCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
-	    } else if (comp.first == 15 ||  comp.first == 30 || comp.first == 26) {
-        TowerInfo *_tower = _ihcal_towers->get_tower_at_channel(channel);
-	      float jet_tower_e = _tower->get_energy();
-        ncomponent_ihcal++;
-        ihcal_calo_e += jet_tower_e;
-        //std::cout << "  iHCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
-	    } else if (comp.first == 16 || comp.first == 31 || comp.first == 27) {
-        TowerInfo *_tower = _ohcal_towers->get_tower_at_channel(channel);
-	      float jet_tower_e = _tower->get_energy();
-        ncomponent_ohcal++;
-        ohcal_calo_e += jet_tower_e;
-        //std::cout << "  oHCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
-      }
-	  }
-    jet_emcal_calo_E[njet] = emcal_calo_e;
-    jet_ihcal_calo_E[njet] = ihcal_calo_e;
-    jet_ohcal_calo_E[njet] = ohcal_calo_e;
-
-
-    njet++;
-    if (njet > njetmax)
+    // reset
+    njet = 0;
+    for (auto _jet : *_jets)
     {
-      std::cout << "njet exceed the max range: " << njet << std::endl;
-      return Fun4AllReturnCodes::ABORTEVENT;
+      if (_jet->get_pt() < 5)
+        continue; // Skip jets with pt less than 3 GeV. (same cut in jet reconstruction)
+      jet_E[njet] = _jet->get_e();
+      jet_Et[njet] = _jet->get_et();
+      jet_Pt[njet] = _jet->get_pt();
+      jet_Eta[njet] = _jet->get_eta();
+      jet_Phi[njet] = _jet->get_phi();
+
+      int ncomponent_emcal = 0;
+      int ncomponent_ihcal = 0;
+      int ncomponent_ohcal = 0;
+      float emcal_calo_e = 0;
+      float ihcal_calo_e = 0;
+      float ohcal_calo_e = 0;
+
+      for (auto comp : _jet->get_comp_vec())
+      {
+        unsigned int channel = comp.second;
+        if (comp.first == 14 || comp.first == 29 || comp.first == 25 || comp.first == 28)
+        {
+          TowerInfo *_tower = _emcal_towers->get_tower_at_channel(channel);
+          float jet_tower_e = _tower->get_energy();
+          ncomponent_emcal++;
+          emcal_calo_e += jet_tower_e;
+          // std::cout << "  EMCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
+        }
+        else if (comp.first == 15 || comp.first == 30 || comp.first == 26)
+        {
+          TowerInfo *_tower = _ihcal_towers->get_tower_at_channel(channel);
+          float jet_tower_e = _tower->get_energy();
+          ncomponent_ihcal++;
+          ihcal_calo_e += jet_tower_e;
+          // std::cout << "  iHCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
+        }
+        else if (comp.first == 16 || comp.first == 31 || comp.first == 27)
+        {
+          TowerInfo *_tower = _ohcal_towers->get_tower_at_channel(channel);
+          float jet_tower_e = _tower->get_energy();
+          ncomponent_ohcal++;
+          ohcal_calo_e += jet_tower_e;
+          // std::cout << "  oHCal tower: " << jet_tower_e << "  ieta: " << jet_tower_ieta << "  iphi: " << jet_tower_iphi << std::endl;
+        }
+      }
+      jet_emcal_calo_E[njet] = emcal_calo_e;
+      jet_ihcal_calo_E[njet] = ihcal_calo_e;
+      jet_ohcal_calo_E[njet] = ohcal_calo_e;
+
+      njet++;
+      if (njet > njetmax)
+      {
+        std::cout << "njet exceed the max range: " << njet << std::endl;
+        return Fun4AllReturnCodes::ABORTEVENT;
+      }
     }
   }
-
   bool saveevent = false;
   for (int i = 0; i < nclustercontainer; i++)
   {
