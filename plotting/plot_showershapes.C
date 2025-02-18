@@ -30,7 +30,7 @@ void plot_showershapes()
     //------------------------------------------------------------------------------
     TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root", "READ");
     TFile *f_sig  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
-    TFile *f_bkg  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
+    TFile *f_bkg  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet10.root", "READ");
 
     if (!f_data || f_data->IsZombie())
     {
@@ -218,9 +218,9 @@ void plot_showershapes()
                     myMarkerLineText(0.55, 0.70, 0, kBlack, 0, kBlack, 1,
                                      "Data", 0.05, true);
                     myMarkerLineText(0.55, 0.65, 0, kRed, 0, kRed, 1,
-                                     "Signal", 0.05, true);
+                                     "Signal MC", 0.05, true);
                     myMarkerLineText(0.55, 0.60, 0, kBlue, 0, kBlue, 1,
-                                     "Background", 0.05, true);
+                                     "Background MC", 0.05, true);
 
                     c_proj->SaveAs(Form("%s/dis_%s.pdf", savePath.c_str(), histNamesave.Data()));
 
@@ -279,9 +279,9 @@ void plot_showershapes()
                     myMarkerLineText(0.55, 0.75, 0, kBlack, 0, kBlack, 1,
                                      "Data", 0.05, true);
                     myMarkerLineText(0.55, 0.70, 0, kRed, 0, kRed, 1,
-                                     "Signal", 0.05, true);
+                                     "Signal MC", 0.05, true);
                     myMarkerLineText(0.55, 0.65, 0, kBlue, 0, kBlue, 1,
-                                     "Background", 0.05, true);
+                                     "Background MC", 0.05, true);
 
                     TCanvas *c_bkg = new TCanvas(
                         Form("c_bkg_%s", histNameFull.Data()),
@@ -293,7 +293,7 @@ void plot_showershapes()
                         Form("%s_px_bkgOnly", histNameFull.Data()));
                     proj_bkg_clone->SetLineColor(kBlue);
 
-                    proj_bkg_clone->SetYTitle("<#it{E}_{T}^{iso} [GeV]>");
+                    proj_bkg_clone->SetYTitle("<#it{E}_{T}^{iso}> [GeV]");
                     proj_bkg_clone->SetXTitle(xaxisname.Data());
                     float max = proj_bkg_clone->GetMaximum();
                     proj_bkg_clone->GetYaxis()->SetRangeUser(0,max*1.3);
@@ -308,7 +308,7 @@ void plot_showershapes()
                     myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
                     myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
                     myText(0.55, 0.90, 1, Form("%.0f<p_{T}<%.0fGeV,%s", pTlow, pThigh, bgcut.c_str()), 0.04);
-                    myText(0.55, 0.85, 1, "Background Only MC", 0.04);
+                    myText(0.55, 0.85, 1, "Background MC", 0.04);
                     myText(0.55, 0.80, 1, Form("Correlation: %.3f", corr), 0.04);
 
                     // Optionally save
