@@ -46,7 +46,7 @@ void init_plot()
 
   frame_response = new TH2F("frame_response", "", 42, et_low, et_high, 42, et_low, et_high);
   frame_response->SetXTitle("#it{E}_{T}^{#gamma,rec} [GeV]");
-  frame_response->SetYTitle("#it{E}_{T}^{#gamma} [GeV]");
+  frame_response->SetYTitle("#it{E}_{T}^{#gamma,truth} [GeV]");
   frame_response->GetXaxis()->SetRangeUser(7, 40);
   frame_response->GetYaxis()->SetRangeUser(7, 40);
 
