@@ -14,7 +14,7 @@
 void plot_showershapes()
 {
     init_plot();
-    string savePath = "figures/";
+    string savePath = "../PPG12-analysis-note/Figures/showershapes/";
 
     std::vector<double> eta_bins = {-0.7, 0.7};
     // std::vector<double> pT_bin_edges = {8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50};
@@ -28,9 +28,9 @@ void plot_showershapes()
     // 2) Open your three ROOT files: data, signal, background
     //    (Update the filenames as needed.)
     //------------------------------------------------------------------------------
-    TFile *f_data = TFile::Open("../efficiencytool/results/data_histoshower_shape_.root", "READ");
-    TFile *f_sig = TFile::Open("../efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
-    TFile *f_bkg = TFile::Open("../efficiencytool/results/MC_efficiencyshower_shape_jet10.root", "READ");
+    TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root", "READ");
+    TFile *f_sig  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
+    TFile *f_bkg  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
 
     if (!f_data || f_data->IsZombie())
     {
@@ -237,7 +237,7 @@ void plot_showershapes()
 
                     TProfile *pfx_bkg = h2_bkg->ProfileX(
                         Form("%s_pfx_bkg", histNameFull.Data()),
-                        1, -1, "s");
+                        1, -1, "");
                     TCanvas *c_prof = new TCanvas(
                         Form("c_prof_%s", histNameFull.Data()),
                         Form("ProfileX - %s", histNameFull.Data()),
@@ -266,8 +266,11 @@ void plot_showershapes()
                         pfx_data->Draw("E");
                     if (pfx_sig)
                         pfx_sig->Draw("E SAME");
-                    if (pfx_bkg)
-                        pfx_bkg->Draw("E SAME");
+                    if (pfx_bkg){
+                        pfx_bkg->Draw("hist SAME");
+                        pfx_bkg->Draw("ex0 SAME");
+                        pfx_bkg->SetMarkerSize(0);
+                    }
 
                     myText(0.50, 0.90, 1, strleg1.c_str(), 0.04);
                     myText(0.50, 0.85, 1, strleg2.c_str(), 0.04);
@@ -292,17 +295,21 @@ void plot_showershapes()
 
                     proj_bkg_clone->SetYTitle("<#it{E}_{T}^{iso} [GeV]>");
                     proj_bkg_clone->SetXTitle(xaxisname.Data());
+                    float max = proj_bkg_clone->GetMaximum();
+                    proj_bkg_clone->GetYaxis()->SetRangeUser(0,max*1.3);
 
                     proj_bkg_clone->Draw("HIST");
+                    proj_bkg_clone->Draw("same ex0");
+                    proj_bkg_clone->SetMarkerSize(0);
 
-                    myText(0.50, 0.90, 1, strleg1.c_str(), 0.04);
-                    myText(0.50, 0.85, 1, strleg2.c_str(), 0.04);
-                    myText(0.50, 0.80, 1, strleg3.c_str(), 0.04);
-                    myText(0.35, 0.75, 1, Form("%.1f<#eta< %.1f, %.0f<p_{T}<%.0fGeV,%s", etalow, etahigh, pTlow, pThigh, bgcut.c_str()), 0.04);
-                    myText(0.50, 0.70, 1, "Background", 0.04);
-                    // find the correlation and display it
                     float corr = h2_bkg->GetCorrelationFactor();
-                    myText(0.50, 0.65, 1, Form("Correlation: %.3f", corr), 0.04);
+
+                    myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
+                    myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
+                    myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
+                    myText(0.55, 0.90, 1, Form("%.0f<p_{T}<%.0fGeV,%s", pTlow, pThigh, bgcut.c_str()), 0.04);
+                    myText(0.55, 0.85, 1, "Background Only MC", 0.04);
+                    myText(0.55, 0.80, 1, Form("Correlation: %.3f", corr), 0.04);
 
                     // Optionally save
                     c_bkg->SaveAs(Form("%s/pfx_%s.pdf", savePath.c_str(), histNamesave.Data()));

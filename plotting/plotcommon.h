@@ -16,6 +16,7 @@ string strleg2 = "#it{p}+#it{p} 200 GeV";
 string strleg3 = "";
 string strSigMC = "Pythia signal";
 string strMC = "Pythia";
+string strIncMC = "Inclusive Pythia jet";
 
 void init_plot()
 {

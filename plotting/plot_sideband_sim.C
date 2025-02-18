@@ -5,7 +5,7 @@ void plot_sideband_sim(){
 
   init_plot();
 
-  string savePath="/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/PPG12-analysis-note/Figures/";
+  string savePath="../PPG12-analysis-note/Figures/";
 
 
   TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
@@ -53,7 +53,7 @@ void plot_sideband_sim(){
 
   myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.5,0.85,1,strleg2.c_str(),0.04);
-  myText(0.5,0.80,1,strleg3.c_str(),0.04);
+  myText(0.5,0.80,1,strIncMC.c_str(),0.04);
   myMarkerLineText(0.55,0.75, 0, kBlack, 0, kBlack, 1,"A: tight iso", 0.05, true);
   myMarkerLineText(0.55,0.70, 0, kRed, 0, kRed, 1,"B: tight noniso", 0.05, true);
   myMarkerLineText(0.55,0.65, 0, kBlue, 0, kBlue, 1,"C: nontight iso", 0.05, true);
@@ -62,7 +62,7 @@ void plot_sideband_sim(){
   gPad->SetLogy();
   c1->SaveAs(Form("%s/et_sbs_sim.pdf",savePath.c_str()));
 
-    //unset logy
+  //unset logy
   gPad->SetLogy(0);
   TCanvas* c3 = new TCanvas("c3","c3",600,600);
   frame_et_rec->Draw("axis");
@@ -79,7 +79,7 @@ void plot_sideband_sim(){
 
   myText(0.18,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.18,0.85,1,strleg2.c_str(),0.04);
-  myText(0.18,0.80,1,strleg3.c_str(),0.04);
+  myText(0.18,0.80,1,strIncMC.c_str(),0.04);
   myMarkerLineText(0.55,0.75+0.15, 0, kBlack, 0, kBlack,1,"B/A: tight noniso"   , 0.05, true);
   myMarkerLineText(0.55,0.70+0.15, 0, kRed  , 0, kRed  ,1,"C/A: nontight iso", 0.05, true);
   myMarkerLineText(0.55,0.65+0.15, 0, kBlue , 0, kBlue ,1,"D/A: nontight noniso", 0.05, true);
@@ -149,9 +149,13 @@ void plot_sideband_sim(){
     frame_isoET->GetYaxis()->SetRangeUser(0,max*1.3);
 
     h_tight_isoET_pt[ipt]   ->Draw("same hist");
+    h_tight_isoET_pt[ipt]   ->Draw("same ex0");
+    h_tight_isoET_pt[ipt]   ->SetMarkerSize(0);
 
     h_nontight_isoET_pt[ipt]->Draw("same hist");
     h_nontight_isoET_pt[ipt]->SetLineColor(kRed);
+    h_nontight_isoET_pt[ipt]->Draw("same ex0");
+    h_nontight_isoET_pt[ipt]->SetMarkerSize(0);
 
     h_tight_isoET_mcSig_pt[ipt]->Draw("same hist");
     h_tight_isoET_mcSig_pt[ipt]->SetLineColor(kBlue);
@@ -161,8 +165,8 @@ void plot_sideband_sim(){
     myText          (0.50,0.9 -0.1,1,strleg1.c_str(),0.04);
     myText          (0.50,0.85-0.1,1,strleg2.c_str(),0.04);
     myText          (0.50,0.80-0.1,1,strleg3.c_str(),0.04);
-    myMarkerLineText(0.55,0.75-0.1, 0, kBlack, 0, kBlack, 1,"tight data", 0.05, true);
-    myMarkerLineText(0.55,0.70-0.1, 0, kRed, 0, kRed, 1,"nontight data", 0.05, true);
+    myMarkerLineText(0.55,0.75-0.1, 0, kBlack, 0, kBlack, 1,"tight inclusive MC", 0.05, true);
+    myMarkerLineText(0.55,0.70-0.1, 0, kRed, 0, kRed, 1,"nontight inclusive MC", 0.05, true);
     myMarkerLineText(0.55,0.65-0.1, 0, kBlue, 0, kBlue, 1,"tight signal MC", 0.05, true);
     //myMarkerLineText(0.55,0.60-0.1, 0, kMagenta, 0, kMagenta, 1,"", 0.05, true);
 
