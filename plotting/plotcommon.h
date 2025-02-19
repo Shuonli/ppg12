@@ -13,7 +13,7 @@ TGraph *linezero;
 
 string strleg1 = "#bf{#it{sPHENIX}} Internal";
 string strleg2 = "#it{p}+#it{p} 200 GeV";
-string strleg3 = "";
+string strleg3 = "|#it{#eta^{#gamma}}|<0.7";
 string strSigMC = "Pythia signal";
 string strMC = "Pythia";
 string strIncMC = "Inclusive Pythia jet";
@@ -24,7 +24,7 @@ void init_plot()
 
   const float et_low = 7;
   const float et_high = 50;
-  frame_et_rec = new TH1F("frame_et", "", 42, et_low, et_high);
+  frame_et_rec = new TH1F("frame_et", "", 43, et_low, et_high);
   frame_et_rec->SetXTitle("#it{E}_{T}^{#gamma,rec} [GeV]");
   frame_et_rec->GetXaxis()->SetRangeUser(8, 40);
   frame_et_rec->SetYTitle("Counts");
