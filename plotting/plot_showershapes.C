@@ -129,7 +129,13 @@ void plot_showershapes()
                     //if first is h , then xaxismax is 0.4
                     if (xaxisname[0] == 'h')
                     {
-                        xaxismax = 0.4;
+                        xaxismax = 0.3;
+                        nrebin = 1;
+                    }
+                    if (xaxisname.CompareTo("et4") ==0)
+                    {
+                        xaxismax = 0.3;
+                        nrebin = 1;
                         nrebin = 1;
                     }
 
@@ -198,28 +204,31 @@ void plot_showershapes()
 
                     // Draw them
                     proj_sig->SetYTitle("normalized counts");
+                    proj_sig->GetYaxis()->SetTitleOffset(1.5);
                     proj_sig->SetXTitle(xaxisname.Data());
-                    proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.2);
+                    proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.3);
+                    proj_sig->GetXaxis()->SetNdivisions(505);
                     proj_sig->Draw("HIST");
-                    proj_data->Draw("HIST SAME");
 
                     proj_bkg->Draw("HIST SAME");
 
-                    myText(0.50, 0.90, 1, strleg1.c_str(), 0.04);
-                    myText(0.50, 0.85, 1, strleg2.c_str(), 0.04);
-                    myText(0.50, 0.80, 1, strleg3.c_str(), 0.04);
+                    proj_data->Draw("ex0 SAME");
+
+                    myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
+                    myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
+                    myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
                     float pTlow = pT_bin_edges[ipt];
                     float pThigh = pT_bin_edges[ipt + 1];
                     float etalow = eta_bins[ieta];
                     float etahigh = eta_bins[ieta + 1];
-                    std::string bgcut = (icut == 0) ? "w/o bg cut" : "w/ bg cut";
-                    myText(0.35, 0.75, 1, Form("%.1f<#eta< %.1f, %.0f<p_{T}<%.0fGeV,%s", etalow, etahigh, pTlow, pThigh, bgcut.c_str()), 0.04);
+                    std::string bgcut = (icut == 0) ? "w/o ps cut" : "w/ ps cut";
+                    myText(0.2, 0.75, 1, Form("%.0f<p_{T}<%.0fGeV,%s", pTlow, pThigh, bgcut.c_str()), 0.04);
 
-                    myMarkerLineText(0.55, 0.70, 0, kBlack, 0, kBlack, 1,
+                    myMarkerLineText(0.6, 0.90, 1.5, kBlack, 20, kBlack, 1,
                                      "Data", 0.05, true);
-                    myMarkerLineText(0.55, 0.65, 0, kRed, 0, kRed, 1,
+                    myMarkerLineText(0.6, 0.85, 0, kRed, 0, kRed, 1,
                                      "Signal MC", 0.05, true);
-                    myMarkerLineText(0.55, 0.60, 0, kBlue, 0, kBlue, 1,
+                    myMarkerLineText(0.6, 0.80, 0, kBlue, 0, kBlue, 1,
                                      "Background MC", 0.05, true);
 
                     c_proj->SaveAs(Form("%s/dis_%s.pdf", savePath.c_str(), histNamesave.Data()));

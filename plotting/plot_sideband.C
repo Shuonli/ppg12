@@ -5,7 +5,7 @@ void plot_sideband(){
 
   init_plot();
 
-  string savePath="/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/PPG12-analysis-note/Figures/";
+  string savePath="../PPG12-analysis-note/Figures/";
 
 
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet10_nom.root");
@@ -38,7 +38,7 @@ void plot_sideband(){
 
   TCanvas* c1 = new TCanvas("c1","c1",600,600);
   frame_et_rec->Draw("axis");
-  frame_et_rec->GetXaxis()->SetRangeUser(10,30);
+  frame_et_rec->GetXaxis()->SetRangeUser(8,35);
   h_tight_iso_cluster->Draw("same hist");
 
   h_tight_noniso_cluster->Draw("same hist");
@@ -52,7 +52,7 @@ void plot_sideband(){
 
   myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.5,0.85,1,strleg2.c_str(),0.04);
-  myText(0.5,0.80,1,strleg3.c_str(),0.04);
+  myText(0.5,0.80,1,Form("Data   %s",strleg3.c_str()),0.04);
   myMarkerLineText(0.55,0.75, 0, kBlack, 0, kBlack, 1,"A: tight iso", 0.05, true);
   myMarkerLineText(0.55,0.70, 0, kRed, 0, kRed, 1,"B: tight noniso", 0.05, true);
   myMarkerLineText(0.55,0.65, 0, kBlue, 0, kBlue, 1,"C: nontight iso", 0.05, true);
@@ -79,6 +79,7 @@ void plot_sideband(){
   myText(0.18,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.18,0.85,1,strleg2.c_str(),0.04);
   myText(0.18,0.80,1,strleg3.c_str(),0.04);
+  myText(0.18,0.75,1,"Data",0.04);
   myMarkerLineText(0.55,0.75+0.15, 0, kBlack, 0, kBlack,1,"B/A: tight noniso"   , 0.05, true);
   myMarkerLineText(0.55,0.70+0.15, 0, kRed  , 0, kRed  ,1,"C/A: nontight iso", 0.05, true);
   myMarkerLineText(0.55,0.65+0.15, 0, kBlue , 0, kBlue ,1,"D/A: nontight noniso", 0.05, true);
@@ -129,7 +130,7 @@ void plot_sideband(){
     h_nontight_isoET_pt[ipt]   ->Scale(1./h_nontight_isoET_pt[ipt]->Integral());
 
     h_tight_isoET_pt[ipt]      ->Rebin(8);
-    h_tight_isoET_mcSig_pt[ipt]->Rebin(4);
+    h_tight_isoET_mcSig_pt[ipt]->Rebin(8);
     h_nontight_isoET_pt[ipt]   ->Rebin(8);
 
     //scale by bin width
