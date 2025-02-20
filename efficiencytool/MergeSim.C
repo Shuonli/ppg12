@@ -18,6 +18,12 @@ void MergeSim(const std::string &configname = "config.yaml") {
 
     std::string outfilename = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
+    std::string infilenamejet10 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet10" + "_" + var_type + ".root";
+    std::string infilenamejet20 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet20" + "_" + var_type + ".root";
+    std::string infilenamejet30 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet30" + "_" + var_type + ".root";
+
+    std::string outfilenamejet = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet" + "_" + var_type + ".root";
+
     std::string infilenameresponse1 = configYaml["output"]["response_outfile"].as<std::string>() + "_" + "photon5" + "_" + var_type + ".root";
     std::string infilenameresponse2 = configYaml["output"]["response_outfile"].as<std::string>() + "_" + "photon10" + "_" + var_type + ".root";
     std::string infilenameresponse3 = configYaml["output"]["response_outfile"].as<std::string>() + "_" + "photon20" + "_" + var_type + ".root";
@@ -25,7 +31,6 @@ void MergeSim(const std::string &configname = "config.yaml") {
     std::string outfilenameresponse = configYaml["output"]["response_outfile"].as<std::string>() + "_" + var_type + ".root";
     
     // Set the name of the output file.
-    // "RECREATE" means the file will be created anew (overwriting any existing file).
     merger.OutputFile(outfilename.c_str(), "RECREATE");
 
     // Add the files you want to merge
@@ -42,11 +47,29 @@ void MergeSim(const std::string &configname = "config.yaml") {
     
     std::cout << "Files merged successfully into " << outfilename << std::endl;
 
+    //merge the inclusive samples
+
+    TFileMerger merger_jet;
+    
+    merger_jet.OutputFile(outfilenamejet.c_str(), "RECREATE");
+
+    merger_jet.AddFile(infilenamejet10.c_str());
+    merger_jet.AddFile(infilenamejet20.c_str());
+    merger_jet.AddFile(infilenamejet30.c_str());
+
+    // Perform the merge
+    if (!merger_jet.Merge()) {
+        ::Error("mergeFiles", "Merge failed!");
+        return;
+    }
+
+    std::cout << "Files merged successfully into " << outfilenamejet << std::endl;
+
+
     // Create a TFileMerger instance
     TFileMerger merger_response;
 
     // Set the name of the output file.
-    // "RECREATE" means the file will be created anew (overwriting any existing file).
     merger_response.OutputFile(outfilenameresponse.c_str(), "RECREATE");
 
     // Add the files you want to merge
