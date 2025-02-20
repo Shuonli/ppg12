@@ -40,7 +40,7 @@ void init_plot()
   const float isoet_high = 15;
   frame_isoET = new TH1F("frame_et", "", 42, isoet_low, isoet_high);
   frame_isoET->SetXTitle("#it{E}_{T}^{iso} [GeV]");
-  // frame_isoET->GetXaxis()->SetRangeUser(8,40);
+   frame_isoET->GetXaxis()->SetRangeUser(-3,15);
   frame_isoET->SetYTitle("scaled counts");
   frame_isoET->GetYaxis()->SetTitleOffset(1.5);
   // frame_isoET->GetYaxis()->SetRangeUser(5,5e5);
