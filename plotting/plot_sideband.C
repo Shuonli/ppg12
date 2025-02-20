@@ -11,6 +11,7 @@ void plot_sideband(){
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet10_nom.root");
   TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_nom.root");
   TFile* fmc   = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+ TFile* fbkg = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
 
   TH1D* h_tight_iso_cluster       = (TH1D*) fdata->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster    = (TH1D*) fdata->Get("h_tight_noniso_cluster_0");
@@ -21,6 +22,11 @@ void plot_sideband(){
   TH1D* h_tight_noniso_cluster_mcSig    = (TH1D*) fmc->Get("h_tight_noniso_cluster_0");
   TH1D* h_nontight_iso_cluster_mcSig    = (TH1D*) fmc->Get("h_nontight_iso_cluster_0");
   TH1D* h_nontight_noniso_cluster_mcSig = (TH1D*) fmc->Get("h_nontight_noniso_cluster_0");
+
+  TH1D* h_tight_iso_cluster_mcBkg       = (TH1D*) fbkg->Get("h_tight_iso_cluster_0");
+  TH1D* h_tight_noniso_cluster_mcBkg    = (TH1D*) fbkg->Get("h_tight_noniso_cluster_0");
+  TH1D* h_nontight_iso_cluster_mcBkg    = (TH1D*) fbkg->Get("h_nontight_iso_cluster_0");
+  TH1D* h_nontight_noniso_cluster_mcBkg = (TH1D*) fbkg->Get("h_nontight_noniso_cluster_0");
 
   TH1D* h_BoverA = (TH1D*) h_tight_noniso_cluster->Clone("h_BoverA");
   h_BoverA->Divide(h_tight_iso_cluster);
@@ -120,23 +126,28 @@ void plot_sideband(){
   TH1D* h_tight_isoET_pt[NptBins];
   TH1D* h_tight_isoET_mcSig_pt[NptBins];
   TH1D* h_nontight_isoET_pt[NptBins];
+  TH1D* h_tight_isoET_mcBkg_pt[NptBins];
+  TH1D* h_nontight_isoET_mcBkg_pt[NptBins];
+
   for(int ipt=0; ipt<NptBins; ++ipt){
     h_tight_isoET_pt[ipt] = (TH1D*) fdata->Get(Form("h_tight_isoET_0_%d",ipt));
     h_tight_isoET_mcSig_pt[ipt] = (TH1D*) fmc->Get(Form("h_tight_isoET_0_%d",ipt));
+    h_tight_isoET_mcBkg_pt[ipt] = (TH1D*) fbkg->Get(Form("h_tight_isoET_0_%d",ipt));
+    h_nontight_isoET_mcBkg_pt[ipt] = (TH1D*) fbkg->Get(Form("h_nontight_isoET_0_%d",ipt));
     h_nontight_isoET_pt[ipt] = (TH1D*) fdata->Get(Form("h_nontight_isoET_0_%d",ipt));
-
-    h_tight_isoET_pt[ipt]      ->Scale(1./h_tight_isoET_pt[ipt]->Integral());
-    h_tight_isoET_mcSig_pt[ipt]->Scale(1./h_tight_isoET_mcSig_pt[ipt]->Integral());
-    h_nontight_isoET_pt[ipt]   ->Scale(1./h_nontight_isoET_pt[ipt]->Integral());
 
     h_tight_isoET_pt[ipt]      ->Rebin(8);
     h_tight_isoET_mcSig_pt[ipt]->Rebin(8);
+    h_tight_isoET_mcBkg_pt[ipt]->Rebin(8);
+    h_nontight_isoET_mcBkg_pt[ipt]->Rebin(8);
     h_nontight_isoET_pt[ipt]   ->Rebin(8);
 
-    //scale by bin width
-    h_tight_isoET_pt[ipt]->Scale(1./h_tight_isoET_pt[ipt]->GetBinWidth(1));
-    h_tight_isoET_mcSig_pt[ipt]->Scale(1./h_tight_isoET_mcSig_pt[ipt]->GetBinWidth(1));
-    h_nontight_isoET_pt[ipt]->Scale(1./h_nontight_isoET_pt[ipt]->GetBinWidth(1));
+    h_tight_isoET_pt[ipt]      ->Scale(1./h_tight_isoET_pt[ipt]->Integral(),"width");
+    h_tight_isoET_mcSig_pt[ipt]->Scale(1./h_tight_isoET_mcSig_pt[ipt]->Integral(),"width");
+    h_tight_isoET_mcBkg_pt[ipt]->Scale(1./h_tight_isoET_mcBkg_pt[ipt]->Integral(),"width");
+    h_nontight_isoET_mcBkg_pt[ipt]->Scale(1./h_nontight_isoET_mcBkg_pt[ipt]->Integral(),"width");
+    h_nontight_isoET_pt[ipt]   ->Scale(1./h_nontight_isoET_pt[ipt]->Integral(),"width");
+
 
     //[ipt]->Scale(1./[ipt]->Integral());
   }
@@ -146,6 +157,40 @@ void plot_sideband(){
     TCanvas* c2 = new TCanvas("c2","c2",600,600);
     frame_isoET->Draw("axis");
     float max = h_tight_isoET_mcSig_pt[ipt]->GetMaximum();
+    frame_isoET->GetYaxis()->SetRangeUser(0,max*1.3);
+
+    h_tight_isoET_pt[ipt]   ->Draw("same ex0");
+
+    h_tight_isoET_mcBkg_pt[ipt]->Draw("same hist");
+    h_tight_isoET_mcBkg_pt[ipt]->SetLineColor(kBlack);
+
+    h_nontight_isoET_pt[ipt]->Draw("same ex0");
+    h_nontight_isoET_pt[ipt]->SetLineColor(kRed);
+    h_nontight_isoET_pt[ipt]->SetMarkerColor(kRed);
+    h_nontight_isoET_pt[ipt]->SetMarkerStyle(24);
+
+    h_nontight_isoET_mcBkg_pt[ipt]->Draw("same hist");
+    h_nontight_isoET_mcBkg_pt[ipt]->SetLineColor(kRed);
+
+    //h_tight_isoET_mcSig_pt[ipt]->Draw("same hist");
+    //h_tight_isoET_mcSig_pt[ipt]->SetLineColor(kBlue);
+
+    myText(0.2,0.9,1,Form("%0.0f < #it{E}_{T}^{#gamma,rec} < %0.0f [GeV]",ptRanges[ipt],ptRanges[ipt+1]),0.04);
+
+    myText          (0.60,0.9 ,1,strleg1.c_str(),0.04);
+    myText          (0.60,0.85,1,strleg2.c_str(),0.04);
+    myText          (0.60,0.80,1,strleg3.c_str(),0.04);
+    myMarkerLineText(0.50,0.75, 1, kBlack, 20, kBlack, 1,"tight data", 0.05, true);
+    myMarkerLineText(0.50,0.70, 0, kBlack, 0, kBlack, 1,"tight inclusive MC", 0.05, true);
+    myMarkerLineText(0.50,0.65, 1, kRed, 24, kRed, 1,"nontight data", 0.05, true);
+    myMarkerLineText(0.50,0.60, 0, kRed, 0, kRed, 1,"nontight inclusive MC", 0.05, true);
+
+    c2->SaveAs(Form("%s/iso_ET_pt%d_comb.pdf",savePath.c_str(),ipt));
+
+
+    TCanvas* c22 = new TCanvas("c22","c22",600,600);
+    frame_isoET->Draw("axis");
+    max = h_tight_isoET_mcSig_pt[ipt]->GetMaximum();
     frame_isoET->GetYaxis()->SetRangeUser(0,max*1.3);
 
     h_tight_isoET_pt[ipt]   ->Draw("same hist");
@@ -166,7 +211,7 @@ void plot_sideband(){
     myMarkerLineText(0.55,0.65-0.1, 0, kBlue, 0, kBlue, 1,"tight signal MC", 0.05, true);
     //myMarkerLineText(0.55,0.60-0.1, 0, kMagenta, 0, kMagenta, 1,"", 0.05, true);
 
-    c2->SaveAs(Form("%s/iso_ET_pt%d.pdf",savePath.c_str(),ipt));
+    c22->SaveAs(Form("%s/iso_ET_pt%d.pdf",savePath.c_str(),ipt));
 
   }
 
