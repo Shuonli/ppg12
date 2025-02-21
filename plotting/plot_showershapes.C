@@ -31,7 +31,7 @@ void plot_showershapes()
     TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root", "READ");
     TFile *f_sig  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
     TFile *f_bkg  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
-
+    
     if (!f_data || f_data->IsZombie())
     {
         std::cerr << "Error: Could not open data file!" << std::endl;
@@ -132,6 +132,7 @@ void plot_showershapes()
                         xaxismax = 0.4;
                         nrebin = 1;
                     }
+
 
 
                     TString histNameFull = Form(

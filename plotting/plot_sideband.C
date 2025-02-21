@@ -21,7 +21,7 @@ void plot_sideband(){
   TH1D* h_tight_noniso_cluster_mcSig    = (TH1D*) fmc->Get("h_tight_noniso_cluster_0");
   TH1D* h_nontight_iso_cluster_mcSig    = (TH1D*) fmc->Get("h_nontight_iso_cluster_0");
   TH1D* h_nontight_noniso_cluster_mcSig = (TH1D*) fmc->Get("h_nontight_noniso_cluster_0");
-
+  
   TH1D* h_BoverA = (TH1D*) h_tight_noniso_cluster->Clone("h_BoverA");
   h_BoverA->Divide(h_tight_iso_cluster);
   TH1D* h_CoverA = (TH1D*) h_nontight_iso_cluster->Clone("h_CoverA");
