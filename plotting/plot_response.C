@@ -5,7 +5,7 @@ void plot_response()
 
     init_plot();
 
-    string savePath = "figures/";
+    string savePath = "../PPG12-analysis-note/Figures/";
 
     string matrix = "response matrix";
 

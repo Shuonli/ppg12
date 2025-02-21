@@ -130,7 +130,7 @@ void plot_sideband_sim(){
     h_nontight_isoET_pt[ipt]   ->Scale(1./h_nontight_isoET_pt[ipt]->Integral());
 
     h_tight_isoET_pt[ipt]      ->Rebin(8);
-    h_tight_isoET_mcSig_pt[ipt]->Rebin(4);
+    h_tight_isoET_mcSig_pt[ipt]->Rebin(8);
     h_nontight_isoET_pt[ipt]   ->Rebin(8);
 
     //scale by bin width
