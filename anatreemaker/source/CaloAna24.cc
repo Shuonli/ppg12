@@ -1,5 +1,3 @@
-
-
 #include "CaloAna24.h"
 
 #include <fun4all/Fun4AllReturnCodes.h>
@@ -34,6 +32,8 @@
 #include <calobase/RawTowerDefs.h>
 #include <calobase/RawTowerGeom.h>
 #include <calobase/RawTowerGeomContainer.h>
+
+#include <calotrigger/TriggerRunInfo.h>
 
 // Tower stuff
 #include <calobase/TowerInfo.h>
@@ -114,6 +114,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("currentscaler_raw", currentscaler_raw, "currentscaler_raw[32]/L");
   slimtree->Branch("currentscaler_live", currentscaler_live, "currentscaler_live[32]/L");
   slimtree->Branch("currentscaler_scaled", currentscaler_scaled, "currentscaler_scaled[32]/L");
+  slimtree->Branch("trigger_prescale", trigger_prescale, "trigger_prescale[32]/F");
   slimtree->Branch("eventnumber", &m_eventnumber, "eventnumber/I");
 
   // particle level
@@ -157,6 +158,15 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_%s", clusternamelist[i].c_str()), cluster_iso_03[i], Form("cluster_iso_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_%s", clusternamelist[i].c_str()), cluster_iso_04[i], Form("cluster_iso_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_emcal[i], Form("cluster_iso_03_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_hcalin[i], Form("cluster_iso_03_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_hcalout[i], Form("cluster_iso_03_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_60_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_60_emcal[i], Form("cluster_iso_03_60_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_60_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_60_hcalin[i], Form("cluster_iso_03_60_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_60_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_60_hcalout[i], Form("cluster_iso_03_60_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_120_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_120_emcal[i], Form("cluster_iso_03_120_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_120_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_120_hcalin[i], Form("cluster_iso_03_120_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_120_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_120_hcalout[i], Form("cluster_iso_03_120_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_emcal_%s", clusternamelist[i].c_str()), cluster_iso_04_emcal[i], Form("cluster_iso_04_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_04_hcalin[i], Form("cluster_iso_04_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_04_hcalout[i], Form("cluster_iso_04_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -232,6 +242,13 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("jet_emcal_calo_E", jet_emcal_calo_E, "jet_emcal_calo_E[njet]/F");
   slimtree->Branch("jet_ihcal_calo_E", jet_ihcal_calo_E, "jet_ihcal_calo_E[njet]/F");
   slimtree->Branch("jet_ohcal_calo_E", jet_ohcal_calo_E, "jet_ohcal_calo_E[njet]/F");
+
+  slimtree->Branch("njet_truth", &njet_truth, "njet_truth/I");
+  slimtree->Branch("jet_truth_E", jet_truth_E, "jet_truth_E[njet_truth]/F");
+  slimtree->Branch("jet_truth_Et", jet_truth_Et, "jet_truth_Et[njet_truth]/F");
+  slimtree->Branch("jet_truth_Pt", jet_truth_Pt, "jet_truth_Pt[njet_truth]/F");
+  slimtree->Branch("jet_truth_Eta", jet_truth_Eta, "jet_truth_Eta[njet_truth]/F");
+  slimtree->Branch("jet_truth_Phi", jet_truth_Phi, "jet_truth_Phi[njet_truth]/F");
 
   // bin 1 for generated event, bin 2 for accepted event
   h_sim_cross_counting = new TH1I("sim_cross_counting", "sim_cross_counting", 2, 0, 2);
@@ -322,6 +339,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         triggervec = (triggervec >> 1U) & 0xffffffffU;
         triggervecraw = (triggervecraw >> 1U) & 0xffffffffU;
       }
+    }
+
+    TriggerRunInfo *trigRunInfo = findNode::getClass<TriggerRunInfo>(topNode, "TriggerRunInfo");
+    for (int i = 0; i < 32; i++)
+    {
+      trigger_prescale[i] = trigRunInfo->getPrescaleByBit(i);
     }
   }
 
@@ -457,8 +480,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
         if (m_vertex != m_vertex)
           return Fun4AllReturnCodes::EVENT_OK;
-        if (abs(m_vertex) > m_vertex_cut)
-          return Fun4AllReturnCodes::EVENT_OK;
+        if (!isMC)
+        {
+          if (abs(m_vertex) > m_vertex_cut)
+            return Fun4AllReturnCodes::EVENT_OK;
+        }
       }
       else
       {
@@ -918,10 +944,23 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
       }
 
-      float emcalET_04 = calculateET(eta, phi, 0.4, 0);
+      float emcalET_04 = calculateET(eta, phi, 0.4, 0, 0.0);
       std::cout << "emcalET_04: " << emcalET_04 << std::endl;
-      float ihcalET_04 = calculateET(eta, phi, 0.4, 1);
-      float ohcalET_04 = calculateET(eta, phi, 0.4, 2);
+      float ihcalET_04 = calculateET(eta, phi, 0.4, 1, 0.0);
+      float ohcalET_04 = calculateET(eta, phi, 0.4, 2, 0.0);
+
+      float emcalET_03 = calculateET(eta, phi, 0.3, 0, 0.0);
+      float ihcalET_03 = calculateET(eta, phi, 0.3, 1, 0.0);
+      float ohcalET_03 = calculateET(eta, phi, 0.3, 2, 0.0);
+
+      float emcalET_03_60 = calculateET(eta, phi, 0.3, 0, 0.06);
+      float ihcalET_03_60 = calculateET(eta, phi, 0.3, 1, 0.06);
+      float ohcalET_03_60 = calculateET(eta, phi, 0.3, 2, 0.06);
+
+      float emcalET_03_120 = calculateET(eta, phi, 0.3, 0, 0.12);
+      float ihcalET_03_120 = calculateET(eta, phi, 0.3, 1, 0.12);
+      float ohcalET_03_120 = calculateET(eta, phi, 0.3, 2, 0.12);
+
       if (ET > maxclusterpt)
       {
         maxclusterpt = ET;
@@ -1210,12 +1249,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           float di_float = i - cog_eta;
           float dj_float = j - cog_phi;
 
-          
           // safe gard, we already did this while populating the matrix
           if (E77[i][j] < m_shower_shape_min_tower_E)
             E77[i][j] = 0;
-          
-          //if owned by the tower
+
+          // if owned by the tower
           if (E77_ownership[i][j] == 1)
           {
             weta += E77[i][j] * di * di;
@@ -1224,12 +1262,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
             weta_cog += E77[i][j] * di_float * di_float;
             wphi_cog += E77[i][j] * dj_float * dj_float;
             Eetaphi += E77[i][j];
-            if(i!=3 || j!=3){
+            if (i != 3 || j != 3)
+            {
               weta_cogx += E77[i][j] * di_float * di_float;
               wphi_cogx += E77[i][j] * dj_float * dj_float;
             }
-
-
           }
 
           e77 += E77[i][j];
@@ -1322,9 +1359,9 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       weta_cogx = Eetaphi > 0 ? weta_cogx / Eetaphi : 0;
       wphi_cogx = Eetaphi > 0 ? wphi_cogx / Eetaphi : 0;
 
-      //w32 = w32 > 0 ? sqrt(w32) : 0;
-      //w52 = w52 > 0 ? sqrt(w52) : 0;
-      //w72 = w72 > 0 ? sqrt(w72) : 0;
+      // w32 = w32 > 0 ? sqrt(w32) : 0;
+      // w52 = w52 > 0 ? sqrt(w52) : 0;
+      // w72 = w72 > 0 ? sqrt(w72) : 0;
 
       // w32 = sqrt(w32);
       // w72 = sqrt(w72);
@@ -1469,6 +1506,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_02[i][ncluster[i]] = clusteriso[0];
       cluster_iso_03[i][ncluster[i]] = clusteriso[1];
       cluster_iso_04[i][ncluster[i]] = clusteriso[2];
+      cluster_iso_03_emcal[i][ncluster[i]] = emcalET_03 - ET;
+      cluster_iso_03_hcalin[i][ncluster[i]] = ihcalET_03;
+      cluster_iso_03_hcalout[i][ncluster[i]] = ohcalET_03;
+      cluster_iso_03_60_emcal[i][ncluster[i]] = emcalET_03_60 - ET;
+      cluster_iso_03_60_hcalin[i][ncluster[i]] = ihcalET_03_60;
+      cluster_iso_03_60_hcalout[i][ncluster[i]] = ohcalET_03_60;
+      cluster_iso_03_120_emcal[i][ncluster[i]] = emcalET_03_120 - ET;
+      cluster_iso_03_120_hcalin[i][ncluster[i]] = ihcalET_03_120;
+      cluster_iso_03_120_hcalout[i][ncluster[i]] = ohcalET_03_120;
       cluster_iso_04_emcal[i][ncluster[i]] = emcalET_04 - ET;
       cluster_iso_04_hcalin[i][ncluster[i]] = ihcalET_04;
       cluster_iso_04_hcalout[i][ncluster[i]] = ohcalET_04;
@@ -1615,6 +1661,33 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       {
         std::cout << "njet exceed the max range: " << njet << std::endl;
         return Fun4AllReturnCodes::ABORTEVENT;
+      }
+    }
+    if (isMC)
+    {
+      // truth jet stuff
+      JetContainer *_truth_jets = findNode::getClass<JetContainer>(topNode, "AntiKt_Truth_r04");
+      if (_truth_jets)
+      {
+
+        njet_truth = 0;
+
+        for (auto _truthjet : *_truth_jets)
+        {
+          if (_truthjet->get_eta() < -2 || _truthjet->get_eta() > 2 || _truthjet->get_pt() < 5 || _truthjet->get_pt() > 100)
+            continue; // Cut for truth jets.
+          jet_truth_E[njet_truth] = _truthjet->get_e();
+          jet_truth_Et[njet_truth] = _truthjet->get_et();
+          jet_truth_Pt[njet_truth] = _truthjet->get_pt();
+          jet_truth_Eta[njet_truth] = _truthjet->get_eta();
+          jet_truth_Phi[njet_truth] = _truthjet->get_phi();
+          njet_truth++;
+          if (njet_truth > njetmax)
+          {
+            std::cout << "njet_truth exceed the max range: " << njet_truth << std::endl;
+            return Fun4AllReturnCodes::ABORTEVENT;
+          }
+        }
       }
     }
   }
@@ -1859,7 +1932,7 @@ double CaloAna24::getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, do
   return r;
 }
 
-float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer: 0 EMCal, 1 IHCal, 2 OHCal
+float CaloAna24::calculateET(float eta, float phi, float dR, int layer, float min_E) // layer: 0 EMCal, 1 IHCal, 2 OHCal
 {
   float ET = 0;
   RawTowerGeomContainer *geomcontainer = nullptr;
@@ -1936,7 +2009,10 @@ float CaloAna24::calculateET(float eta, float phi, float dR, int layer) // layer
 
     if (deltaR(eta, this_eta, phi, this_phi) < dR)
     {
-      ET += tower->get_energy() / cosh(this_eta);
+      if(tower->get_energy() > min_E)
+      {
+        ET += tower->get_energy() / cosh(this_eta);
+      }
     }
   }
   return ET;
