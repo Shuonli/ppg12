@@ -1,4 +1,4 @@
-#include "/sphenix/u/bseidlitz/install/BlairUtils.C"
+#include "BlairUtils.C"
 #include "sPhenixStyle.C"
 
 const int NptBins = 7;
@@ -12,7 +12,7 @@ TGraph *lineone;
 TGraph *linezero;
 
 string strleg1 = "#bf{#it{sPHENIX}} Internal";
-string strleg2 = "#it{p}+#it{p} 200 GeV";
+string strleg2 = "#it{p}+#it{p} #sqrt{s}=200 GeV";
 string strleg3 = "";
 string strSigMC = "Pythia signal";
 string strMC = "Pythia";
@@ -31,7 +31,7 @@ void init_plot()
   frame_et_rec->GetYaxis()->SetRangeUser(5, 5e5);
 
   frame_et_truth = new TH1F("frame_et_truth", "", 42, et_low, et_high);
-  frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+  frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
   frame_et_truth->GetXaxis()->SetRangeUser(8, 40);
   frame_et_truth->SetYTitle("Efficiency");
   frame_et_truth->GetYaxis()->SetRangeUser(0.2, 1.1);
