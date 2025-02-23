@@ -64,7 +64,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     // float jetluminosity = jetevents / photon20cross;
 
     // for mc we can check the actual purity
-    //bool isMC =true;
+    // bool isMC =true;
 
     if (isMC)
     {
@@ -388,8 +388,8 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
     std::cout << "n bins: " << h_data_sub_copy->GetNbinsX() << "nbins sim: " << h_tight_iso_cluster_signal_copy->GetNbinsX() << std::endl;
 
-    //h_data_sub_copy->Divide(h_tight_iso_cluster_signal_copy);
-    //h_data_sub_leak_copy->Divide(h_tight_iso_cluster_signal_copy);
+    // h_data_sub_copy->Divide(h_tight_iso_cluster_signal_copy);
+    // h_data_sub_leak_copy->Divide(h_tight_iso_cluster_signal_copy);
 
     /*
     // purity correction with and without leakage correction
@@ -425,13 +425,12 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>();     // 0 for no reweighting, 1 for reweighting
     std::vector<TH1D *> h_unfold_sub_list;
     std::vector<TH1D *> h_unfold_sub_list_copy;
-    
+
     std::vector<TH1D *> h_unfold_sub_leak_list;
     std::vector<TH1D *> h_unfold_sub_leak_list_copy;
 
-    TH1D* h_reweight_factor;
-    TH1D* h_reweight_factor_leak;
-    
+    TH1D *h_reweight_factor;
+    TH1D *h_reweight_factor_leak;
 
     // do reweighting
     if (reweight == 1)
@@ -440,9 +439,9 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
         TH1F *h_truth = (TH1F *)response->Htruth();
         TH2F *h_response = (TH2F *)response->Hresponse();
 
-        h_reweight_factor = (TH1D*)h_reco->Clone("h_reweight_factor");
+        h_reweight_factor = (TH1D *)h_reco->Clone("h_reweight_factor");
         h_reweight_factor->Reset();
-        h_reweight_factor_leak = (TH1D*)h_reco->Clone("h_reweight_factor_leak");
+        h_reweight_factor_leak = (TH1D *)h_reco->Clone("h_reweight_factor_leak");
         h_reweight_factor_leak->Reset();
 
         TH2F *h_response_reweighted = (TH2F *)h_response->Clone("h_response_reweighted");
@@ -491,21 +490,20 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
                 float response_val = h_response->GetBinContent(ibin, jbin);
                 float response_leak_val = h_response->GetBinContent(ibin, jbin);
 
-
                 h_response_reweighted->SetBinContent(ibin, jbin, response_val * reweight_val);
                 h_response_reweighted->SetBinError(ibin, jbin, h_response->GetBinError(ibin, jbin) * reweight_val);
                 h_response_leak_reweighted->SetBinContent(ibin, jbin, response_leak_val * reweight_leak_val);
                 h_response_leak_reweighted->SetBinError(ibin, jbin, h_response->GetBinError(ibin, jbin) * reweight_leak_val);
             }
         }
-        TH1F *h_reweighted_reco = (TH1F*)h_response_reweighted->ProjectionX("h_reweighted_reco");
-        TH1F *h_reweighted_truth = (TH1F*)h_response_reweighted->ProjectionY("h_reweighted_truth");
+        TH1F *h_reweighted_reco = (TH1F *)h_response_reweighted->ProjectionX("h_reweighted_reco");
+        TH1F *h_reweighted_truth = (TH1F *)h_response_reweighted->ProjectionY("h_reweighted_truth");
         response_reweighted = new RooUnfoldResponse(h_reweighted_reco, h_reweighted_truth, h_response_reweighted, "response_reweighted", "response_reweighted", false);
-        
-        TH1F *h_reweighted_leak_reco =(TH1F*) h_response_leak_reweighted->ProjectionX("h_reweighted_leak_reco");
-        TH1F *h_reweighted_leak_truth =(TH1F*) h_response_leak_reweighted->ProjectionY("h_reweighted_leak_truth");
 
-        response_leak_reweighted = new RooUnfoldResponse(h_reweighted_leak_reco , h_reweighted_leak_truth, h_response_leak_reweighted, "response_leak_reweighted", "response_leak_reweighted", false);
+        TH1F *h_reweighted_leak_reco = (TH1F *)h_response_leak_reweighted->ProjectionX("h_reweighted_leak_reco");
+        TH1F *h_reweighted_leak_truth = (TH1F *)h_response_leak_reweighted->ProjectionY("h_reweighted_leak_truth");
+
+        response_leak_reweighted = new RooUnfoldResponse(h_reweighted_leak_reco, h_reweighted_leak_truth, h_response_leak_reweighted, "response_leak_reweighted", "response_leak_reweighted", false);
     }
     else
     {
@@ -669,6 +667,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
     for (int i = 0; i < niterations_total; i++)
     {
+        std::cout << "i: " << i << std::endl;
         h_unfold_sub_list[i]->Write();
         h_unfold_sub_list_copy[i]->Write();
         h_unfold_sub_leak_list[i]->Write();
@@ -696,26 +695,34 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     gpurity_leak->Write();
     g_purity_truth->Write();
     g_mbd_eff->Write();
+    std::cout << "saving histograms" << std::endl;
+
     h_data_sub_copy->Write();
     h_data_sub_leak_copy->Write();
     h_tight_iso_cluster_signal_copy->Write();
     h_leak_B->Write();
     h_leak_C->Write();
     h_leak_D->Write();
-
-    h_reweight_factor->Write();
-    h_reweight_factor_leak->Write();
-
+    if (reweight == 1)
+    {
+        h_reweight_factor->Write();
+        h_reweight_factor_leak->Write();
+    }
     h_data_sub->Write();
     h_data_sub_leak->Write();
     h_tight_iso_cluster_signal_data->Write();
     h_common_cluster_data->Write();
-
-    response_reweighted->Hresponse()->Write();
-    response_leak_reweighted->Hresponse()->Write();
+    if (reweight == 1)
+    {
+        response_reweighted->Hresponse()->Write();
+        response_leak_reweighted->Hresponse()->Write();
+    }
+    else
+    {
+        std::cout << "response->Hresponse()->Write()" << std::endl;
+        response->Hresponse()->Write();
+    }
 
     fout->Write();
     fout->Close();
-
-    // unfold the spectrum based on data's response matrix
 }
