@@ -5,7 +5,7 @@ void plot_sideband(){
 
   init_plot();
 
-  string savePath="../PPG12-analysis-note/Figures/";
+  string savePath="../PPG12-analysis-note/Figures/analysis/";
 
 
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet10_nom.root");
