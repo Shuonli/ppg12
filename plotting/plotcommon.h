@@ -1,4 +1,4 @@
-#include "/sphenix/u/bseidlitz/install/BlairUtils.C"
+#include "BlairUtils.C"
 #include "sPhenixStyle.C"
 
 const int NptBins = 7;
@@ -12,7 +12,7 @@ TGraph *lineone;
 TGraph *linezero;
 
 string strleg1 = "#bf{#it{sPHENIX}} Internal";
-string strleg2 = "#it{p}+#it{p} 200 GeV";
+string strleg2 = "#it{p}+#it{p} #sqrt{s}=200 GeV";
 string strleg3 = "|#it{#eta^{#gamma}}|<0.7";
 string strSigMC = "Pythia signal";
 string strMC = "Pythia";
@@ -30,22 +30,22 @@ void init_plot()
   frame_et_rec->SetYTitle("Counts");
   frame_et_rec->GetYaxis()->SetRangeUser(5, 5e5);
 
-  frame_et_truth = new TH1F("frame_et_truth", "", 42, et_low, et_high);
-  frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+  frame_et_truth = new TH1F("frame_et_truth", "", 43, et_low, et_high);
+  frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
   frame_et_truth->GetXaxis()->SetRangeUser(8, 40);
   frame_et_truth->SetYTitle("Efficiency");
   frame_et_truth->GetYaxis()->SetRangeUser(0.2, 1.1);
 
   const float isoet_low = -5;
   const float isoet_high = 15;
-  frame_isoET = new TH1F("frame_et", "", 42, isoet_low, isoet_high);
+  frame_isoET = new TH1F("frame_et", "", 43, isoet_low, isoet_high);
   frame_isoET->SetXTitle("#it{E}_{T}^{iso} [GeV]");
    frame_isoET->GetXaxis()->SetRangeUser(-3,15);
   frame_isoET->SetYTitle("scaled counts");
   frame_isoET->GetYaxis()->SetTitleOffset(1.5);
   // frame_isoET->GetYaxis()->SetRangeUser(5,5e5);
 
-  frame_response = new TH2F("frame_response", "", 42, et_low, et_high, 42, et_low, et_high);
+  frame_response = new TH2F("frame_response", "", 43, et_low, et_high, 43, et_low, et_high);
   frame_response->SetXTitle("#it{E}_{T}^{#gamma,rec} [GeV]");
   frame_response->SetYTitle("#it{E}_{T}^{#gamma,truth} [GeV]");
   frame_response->GetXaxis()->SetRangeUser(7, 40);

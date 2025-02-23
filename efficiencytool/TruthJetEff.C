@@ -13,7 +13,7 @@
 
 // R__LOAD_LIBRARY(/sphenix/user/egm2153/calib_study/JetValidation/analysis/roounfold/libRooUnfold.so)
 
-void RecoEffCalculator(const std::string &configname = "config.yaml", const std::string filetype = "data")
+void TruthJetEff(const std::string &configname = "jeteff.yaml", const std::string filetype = "jet10")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -43,23 +43,16 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     float max_photon_lower = 0;
     float max_photon_upper = 100;
-    // unit in pb
+
     const float photon5cross = 2.017e+08 * 0.000442571;
     const float photon10cross = 3.690e+07 * 0.000181474;
     const float photon20cross = 1.571e+05 * 0.000673448;
 
-    // Hanpu uses unit in b
     const float jet10cross = 3.646e-6;
-    const float jet20cross = 1392140.9 * 0.042 * 1e-12;
     const float jet30cross = 2.505e-9;
 
     float max_jet_lower = 0;
     float max_jet_upper = 100;
-
-    float energy_scale_lower = 0;
-    float energy_scale_upper = 100;
-
-    float cluster_ET_upper = 100;
 
     float weight = 1.0;
 
@@ -84,28 +77,14 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
-        max_jet_upper = 22;
-        energy_scale_lower = 10;
-        energy_scale_upper = 20;
-        cluster_ET_upper = 25;
-        weight = jet10cross / jet30cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet20")
-    {
-        max_jet_lower = 22;
         max_jet_upper = 30;
-        energy_scale_lower = 20;
-        energy_scale_upper = 30;
-        weight = jet20cross / jet30cross;
+        weight = jet10cross / jet30cross;
         isbackground = true;
     }
     else if (filetype == "jet30")
     {
         max_jet_lower = 30;
         max_jet_upper = 100;
-        energy_scale_lower = 30;
-        energy_scale_upper = 100;
         weight = 1.0;
         isbackground = true;
     }
@@ -147,14 +126,10 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     std::vector<float> pT_bins = configYaml["analysis"]["pT_bins"].as<std::vector<float>>();
     int n_pT_bins = pT_bins.size() - 1;
     double pT_bin_edges[n_pT_bins + 1];
-    double pTmin = pT_bins[0];
-    double pTmax = pT_bins[n_pT_bins];
 
     std::vector<float> pT_bins_truth = configYaml["analysis"]["pT_bins_truth"].as<std::vector<float>>();
     int n_pT_bins_truth = pT_bins_truth.size() - 1;
     double pT_bin_edges_truth[n_pT_bins_truth + 1];
-    double pTmin_truth = pT_bins_truth[0];
-    double pTmax_truth = pT_bins_truth[n_pT_bins_truth];
 
     std::cout << "n_pT_bins_truth: " << n_pT_bins_truth << std::endl;
     for (int i = 0; i < n_pT_bins_truth + 1; i++)
@@ -391,8 +366,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     TH1F *h_max_decay_pT = new TH1F("h_max_decay_pT", "Max Decay Photon pT", 1000, 0, 100);
     TH1F *h_decay_photon_pT = new TH1F("h_decay_photon_pT", "Decay Photon pT", 1000, 0, 100);
     TH1F *h_vertexz = new TH1F("h_vertexz", "Vertex z", 100, -50, 50);
-    TH1F *h_cluster_common_Et = new TH1F("h_cluster_common_E", "Cluster Common E", 1000, 0, 100);
-    TH1F *h_cluster_common_leaking_Et = new TH1F("h_cluster_common_leaking_E", "Cluster Common Leaking E", 1000, 0, 100);
 
     TH1F *h_max_truth_jet_pT = new TH1F("h_max_truth_jet_pT", "Max Truth Jet pT", 1000, 0, 100);
 
@@ -422,6 +395,12 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_cut;
 
+    std::vector<TH1D *> h_truth_jet_vertexcut;
+
+    std::vector<TH1D *> h_truth_jet_recovertexcut;
+
+    std::vector<TH1D *> h_truth_jet_vertexcut_mbd_cut;
+
     std::vector<TH1D *> h_tight_iso_cluster_signal;
     std::vector<TH1D *> h_tight_noniso_cluster_signal;
     std::vector<TH1D *> h_nontight_iso_cluster_signal;
@@ -440,9 +419,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     // unfold response matrix
     std::vector<RooUnfoldResponse *> responses_full;
     std::vector<RooUnfoldResponse *> responses_half;
-    // vector for the response matrix th2
-    std::vector<TH2D *> h_response_full_list;
-    std::vector<TH2D *> h_response_half_list;
     // id histogram for unfolding
     std::vector<TH1D *> h_pT_truth_response;
     std::vector<TH1D *> h_pT_reco_response;
@@ -521,6 +497,18 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                                                         Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                         n_pT_bins_truth, pT_bin_edges_truth));
 
+        h_truth_jet_vertexcut.push_back(new TH1D(Form("h_truth_jet_vertexcut_%d", ieta),
+                                                 Form("Truth Jet pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                 n_pT_bins_truth, pT_bin_edges_truth));
+
+        h_truth_jet_recovertexcut.push_back(new TH1D(Form("h_truth_jet_recovertexcut_%d", ieta),
+                                                     Form("Truth Jet pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                     n_pT_bins_truth, pT_bin_edges_truth));
+
+        h_truth_jet_vertexcut_mbd_cut.push_back(new TH1D(Form("h_truth_jet_vertexcut_mbd_cut_%d", ieta),
+                                                         Form("Truth Jet pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                         n_pT_bins_truth, pT_bin_edges_truth));
+
         h_tight_iso_cluster_signal.push_back(new TH1D(Form("h_tight_iso_cluster_signal_%d", ieta),
                                                       Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                       n_pT_bins, pT_bin_edges));
@@ -580,8 +568,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
         responses_full.push_back(new RooUnfoldResponse((const TH1 *)h_pT_reco_response[ieta], (const TH1 *)h_pT_truth_response[ieta], h_response_full, Form("response_matrix_full_%d", ieta), "", false));
 
-        h_response_full_list.push_back(h_response_full);
-
         h_pT_truth_half_response.push_back(new TH1D(Form("h_pT_truth_half_response_%d", ieta),
                                                     Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                     n_pT_bins_truth, pT_bin_edges_truth));
@@ -603,8 +589,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                                          n_pT_bins, pT_bin_edges, n_pT_bins_truth, pT_bin_edges_truth);
 
         responses_half.push_back(new RooUnfoldResponse(h_pT_reco_half_response[ieta], h_pT_truth_half_response[ieta], h_response_half, Form("response_matrix_half_%d", ieta), ""));
-
-        h_response_half_list.push_back(h_response_half);
 
         h_ncluster_truth.push_back(new TH2D(Form("h_ncluster_truth_%d", ieta),
                                             Form("N Cluster From Truth %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -648,10 +632,9 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         slimtree->GetEntry(ientry);
         if (!issim)
         {
-            
+
             if (scaledtrigger[trigger_used] == 0)
                 continue;
-            /*
             float trigger_weight = 1.0;
             if (trigger_prescale[trigger_used] != 0)
             {
@@ -669,8 +652,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 std::cout << trigger_prescale[trigger_used] << std::endl;
                 continue;
             }
-            */
-            
         }
 
         std::map<int, int> particle_trkidmap;
@@ -793,20 +774,33 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                         maxjetpT = jet_truth_Pt[ijet];
                     }
                 }
-
                 if ((maxjetpT > max_jet_upper) || (maxjetpT < max_jet_lower))
                 {
                     continue;
                 }
-
-                // energy scale cut for now
-                /*
-                if ((energy_scale > energy_scale_upper) || (energy_scale < energy_scale_lower))
-                {
-                    continue;
-                }
-                */
                 h_max_truth_jet_pT->Fill(maxjetpT, weight);
+
+                // check if truth vertex is within the vertex cut
+                for (int ijet = 0; ijet < njet_truth; ijet++)
+                {
+                    // jet eta cut
+                    if (abs(jet_truth_Eta[ijet]) > 0.7)
+                        continue;
+                    if (abs(vertexz_truth) < vertexcut)
+                    {
+
+                        h_truth_jet_vertexcut[0]->Fill(jet_truth_Pt[ijet], weight);
+                        if (abs(vertexz) < vertexcut)
+                        {
+                            h_truth_jet_recovertexcut[0]->Fill(jet_truth_Pt[ijet], weight);
+
+                            if (mbdnorthhit >= 1 && mbdsouthhit >= 1)
+                            {
+                                h_truth_jet_vertexcut_mbd_cut[0]->Fill(jet_truth_Pt[ijet], weight);
+                            }
+                        }
+                    }
+                }
             }
             if (!isbackground)
             {
@@ -907,7 +901,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         if (!(mbdnorthhit >= 1 && mbdsouthhit >= 1))
             continue;
         h_vertexz->Fill(vertexz, weight);
-        float leading_common_cluster_ET = 0;
         for (int icluster = 0; icluster < ncluster; icluster++)
         {
             // need ET > 10 GeV
@@ -980,7 +973,10 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     break;
                 }
             }
-            
+            if (pTbin == -1)
+            {
+                continue;
+            }
             bool common_pass = false;
             bool tight = false;
             bool nontight = false;
@@ -1003,8 +999,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 cluster_prob[icluster] < common_prob_max &&
                 e11_over_e33 > common_e11_over_e33_min &&
                 e11_over_e33 < common_e11_over_e33_max &&
-                //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
-                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound))
+                (!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound)))
             {
                 common_pass = true;
             }
@@ -1068,9 +1063,8 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     if (
                         !(e11_over_e33 > tight_e11_over_e33_min && e11_over_e33 < tight_e11_over_e33_max) ||
                         !(cluster_et4[icluster] > tight_et4_min && cluster_et4[icluster] < tight_et4_max) ||
-                        !(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max)
-                        //||!(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max)
-                    )
+                        !(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max) ||
+                        !(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max))
                     {
 
                         nontight = true;
@@ -1098,32 +1092,16 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
             if (common_pass)
             {
                 h_common_cluster[etabin]->Fill(cluster_Et[icluster], weight);
-                h_cluster_common_Et->Fill(cluster_Et[icluster], weight);
-                if (cluster_Et[icluster] > leading_common_cluster_ET)
-                {
-                    leading_common_cluster_ET = cluster_Et[icluster];
-                }
-            }
-            if (pTbin != -1)
-            {
-                if (tight)
-                {
-                    h_tight_cluster_pT[etabin][pTbin]->Fill(recoisoET, weight);
-                }
-                if (nontight)
-                {
-                    h_nontight_cluster_pT[etabin][pTbin]->Fill(recoisoET, weight);
-                }
-            }
-            //for jet 10 event we want to remove some high ET clusters to reduce the fluctuation
-            if(isbackground)
-            {
-                if(cluster_Et[icluster]>cluster_ET_upper)
-                {
-                    continue;
-                }
             }
 
+            if (tight)
+            {
+                h_tight_cluster_pT[etabin][pTbin]->Fill(recoisoET, weight);
+            }
+            if (nontight)
+            {
+                h_nontight_cluster_pT[etabin][pTbin]->Fill(recoisoET, weight);
+            }
 
             if (issim)
             {
@@ -1149,10 +1127,8 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
                 if (photon_iso_ET.find(iparticle) != photon_iso_ET.end())
                 {
-                    if (pTbin != -1)
-                    {
-                        h_iso_truth_reco[etabin][pTbin]->Fill(photon_iso_ET[iparticle], recoisoET, weight);
-                    }
+                    h_iso_truth_reco[etabin][pTbin]->Fill(photon_iso_ET[iparticle], recoisoET, weight);
+
                     if (photon_reco.find(iparticle) == photon_reco.end())
                     {
                         // then it is non truth signal, if it pass the reco, iso, and tight cuts, then it is a fake
@@ -1180,10 +1156,9 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     photon_reco[iparticle] = true;
 
                     h_pT_truth_reco[etabin]->Fill(particle_Pt[iparticle], cluster_Et[icluster] / particle_Pt[iparticle], weight);
-                    if (pTbin != -1)
-                    {
-                        h_response_isoET[etabin][pTbin]->Fill(cluster_Et[icluster] / particle_Pt[iparticle], recoisoET, weight);
-                    }
+
+                    h_response_isoET[etabin][pTbin]->Fill(cluster_Et[icluster] / particle_Pt[iparticle], recoisoET, weight);
+
                     if (iso)
                     {
                         photon_iso[iparticle] = true;
@@ -1196,27 +1171,21 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
                     if (tight && iso)
                     {
-                        if (particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth && cluster_Et[icluster] > pTmin && cluster_Et[icluster] < pTmax)
+                        h_tight_iso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                        // fill the response matrix
+                        h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight);
+                        h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight);
+                        responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
+                        if (ientry < (nentries / 2))
                         {
-
-                            h_tight_iso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
-                            // fill the response matrix
-                            h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                            h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight);
-                            responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                            h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                            if (ientry < (nentries / 2))
-                            {
-                                h_pT_truth_half_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                h_pT_reco_half_response[etabin]->Fill(cluster_Et[icluster], weight);
-                                responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                                h_response_half_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                            }
-                            else
-                            {
-                                h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
-                            }
+                            h_pT_truth_half_response[etabin]->Fill(particle_Pt[iparticle], weight);
+                            h_pT_reco_half_response[etabin]->Fill(cluster_Et[icluster], weight);
+                            responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
+                        }
+                        else
+                        {
+                            h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
+                            h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
                         }
                     }
                     if (tight && noniso)
@@ -1236,10 +1205,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     h_singal_truth_isoET[etabin]->Fill(particle_Pt[iparticle], recoisoET, weight);
                 }
             }
-        }//end of cluster loop
-        if (leading_common_cluster_ET > 0)
-        {
-            h_cluster_common_leaking_Et->Fill(leading_common_cluster_ET, weight);
         }
 
         // go over the map and fill the TEfficiency

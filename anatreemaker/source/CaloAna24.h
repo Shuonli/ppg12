@@ -60,7 +60,8 @@ public:
   void set_isSingleParticle(bool isSingleParticle_)
   {
     isSingleParticle = isSingleParticle_;
-    if(isSingleParticle)isMC = true;
+    if (isSingleParticle)
+      isMC = true;
   }
 
   void set_using_trigger_bits(std::vector<int> trigger_bits)
@@ -76,8 +77,7 @@ private:
   int ievent = 0;
   Ort::Session *onnxmodule{nullptr};
   std::string m_modelPath{"/sphenix/u/shuhang98/core_patch/coresoftware/offline/packages/CaloReco/functional_model_single.onnx"};
-  std::string m_outputFileName{"caloana.root"};  
-
+  std::string m_outputFileName{"caloana.root"};
 
   TFile *fout;
 
@@ -98,6 +98,7 @@ private:
   bool livetrigger[32] = {false};
   int nscaledtrigger[32] = {0};
   int nlivetrigger[32] = {0};
+  float trigger_prescale[32] = {-1};
   int m_eventnumber{0};
 
   float vertexz{-9999};
@@ -138,11 +139,9 @@ private:
   float daughter_vtx_x[ndaughtermax] = {0};
   float daughter_vtx_y[ndaughtermax] = {0};
   float daughter_vtx_z[ndaughtermax] = {0};
-  
 
-
-  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC_NO_SPLIT"};
-  static const int nclustercontainer = 1;
+  std::vector<std::string> clusternamelist = {"CLUSTERINFO_CEMC_NO_SPLIT", "CLUSTERINFO_CEMC"};
+  static const int nclustercontainer = 2;
   // cluster wise stuff
   float clusterpTmin{5};
   static const int nclustermax = 10000;
@@ -159,6 +158,15 @@ private:
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_hcalout[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_60_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_60_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_60_hcalout[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_120_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_120_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_120_hcalout[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_hcalout[nclustercontainer][nclustermax] = {0};
@@ -227,18 +235,24 @@ private:
   int cluster_ohcal_iphi[nclustercontainer][nclustermax] = {0};
   // Number of radii
 
-  static const int njetmax = 10000;
+  static const int njetmax = 1000;
   int njet{0};
   float jet_E[njetmax] = {0};
   float jet_Et[njetmax] = {0};
   float jet_Pt[njetmax] = {0};
   float jet_Eta[njetmax] = {0};
   float jet_Phi[njetmax] = {0};
-
   float jet_emcal_calo_E[njetmax] = {0};
   float jet_ihcal_calo_E[njetmax] = {0};
   float jet_ohcal_calo_E[njetmax] = {0};
 
+  static const int njet_truthmax = 1000;
+  int njet_truth{0};
+  float jet_truth_E[njet_truthmax] = {0};
+  float jet_truth_Et[njet_truthmax] = {0};
+  float jet_truth_Pt[njet_truthmax] = {0};
+  float jet_truth_Eta[njet_truthmax] = {0};
+  float jet_truth_Phi[njet_truthmax] = {0};
 
   static const int nRadii = 3;
 
@@ -266,7 +280,7 @@ private:
 
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
 
-  float calculateET(float eta, float phi, float dR, int layer); // layer: 0 EMCal, 1 IHCal, 2 OHCal
+  float calculateET(float eta, float phi, float dR, int layer, float min_E); // layer: 0 EMCal, 1 IHCal, 2 OHCal
 
   std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
@@ -291,7 +305,7 @@ private:
     float dr = sqrt(deta * deta + dphi * dphi);
     return dr;
   }
-  std::vector<int> using_trigger_bits{24, 25,26,27};
+  std::vector<int> using_trigger_bits{24, 25, 26, 27};
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
   float m_vertex_cut{30.0};
   float m_shower_shape_min_tower_E{0.07};
@@ -306,7 +320,7 @@ private:
   RawTowerGeomContainer *geomOH{nullptr};
 
   TowerInfoContainer *emcTowerContainer{nullptr};
-  TowerInfoContainer *emcRawTowerContainer{nullptr};  
+  TowerInfoContainer *emcRawTowerContainer{nullptr};
   TowerInfoContainer *ihcalTowerContainer{nullptr};
   TowerInfoContainer *ihcalRawTowerContainer{nullptr};
   TowerInfoContainer *ohcalTowerContainer{nullptr};

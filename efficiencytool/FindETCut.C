@@ -75,7 +75,7 @@ void FindETCut()
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
 
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_merge.root", "READ");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
 
     bool x_is_truth = false;
 
