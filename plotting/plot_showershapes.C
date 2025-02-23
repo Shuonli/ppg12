@@ -22,7 +22,7 @@ void plot_showershapes()
     // Number of bins is one less than the number of edges
     int nEtaBins = eta_bins.size() - 1;
     int nPtBins = pT_bin_edges.size() - 1;
-    int nCuts = 2; // e.g. 0 or 1 (two cut options)
+    int nCuts = 4; // e.g. 0 or 1 (two cut options)
 
     //------------------------------------------------------------------------------
     // 2) Open your three ROOT files: data, signal, background
@@ -119,6 +119,7 @@ void plot_showershapes()
                     TString xaxisname = hbase.substr(4, hbase.size() - 4);
 
                     float xaxismax = 1.0;
+                    float xaxismin = 0;
                     int nrebin = 4;
 
                     //if the first character of xaxisname is 'w', then the xaxismax is 2.0
@@ -136,6 +137,18 @@ void plot_showershapes()
                     {
                         xaxismax = 0.3;
                         nrebin = 1;
+                        nrebin = 1;
+                    }
+                    if (xaxisname.CompareTo("e32_to_e35") ==0)
+                    {
+                        xaxismax = 1;
+                        xaxismin = 0.4;
+                        nrebin = 1;
+                    }
+                    if (xaxisname.CompareTo("et1") ==0)
+                    {
+                        xaxismax = 1;
+                        xaxismin = 0.3;
                         nrebin = 1;
                     }
 
@@ -162,9 +175,9 @@ void plot_showershapes()
                     h2_sig->RebinX(nrebin);
                     h2_data->RebinX(nrebin);
 
-                    h2_bkg->GetXaxis()->SetRangeUser(0, xaxismax);
-                    h2_sig->GetXaxis()->SetRangeUser(0, xaxismax);
-                    h2_data->GetXaxis()->SetRangeUser(0, xaxismax);
+                    h2_bkg ->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+                    h2_sig ->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+                    h2_data->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
 
                     // Check if they exist (skip if not found)
                     if (!h2_data || !h2_sig || !h2_bkg)
@@ -221,7 +234,11 @@ void plot_showershapes()
                     float pThigh = pT_bin_edges[ipt + 1];
                     float etalow = eta_bins[ieta];
                     float etahigh = eta_bins[ieta + 1];
-                    std::string bgcut = (icut == 0) ? "w/o ps cut" : "w/ ps cut";
+                    std::string bgcut;
+                    if (icut == 0) bgcut = "w/o nbkg cut";
+                    if (icut == 1) bgcut = "w/  nbkg cut";
+                    if (icut == 2) bgcut = "w/ tight cut";
+                    if (icut == 3) bgcut = "w/ nontight cut";
                     myText(0.2, 0.75, 1, Form("%.0f<p_{T}<%.0fGeV,%s", pTlow, pThigh, bgcut.c_str()), 0.04);
 
                     myMarkerLineText(0.6, 0.90, 1.5, kBlack, 20, kBlack, 1,
@@ -312,7 +329,7 @@ void plot_showershapes()
                     proj_bkg_clone->SetMarkerSize(0);
 
                     float corr = h2_bkg->GetCorrelationFactor();
-
+                   
                     myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
                     myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
                     myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
