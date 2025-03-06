@@ -75,14 +75,22 @@ void FindETCut()
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
 
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
-
     bool x_is_truth = false;
+
+    bool is_signal = true;
+
+    //TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
+
+    if(!is_signal){
+        fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
+    }
+    
 
     TH2D *h_eff = (TH2D *)fin->Get("h_singal_truth_isoET_0");
 
     if(!x_is_truth){
-        h_eff = (TH2D *)fin->Get("h_singal_reco_isoET_0");
+        h_eff = (TH2D *)fin->Get("h_ET_isoET_eta0");
     }
 
     

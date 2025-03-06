@@ -48,7 +48,7 @@ void scale_histogram(TH1 *h, float lumi)
 
 void CalculatePhotonYield(const std::string &configname = "config.yaml", bool isMC = false)
 {
-    float luminosity = 16.8468; // pb^-1
+    float luminosity = 16.8468* 23./26.1;                  // pb^-1
     float solid_angle = 2 * M_PI * 0.7 * 2;
     // lumi times cross section is events
     float nsimevents = 1E7;
@@ -273,11 +273,11 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
         double errcc = h_leak_C->GetBinError(ibin);
         double errcd = h_leak_D->GetBinError(ibin);
 
-        TH1D *h_result = new TH1D("h_result", "h_result", 100, 0, A * 10);
-        TH1D *h_result_purity = new TH1D("h_result_purity", "h_result_purity", 100, 0, 1);
-
-        TH1D *h_result_leak = new TH1D("h_result_leak", "h_result_leak", 100, 0, A * 10);
-        TH1D *h_result_purity_leak = new TH1D("h_result_purity_leak", "h_result_purity_leak", 100, 0, 1);
+        TH1D *h_result = new TH1D("h_result", "h_result", 100, -A, A * 10);
+        TH1D *h_result_purity = new TH1D("h_result_purity", "h_result_purity", 100, -1, 2);
+        
+        TH1D *h_result_leak = new TH1D("h_result_leak", "h_result_leak", 100, -A, A * 10);
+        TH1D *h_result_purity_leak = new TH1D("h_result_purity_leak", "h_result_purity_leak", 100, -1, 2);
 
         for (int isample = 0; isample < nsamples; isample++)
         {
@@ -423,6 +423,9 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     int resultit = configYaml["analysis"]["unfold"]["resultit"].as<int>();
     int resultleak = configYaml["analysis"]["unfold"]["resultleak"].as<int>(); // 0 for no leakage correction, 1 for leakage correction
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>();     // 0 for no reweighting, 1 for reweighting
+    //we move the reweight handling to updtream turn it off here
+    reweight = 0;
+
     std::vector<TH1D *> h_unfold_sub_list;
     std::vector<TH1D *> h_unfold_sub_list_copy;
 

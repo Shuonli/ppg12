@@ -9,6 +9,8 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     bool isbackground = false;
 
+    int iso_threshold = (bool)configYaml["analysis"]["iso_threshold"].as<int>(0);
+
     if (filetype == "data")
     {
         issim = false;
@@ -29,15 +31,22 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     std::cout << "infilename: " << infilename << std::endl;
 
+    float bg_timing_cut = -0.5;
+    float bg_timing_cut_more = -0.6;
+    float eta_bg_lower = 0.0;
+
     float max_photon_lower = 0;
     float max_photon_upper = 100;
 
+    // unit in pb
     const float photon5cross = 2.017e+08 * 0.000442571;
     const float photon10cross = 3.690e+07 * 0.000181474;
     const float photon20cross = 1.571e+05 * 0.000673448;
 
+    // Hanpu uses unit in b
     const float jet10cross = 3.646e-6;
-    const float jet20cross = 1392140.9 * 0;
+    const float jet15cross = 36864930.0 * 0.011059973 * 1e-12;
+    const float jet20cross = 1392140.9 * 0.042 * 1e-12;
     const float jet30cross = 2.505e-9;
 
     float max_jet_lower = 0;
@@ -70,19 +79,30 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
-        max_jet_upper = 24;
+        max_jet_upper = 17;
         energy_scale_lower = 10;
-        energy_scale_upper = 20;
-        cluster_ET_upper = 25;
+        energy_scale_upper = 16;
+        cluster_ET_upper = 17;
         weight = jet10cross / jet30cross;
+        isbackground = true;
+    }
+    else if (filetype == "jet15")
+    {
+        max_jet_lower = 17;
+        max_jet_upper = 23;
+        energy_scale_lower = 16;
+        energy_scale_upper = 20;
+        cluster_ET_upper = 23;
+        weight = jet15cross / jet30cross;
         isbackground = true;
     }
     else if (filetype == "jet20")
     {
-        max_jet_lower = 24;
+        max_jet_lower = 23;
         max_jet_upper = 30;
         energy_scale_lower = 20;
         energy_scale_upper = 30;
+        cluster_ET_upper = 30;
         weight = jet20cross / jet30cross;
         isbackground = true;
     }
@@ -100,13 +120,15 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     std::string outfilename = configYaml["output"]["eff_outfile"].as<std::string>() + "shower_shape" + "_" + filetype + incusive_str + ".root";
 
+    std::string treestring = configYaml["output"]["eff_outfile"].as<std::string>() + "_tree" + "_" + filetype + incusive_str;
+
     std::string responsefilename = "bla";
 
     if (!issim)
     {
         outfilename = configYaml["output"]["data_outfile"].as<std::string>() + "shower_shape" + "_" + ".root";
         // unfolding is only for sim
-        responsefilename = "bla.root";
+        responsefilename = "bla";
     }
 
     std::cout << "outfilename: " << outfilename << std::endl;
@@ -247,8 +269,10 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     float vertexz;
     float vertexz_truth;
 
-    static const int nparticlesmax = 10000;
-    static const int nclustercontainermx = 1000;
+    static const int nparticlesmax = 1000;
+    static const int nclustercontainermx = 100;
+
+    static const int arraysize = 49;
 
     float particle_E[nparticlesmax], particle_Pt[nparticlesmax], particle_Eta[nparticlesmax], particle_Phi[nparticlesmax], particle_truth_iso_02[nparticlesmax], particle_truth_iso_03[nparticlesmax], particle_truth_iso_04[nparticlesmax];
     int particle_pid[nparticlesmax], particle_trkid[nparticlesmax], particle_photonclass[nparticlesmax], particle_converted[nparticlesmax];
@@ -261,9 +285,31 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     float cluster_weta_cogx[nclustercontainermx], cluster_wphi_cogx[nclustercontainermx], cluster_weta_cog[nclustercontainermx], cluster_wphi_cog[nclustercontainermx];
 
+    int cluster_ownership_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_time_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_e_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_adc_array[nclustercontainermx][arraysize] = {0};
+
+    int cluster_e_array_idx[nclustercontainermx][arraysize] = {0};
+
+    int cluster_status_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_iso_03_emcal[nclustercontainermx], cluster_iso_03_hcalin[nclustercontainermx], cluster_iso_03_hcalout[nclustercontainermx];
+    float cluster_iso_03_60_emcal[nclustercontainermx], cluster_iso_03_60_hcalin[nclustercontainermx], cluster_iso_03_60_hcalout[nclustercontainermx];
+    float cluster_iso_03_120_emcal[nclustercontainermx], cluster_iso_03_120_hcalin[nclustercontainermx], cluster_iso_03_120_hcalout[nclustercontainermx];
+
     static const int njettruthmax = 100;
     int njet_truth;
     float jet_truth_E[njettruthmax], jet_truth_Pt[njettruthmax], jet_truth_Eta[njettruthmax], jet_truth_Phi[njettruthmax];
+
+    int njet;
+
+    static const int njetmax = 100;
+
+    float jet_E[njetmax], jet_Pt[njetmax], jet_Eta[njetmax], jet_Phi[njetmax];
 
     slimtree->SetBranchAddress("mbdnorthhit", &mbdnorthhit);
     slimtree->SetBranchAddress("mbdsouthhit", &mbdsouthhit);
@@ -341,6 +387,23 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     slimtree->SetBranchAddress(Form("cluster_e72_%s", clusternodename.c_str()), &cluster_e72);
     slimtree->SetBranchAddress(Form("cluster_w52_%s", clusternodename.c_str()), &cluster_w52);
 
+    slimtree->SetBranchAddress(Form("cluster_e_array_%s", clusternodename.c_str()), cluster_e_array);
+    // slimtree->SetBranchAddress(Form("cluster_adc_array_%s", clusternodename.c_str()), &cluster_adc_array);
+    // slimtree->SetBranchAddress(Form("cluster_e_array_idx_%s", clusternodename.c_str()), &cluster_e_array_idx);
+    // slimtree->SetBranchAddress(Form("cluster_status_array_%s", clusternodename.c_str()), &cluster_status_array);
+    slimtree->SetBranchAddress(Form("cluster_time_array_%s", clusternodename.c_str()), &cluster_time_array);
+    slimtree->SetBranchAddress(Form("cluster_ownership_array_%s", clusternodename.c_str()), &cluster_ownership_array);
+
+    slimtree->SetBranchAddress(Form("cluster_iso_03_emcal_%s", clusternodename.c_str()), &cluster_iso_03_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_hcalout);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_emcal_%s", clusternodename.c_str()), &cluster_iso_03_60_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_60_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_60_hcalout);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()), &cluster_iso_03_120_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_120_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_120_hcalout);
+
     slimtree->SetBranchAddress(Form("cluster_ihcal_et_%s", clusternodename.c_str()), &cluster_ihcal_et);
     slimtree->SetBranchAddress(Form("cluster_ohcal_et_%s", clusternodename.c_str()), &cluster_ohcal_et);
     slimtree->SetBranchAddress(Form("cluster_ihcal_et22_%s", clusternodename.c_str()), &cluster_ihcal_et22);
@@ -358,23 +421,167 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     slimtree->SetBranchAddress("jet_truth_Eta", &jet_truth_Eta);
     slimtree->SetBranchAddress("jet_truth_Phi", &jet_truth_Phi);
 
+    slimtree->SetBranchAddress("njet", &njet);
+    slimtree->SetBranchAddress("jet_E", &jet_E);
+    slimtree->SetBranchAddress("jet_Pt", &jet_Pt);
+    slimtree->SetBranchAddress("jet_Eta", &jet_Eta);
+    slimtree->SetBranchAddress("jet_Phi", &jet_Phi);
+
+    // ttree for TMVA training
+    const static int nETbins = 1;
+    double ETbins[nETbins + 1] = {5, 100};
+
+    TFile *foutTMVA[nETbins];
+    TTree *treeTMVA[nETbins];
+
+    float prob_TMVA;
+    float CNN_prob_TMVA;
+    float e17_to_e77_TMVA;
+    float e37_to_e77_TMVA;
+    float e32_to_e35_TMVA;
+    float e33_to_e35_TMVA;
+    float e11_to_e33_TMVA;
+    float e11_to_E_TMVA;
+    float e33_to_E_TMVA;
+    float hcalet33_to_ettot_TMVA;
+    float ihcalet33_to_ettot_TMVA;
+    float ohcalet33_to_ettot_TMVA;
+    float hcalet22_to_ettot_TMVA;
+    float ihcalet22_to_ettot_TMVA;
+    float ohcalet22_to_ettot_TMVA;
+    float detamax_TMVA;
+    float dphimax_TMVA;
+    float e1_TMVA;
+    float e2_TMVA;
+    float e3_TMVA;
+    float e4_TMVA;
+    float et1_TMVA;
+    float et2_TMVA;
+    float et3_TMVA;
+    float et4_TMVA;
+    float weta_TMVA;
+    float wphi_TMVA;
+    float w32_TMVA;
+    float w52_TMVA;
+    float w72_TMVA;
+    float wr_TMVA;
+    float wrr_TMVA;
+    float weta_cog_TMVA;
+    float wphi_cog_TMVA;
+    float weta_cogx_TMVA;
+    float wphi_cogx_TMVA;
+    float vertex_z_TMVA;
+    float cluster_eta_TMVA;
+    float cluster_ET_TMVA;
+    float cluster_iso_02_TMVA;
+    float cluster_iso_03_TMVA;
+    float cluster_iso_04_TMVA;
+    float cluster_iso_03_emcal_TMVA;
+    float cluster_iso_03_hcalin_TMVA;
+    float cluster_iso_03_hcalout_TMVA;
+    float cluster_iso_03_60_emcal_TMVA;
+    float cluster_iso_03_60_hcalin_TMVA;
+    float cluster_iso_03_60_hcalout_TMVA;
+    float cluster_iso_03_120_emcal_TMVA;
+    float cluster_iso_03_120_hcalin_TMVA;
+    float cluster_iso_03_120_hcalout_TMVA;
+    int label_TMVA;
+
+    for (int iET = 0; iET < nETbins; iET++)
+    {
+
+        foutTMVA[iET] = new TFile(Form("%s_%d.root", treestring.c_str(), iET), "RECREATE");
+        treeTMVA[iET] = new TTree("tree", "tree");
+
+        treeTMVA[iET]->Branch("prob", &prob_TMVA, "prob/F");
+        treeTMVA[iET]->Branch("CNN_prob", &CNN_prob_TMVA, "CNN_prob/F");
+        treeTMVA[iET]->Branch("e17_to_e77", &e17_to_e77_TMVA, "e17_to_e77/F");
+        treeTMVA[iET]->Branch("e37_to_e77", &e37_to_e77_TMVA, "e37_to_e77/F");
+        treeTMVA[iET]->Branch("e32_to_e35", &e32_to_e35_TMVA, "e32_to_e35/F");
+        treeTMVA[iET]->Branch("e33_to_e35", &e33_to_e35_TMVA, "e33_to_e35/F");
+        treeTMVA[iET]->Branch("e11_to_e33", &e11_to_e33_TMVA, "e11_to_e33/F");
+        treeTMVA[iET]->Branch("e11_to_E", &e11_to_E_TMVA, "e11_to_E/F");
+        treeTMVA[iET]->Branch("e33_to_E", &e33_to_E_TMVA, "e33_to_E/F");
+        treeTMVA[iET]->Branch("hcalet33_to_ettot", &hcalet33_to_ettot_TMVA, "hcalet33_to_ettot/F");
+        treeTMVA[iET]->Branch("ihcalet33_to_ettot", &ihcalet33_to_ettot_TMVA, "ihcalet33_to_ettot/F");
+        treeTMVA[iET]->Branch("ohcalet33_to_ettot", &ohcalet33_to_ettot_TMVA, "ohcalet33_to_ettot/F");
+        treeTMVA[iET]->Branch("hcalet22_to_ettot", &hcalet22_to_ettot_TMVA, "hcalet22_to_ettot/F");
+        treeTMVA[iET]->Branch("ihcalet22_to_ettot", &ihcalet22_to_ettot_TMVA, "ihcalet22_to_ettot/F");
+        treeTMVA[iET]->Branch("ohcalet22_to_ettot", &ohcalet22_to_ettot_TMVA, "ohcalet22_to_ettot/F");
+        treeTMVA[iET]->Branch("detamax", &detamax_TMVA, "detamax/F");
+        treeTMVA[iET]->Branch("dphimax", &dphimax_TMVA, "dphimax/F");
+        treeTMVA[iET]->Branch("e1", &e1_TMVA, "e1/F");
+        treeTMVA[iET]->Branch("e2", &e2_TMVA, "e2/F");
+        treeTMVA[iET]->Branch("e3", &e3_TMVA, "e3/F");
+        treeTMVA[iET]->Branch("e4", &e4_TMVA, "e4/F");
+        treeTMVA[iET]->Branch("et1", &et1_TMVA, "et1/F");
+        treeTMVA[iET]->Branch("et2", &et2_TMVA, "et2/F");
+        treeTMVA[iET]->Branch("et3", &et3_TMVA, "et3/F");
+        treeTMVA[iET]->Branch("et4", &et4_TMVA, "et4/F");
+        treeTMVA[iET]->Branch("weta", &weta_TMVA, "weta/F");
+        treeTMVA[iET]->Branch("wphi", &wphi_TMVA, "wphi/F");
+        treeTMVA[iET]->Branch("w32", &w32_TMVA, "w32/F");
+        treeTMVA[iET]->Branch("w52", &w52_TMVA, "w52/F");
+        treeTMVA[iET]->Branch("w72", &w72_TMVA, "w72/F");
+        treeTMVA[iET]->Branch("wr", &wr_TMVA, "wr/F");
+        treeTMVA[iET]->Branch("wrr", &wrr_TMVA, "wrr/F");
+        treeTMVA[iET]->Branch("weta_cog", &weta_cog_TMVA, "weta_cog/F");
+        treeTMVA[iET]->Branch("wphi_cog", &wphi_cog_TMVA, "wphi_cog/F");
+        treeTMVA[iET]->Branch("weta_cogx", &weta_cogx_TMVA, "weta_cogx/F");
+        treeTMVA[iET]->Branch("wphi_cogx", &wphi_cogx_TMVA, "wphi_cogx/F");
+        treeTMVA[iET]->Branch("vertex_z", &vertex_z_TMVA, "vertex_z/F");
+        treeTMVA[iET]->Branch("cluster_eta", &cluster_eta_TMVA, "cluster_eta/F");
+        treeTMVA[iET]->Branch("cluster_Et", &cluster_ET_TMVA, "cluster_ET/F");
+        treeTMVA[iET]->Branch("cluster_iso_02", &cluster_iso_02_TMVA, "cluster_iso_02/F");
+        treeTMVA[iET]->Branch("cluster_iso_03", &cluster_iso_03_TMVA, "cluster_iso_03/F");
+        treeTMVA[iET]->Branch("cluster_iso_04", &cluster_iso_04_TMVA, "cluster_iso_04/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_emcal", &cluster_iso_03_emcal_TMVA, "cluster_iso_03_emcal/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_hcalin", &cluster_iso_03_hcalin_TMVA, "cluster_iso_03_hcalin/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_hcalout", &cluster_iso_03_hcalout_TMVA, "cluster_iso_03_hcalout/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_60_emcal", &cluster_iso_03_60_emcal_TMVA, "cluster_iso_03_60_emcal/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_60_hcalin", &cluster_iso_03_60_hcalin_TMVA, "cluster_iso_03_60_hcalin/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_60_hcalout", &cluster_iso_03_60_hcalout_TMVA, "cluster_iso_03_60_hcalout/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_120_emcal", &cluster_iso_03_120_emcal_TMVA, "cluster_iso_03_120_emcal/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_120_hcalin", &cluster_iso_03_120_hcalin_TMVA, "cluster_iso_03_120_hcalin/F");
+        treeTMVA[iET]->Branch("cluster_iso_03_120_hcalout", &cluster_iso_03_120_hcalout_TMVA, "cluster_iso_03_120_hcalout/F");
+        treeTMVA[iET]->Branch("label", &label_TMVA, "label/I");
+    }
+
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
-    std::vector<std::vector<TH1D *>> h_signal_cluster_pT;
-    h_signal_cluster_pT.resize(eta_bins.size() - 1);
-    std::vector<std::vector<TH1D *>> h_background_cluster_pT;
-    h_background_cluster_pT.resize(eta_bins.size() - 1);
+    // TH2D *
+    std::vector<std::vector<TH1D *>> h_tight_reco_iso;
+    h_tight_reco_iso.resize(eta_bins.size() - 1);
+    std::vector<std::vector<TH1D *>> h_nt_reco_iso;
+    h_nt_reco_iso.resize(eta_bins.size() - 1);
+    std::vector<std::vector<TH1D *>> h_signal_truth_iso;
+    h_signal_truth_iso.resize(eta_bins.size() - 1);
+    std::vector<std::vector<TH1D *>> h_background_truth_iso;
+    h_background_truth_iso.resize(eta_bins.size() - 1);
+    std::vector<TH2D *> h_ET_isoET;
 
     for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
     {
+        h_ET_isoET.push_back(new TH2D(Form("h_ET_isoET_eta%d", ieta),
+                                      Form("ET vs isoET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                      400, 0, 50, 4400, -5, 50));
+
         for (int ipt = 0; ipt < n_pT_bins; ipt++)
         {
-            h_signal_cluster_pT[ieta].push_back(new TH1D(Form("h_signal_cluster_pT_eta%d_pt%d", ieta, ipt),
-                                                         Form("Signal Cluster pT %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
-                                                         400, -10, 30));
+            h_signal_truth_iso[ieta].push_back(new TH1D(Form("h_signal_truth_iso_eta%d_pt%d", ieta, ipt),
+                                                        Form("Signal truth iso %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
+                                                        400, -10, 30));
 
-            h_background_cluster_pT[ieta].push_back(new TH1D(Form("h_background_cluster_pT_eta%d_pt%d", ieta, ipt),
-                                                             Form("Background Cluster pT %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
-                                                             400, -10, 30));
+            h_background_truth_iso[ieta].push_back(new TH1D(Form("h_background_truth_iso_eta%d_pt%d", ieta, ipt),
+                                                            Form("Background truth iso %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
+                                                            400, -10, 30));
+
+            h_tight_reco_iso[ieta].push_back(new TH1D(Form("h_tight_reco_iso_eta%d_pt%d", ieta, ipt),
+                                                      Form("Tight Iso ET %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
+                                                      400, -10, 30));
+
+            h_nt_reco_iso[ieta].push_back(new TH1D(Form("h_nt_reco_iso_eta%d_pt%d", ieta, ipt),
+                                                   Form("Non Tight Iso ET %.1f < eta < %.1f, %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
+                                                   400, -10, 30));
         }
     }
 
@@ -384,6 +591,9 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     // 2) Define your "histogram names" (the old map keys become string keys).
     //    For instance, you can directly populate them:
+
+    static const int ncuts = 6;
+
     h2d_all["h2d_prob"];
     h2d_all["h2d_CNN_prob"];
     h2d_all["h2d_e17_to_e77"];
@@ -421,17 +631,31 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     h2d_all["h2d_weta_cogx"];
     h2d_all["h2d_wphi_cogx"];
 
+    std::vector<std::vector<TH2D *>> h_ET_eta;
+    h_ET_eta.resize(ncuts);
+
+    for (int icut = 0; icut < ncuts; icut++)
+    {
+        for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
+        {
+            h_ET_eta[icut].push_back(new TH2D(Form("h_ET_eta_cut%d_eta%d", icut, ieta),
+                                              Form("ET vs eta cut %d %.1f < eta < %.1f", icut, eta_bins[ieta], eta_bins[ieta + 1]),
+                                              400, 0, 50, 100, -1, 1));
+        }
+    }
+
     for (auto &kv : h2d_all)
     {
         // kv is a reference to std::pair<const std::string, std::vector<std::vector<std::vector<TH2F*>>>>
         const std::string &basename = kv.first; // the key (string)
         auto &histVector3D = kv.second;         // the 3D vector of TH2F*, which we can now modify
 
-        for (int icut = 0; icut < 4; icut++)
+        for (int icut = 0; icut < ncuts; icut++)
         {
             std::vector<std::vector<TH2F *>> h2d_eta;
             for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
             {
+                //
                 std::vector<TH2F *> h2d_pt;
                 for (int ipt = 0; ipt < n_pT_bins; ipt++)
                 {
@@ -442,7 +666,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                              eta_bins[ieta + 1],
                              pT_bin_edges[ipt],
                              pT_bin_edges[ipt + 1]),
-                        200, 0, 2,   // X bins
+                        300, -1, 2,   // X bins
                         200, -10, 30 // Y bins
                     );
                     h2D->GetXaxis()->SetTitle(basename.c_str());
@@ -469,12 +693,6 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
             if (scaledtrigger[trigger_used] == 0)
                 continue;
         }
-
-        if (abs(vertexz) > vertexcut)
-            continue;
-
-        if (!(mbdnorthhit >= 1 && mbdsouthhit >= 1))
-            continue;
 
         std::set<int> signal_set;
         std::set<int> background_set;
@@ -545,7 +763,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                             signal_set.insert(iparticle);
                             if (etabin != -1 && pTbin != -1)
                             {
-                                h_signal_cluster_pT[etabin][pTbin]->Fill(truthisoET);
+                                h_signal_truth_iso[etabin][pTbin]->Fill(truthisoET, weight);
                             }
                         }
                     }
@@ -558,7 +776,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                     {
                         if (etabin != -1 && pTbin != -1)
                         {
-                            h_background_cluster_pT[etabin][pTbin]->Fill(truthisoET);
+                            h_background_truth_iso[etabin][pTbin]->Fill(truthisoET, weight);
                         }
                     }
                 }
@@ -600,6 +818,15 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                  }
                  */
             }
+        }
+
+        std::vector<float> jetphi;
+
+        for (int ijet = 0; ijet < njet; ijet++)
+        {
+            if (jet_Pt[ijet] < 10)
+                continue;
+            jetphi.push_back(jet_Phi[ijet]);
         }
         // loop over clusters
         for (int icluster = 0; icluster < ncluster; icluster++)
@@ -660,6 +887,114 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                 std::cout << "Error: conesize not supported" << std::endl;
                 continue;
             }
+
+            if (iso_threshold)
+            {
+                recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+            }
+
+            //
+            if (issim)
+            {
+                if (particle_trkidmap.find(cluster_truthtrkID[icluster]) == particle_trkidmap.end())
+                {
+                    // std::cout<<"trackid: "<<cluster_truthtrkID[icluster]<<std::endl;
+                    // std::cout << "Error: cluster_truthtrkID not found in particle_trkidmap" << std::endl;
+                    continue;
+                }
+                int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
+                if (!isbackground)
+                {
+                    if (signal_set.find(iparticle) == signal_set.end())
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (!doinclusive)
+                    {
+                        if (background_set.find(iparticle) == background_set.end())
+                        {
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            prob_TMVA = cluster_prob[icluster];
+            CNN_prob_TMVA = cluster_CNN_prob[icluster];
+            e17_to_e77_TMVA = cluster_e17[icluster] / cluster_e77[icluster];
+            e37_to_e77_TMVA = cluster_e37[icluster] / cluster_e77[icluster];
+            e32_to_e35_TMVA = cluster_e32[icluster] / cluster_e35[icluster];
+            e33_to_e35_TMVA = cluster_e33[icluster] / cluster_e35[icluster];
+            e11_to_e33_TMVA = cluster_e11[icluster] / cluster_e33[icluster];
+            e11_to_E_TMVA = cluster_e11[icluster] / cluster_E[icluster];
+            e33_to_E_TMVA = cluster_e33[icluster] / cluster_E[icluster];
+            hcalet33_to_ettot_TMVA = hcalet33 / (cluster_Et[icluster] + hcalet33);
+            ihcalet33_to_ettot_TMVA = cluster_ihcal_et33[icluster] / (cluster_Et[icluster] + hcalet33);
+            ohcalet33_to_ettot_TMVA = cluster_ohcal_et33[icluster] / (cluster_Et[icluster] + hcalet33);
+            hcalet22_to_ettot_TMVA = hcalet22 / (cluster_Et[icluster] + hcalet22);
+            ihcalet22_to_ettot_TMVA = cluster_ihcal_et22[icluster] / (cluster_Et[icluster] + hcalet22);
+            ohcalet22_to_ettot_TMVA = cluster_ohcal_et22[icluster] / (cluster_Et[icluster] + hcalet22);
+            detamax_TMVA = cluster_detamax[icluster] / 10.0;
+            dphimax_TMVA = cluster_dphimax[icluster] / 10.0;
+            e1_TMVA = cluster_e1[icluster];
+            e2_TMVA = cluster_e2[icluster];
+            e3_TMVA = cluster_e3[icluster];
+            e4_TMVA = cluster_e4[icluster];
+            et1_TMVA = cluster_et1[icluster];
+            et2_TMVA = cluster_et2[icluster];
+            et3_TMVA = cluster_et3[icluster];
+            et4_TMVA = cluster_et4[icluster];
+            weta_TMVA = cluster_weta[icluster];
+            wphi_TMVA = cluster_wphi[icluster];
+            w32_TMVA = cluster_w32[icluster];
+            w52_TMVA = cluster_w52[icluster];
+            w72_TMVA = cluster_w72[icluster];
+            wr_TMVA = cluster_wphi[icluster] / cluster_weta[icluster];
+            wrr_TMVA = cluster_weta[icluster] / cluster_wphi[icluster];
+            weta_cog_TMVA = cluster_weta_cog[icluster];
+            wphi_cog_TMVA = cluster_wphi_cog[icluster];
+            weta_cogx_TMVA = cluster_weta_cogx[icluster];
+            wphi_cogx_TMVA = cluster_wphi_cogx[icluster];
+            vertex_z_TMVA = vertexz;
+            cluster_eta_TMVA = cluster_Eta[icluster];
+            cluster_ET_TMVA = cluster_Et[icluster];
+            cluster_iso_02_TMVA = cluster_iso_02[icluster];
+            cluster_iso_03_TMVA = cluster_iso_03[icluster];
+            cluster_iso_04_TMVA = cluster_iso_04[icluster];
+            cluster_iso_03_emcal_TMVA = cluster_iso_03_emcal[icluster];
+            cluster_iso_03_hcalin_TMVA = cluster_iso_03_hcalin[icluster];
+            cluster_iso_03_hcalout_TMVA = cluster_iso_03_hcalout[icluster];
+            cluster_iso_03_60_emcal_TMVA = cluster_iso_03_60_emcal[icluster];
+            cluster_iso_03_60_hcalin_TMVA = cluster_iso_03_60_hcalin[icluster];
+            cluster_iso_03_60_hcalout_TMVA = cluster_iso_03_60_hcalout[icluster];
+            cluster_iso_03_120_emcal_TMVA = cluster_iso_03_120_emcal[icluster];
+            cluster_iso_03_120_hcalin_TMVA = cluster_iso_03_120_hcalin[icluster];
+            cluster_iso_03_120_hcalout_TMVA = cluster_iso_03_120_hcalout[icluster];
+            label_TMVA = isbackground ? 0 : 1;
+
+            int ETbin = -1;
+            for (int iET = 0; iET < nETbins; iET++)
+            {
+                if (cluster_Et[icluster] > ETbins[iET] && cluster_Et[icluster] < ETbins[iET + 1])
+                {
+                    ETbin = iET;
+                    break;
+                }
+            }
+            if (ETbin != -1 && issim)
+            {
+                treeTMVA[ETbin]->Fill();
+            }
+
+            if (abs(vertexz) > vertexcut)
+                continue;
+
+            if (!(mbdnorthhit >= 1 && mbdsouthhit >= 1))
+                continue;
+
             float cluster_eta = cluster_Eta[icluster];
             int etabin = -1;
             for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
@@ -689,34 +1024,9 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
             {
                 continue;
             }
-            //
-            if (issim)
-            {
-                if (particle_trkidmap.find(cluster_truthtrkID[icluster]) == particle_trkidmap.end())
-                {
-                    // std::cout<<"trackid: "<<cluster_truthtrkID[icluster]<<std::endl;
-                    // std::cout << "Error: cluster_truthtrkID not found in particle_trkidmap" << std::endl;
-                    continue;
-                }
-                int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
-                if (!isbackground)
-                {
-                    if (signal_set.find(iparticle) == signal_set.end())
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    if (!doinclusive)
-                    {
-                        if (background_set.find(iparticle) == background_set.end())
-                        {
-                            continue;
-                        }
-                    }
-                }
-            }
+
+            // fill iso ET and et histogram
+            h_ET_isoET[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
 
             // now fill the histograms
             auto fillAllHists = [&](int idx, size_t icl)
@@ -757,9 +1067,58 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                 h2d_all["h2d_wphi_cog"][idx][etabin][pTbin]->Fill(cluster_wphi_cog[icl], recoisoET, weight);
                 h2d_all["h2d_weta_cogx"][idx][etabin][pTbin]->Fill(cluster_weta_cogx[icl], recoisoET, weight);
                 h2d_all["h2d_wphi_cogx"][idx][etabin][pTbin]->Fill(cluster_wphi_cogx[icl], recoisoET, weight);
+
+                h_ET_eta[idx][etabin]->Fill(cluster_Et[icl], cluster_Eta[icl], weight);
             };
 
             fillAllHists(0, icluster);
+
+            // calculate cluster time
+            float clusteravgtime = 0;
+            float cluster_total_e = 0;
+            for (int i = 0; i < 49; i++)
+            {
+
+                if (cluster_ownership_array[icluster][i] == 1)
+                {
+                    clusteravgtime += cluster_time_array[icluster][i] * cluster_e_array[icluster][i];
+                    // std::cout<<"cluster_time_array[icluster][i]: "<<cluster_time_array[icluster][i]<<std::endl;
+                    cluster_total_e += cluster_e_array[icluster][i];
+                }
+            }
+            clusteravgtime = cluster_total_e > 0 ? clusteravgtime / cluster_total_e : 0;
+
+            bool badtime = clusteravgtime < bg_timing_cut;
+
+            bool morebadtime = clusteravgtime < bg_timing_cut_more;
+
+            bool otherside_jet = false;
+
+            for (int ijet = 0; ijet < (int)jetphi.size(); ijet++)
+            {
+                float dphi = cluster_Phi[icluster] - jetphi[ijet];
+
+                while (dphi > M_PI)
+                    dphi = dphi - 2 * M_PI;
+                while (dphi < -M_PI)
+                    dphi = dphi + 2 * M_PI;
+
+                if (abs(dphi) > (M_PI / 2))
+                {
+                    otherside_jet = true;
+                    break;
+                }
+            }
+
+            if (badtime && !otherside_jet)
+            {
+                fillAllHists(4, icluster);
+            }
+
+            if (morebadtime && !otherside_jet)
+            {
+                fillAllHists(5, icluster);
+            }
 
             // streak event removal cut
             // if (wr_cogx < 0.4 && cluster_weta_cogx[icluster] > 1)
@@ -848,17 +1207,28 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                     nontight = true;
                 }
             }
+
             if (tight)
             {
                 fillAllHists(2, icluster);
+                h_tight_reco_iso[etabin][pTbin]->Fill(recoisoET, weight);
             }
             if (nontight)
             {
                 fillAllHists(3, icluster);
+                h_nt_reco_iso[etabin][pTbin]->Fill(recoisoET, weight);
             }
         }
     }
     fout->cd();
     fout->Write();
     fout->Close();
+
+    for (int iET = 0; iET < nETbins; iET++)
+    {
+        // save the tree
+        foutTMVA[iET]->cd();
+        treeTMVA[iET]->Write();
+        foutTMVA[iET]->Close();
+    }
 }
