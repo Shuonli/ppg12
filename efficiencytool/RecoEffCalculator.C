@@ -13,6 +13,19 @@
 
 // R__LOAD_LIBRARY(/sphenix/user/egm2153/calib_study/JetValidation/analysis/roounfold/libRooUnfold.so)
 
+void SaveYamlToRoot(TFile *f, const char *yaml_filename)
+{
+    // Read YAML file into a string
+    std::ifstream yaml_file(yaml_filename);
+    std::string yaml_content((std::istreambuf_iterator<char>(yaml_file)),
+                             std::istreambuf_iterator<char>());
+
+    // Create a ROOT file and save the YAML string
+    TObjString yaml_obj(yaml_content.c_str());
+    f->cd();
+    yaml_obj.Write("config");
+}
+
 void RecoEffCalculator(const std::string &configname = "config.yaml", const std::string filetype = "data")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
@@ -27,6 +40,9 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     // bool isbackground = (bool)configYaml["input"]["isbackground"].as<int>();
     bool isbackground = false;
+    // hardcode here for now
+    float bg_timing_cut = -0.5;
+    float npb_weta_min = 0.4;
 
     std::string infilename_root_dir = configYaml["input"]["photon_jet_file_root_dir"].as<std::string>();
 
@@ -45,11 +61,12 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     float max_photon_upper = 100;
     // unit in pb
     const float photon5cross = 2.017e+08 * 0.000442571;
-    const float photon10cross = 3.690e+07 * 0.000181474;
+    const float photon10cross = 3.688e+07 * 0.000181474;
     const float photon20cross = 1.571e+05 * 0.000673448;
 
     // Hanpu uses unit in b
     const float jet10cross = 3.646e-6;
+    const float jet15cross = 36864930.0 * 0.011059973 * 1e-12;
     const float jet20cross = 1392140.9 * 0.042 * 1e-12;
     const float jet30cross = 2.505e-9;
 
@@ -84,16 +101,26 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
-        max_jet_upper = 22;
+        max_jet_upper = 19;
         energy_scale_lower = 10;
-        energy_scale_upper = 20;
+        energy_scale_upper = 16;
         cluster_ET_upper = 25;
         weight = jet10cross / jet30cross;
         isbackground = true;
     }
+    else if (filetype == "jet15")
+    {
+        max_jet_lower = 19;
+        max_jet_upper = 23;
+        energy_scale_lower = 16;
+        energy_scale_upper = 20;
+        cluster_ET_upper = 25;
+        weight = jet15cross / jet30cross;
+        isbackground = true;
+    }
     else if (filetype == "jet20")
     {
-        max_jet_lower = 22;
+        max_jet_lower = 23;
         max_jet_upper = 30;
         energy_scale_lower = 20;
         energy_scale_upper = 30;
@@ -131,6 +158,16 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     TTree *slimtree = (TTree *)ftreein->Get(configYaml["input"]["tree"].as<std::string>().c_str());
 
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
+
+    int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
+
+    int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
+
+    int weta_fail = configYaml["analysis"]["weta_fail"].as<int>(0);
+    int wphi_fail = configYaml["analysis"]["wphi_fail"].as<int>(0);
+    int e11_to_e33_fail = configYaml["analysis"]["e11_to_e33_fail"].as<int>(0);
+    int e32_to_e35_fail = configYaml["analysis"]["e32_to_e35_fail"].as<int>(0);
+    int et1_fail = configYaml["analysis"]["et1_fail"].as<int>(0);
 
     float truthisocut = configYaml["analysis"]["truth_iso_max"].as<float>();
 
@@ -174,6 +211,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     int trigger_used = configYaml["analysis"]["trigger_used"].as<int>();
 
     // getting cuts from the config file
+    std::cout << "tight cuts" << std::endl;
     float tight_reta77_min = configYaml["analysis"]["tight"]["reta77_min"].as<float>();
     float tight_reta77_max = configYaml["analysis"]["tight"]["reta77_max"].as<float>();
 
@@ -191,12 +229,27 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     float tight_weta_cogx_max = configYaml["analysis"]["tight"]["weta_cogx_max"].as<float>();
     float tight_weta_cogx_min = configYaml["analysis"]["tight"]["weta_cogx_min"].as<float>();
+    float tight_weta_cogx_max_b = configYaml["analysis"]["tight"]["weta_cogx_max_b"].as<float>();
+    float tight_weta_cogx_max_s = configYaml["analysis"]["tight"]["weta_cogx_max_s"].as<float>();
+
+    float tight_wphi_cogx_max = configYaml["analysis"]["tight"]["wphi_cogx_max"].as<float>();
+    float tight_wphi_cogx_min = configYaml["analysis"]["tight"]["wphi_cogx_min"].as<float>();
+    float tight_wphi_cogx_max_b = configYaml["analysis"]["tight"]["wphi_cogx_max_b"].as<float>();
+    float tight_wphi_cogx_max_s = configYaml["analysis"]["tight"]["wphi_cogx_max_s"].as<float>();
 
     float tight_e11_over_e33_max = configYaml["analysis"]["tight"]["e11_over_e33_max"].as<float>();
     float tight_e11_over_e33_min = configYaml["analysis"]["tight"]["e11_over_e33_min"].as<float>();
 
     float tight_et1_max = configYaml["analysis"]["tight"]["et1_max"].as<float>();
     float tight_et1_min = configYaml["analysis"]["tight"]["et1_min"].as<float>();
+    float tight_et1_min_b = configYaml["analysis"]["tight"]["et1_min_b"].as<float>();
+    float tight_et1_min_s = configYaml["analysis"]["tight"]["et1_min_s"].as<float>();
+
+    float tight_et2_max = configYaml["analysis"]["tight"]["et2_max"].as<float>(1.0);
+    float tight_et2_min = configYaml["analysis"]["tight"]["et2_min"].as<float>(0.0);
+
+    float tight_et3_max = configYaml["analysis"]["tight"]["et3_max"].as<float>(1.0);
+    float tight_et3_min = configYaml["analysis"]["tight"]["et3_min"].as<float>(0.0);
 
     float tight_e32_over_e35_max = configYaml["analysis"]["tight"]["e32_over_e35_max"].as<float>();
     float tight_e32_over_e35_min = configYaml["analysis"]["tight"]["e32_over_e35_min"].as<float>();
@@ -211,6 +264,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     float tight_w32_min = configYaml["analysis"]["tight"]["w32_min"].as<float>();
 
     // non tight cuts
+    std::cout << "non tight cuts" << std::endl;
     float non_tight_reta77_min = configYaml["analysis"]["non_tight"]["reta77_min"].as<float>();
     float non_tight_reta77_max = configYaml["analysis"]["non_tight"]["reta77_max"].as<float>();
 
@@ -228,6 +282,13 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     float non_tight_weta_cogx_max = configYaml["analysis"]["non_tight"]["weta_cogx_max"].as<float>();
     float non_tight_weta_cogx_min = configYaml["analysis"]["non_tight"]["weta_cogx_min"].as<float>();
+    float non_tight_weta_cogx_max_b = configYaml["analysis"]["non_tight"]["weta_cogx_max_b"].as<float>();
+    float non_tight_weta_cogx_max_s = configYaml["analysis"]["non_tight"]["weta_cogx_max_s"].as<float>();
+
+    float non_tight_wphi_cogx_max = configYaml["analysis"]["non_tight"]["wphi_cogx_max"].as<float>();
+    float non_tight_wphi_cogx_min = configYaml["analysis"]["non_tight"]["wphi_cogx_min"].as<float>();
+    float non_tight_wphi_cogx_max_b = configYaml["analysis"]["non_tight"]["wphi_cogx_max_b"].as<float>();
+    float non_tight_wphi_cogx_max_s = configYaml["analysis"]["non_tight"]["wphi_cogx_max_s"].as<float>();
 
     float non_tight_prob_max = configYaml["analysis"]["non_tight"]["prob_max"].as<float>();
     float non_tight_prob_min = configYaml["analysis"]["non_tight"]["prob_min"].as<float>();
@@ -258,6 +319,13 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     float common_wr_cogx_bound = configYaml["analysis"]["common"]["wr_cogx_bound"].as<float>();
     float common_cluster_weta_cogx_bound = configYaml["analysis"]["common"]["cluster_weta_cogx_bound"].as<float>();
 
+    int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(); // 0 for no reweighting, 1 for reweighting
+
+    // polynomial 3 for the reweighting
+    TF1 *f_reweight = new TF1("f_reweight", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 0, 100);
+    // need to make this into the config file in the future!!!
+    f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
+
     int mbdnorthhit, mbdsouthhit;
     int pythiaid, nparticles;
     int ncluster;
@@ -271,8 +339,8 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     float trigger_prescale[32] = {0};
 
-    static const int nparticlesmax = 1000;
-    static const int nclustercontainermx = 1000;
+    static const int nparticlesmax = 100;
+    static const int nclustercontainermx = 50;
 
     float particle_E[nparticlesmax], particle_Pt[nparticlesmax], particle_Eta[nparticlesmax], particle_Phi[nparticlesmax], particle_truth_iso_02[nparticlesmax], particle_truth_iso_03[nparticlesmax], particle_truth_iso_04[nparticlesmax];
     int particle_pid[nparticlesmax], particle_trkid[nparticlesmax], particle_photonclass[nparticlesmax], particle_converted[nparticlesmax];
@@ -285,21 +353,47 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     float cluster_weta_cogx[nclustercontainermx], cluster_wphi_cogx[nclustercontainermx];
 
+    static const int arraysize = 49;
+
+    int cluster_ownership_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_time_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_e_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_adc_array[nclustercontainermx][arraysize] = {0};
+
+    int cluster_e_array_idx[nclustercontainermx][arraysize] = {0};
+
+    int cluster_status_array[nclustercontainermx][arraysize] = {0};
+
+    float cluster_iso_03_emcal[nclustercontainermx], cluster_iso_03_hcalin[nclustercontainermx], cluster_iso_03_hcalout[nclustercontainermx];
+    float cluster_iso_03_60_emcal[nclustercontainermx], cluster_iso_03_60_hcalin[nclustercontainermx], cluster_iso_03_60_hcalout[nclustercontainermx];
+    float cluster_iso_03_120_emcal[nclustercontainermx], cluster_iso_03_120_hcalin[nclustercontainermx], cluster_iso_03_120_hcalout[nclustercontainermx];
+
     static const int njettruthmax = 100;
     int njet_truth;
     float jet_truth_E[njettruthmax], jet_truth_Pt[njettruthmax], jet_truth_Eta[njettruthmax], jet_truth_Phi[njettruthmax];
+
+    int njet;
+
+    static const int njetmax = 100;
+
+    float jet_E[njetmax], jet_Pt[njetmax], jet_Eta[njetmax], jet_Phi[njetmax];
+
+    // slimtree->SetBranchStatus("*", 0);
 
     slimtree->SetBranchAddress("mbdnorthhit", &mbdnorthhit);
     slimtree->SetBranchAddress("mbdsouthhit", &mbdsouthhit);
     slimtree->SetBranchAddress("pythiaid", &pythiaid);
     slimtree->SetBranchAddress("nparticles", &nparticles);
-    slimtree->SetBranchAddress(Form("ncluster_%s", clusternodename.c_str()), &ncluster);
     slimtree->SetBranchAddress("vertexz", &vertexz);
     slimtree->SetBranchAddress("vertexz_truth", &vertexz_truth);
     slimtree->SetBranchAddress("energy_scale", &energy_scale);
     slimtree->SetBranchAddress("scaledtrigger", scaledtrigger);
     slimtree->SetBranchAddress("livetrigger", livetrigger);
     slimtree->SetBranchAddress("trigger_prescale", trigger_prescale);
+    slimtree->SetBranchAddress(Form("ncluster_%s", clusternodename.c_str()), &ncluster);
 
     slimtree->SetBranchAddress("particle_E", &particle_E);
     slimtree->SetBranchAddress("particle_Pt", &particle_Pt);
@@ -364,6 +458,23 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     slimtree->SetBranchAddress(Form("cluster_e72_%s", clusternodename.c_str()), &cluster_e72);
     slimtree->SetBranchAddress(Form("cluster_w52_%s", clusternodename.c_str()), &cluster_w52);
 
+    slimtree->SetBranchAddress(Form("cluster_e_array_%s", clusternodename.c_str()), cluster_e_array);
+    // slimtree->SetBranchAddress(Form("cluster_adc_array_%s", clusternodename.c_str()), &cluster_adc_array);
+    // slimtree->SetBranchAddress(Form("cluster_e_array_idx_%s", clusternodename.c_str()), &cluster_e_array_idx);
+    // slimtree->SetBranchAddress(Form("cluster_status_array_%s", clusternodename.c_str()), &cluster_status_array);
+    slimtree->SetBranchAddress(Form("cluster_time_array_%s", clusternodename.c_str()), &cluster_time_array);
+    slimtree->SetBranchAddress(Form("cluster_ownership_array_%s", clusternodename.c_str()), &cluster_ownership_array);
+
+    slimtree->SetBranchAddress(Form("cluster_iso_03_emcal_%s", clusternodename.c_str()), &cluster_iso_03_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_hcalout);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_emcal_%s", clusternodename.c_str()), &cluster_iso_03_60_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_60_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_60_hcalout);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()), &cluster_iso_03_120_emcal);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()), &cluster_iso_03_120_hcalin);
+    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()), &cluster_iso_03_120_hcalout);
+
     slimtree->SetBranchAddress(Form("cluster_ihcal_et_%s", clusternodename.c_str()), &cluster_ihcal_et);
     slimtree->SetBranchAddress(Form("cluster_ohcal_et_%s", clusternodename.c_str()), &cluster_ohcal_et);
     slimtree->SetBranchAddress(Form("cluster_ihcal_et22_%s", clusternodename.c_str()), &cluster_ihcal_et22);
@@ -380,6 +491,12 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     slimtree->SetBranchAddress("jet_truth_Pt", &jet_truth_Pt);
     slimtree->SetBranchAddress("jet_truth_Eta", &jet_truth_Eta);
     slimtree->SetBranchAddress("jet_truth_Phi", &jet_truth_Phi);
+
+    slimtree->SetBranchAddress("njet", &njet);
+    slimtree->SetBranchAddress("jet_E", &jet_E);
+    slimtree->SetBranchAddress("jet_Pt", &jet_Pt);
+    slimtree->SetBranchAddress("jet_Eta", &jet_Eta);
+    slimtree->SetBranchAddress("jet_Phi", &jet_Phi);
 
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
     TH1F *h_max_photon_pT = new TH1F("h_max_photon_pT", "Max Photon pT", 1000, 0, 100);
@@ -426,6 +543,11 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     std::vector<TH1D *> h_tight_noniso_cluster_signal;
     std::vector<TH1D *> h_nontight_iso_cluster_signal;
     std::vector<TH1D *> h_nontight_noniso_cluster_signal;
+
+    std::vector<TH1D *> h_tight_iso_cluster_background;
+    std::vector<TH1D *> h_tight_noniso_cluster_background;
+    std::vector<TH1D *> h_nontight_iso_cluster_background;
+    std::vector<TH1D *> h_nontight_noniso_cluster_background;
 
     std::vector<TH2D *> h_singal_reco_isoET;
     std::vector<TH2D *> h_singal_truth_isoET;
@@ -533,6 +655,19 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         h_nontight_noniso_cluster_signal.push_back(new TH1D(Form("h_nontight_noniso_cluster_signal_%d", ieta),
                                                             Form("Non-Tight Non-Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                             n_pT_bins, pT_bin_edges));
+
+        h_tight_iso_cluster_background.push_back(new TH1D(Form("h_tight_iso_cluster_background_%d", ieta),
+                                                          Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                          n_pT_bins, pT_bin_edges));
+        h_tight_noniso_cluster_background.push_back(new TH1D(Form("h_tight_noniso_cluster_background_%d", ieta),
+                                                             Form("Tight Non-Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                             n_pT_bins, pT_bin_edges));
+        h_nontight_iso_cluster_background.push_back(new TH1D(Form("h_nontight_iso_cluster_background_%d", ieta),
+                                                             Form("Non-Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                             n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_cluster_background.push_back(new TH1D(Form("h_nontight_noniso_cluster_background_%d", ieta),
+                                                                Form("Non-Tight Non-Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                                n_pT_bins, pT_bin_edges));
 
         h_singal_reco_isoET.push_back(new TH2D(Form("h_singal_reco_isoET_%d", ieta),
                                                Form("Signal Reco Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -648,7 +783,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         slimtree->GetEntry(ientry);
         if (!issim)
         {
-            
+
             if (scaledtrigger[trigger_used] == 0)
                 continue;
             /*
@@ -670,7 +805,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 continue;
             }
             */
-            
         }
 
         std::map<int, int> particle_trkidmap;
@@ -906,6 +1040,16 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
         if (!(mbdnorthhit >= 1 && mbdsouthhit >= 1))
             continue;
+
+        std::vector<float> jetphi;
+
+        for (int ijet = 0; ijet < njet; ijet++)
+        {
+            if (jet_Pt[ijet] < 10)
+                continue;
+            jetphi.push_back(jet_Phi[ijet]);
+        }
+
         h_vertexz->Fill(vertexz, weight);
         float leading_common_cluster_ET = 0;
         for (int icluster = 0; icluster < ncluster; icluster++)
@@ -955,6 +1099,11 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 continue;
             }
 
+            if (iso_threshold)
+            {
+                recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+            }
+
             float cluster_eta = cluster_Eta[icluster];
             int etabin = -1;
             for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
@@ -980,7 +1129,48 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     break;
                 }
             }
-            
+
+            // calculate cluster time
+            float clusteravgtime = 0;
+            float cluster_total_e = 0;
+            for (int i = 0; i < 49; i++)
+            {
+
+                if (cluster_ownership_array[icluster][i] == 1)
+                {
+                    clusteravgtime += cluster_time_array[icluster][i] * cluster_e_array[icluster][i];
+                    // std::cout<<"cluster_time_array[icluster][i]: "<<cluster_time_array[icluster][i]<<std::endl;
+                    cluster_total_e += cluster_e_array[icluster][i];
+                }
+            }
+            clusteravgtime = cluster_total_e > 0 ? clusteravgtime / cluster_total_e : 0;
+
+            bool badtime = clusteravgtime < bg_timing_cut;
+
+            bool otherside_jet = false;
+
+            for (int ijet = 0; ijet < (int)jetphi.size(); ijet++)
+            {
+                float dphi = cluster_Phi[icluster] - jetphi[ijet];
+
+                while (dphi > M_PI)
+                    dphi = dphi - 2 * M_PI;
+                while (dphi < -M_PI)
+                    dphi = dphi + 2 * M_PI;
+
+                if (abs(dphi) > (M_PI / 2))
+                {
+                    otherside_jet = true;
+                    break;
+                }
+            }
+
+            bool isnpb = badtime && !otherside_jet;
+            if (cluster_weta_cogx[icluster] < npb_weta_min)
+            {
+                isnpb = false;
+            }
+
             bool common_pass = false;
             bool tight = false;
             bool nontight = false;
@@ -1011,47 +1201,66 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
             if (common_pass)
             {
-
-                // need to update to a function to find tight and non tight
-                if (
-                    // reta77 > tight_reta77_min &&
-                    // reta77 < tight_reta77_max &&
-                    // rhad33 > tight_rhad33_min &&
-                    // rhad33 < tight_rhad33_max &&
-                    // cluster_w72[icluster] > tight_w72_min &&
-                    // cluster_w72[icluster] < tight_w72_max &&
-                    // re11_E > tight_re11_E_min &&
-                    // re11_E < tight_re11_E_max &&
-                    // cluster_CNN_prob[icluster] > tight_CNN_min &&
-                    // cluster_CNN_prob[icluster] < tight_CNN_max &&
-                    cluster_weta_cogx[icluster] > tight_weta_cogx_min &&
-                    cluster_weta_cogx[icluster] < tight_weta_cogx_max &&
-                    e11_over_e33 > tight_e11_over_e33_min &&
-                    e11_over_e33 < tight_e11_over_e33_max &&
-                    e32_over_e35 > tight_e32_over_e35_min &&
-                    e32_over_e35 < tight_e32_over_e35_max &&
-                    cluster_et1[icluster] > tight_et1_min &&
-                    cluster_et1[icluster] < tight_et1_max &&
-                    cluster_et4[icluster] > tight_et4_min &&
-                    cluster_et4[icluster] < tight_et4_max &&
-                    cluster_prob[icluster] > tight_prob_min &&
-                    cluster_prob[icluster] < tight_prob_max)
                 {
+                    tight_weta_cogx_max = tight_weta_cogx_max_b + tight_weta_cogx_max_s * clusterET;
+                    tight_wphi_cogx_max = tight_wphi_cogx_max_b + tight_wphi_cogx_max_s * clusterET;
+                    tight_et1_min = tight_et1_min_b + tight_et1_min_s * clusterET;
+                }
+                // need to update to a function to find tight and non tight
+                bool is_cluster_weta_cogx_tight =
+                    (cluster_weta_cogx[icluster] > tight_weta_cogx_min) &&
+                    (cluster_weta_cogx[icluster] < tight_weta_cogx_max);
 
+                bool is_cluster_wphi_cogx_tight =
+                    (cluster_wphi_cogx[icluster] > tight_wphi_cogx_min) &&
+                    (cluster_wphi_cogx[icluster] < tight_wphi_cogx_max);
+
+                bool is_cluster_et1_tight =
+                    (cluster_et1[icluster] > tight_et1_min) &&
+                    (cluster_et1[icluster] < tight_et1_max);
+
+                bool is_cluster_et2_tight =
+                    (cluster_et2[icluster] > tight_et2_min) &&
+                    (cluster_et2[icluster] < tight_et2_max);
+
+                bool is_cluster_et3_tight =
+                    (cluster_et3[icluster] > tight_et3_min) &&
+                    (cluster_et3[icluster] < tight_et3_max);
+
+                bool is_e11_over_e33_tight =
+                    (e11_over_e33 > tight_e11_over_e33_min) &&
+                    (e11_over_e33 < tight_e11_over_e33_max);
+
+                bool is_e32_over_e35_tight =
+                    (e32_over_e35 > tight_e32_over_e35_min) &&
+                    (e32_over_e35 < tight_e32_over_e35_max);
+
+                bool is_cluster_et4_tight =
+                    (cluster_et4[icluster] > tight_et4_min) &&
+                    (cluster_et4[icluster] < tight_et4_max);
+
+                bool is_cluster_prob_tight =
+                    (cluster_prob[icluster] > tight_prob_min) &&
+                    (cluster_prob[icluster] < tight_prob_max);
+
+                // Combined condition
+                if (is_cluster_weta_cogx_tight &&
+                    is_cluster_wphi_cogx_tight &&
+                    is_cluster_et1_tight &&
+                    is_cluster_et2_tight &&
+                    is_cluster_et3_tight &&
+                    is_e11_over_e33_tight &&
+                    is_e32_over_e35_tight &&
+                    is_cluster_et4_tight &&
+                    is_cluster_prob_tight)
+                {
                     tight = true;
                 }
-                if ( // reta77 > non_tight_reta77_min &&
-                     // reta77 < non_tight_reta77_max &&
-                     // rhad33 > non_tight_rhad33_min &&
-                     // rhad33 < non_tight_rhad33_max &&
-                     // cluster_w72[icluster] > non_tight_w72_min &&
-                     // cluster_w72[icluster] < non_tight_w72_max &&
-                     // re11_E > non_tight_re11_E_min &&
-                     // re11_E < non_tight_re11_E_max &&
-                     // cluster_CNN_prob[icluster] > non_tight_CNN_min &&
-                     // cluster_CNN_prob[icluster] < non_tight_CNN_max &&
+                if (
                     cluster_weta_cogx[icluster] > non_tight_weta_cogx_min &&
                     cluster_weta_cogx[icluster] < non_tight_weta_cogx_max &&
+                    cluster_wphi_cogx[icluster] > non_tight_wphi_cogx_min &&
+                    cluster_wphi_cogx[icluster] < non_tight_wphi_cogx_max &&
                     cluster_prob[icluster] > non_tight_prob_min &&
                     cluster_prob[icluster] < non_tight_prob_max &&
                     e11_over_e33 > non_tight_e11_over_e33_min &&
@@ -1064,17 +1273,89 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     cluster_et4[icluster] < non_tight_et4_max)
                 {
                     // fail at least one of the tight cuts with small correlation
+                    int nfail = 0;
+                    if (!is_cluster_weta_cogx_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_wphi_cogx_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_et1_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_et2_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_et3_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_e11_over_e33_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_e32_over_e35_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_et4_tight)
+                    {
+                        nfail++;
+                    }
+                    if (!is_cluster_prob_tight)
+                    {
+                        nfail++;
+                    }
 
+                    if ((nfail > n_nt_fail))
+                    {
+                        bool all_flags_fail = true;
+                        if (weta_fail)
+                        {
+                            if (is_cluster_weta_cogx_tight)
+                                all_flags_fail = false;
+                        }
+                        if (wphi_fail)
+                        {
+                            if (is_cluster_wphi_cogx_tight)
+                                all_flags_fail = false;
+                        }
+                        if (et1_fail)
+                        {
+                            if (is_cluster_et1_tight)
+                                all_flags_fail = false;
+                        }
+                        if (e11_to_e33_fail)
+                        {
+                            if (is_e11_over_e33_tight)
+                                all_flags_fail = false;
+                        }
+                        if (e32_to_e35_fail)
+                        {
+                            if (is_e32_over_e35_tight)
+                                all_flags_fail = false;
+                        }
+
+                        if (all_flags_fail)
+                        {
+                            nontight = true;
+                        }
+                    }
+                    /*
                     if (
-                        !(e11_over_e33 > tight_e11_over_e33_min && e11_over_e33 < tight_e11_over_e33_max) ||
-                        !(cluster_et4[icluster] > tight_et4_min && cluster_et4[icluster] < tight_et4_max) ||
-                        !(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max)
-                        //||!(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max)
-                    )
+                        //!(e11_over_e33 > tight_e11_over_e33_min && e11_over_e33 < tight_e11_over_e33_max) ||
+                        //!(cluster_et4[icluster] > tight_et4_min && cluster_et4[icluster] < tight_et4_max) ||
+                        //!(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max)
+                        !(cluster_wphi_cogx[icluster] > tight_wphi_cogx_min && cluster_wphi_cogx[icluster] < tight_wphi_cogx_max) || !(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max) || !(cluster_et1[icluster] > tight_et1_min && cluster_et1[icluster] < tight_et1_max))
                     {
 
                         nontight = true;
                     }
+                    */
                 }
             }
 
@@ -1082,18 +1363,26 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
             {
                 h_tight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 // h_pT_reco_response[etabin]->Fill(cluster_Et[icluster]);
+                if (isnpb)
+                    h_tight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (tight && noniso)
             {
                 h_tight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                if (isnpb)
+                    h_tight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (nontight && iso)
             {
                 h_nontight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                if (isnpb)
+                    h_nontight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (nontight && noniso)
             {
                 h_nontight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                if (isnpb)
+                    h_nontight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (common_pass)
             {
@@ -1115,15 +1404,14 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     h_nontight_cluster_pT[etabin][pTbin]->Fill(recoisoET, weight);
                 }
             }
-            //for jet 10 event we want to remove some high ET clusters to reduce the fluctuation
-            if(isbackground)
+            // for jet 10 event we want to remove some high ET clusters to reduce the fluctuation
+            if (isbackground)
             {
-                if(cluster_Et[icluster]>cluster_ET_upper)
+                if (cluster_Et[icluster] > cluster_ET_upper)
                 {
                     continue;
                 }
             }
-
 
             if (issim)
             {
@@ -1203,19 +1491,24 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                             // fill the response matrix
                             h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight);
                             h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight);
-                            responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                            h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
+                            float response_reweight = 1.0;
+                            if (!reweight)
+                            {
+                                response_reweight = cluster_Et[icluster] > 30 ? f_reweight->Eval(30) : f_reweight->Eval(cluster_Et[icluster]);
+                            }
+                            responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                            h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
                             if (ientry < (nentries / 2))
                             {
                                 h_pT_truth_half_response[etabin]->Fill(particle_Pt[iparticle], weight);
                                 h_pT_reco_half_response[etabin]->Fill(cluster_Et[icluster], weight);
-                                responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
-                                h_response_half_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight);
+                                responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                                h_response_half_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
                             }
                             else
                             {
-                                h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
+                                h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight * response_reweight);
+                                h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight * response_reweight);
                             }
                         }
                     }
@@ -1236,7 +1529,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     h_singal_truth_isoET[etabin]->Fill(particle_Pt[iparticle], recoisoET, weight);
                 }
             }
-        }//end of cluster loop
+        } // end of cluster loop
         if (leading_common_cluster_ET > 0)
         {
             h_cluster_common_leaking_Et->Fill(leading_common_cluster_ET, weight);
@@ -1304,6 +1597,10 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
     fout->Write();
     fout->Close();
+    if (!issim)
+    {
+        SaveYamlToRoot(fout, configname.c_str());
+    }
 
     fresponse->Write();
     fresponse->Close();
