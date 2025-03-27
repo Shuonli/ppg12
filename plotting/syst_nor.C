@@ -10,7 +10,7 @@ void syst_nor()
   TFile *f2 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nr.root"));
 
   string legf1 = "nominal";
-  string legf2 = "w/o reweighting";
+  string legf2 = "w/o reweighting var.";
 
   /////////////////////////////
   // plotting
@@ -90,11 +90,34 @@ void syst_nor()
   h_dev_rel->SetMarkerColor(kBlue);
   h_dev_rel->SetLineColor(kBlue);
 
-  h_dev_rel->Draw("same");
+  h_dev_rel->Draw("same hist p");
 
   linezero->Draw("L");
 
   c1->SaveAs(Form("%s/syst_spec_%s.pdf", savePath.c_str(), varStr.c_str()));
+
+
+  TCanvas *c2 = new TCanvas("can", "", 900, 600);
+  init_plot();
+  frame_et_truth->SetYTitle("Relative difference");
+  frame_et_truth->GetYaxis()->SetRangeUser(-0.1, 0.15);
+  frame_et_truth->GetXaxis()->SetRangeUser(pTmin, pTmax);
+  frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+
+  frame_et_truth->Draw("axis");
+  linezero->Draw("L");
+
+  h_dev_rel->SetMarkerStyle(20);
+  h_dev_rel->SetMarkerColor(kBlue);
+  h_dev_rel->SetLineColor(kBlue);
+
+  h_dev_rel->Draw("same p hist");
+
+  myText(0.6, 0.9, 1, strleg1.c_str(), 0.05);
+  myText(0.6, 0.85, 1, strleg2.c_str(), 0.05);
+  myText(0.6, 0.80, 1, legf2.c_str(), 0.05);
+
+  c2->SaveAs(Form("%s/syst_rel_%s.pdf", savePath.c_str(), varStr.c_str()));
 
   TH1F* h_dev_low = (TH1F *)h_dev->Clone("h_dev_low");
   TH1F* h_dev_high = (TH1F *)h_dev->Clone("h_dev_high");

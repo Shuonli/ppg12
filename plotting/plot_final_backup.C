@@ -1,21 +1,11 @@
 #include "plotcommon.h"
 
-// 0: our data, 1: PHENIX, 2: JETPHOX, 3: PYTHIA, 4: Werner
-const int col[] = {kAzure + 2, kPink + 5, kPink + 5, kCyan + 4, kYellow + 2, kSpring - 7, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
-// const int col[] = {kAzure+2, kPink+5, kPink+5, kOrange+9, kYellow + 2, kSpring -7, kRed - 4, kBlack, kBlue - 3,  kPink - 5, kGreen + 3, kBlue - 3};
-const int mkcol[] = {kAzure + 2, kPink + 5, kPink + 4, kCyan + 4, kSpring - 7, kSpring - 7, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
-const float trans[] = {0.35, 0.5, 0.45, 0.65, 0.65};
-// const float trans[] = {0.35, 0.5, 0.35, 0.65, 0.35};
-const int mkStyle[] = {20, 21, 25, 27, 47, 33, 25, 27, 28, 24, 29, 28, 22};
-const float mkSize[] = {1.4, 1.4, 1.2, 2.0, 1.5, 1, 1, 1, 1, 1, 1, 1, 1};
-const int lineWidth[] = {2, 2, 2, 2, 2};
-const int fillStyle[] = {1, 1, 3345, 1, 3354};
-// const int fillStyle[] = {1, 1, 1001, 1, 1001};
+const int col[] = {kAzure + 2, kPink + 5, kGreen - 2, kBlack, kRed - 4, kBlack, kBlue - 3, kYellow + 2, kPink - 5, kGreen + 3, kBlue - 3};
+const int mkStyle[] = {20, 21, 33, 34, 33, 25, 27, 28, 24, 29, 28, 22};
+const float mkSize[] = {1.4, 1.4, 1.5, 1.5, 1.1, 1, 1, 1, 1, 1, 1, 1, 1};
 void plot_final()
 {
     init_plot();
-
-    gStyle->SetHatchesLineWidth(4);
 
     std::string MCstring = "JETPHOX";
 
@@ -34,7 +24,7 @@ void plot_final()
     float lowerx = 10;
     float upperx = 26;
 
-    TFile *fin_data = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_scale20.root");
+    TFile *fin_data = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom468.root");
 
     TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
     TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_10.root");
@@ -79,9 +69,7 @@ void plot_final()
     h_pythia_data->Divide(h_data);
 
     TH1F *h_syst_low = (TH1F *)fin_syst->Get("h_sum_low");
-    h_syst_low->Scale(1.0 / deta);
     TH1F *h_syst_high = (TH1F *)fin_syst->Get("h_sum_high");
-    h_syst_high->Scale(1.0 / deta);
 
     TH1F *h_syst_rel_low = (TH1F *)fin_syst->Get("h_sum_rel_low");
     TH1F *h_syst_rel_high = (TH1F *)fin_syst->Get("h_sum_rel_high");
@@ -239,41 +227,6 @@ void plot_final()
         gSys_PHENIX->SetPoint(i, x[i], yScaled);
         gSys_PHENIX->SetPointError(i, exl, exh, sysDownScaled, sysUpScaled);
     }
-    
-    TF1 *f1 = new TF1("f1", "[0]*pow([1]/x,[2]+[3]*log(x/[1]))", lowerx, upperx);
-    f1->SetParameters(1e7, 1, 5, 0.1);
-    
-   /*
-    TF1 *f1 = new TF1("f1", "[0]*(1+x/[1])^(-[2])", 5, 26);
-    f1->SetParameters(2.09375e+3, 1.54186e+01, 1.32747e+01);
-    */
-    f1->SetParLimits(0, 0, 1e8);
-    f1->SetParLimits(1, 0, 50);
-    f1->SetParLimits(2, 0, 50);
-    f1->SetParLimits(3, -1, 50);
-
-    // fit PHENIX data
-    gStat_PHENIX->Fit(f1, "REM", "", 5, upperx);
-    gStat_PHENIX->Fit(f1, "REM", "", 5, upperx);
-    gStat_PHENIX->Fit(f1, "REM", "", 5, upperx);
-    // loop over PHENIX data points
-    int nPHENIX = gStat_PHENIX->GetN();
-    for (int i = 0; i < nPHENIX; i++)
-    {
-        double x, y;
-        gStat_PHENIX->GetPoint(i, x, y);
-        double xlow = x - gStat_PHENIX->GetErrorXlow(i);
-        double xup = x + gStat_PHENIX->GetErrorXhigh(i);
-        double deltax = xup - xlow;
-
-        double meanfit = f1->Integral(xlow, xup) / deltax;
-        double centerfit = f1->Eval(x);
-        double correction = meanfit / centerfit;
-        double fit_y = centerfit / y;
-
-        std::cout << "x: " << x << " y: " << y << " meanfit: " << meanfit << " centerfit: " << centerfit << " correction: " << correction << std::endl;
-        //std::cout << "pT: " << x << " PHENX: " << y << " fit/data: " << fit_y << std::endl;
-    }
 
     // getting a different NLO
     ifstream myfile;
@@ -346,8 +299,8 @@ void plot_final()
     TF1 *fphoton02 = new TF1("f02", [&](double *x, double *)
                              { return tphoton02->Eval(x[0]); }, lowerx, upperx, 0);
 
-    TGraphAsymmErrors *g_syst_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_syst_NLO_werner");
-    TGraphAsymmErrors *g_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_NLO_werner");
+    // TGraphAsymmErrors *g_syst_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_syst_NLO_werner");
+    // TGraphAsymmErrors *g_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_NLO_werner");
     TGraphAsymmErrors *g_syst_rel_NLO_werner = (TGraphAsymmErrors *)g_syst_rel_NLO->Clone("g_syst_rel_NLO_werner");
     TGraphAsymmErrors *g_rel_NLO_werner = (TGraphAsymmErrors *)g_syst_rel_NLO->Clone("g_rel_NLO_werner");
 
@@ -376,12 +329,6 @@ void plot_final()
         float ratio05 = y_yield05 / y_data;
         float ratio20 = y_yield02 / y_data;
 
-        g_NLO_werner->SetPoint(i, x, y_yield);
-        g_NLO_werner->SetPointError(i, xlow, xup, 0, 0);
-
-        g_syst_NLO_werner->SetPoint(i, x, y_yield);
-        g_syst_NLO_werner->SetPointError(i, xlow, xup, y_yield - y_yield02, y_yield05 - y_yield);
-
         g_rel_NLO_werner->SetPoint(i, x, ratio);
         g_rel_NLO_werner->SetPointError(i, xlow, xup, ratio_err, ratio_err);
 
@@ -390,92 +337,65 @@ void plot_final()
     }
 
     tphoton->SetMarkerStyle(21);
-    tphoton->SetMarkerColor(mkcol[4]);
-    tphoton->SetLineColor(mkcol[4]);
-    // tphoton->Draw(" l,same");
+    tphoton->SetMarkerColor(col[7]);
+    tphoton->SetLineColor(col[7]);
+    tphoton->Draw(" l,same");
 
     tphoton05->SetMarkerStyle(21);
-    tphoton05->SetMarkerColor(mkcol[4]);
-    tphoton05->SetLineColor(mkcol[4]);
+    tphoton05->SetMarkerColor(col[7]);
+    tphoton05->SetLineColor(col[7]);
     tphoton05->SetLineStyle(7);
-    // tphoton05->Draw("l,same");
+    tphoton05->Draw("l,same");
 
     tphoton02->SetMarkerStyle(21);
-    tphoton02->SetMarkerColor(mkcol[4]);
-    tphoton02->SetLineColor(mkcol[4]);
+    tphoton02->SetMarkerColor(col[7]);
+    tphoton02->SetLineColor(col[7]);
     tphoton02->SetLineStyle(7);
-    // tphoton02->Draw("l,same");
+    tphoton02->Draw("l,same");
 
-    // Werner
-    g_syst_NLO_werner->SetMarkerStyle(mkStyle[4]);
-    g_syst_NLO_werner->SetMarkerSize(mkSize[4]);
-    g_syst_NLO_werner->SetMarkerColor(mkcol[4]);
-    g_syst_NLO_werner->SetLineColor(mkcol[4]);
-    g_syst_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
-    g_syst_NLO_werner->SetFillStyle(fillStyle[4]);
+    gStat_PHENIX->SetMarkerStyle(28);
+    gStat_PHENIX->SetMarkerSize(1.5);
+    gStat_PHENIX->SetMarkerColor(kRed + 1);
+    gStat_PHENIX->SetLineColor(kRed + 1);
+    // gStat_PHENIX->Draw("P");
 
-    g_syst_NLO_werner->Draw("2,same");
+    gSys_PHENIX->SetMarkerStyle(28);
+    gSys_PHENIX->SetMarkerSize(1.5);
+    gSys_PHENIX->SetMarkerColor(kRed);
+    gSys_PHENIX->SetLineColor(kRed);
+    gSys_PHENIX->SetFillColorAlpha(kRed, 0.25);
+    // gSys_PHENIX->Draw("2 same");
 
-    // gStat_PHENIX->SetMarkerStyle(28);
-    // gStat_PHENIX->SetMarkerSize(1.5);
-    // gStat_PHENIX->SetMarkerColor(kRed + 1);
-    // gStat_PHENIX->SetLineColor(kRed + 1);
-    // // gStat_PHENIX->Draw("P");
-
-    // gSys_PHENIX->SetMarkerStyle(28);
-    // gSys_PHENIX->SetMarkerSize(1.5);
-    // gSys_PHENIX->SetMarkerColor(kRed);
-    // gSys_PHENIX->SetLineColor(kRed);
-    // gSys_PHENIX->SetFillColorAlpha(kRed, 0.25);
-    // // gSys_PHENIX->Draw("2 same");
-
-    // Data
-    g_syst->SetMarkerStyle(mkStyle[0]);
-    g_syst->SetMarkerColor(col[0]);
-    g_syst->SetLineColor(col[0]);
-    g_syst->SetFillColorAlpha(col[0], trans[0]);
+    g_syst->SetMarkerStyle(20);
+    g_syst->SetMarkerColor(kAzure + 2);
+    g_syst->SetLineColor(kAzure + 2);
+    g_syst->SetFillColorAlpha(kAzure + 2, 0.35);
 
     g_syst->Draw("2 same");
 
-    // JETPHOX
-    g_syst_NLO->SetMarkerStyle(mkStyle[2]);
-    g_syst_NLO->SetMarkerColor(mkcol[2]);
-    g_syst_NLO->SetLineColor(mkcol[2]);
-    g_syst_NLO->SetFillColorAlpha(col[2], trans[2]);
-    g_syst_NLO->SetFillStyle(fillStyle[2]);
-
-    g_syst_NLO->Draw("2 same");
-
-    g_NLO_werner->SetMarkerStyle(mkStyle[4]);
-    g_NLO_werner->SetMarkerSize(mkSize[4]);
-    g_NLO_werner->SetMarkerColor(mkcol[4]);
-    g_NLO_werner->SetLineColor(mkcol[4]);
-    g_NLO_werner->SetLineWidth(lineWidth[4]);
-
-    g_NLO_werner->Draw("p same");
-
-    // JETPHOX
-    h_NLO->SetMarkerStyle(mkStyle[2]);
-    h_NLO->SetMarkerSize(mkSize[2]);
-    h_NLO->SetMarkerColor(mkcol[2]);
-    h_NLO->SetLineColor(mkcol[2]);
-    h_NLO->SetFillColorAlpha(col[2], trans[2]);
-    h_NLO->SetFillStyle(fillStyle[2]);
-    h_NLO->SetLineWidth(lineWidth[2]);
+    h_NLO->SetMarkerStyle(25);
+    h_NLO->SetMarkerSize(1.2);
+    h_NLO->SetMarkerColor(kPink + 5);
+    h_NLO->SetLineColor(kPink + 5);
+    h_NLO->SetLineWidth(2);
 
     h_NLO->Draw("same");
 
-    h_pythia->SetMarkerStyle(mkStyle[3]);
-    h_pythia->SetMarkerSize(mkSize[3]);
-    h_pythia->SetMarkerColor(col[3]);
-    h_pythia->SetLineColor(col[3]);
+    g_syst_NLO->SetMarkerStyle(25);
+    g_syst_NLO->SetMarkerColor(col[1]);
+    g_syst_NLO->SetLineColor(col[1]);
+    g_syst_NLO->SetFillColorAlpha(col[1], 0.25);
+
+    g_syst_NLO->Draw("2 same");
+
+    h_pythia->SetMarkerStyle(27);
+    h_pythia->SetMarkerColor(kSpring - 7);
+    h_pythia->SetLineColor(kSpring - 7);
     h_pythia->SetMarkerSize(2);
-    h_pythia->SetLineWidth(lineWidth[3]);
 
     h_pythia->Draw("same");
 
-    h_data->SetMarkerStyle(mkStyle[0]);
-    h_data->SetMarkerSize(mkSize[0]);
+    h_data->SetMarkerStyle(20);
     h_data->SetMarkerColor(col[0]);
     h_data->SetLineColor(col[0]);
     h_data->SetLineWidth(2);
@@ -485,9 +405,9 @@ void plot_final()
     h_data->Draw("same");
 
     TH1F *htemp_data = (TH1F *)h_data->Clone("htemp");
-    htemp_data->SetFillColorAlpha(col[0], trans[0]);
+    htemp_data->SetFillColorAlpha(kAzure + 2, 0.35);
     TH1F *htemp_NLO = (TH1F *)h_NLO->Clone("htemp_NLO");
-    htemp_NLO->SetFillColorAlpha(col[1], trans[1]);
+    htemp_NLO->SetFillColorAlpha(col[1], 0.35);
 
     //--------------------------------------------------lower panel
 
@@ -513,7 +433,7 @@ void plot_final()
     l1->AddEntry((TObject *)0, "", "");
     myText(xpos + 0.085, ypos2 + 1 * dy1 + 0.015, 1, st_thScale.c_str(), fontsize, 0);
     // l1->AddEntry((TObject*)0, "#it{#mu}_{f} = #it{#mu}_{f} = #it{#mu}_{R} = #it{E}_{T}^{#gamma}", "");
-    l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fpl");
+    l1->AddEntry(tphoton, "NLO pQCD by W. Vogelsang", "l");
     l1->Draw("same");
     myText(xpos + 0.07, ypos2 - 0.05, 1, Form("(#scale[0.93]{no #kern[-0.4]{#it{E}_{T}^{iso}} / }%s)", st_thScale.data()), fontsize, 0);
 
@@ -540,58 +460,46 @@ void plot_final()
     frame_et_truth->Draw("axis");
 
     g_syst_rel->SetMarkerStyle(20);
-    g_syst_rel->SetMarkerColor(col[0]);
-    g_syst_rel->SetLineColor(col[0]);
-    g_syst_rel->SetFillColorAlpha(col[0], trans[0]);
+    g_syst_rel->SetMarkerColor(kAzure + 2);
+    g_syst_rel->SetLineColor(kAzure + 2);
+    g_syst_rel->SetFillColorAlpha(kAzure + 2, 0.35);
 
     lineone->Draw("L");
 
     g_syst_rel->Draw("2 same");
 
-    // JETPHOX sys
-    g_syst_rel_NLO->SetMarkerStyle(mkStyle[2]);
-    g_syst_rel_NLO->SetMarkerColor(mkcol[2]);
-    g_syst_rel_NLO->SetLineColor(mkcol[2]);
-    g_syst_rel_NLO->SetLineWidth(lineWidth[2]);
-    g_syst_rel_NLO->SetFillColorAlpha(col[2], trans[2]);
-    g_syst_rel_NLO->SetFillStyle(fillStyle[2]);
-
-    g_syst_rel_NLO->Draw("2 same");
-
-    // Werner sys
-    g_syst_rel_NLO_werner->SetMarkerStyle(mkStyle[4]);
-    g_syst_rel_NLO_werner->SetMarkerColor(mkcol[4]);
-    g_syst_rel_NLO_werner->SetLineColor(mkcol[4]);
-    g_syst_rel_NLO_werner->SetLineWidth(lineWidth[4]);
-    g_syst_rel_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
-    g_syst_rel_NLO_werner->SetFillStyle(fillStyle[4]);
-
-    g_syst_rel_NLO_werner->Draw("2 same");
-
-    // JETPHOX/Data
-    h_NLO_data->SetMarkerStyle(mkStyle[2]);
-    h_NLO_data->SetMarkerSize(mkSize[2]);
-    h_NLO_data->SetMarkerColor(mkcol[2]);
-    h_NLO_data->SetLineColor(mkcol[2]);
-    h_NLO_data->SetLineWidth(lineWidth[2]);
+    h_NLO_data->SetMarkerStyle(25);
+    h_NLO_data->SetMarkerColor(kPink + 8);
+    h_NLO_data->SetLineColor(kPink + 8);
 
     h_NLO_data->Draw("same");
 
-    // Werner/Data
-    g_rel_NLO_werner->SetMarkerStyle(mkStyle[4]);
-    g_rel_NLO_werner->SetMarkerSize(mkSize[4]);
-    g_rel_NLO_werner->SetMarkerColor(mkcol[4]);
-    g_rel_NLO_werner->SetLineColor(mkcol[4]);
-    g_rel_NLO_werner->SetLineWidth(lineWidth[4]);
+    g_syst_rel_NLO->SetMarkerStyle(25);
+    g_syst_rel_NLO->SetMarkerColor(col[1]);
+    g_syst_rel_NLO->SetLineColor(col[1]);
+    g_syst_rel_NLO->SetFillColorAlpha(col[1], 0.25);
+
+    g_syst_rel_NLO->Draw("2 same");
+
+    g_rel_NLO_werner->SetMarkerStyle(47);
+    g_rel_NLO_werner->SetMarkerSize(1.5);
+    g_rel_NLO_werner->SetMarkerColor(col[7]);
+    g_rel_NLO_werner->SetLineColor(col[7]);
+    g_rel_NLO_werner->SetFillColorAlpha(col[7], 0.35);
 
     g_rel_NLO_werner->Draw("p same");
 
-    // Pythia/Data
-    h_pythia_data->SetMarkerStyle(mkStyle[3]);
-    h_pythia_data->SetMarkerColor(col[3]);
-    h_pythia_data->SetLineColor(col[3]);
-    h_pythia_data->SetMarkerSize(mkSize[3]);
-    h_pythia_data->SetLineWidth(lineWidth[3]);
+    g_syst_rel_NLO_werner->SetMarkerStyle(21);
+    g_syst_rel_NLO_werner->SetMarkerColor(col[7]);
+    g_syst_rel_NLO_werner->SetLineColor(col[7]);
+    g_syst_rel_NLO_werner->SetFillColorAlpha(col[7], 0.35);
+
+    g_syst_rel_NLO_werner->Draw("2 same");
+
+    h_pythia_data->SetMarkerStyle(27);
+    h_pythia_data->SetMarkerColor(kSpring - 7);
+    h_pythia_data->SetLineColor(kSpring - 7);
+    h_pythia_data->SetMarkerSize(2);
 
     h_pythia_data->Draw("same");
 
@@ -702,7 +610,7 @@ void plot_final()
     pad_1->cd();
     // common, tight iso, sub, sub with unfold and final result
     frame_et_rec->GetYaxis()->SetRangeUser(2, 1e5);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 26);
+    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
     frame_et_rec->SetYTitle("dN/dE_{T} [GeV^{-1}]");
     frame_et_rec->Draw("axis");
 
@@ -760,7 +668,7 @@ void plot_final()
 
     pad_2->cd();
     frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.15);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 26);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
     frame_et_truth->SetYTitle("after/before unfolding");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
     frame_et_truth->Draw("axis");
@@ -820,13 +728,13 @@ void plot_final()
     gSys_PHENIX->SetMarkerSize(mkSize[1]);
     gSys_PHENIX->SetMarkerColor(col[1]);
     gSys_PHENIX->SetLineColor(col[1]);
-    gSys_PHENIX->SetFillColorAlpha(col[1], trans[1]);
+    gSys_PHENIX->SetFillColorAlpha(col[1], 0.35);
     gSys_PHENIX->Draw("2 same");
 
     g_syst->SetMarkerStyle(mkStyle[0]);
     g_syst->SetMarkerColor(col[0]);
     g_syst->SetLineColor(col[0]);
-    g_syst->SetFillColorAlpha(col[0], trans[0]);
+    g_syst->SetFillColorAlpha(col[0], 0.35);
 
     g_syst->Draw("2 same");
 
@@ -836,94 +744,39 @@ void plot_final()
     h_data->SetLineColor(col[0]);
 
     h_data->Draw("same");
-    {
-        TH1F *htemp_PHENIX = (TH1F *)h_data->Clone("htemp_PHENIX");
-        htemp_PHENIX->SetMarkerStyle(mkStyle[1]);
-        htemp_PHENIX->SetMarkerSize(mkSize[1]);
-        htemp_PHENIX->SetMarkerColor(col[1]);
-        htemp_PHENIX->SetLineColor(col[1]);
-        htemp_PHENIX->SetFillColorAlpha(col[1], trans[1]);
 
-        // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
-        xpos2 = 0.91;
-        fontsize = 0.043;
-        fontsize1 = 0.047;
-        dy = 0.055;
-        xpos = 0.19;
-        ypos2 = 0.25;
-        myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
-        myText(xpos2, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 1);
-        myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
-        myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
-        // myText(xpos2,ypos-1*dy,1,strleg2.c_str(),fontsize,1);
-        // myText(xpos2,ypos-2*dy,1,strleg5.c_str(),fontsize,1);
-        // myText(xpos2,ypos-3*dy,1,strleg3.c_str(),fontsize,1);
-        // myText(xpos2,ypos-4*dy,1,strleg4.c_str(),fontsize,1);
+    TH1F *htemp_PHENIX = (TH1F *)h_data->Clone("htemp_PHENIX");
+    htemp_PHENIX->SetMarkerStyle(mkStyle[1]);
+    htemp_PHENIX->SetMarkerSize(mkSize[1]);
+    htemp_PHENIX->SetMarkerColor(col[1]);
+    htemp_PHENIX->SetLineColor(col[1]);
+    htemp_PHENIX->SetFillColorAlpha(col[1], 0.25);
 
-        nEntry = 2;
-        TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
-        legStyle(l2, 0.21, fontsize);
-        l2->AddEntry(htemp_data, "Data", "fpl");
-        l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}}", "fpl");
-        l2->Draw("same");
-        myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
-    }
+    // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
+    xpos2 = 0.91;
+    fontsize = 0.043;
+    fontsize1 = 0.047;
+    dy = 0.055;
+    xpos = 0.19;
+    ypos2 = 0.25;
+    myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
+    myText(xpos2, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
+    // myText(xpos2,ypos-1*dy,1,strleg2.c_str(),fontsize,1);
+    // myText(xpos2,ypos-2*dy,1,strleg5.c_str(),fontsize,1);
+    // myText(xpos2,ypos-3*dy,1,strleg3.c_str(),fontsize,1);
+    // myText(xpos2,ypos-4*dy,1,strleg4.c_str(),fontsize,1);
+
+    nEntry = 2;
+    TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
+    legStyle(l2, 0.21, fontsize);
+    l2->AddEntry(htemp_data, "Data", "fpl");
+    l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}}", "fpl");
+    l2->Draw("same");
+    myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
+
     c2->SaveAs("figures/final_phenix.pdf");
 
     //-----------------------------------------------------------------
-
-    TCanvas *c3 = new TCanvas("can2", "", 800, 700);
-    // log y
-    c3->SetLogy();
-
-    frame_et_rec->Draw("axis");
-
-    g_syst->SetMarkerStyle(mkStyle[0]);
-    g_syst->SetMarkerColor(col[0]);
-    g_syst->SetLineColor(col[0]);
-    g_syst->SetFillColorAlpha(col[0], trans[0]);
-
-    g_syst->Draw("2 same");
-
-    h_data->SetMarkerStyle(mkStyle[0]);
-    h_data->SetMarkerSize(mkSize[0]);
-    h_data->SetMarkerColor(col[0]);
-    h_data->SetLineColor(col[0]);
-
-    h_data->Draw("same");
-
-    {
-        TH1F *htemp_PHENIX = (TH1F *)h_data->Clone("htemp_PHENIX");
-        htemp_PHENIX->SetMarkerStyle(mkStyle[1]);
-        htemp_PHENIX->SetMarkerSize(mkSize[1]);
-        htemp_PHENIX->SetMarkerColor(col[1]);
-        htemp_PHENIX->SetLineColor(col[1]);
-        htemp_PHENIX->SetFillColorAlpha(col[1], trans[1]);
-
-        // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
-        xpos2 = 0.91;
-        fontsize = 0.043;
-        fontsize1 = 0.047;
-        dy = 0.055;
-        xpos = 0.19;
-        ypos2 = 0.25;
-        myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
-        myText(xpos2, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 1);
-        myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
-        myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
-        // myText(xpos2,ypos-1*dy,1,strleg2.c_str(),fontsize,1);
-        // myText(xpos2,ypos-2*dy,1,strleg5.c_str(),fontsize,1);
-        // myText(xpos2,ypos-3*dy,1,strleg3.c_str(),fontsize,1);
-        // myText(xpos2,ypos-4*dy,1,strleg4.c_str(),fontsize,1);
-
-        nEntry = 1;
-        TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
-        legStyle(l2, 0.21, fontsize);
-        l2->AddEntry(htemp_data, "Data", "fpl");
-        // l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}}", "fpl");
-        l2->Draw("same");
-        // myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
-    }
-
-    c3->SaveAs("figures/final_sphenix.pdf");
 }

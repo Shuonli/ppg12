@@ -1,16 +1,18 @@
 #include"plotcommon.h"
 
 
-void plot_sideband_sim(){
+void plot_sideband_sim_selection(const std::string suffix = "nomtest"){
 
   init_plot();
 
-  string savePath="../PPG12-analysis-note/Figures/analysis/";
+  string savePath="figures";
 
+  std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_" + suffix + ".root";
+  std::string mcname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_" + suffix + ".root";
 
-  TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
+  TFile* fdata = new TFile(dataname.c_str());
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_nom.root");
-  TFile* fmc   = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+  TFile* fmc   = new TFile(mcname.c_str());
 
   TH1D* h_tight_iso_cluster       = (TH1D*) fdata->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster    = (TH1D*) fdata->Get("h_tight_noniso_cluster_0");
@@ -38,8 +40,8 @@ void plot_sideband_sim(){
 
   TCanvas* c1 = new TCanvas("c1","c1",600,600);
   frame_et_rec->Draw("axis");
-  frame_et_rec->GetXaxis()->SetRangeUser(8,35);
-  frame_et_rec->GetYaxis()->SetRangeUser(500, 5e6);
+  frame_et_rec->GetXaxis()->SetRangeUser(10,30);
+  frame_et_rec->GetYaxis()->SetRangeUser(1, 5e6);
   h_tight_iso_cluster->Draw("same hist");
 
   h_tight_noniso_cluster->Draw("same hist");
@@ -60,7 +62,7 @@ void plot_sideband_sim(){
   myMarkerLineText(0.55,0.60, 0, kMagenta, 0, kMagenta, 1,"D: nontight noniso", 0.05, true);
 
   gPad->SetLogy();
-  c1->SaveAs(Form("%s/et_sbs_sim.pdf",savePath.c_str()));
+  c1->SaveAs(Form("%s/et_sbs_sim_%s.pdf",savePath.c_str(),suffix.c_str()));
 
   //unset logy
   gPad->SetLogy(0);
@@ -84,7 +86,7 @@ void plot_sideband_sim(){
   myMarkerLineText(0.55,0.70+0.15, 0, kRed  , 0, kRed  ,1,"C/A: nontight iso", 0.05, true);
   myMarkerLineText(0.55,0.65+0.15, 0, kBlue , 0, kBlue ,1,"D/A: nontight noniso", 0.05, true);
 
-  c3->SaveAs(Form("%s/et_sbs_ratio_sim.pdf",savePath.c_str()));
+  c3->SaveAs(Form("%s/et_sbs_ratio_sim_%s.pdf",savePath.c_str(),suffix.c_str()));
 
 
   //////////////////////////////////////////

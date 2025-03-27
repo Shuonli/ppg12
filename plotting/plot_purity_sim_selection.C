@@ -1,13 +1,15 @@
 #include "plotcommon.h"
 
-void plot_purity_sim()
+void plot_purity_sim_selection(const std::string suffix = "nomtest")
 {
 
     init_plot();
     
     string savePath = "figures/";
 
-    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nomtestv3_mc.root");
+    std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_" + suffix + "_mc.root";
+
+    TFile *fdata = new TFile(dataname.c_str());
 
     TGraphErrors *gpurity = (TGraphErrors *)fdata->Get("gpurity");
     TGraphErrors *gpurity_leak = (TGraphErrors *)fdata->Get("gpurity_leak");
@@ -16,7 +18,7 @@ void plot_purity_sim()
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->SetYTitle("Purity");
     frame_et_rec->GetYaxis()->SetRangeUser(0.0, 1.2);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 30);
+    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
     frame_et_rec->Draw("axis");
 
     gpurity->SetMarkerColor(kBlack);
@@ -45,6 +47,6 @@ void plot_purity_sim()
     myMarkerLineText(0.30, 0.20, 1, kBlue, 20, kBlue, 1, "w/ signal leakage correction", 0.05, true);
     myMarkerLineText(0.30, 0.30, 1, kRed, 20, kRed, 1, "truth", 0.05, true);
 
-    c1->SaveAs(Form("%s/purity_sim.pdf", savePath.c_str()));
+    c1->SaveAs(Form("%s/purity_sim_%s.pdf", savePath.c_str(), suffix.c_str()));
 
 }
