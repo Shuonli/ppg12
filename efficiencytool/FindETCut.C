@@ -185,10 +185,11 @@ void FindETCut()
         "ETCut_FitResults.pdf"                             // Output
     );
 
+    float scale = 1.3;
     //print the fit result
-    std::cout << "90% Efficiency Fit: EisoT = " << fit90->GetParameter(0) << " + " << fit90->GetParameter(1) << "pT" << std::endl;
-    std::cout << "80% Efficiency Fit: EisoT = " << fit80->GetParameter(0) << " + " << fit80->GetParameter(1) << "pT" << std::endl;
-    std::cout << "70% Efficiency Fit: EisoT = " << fit70->GetParameter(0) << " + " << fit70->GetParameter(1) << "pT" << std::endl;
+    std::cout << "90% Efficiency Fit: EisoT = " << fit90->GetParameter(0)*scale << " + " << fit90->GetParameter(1)*scale << "pT" << std::endl;
+    std::cout << "80% Efficiency Fit: EisoT = " << fit80->GetParameter(0)*scale << " + " << fit80->GetParameter(1)*scale << "pT" << std::endl;
+    std::cout << "70% Efficiency Fit: EisoT = " << fit70->GetParameter(0)*scale << " + " << fit70->GetParameter(1)*scale << "pT" << std::endl;
 
     // Cleanup
     // fin->Close();

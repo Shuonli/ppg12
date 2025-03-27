@@ -48,7 +48,10 @@ void scale_histogram(TH1 *h, float lumi)
 
 void CalculatePhotonYield(const std::string &configname = "config.yaml", bool isMC = false)
 {
-    float luminosity = 16.8468* 23./26.1;                  // pb^-1
+    float luminosity = 15.2036; // pb^-1
+    float mbdcorr = 25.2/42 / 0.57;
+    //MBD correction factor
+    //luminosity = luminosity * mbdcorr;
     float solid_angle = 2 * M_PI * 0.7 * 2;
     // lumi times cross section is events
     float nsimevents = 1E7;
@@ -61,6 +64,12 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     const float jetcross = 2.505e+3;
 
     float jetluminosity = jetevents / jetcross;
+    bool fit_purity = true;
+    bool fit_purity_dis = true;
+
+
+
+    
     // float jetluminosity = jetevents / photon20cross;
 
     // for mc we can check the actual purity
@@ -73,6 +82,8 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
+
+    int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
 
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
@@ -91,6 +102,10 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     std::string siminput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
     std::string unfoldinput = configYaml["output"]["response_outfile"].as<std::string>() + "_" + var_type + ".root";
+
+    int fitoption = configYaml["analysis"]["fit_option"].as<int>(0);
+
+    float mbd_eff_scale = configYaml["analysis"]["mbd_eff_scale"].as<float>(0.0);
 
     std::string histogram_postfix = "_0";
 
@@ -221,6 +236,34 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
     TH1F *h_nontight_noniso_cluster_signal_data = (TH1F *)fdatain->Get(nontight_noniso_cluster_signal_name_data.c_str());
 
+    TH1F *h_tight_iso_cluster_background_data = (TH1F *) h_tight_iso_cluster_signal_data->Clone("h_tight_iso_cluster_background_data");
+
+    TH1F *h_tight_noniso_cluster_background_data = (TH1F *) h_tight_noniso_cluster_signal_data->Clone("h_tight_noniso_cluster_background_data");
+
+    TH1F *h_nontight_iso_cluster_background_data = (TH1F *) h_nontight_iso_cluster_signal_data->Clone("h_nontight_iso_cluster_background_data");
+
+    TH1F *h_nontight_noniso_cluster_background_data = (TH1F *) h_nontight_noniso_cluster_signal_data->Clone("h_nontight_noniso_cluster_background_data");
+
+    TH1F *h_tight_iso_cluster_signal_inclusive = (TH1F *)fdatain->Get(tight_iso_cluster_signal_name.c_str());
+
+    TH1F *h_tight_noniso_cluster_signal_inclusive = (TH1F *)fdatain->Get(tight_noniso_cluster_signal_name.c_str());
+
+    TH1F *h_nontight_iso_cluster_signal_inclusive = (TH1F *)fdatain->Get(nontight_iso_cluster_signal_name.c_str());
+
+    TH1F *h_nontight_noniso_cluster_signal_inclusive = (TH1F *)fdatain->Get(nontight_noniso_cluster_signal_name.c_str());
+
+    h_tight_iso_cluster_background_data->Add(h_tight_iso_cluster_signal_inclusive, -1);
+    h_tight_noniso_cluster_background_data->Add(h_tight_noniso_cluster_signal_inclusive, -1);
+    h_nontight_iso_cluster_background_data->Add(h_nontight_iso_cluster_signal_inclusive, -1);
+    h_nontight_noniso_cluster_background_data->Add(h_nontight_noniso_cluster_signal_inclusive, -1);
+
+    // R = A/B*D/C
+    TH1F *h_R = (TH1F *)h_tight_iso_cluster_background_data->Clone("h_R");
+    h_R->Divide(h_tight_noniso_cluster_background_data);
+    h_R->Multiply(h_nontight_noniso_cluster_background_data);
+    h_R->Divide(h_nontight_iso_cluster_background_data);
+
+
     TH1F *h_common_cluster_data = (TH1F *)fdatain->Get(common_cluster_name_data.c_str());
 
     TH1F *h_truth_iso_cluster_data = (TH1F *)fdatain->Get(tight_iso_cluster_signal_name.c_str());
@@ -248,16 +291,37 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     g_mbd_eff->SetName("g_mbd_eff");
 
     // calculate the purity
+    //std::vector<TH1F *> h_NA_sig_list;
+    std::vector<TH1F *> h_purity_list;
+    std::vector<TH1F *> h_purity_leak_list;
+    std::vector<TF1 *> f_purity_list;
+    std::vector<TF1 *> f_purity_leak_list;
     TRandom3 *rand = new TRandom3(0);
+    h_tight_iso_cluster_signal_data->Sumw2();
+    h_tight_noniso_cluster_signal_data->Sumw2();
+    h_nontight_iso_cluster_signal_data->Sumw2();
+    h_nontight_noniso_cluster_signal_data->Sumw2();
     for (int ibin = 1; ibin <= h_tight_iso_cluster_signal_data->GetNbinsX(); ibin++)
     {
         std::cout << "ibin: " << ibin << "bin center: " << h_tight_iso_cluster_signal_data->GetBinCenter(ibin) << std::endl;
-        int nsamples = 10000;
+        int nsamples = 20000;
 
         double A = h_tight_iso_cluster_signal_data->GetBinContent(ibin);
         double B = h_tight_noniso_cluster_signal_data->GetBinContent(ibin);
         double C = h_nontight_iso_cluster_signal_data->GetBinContent(ibin);
         double D = h_nontight_noniso_cluster_signal_data->GetBinContent(ibin);
+
+        double A_w2 = h_tight_iso_cluster_signal_data->GetSumw2()->At(ibin);
+        double B_w2 = h_tight_noniso_cluster_signal_data->GetSumw2()->At(ibin);
+        double C_w2 = h_nontight_iso_cluster_signal_data->GetSumw2()->At(ibin);
+        double D_w2 = h_nontight_noniso_cluster_signal_data->GetSumw2()->At(ibin);
+
+        //std::cout<< "A: " << A << " B: " << B << " C: " << C << " D: " << D << " A_w2: " << A_w2 << " B_w2: " << B_w2 << " C_w2: " << C_w2 << " D_w2: " << D_w2 << std::endl;
+
+        double A_eff = (A != 0) ? (A * A) / A_w2 : 0;
+        double B_eff = (B != 0) ? (B * B) / B_w2 : 0;
+        double C_eff = (C != 0) ? (C * C) / C_w2 : 0;
+        double D_eff = (D != 0) ? (D * D) / D_w2 : 0;
 
         double errA = h_tight_iso_cluster_signal_data->GetBinError(ibin);
         double errB = h_tight_noniso_cluster_signal_data->GetBinError(ibin);
@@ -273,19 +337,27 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
         double errcc = h_leak_C->GetBinError(ibin);
         double errcd = h_leak_D->GetBinError(ibin);
 
-        TH1D *h_result = new TH1D("h_result", "h_result", 100, -A, A * 10);
-        TH1D *h_result_purity = new TH1D("h_result_purity", "h_result_purity", 100, -1, 2);
+        TH1D *h_result = new TH1D("h_result", "h_result", 1000, -A, A * 10);
+        TH1D *h_result_purity = new TH1D("h_result_purity", "h_result_purity", 1000, -1, 2);
         
-        TH1D *h_result_leak = new TH1D("h_result_leak", "h_result_leak", 100, -A, A * 10);
-        TH1D *h_result_purity_leak = new TH1D("h_result_purity_leak", "h_result_purity_leak", 100, -1, 2);
+        TH1D *h_result_leak = new TH1D("h_result_leak", "h_result_leak", 1000, -A, A * 10);
+        TH1D *h_result_purity_leak = new TH1D("h_result_purity_leak", "h_result_purity_leak", 1000, -1, 2);
 
         for (int isample = 0; isample < nsamples; isample++)
         {
+            
+            //use poisson to sample the data
+            double NA_eff = rand->PoissonD(A_eff);
+            double NB_eff = rand->PoissonD(B_eff);
+            double NC_eff = rand->PoissonD(C_eff);
+            double ND_eff = rand->PoissonD(D_eff);
 
-            double NA = rand->Gaus(A, errA);
-            double NB = rand->Gaus(B, errB);
-            double NC = rand->Gaus(C, errC);
-            double ND = rand->Gaus(D, errD);
+            double NA = A * NA_eff / A_eff;
+            double NB = B * NB_eff / B_eff;
+            double NC = C * NC_eff / C_eff;
+            double ND = D * ND_eff / D_eff;
+
+            //std::cout << "NA: " << NA << " NB: " << NB << " NC: " << NC << " ND: " << ND << std::endl;
 
             /*
             double NA = rand->Gaus(A, 0);
@@ -307,7 +379,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
             f->SetParameter(6, CD);
             f->SetParameter(7, 1);
 
-            double root = f->GetX(0, 0, NA);
+            double root = f->GetX(0, -0.5*NA, 2*NA);
 
             double root_manual = NA - NB * NC / ND;
 
@@ -330,7 +402,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
             f->SetParameter(5, CC);
             f->SetParameter(6, CD);
 
-            double root_leak = f->GetX(0, 0, NA);
+            double root_leak = f->GetX(0, -0.5*NA, 2*NA);
 
             if (root_leak == root_leak && abs(root_leak) != std::numeric_limits<double>::infinity())
             {
@@ -340,6 +412,47 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
             // std::cout << "root_leak: " << root_leak << " NA: " << NA << std::endl;
         }
+        //get the nomilal centered value
+        double NA = A;
+        double NB = B;
+        double NC = C;
+        double ND = D;
+
+        double CB = cB;
+        double CC = cC;
+        double CD = cD;
+        //no leakage correction
+        TF1 *f = new TF1("myfunc", myfunc, 0.0, A, 8);
+        f->SetParameter(0, NA);
+        f->SetParameter(1, NB);
+        f->SetParameter(2, NC);
+        f->SetParameter(3, ND);
+        f->SetParameter(4, 0);
+        f->SetParameter(5, 0);
+        f->SetParameter(6, 0);
+        f->SetParameter(7, 1);
+
+        double root = f->GetX(0, 0, 2*NA);
+
+        float purity_result = 0;
+        if (root == root && abs(root) != std::numeric_limits<double>::infinity())
+        {
+            purity_result = root / NA;
+        }
+
+        //leakage correction
+        f->SetParameter(4, CB);
+        f->SetParameter(5, CC);
+        f->SetParameter(6, CD);
+
+        double root_leak = f->GetX(0, 0, 2*NA);
+
+        float purity_result_leak = 0;
+        if (root_leak == root_leak && abs(root_leak) != std::numeric_limits<double>::infinity())
+        {
+            purity_result_leak = root_leak / NA;
+        }
+
         std::cout << "NA: " << A << " NB: " << B << " NC: " << C << " ND: " << D << std::endl;
         std::cout << "result mean: " << h_result->GetMean() << " result std: " << h_result->GetRMS() << std::endl;
         std::cout << "result leak mean: " << h_result_leak->GetMean() << " result leak std: " << h_result_leak->GetRMS() << std::endl;
@@ -349,11 +462,47 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
 
         h_data_sub_leak->SetBinContent(ibin, h_result_leak->GetMean());
         h_data_sub_leak->SetBinError(ibin, h_result_leak->GetRMS());
+        
+        TH1F *h_purity = (TH1F *)h_result_purity->Clone(Form("h_purity_%d", ibin));
+        h_purity->SetName(Form("h_purity_%d", ibin));
 
+
+        TH1F *h_purity_leak = (TH1F *)h_result_purity_leak->Clone(Form("h_purity_leak_%d", ibin));
+        h_purity_leak->SetName(Form("h_purity_leak_%d", ibin));
+   
         // calculate the purity
         float purity = h_result_purity->GetMean();
         float purity_err = h_result_purity->GetRMS();
 
+        float purity_leak = h_result_purity_leak->GetMean();
+        float purity_err_leak = h_result_purity_leak->GetRMS();
+
+
+
+        //gaussian fit the purity
+        if (fit_purity)
+        {
+            float fitlower = h_result_purity->GetMean() - 1 * h_result_purity->GetRMS();
+            float fitupper = h_result_purity->GetMean() + 1.5 * h_result_purity->GetRMS();
+            TF1 *f_purity = new TF1(Form("f_purity_%d", ibin), "gaus", fitlower, fitupper);
+            h_result_purity->Fit(f_purity, "REMQN", "", fitlower, fitupper);
+            f_purity_list.push_back(f_purity);
+            purity = f_purity->GetParameter(1);
+            purity_err = f_purity->GetParameter(2);
+
+            float fitlower_leak = h_result_purity_leak->GetMean() - 1 * h_result_purity_leak->GetRMS();
+            float fitupper_leak = h_result_purity_leak->GetMean() + 1.5 * h_result_purity_leak->GetRMS();
+            TF1 *f_purity_leak = new TF1(Form("f_purity_leak_%d", ibin), "gaus", fitlower_leak, fitupper_leak);
+            h_result_purity_leak->Fit(f_purity_leak, "REMQN", "", fitlower_leak, fitupper_leak);
+            f_purity_leak_list.push_back(f_purity_leak);
+            purity_leak = f_purity_leak->GetParameter(1);
+            purity_err_leak = f_purity_leak->GetParameter(2);
+        }
+
+        h_purity_leak_list.push_back(h_purity_leak);
+        h_purity_list.push_back(h_purity);
+        
+        //gpurity->SetPoint(ibin - 1, h_tight_iso_cluster_signal_data->GetBinCenter(ibin), purity_result);
         gpurity->SetPoint(ibin - 1, h_tight_iso_cluster_signal_data->GetBinCenter(ibin), purity);
         gpurity->SetPointError(ibin - 1, h_tight_iso_cluster_signal_data->GetBinWidth(ibin) / 2, purity_err);
 
@@ -363,9 +512,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
             gpurity->SetPointError(ibin - 1, h_tight_iso_cluster_signal_data->GetBinWidth(ibin) / 2, 0);
         }
 
-        float purity_leak = h_result_purity_leak->GetMean();
-        float purity_err_leak = h_result_purity_leak->GetRMS();
-
+        //gpurity_leak->SetPoint(ibin - 1, h_tight_iso_cluster_signal_data->GetBinCenter(ibin), purity_result_leak);
         gpurity_leak->SetPoint(ibin - 1, h_tight_iso_cluster_signal_data->GetBinCenter(ibin), purity_leak);
         gpurity_leak->SetPointError(ibin - 1, h_tight_iso_cluster_signal_data->GetBinWidth(ibin) / 2, purity_err_leak);
 
@@ -375,6 +522,165 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
             gpurity_leak->SetPointError(ibin - 1, h_tight_iso_cluster_signal_data->GetBinWidth(ibin) / 2, 0);
         }
     }
+
+
+
+    int nFinePoints = 1000; // Number of points for granular intervals
+    double xMin = 8;        // Fit range start
+    double xMax = 26;       // Fit range end
+
+    TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
+    f_purity_fit->SetParameters(1.0, 15.0, 5.0);
+    if(fitoption ==1)
+    {
+        f_purity_fit = new TF1("f_purity_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+        f_purity_fit->SetParameters(0.5, 0.5, 0.5);
+    }
+    
+
+    gpurity->Fit(f_purity_fit, "REMQN", "", xMin, xMax);
+
+    TGraphErrors *grFineConf = new TGraphErrors(nFinePoints);
+    grFineConf->SetName("grFineConf");
+
+    // Fill the graph with x-values spaced uniformly
+    for (int i = 0; i < nFinePoints; ++i) {
+        double x = xMin + i * (xMax - xMin) / (nFinePoints - 1);
+        grFineConf->SetPoint(i, x, 0); 
+    }
+
+
+    TGraphErrors *confInt = new TGraphErrors(gpurity->GetN());
+    confInt->SetName("confInt");
+    for (int i = 0; i < gpurity->GetN(); ++i) {
+        confInt->SetPoint(i, gpurity->GetX()[i], 0); // y=0 is a placeholder
+    }
+
+    //Compute confidence intervals (1 sigma = 68.3%)
+    TVirtualFitter *fitter = TVirtualFitter::GetFitter();
+    fitter->GetConfidenceIntervals(confInt, 0.683);
+    fitter->GetConfidenceIntervals(grFineConf, 0.683);
+
+
+
+    for (int i = 0; i < gpurity->GetN(); ++i) {
+        double x = gpurity->GetX()[i];
+        double y = gpurity->GetY()[i];
+        double ey = gpurity->GetErrorY(i);
+        double err_low = confInt->GetErrorYlow(i);
+        double err_high = confInt->GetErrorYhigh(i);
+        //std::cout << "x: " << x << " y: " << y << " ey: " << ey << " err_low: " << err_low << " err_high: " << err_high << std::endl;
+    }
+
+    TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
+    f_purity_leak_fit->SetParameters(1.0, 15.0, 5.0);
+
+    if(fitoption ==1)
+    {
+        f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+        f_purity_leak_fit->SetParameters(0.5, 0.5, 0.5);
+    }
+
+    //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "pol3", 8, 35);
+    //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+    //    f_purity_leak_fit->SetParameters(0.5, 0.5, 0.5);
+
+
+
+
+    gpurity_leak->Fit(f_purity_leak_fit, "REMQN","", xMin, xMax);
+
+
+
+    TGraphErrors *grFineConf_leak = new TGraphErrors(nFinePoints);
+    grFineConf_leak->SetName("grFineConf_leak");
+
+    // Fill the graph with x-values spaced uniformly
+    for (int i = 0; i < nFinePoints; ++i) {
+        double x = xMin + i * (xMax - xMin) / (nFinePoints - 1);
+        grFineConf_leak->SetPoint(i, x, 0); 
+    }
+
+    TGraphErrors *confInt_leak = new TGraphErrors(gpurity_leak->GetN());
+    confInt_leak->SetName("confInt_leak");
+    for (int i = 0; i < gpurity_leak->GetN(); ++i) {
+        confInt_leak->SetPoint(i, gpurity_leak->GetX()[i], 0); // y=0 is a placeholder
+    }
+
+    //Compute confidence intervals (1 sigma = 68.3%)
+    TVirtualFitter *fitter_leak = TVirtualFitter::GetFitter();
+    fitter_leak->GetConfidenceIntervals(confInt_leak, 0.683);
+    fitter_leak->GetConfidenceIntervals(grFineConf_leak, 0.683);
+
+    for (int i = 0; i < gpurity_leak->GetN(); ++i) {
+        double x = gpurity_leak->GetX()[i];
+        double y = gpurity_leak->GetY()[i];
+        double ey = gpurity_leak->GetErrorY(i);
+        double err_low = confInt_leak->GetErrorYlow(i);
+        double err_high = confInt_leak->GetErrorYhigh(i);
+        //std::cout << "x: " << x << " y: " << y << " ey: " << ey << " err_low: " << err_low << " err_high: " << err_high << std::endl;
+    }
+
+    if(fit_purity_dis)
+    {
+        //apply the confint to h_tight_iso_cluster_signal_data
+        h_data_sub = (TH1F*) h_tight_iso_cluster_signal_data->Clone("h_data_sub");
+
+        for (int ibin = 1; ibin <= h_tight_iso_cluster_signal_data->GetNbinsX(); ibin++)
+        {
+            double NA_count = h_tight_iso_cluster_signal_data->GetBinContent(ibin);
+            double NA_err = h_tight_iso_cluster_signal_data->GetBinError(ibin);
+            //double NA_purity = gpurity->GetY()[ibin - 1];
+            double NA_purity = f_purity_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin));
+            //get the upper and lower error for confint
+            double pusity_fit_low = f_purity_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) - confInt->GetErrorYlow(ibin - 1);
+            double pusity_fit_high = f_purity_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) + confInt->GetErrorYhigh(ibin - 1);
+            if(fittingerror == -1)
+            {
+                NA_purity = pusity_fit_low;
+            }
+            if(fittingerror == 1)
+            {
+                NA_purity = pusity_fit_high;
+            }
+            double NA_sig_count = NA_count * NA_purity;
+            double NA_sig_err = NA_err * NA_purity;
+
+            h_data_sub->SetBinContent(ibin, NA_sig_count);
+            h_data_sub->SetBinError(ibin, NA_sig_err);
+        }
+        
+        h_data_sub_leak = (TH1F*) h_tight_iso_cluster_signal_data->Clone("h_data_sub_leak");
+        
+        for (int ibin = 1; ibin <= h_tight_iso_cluster_signal_data->GetNbinsX(); ibin++)
+        {
+            double NA_count = h_tight_iso_cluster_signal_data->GetBinContent(ibin);
+            double NA_err = h_tight_iso_cluster_signal_data->GetBinError(ibin);
+            //double NA_purity = gpurity_leak->GetY()[ibin - 1];
+            double NA_purity = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin));
+            //get the upper and lower error for confint
+            double pusity_fit_low = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) - confInt_leak->GetErrorYlow(ibin - 1);
+            double pusity_fit_high = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) + confInt_leak->GetErrorYhigh(ibin - 1);
+            if(fittingerror == -1)
+            {
+                NA_purity = pusity_fit_low;
+            }
+            if(fittingerror == 1)
+            {
+                NA_purity = pusity_fit_high;
+            }
+
+
+            double NA_sig_count = NA_count * NA_purity;
+            double NA_sig_err = NA_err * NA_purity;
+
+            h_data_sub_leak->SetBinContent(ibin, NA_sig_count);
+            h_data_sub_leak->SetBinError(ibin, NA_sig_err);
+        }
+
+    }
+    
+
 
     TH1F *h_data_sub_copy = (TH1F *)h_data_sub->Clone("h_data_sub_copy");
     TH1F *h_data_sub_leak_copy = (TH1F *)h_data_sub_leak->Clone("h_data_sub_leak_copy");
@@ -597,7 +903,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
             float eff_iso_val = eff_iso->GetEfficiency(ibin);
             float eff_id_val = eff_id->GetEfficiency(ibin);
 
-            float vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_vertexcut->GetBinContent(ibin);
+            float vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_vertexcut->GetBinContent(ibin) + mbd_eff_scale;
 
             float total_eff = eff_reco_val * eff_iso_val * eff_id_val * vertex_eff_val;
 
@@ -703,6 +1009,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     h_data_sub_copy->Write();
     h_data_sub_leak_copy->Write();
     h_tight_iso_cluster_signal_copy->Write();
+    h_R->Write();
     h_leak_B->Write();
     h_leak_C->Write();
     h_leak_D->Write();
@@ -715,6 +1022,24 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     h_data_sub_leak->Write();
     h_tight_iso_cluster_signal_data->Write();
     h_common_cluster_data->Write();
+    for(auto h_purity: h_purity_list){
+        h_purity->Write();
+    }
+    for(auto h_purity_leak: h_purity_leak_list){
+        h_purity_leak->Write();
+    }
+    for(auto f_purity: f_purity_list){
+        f_purity->Write();
+    }
+    for(auto f_purity_leak: f_purity_leak_list){
+        f_purity_leak->Write();
+    }
+    f_purity_fit->Write();
+    f_purity_leak_fit->Write();
+    confInt->Write();
+    confInt_leak->Write();
+    grFineConf->Write();
+    grFineConf_leak->Write();
     if (reweight == 1)
     {
         response_reweighted->Hresponse()->Write();
