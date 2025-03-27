@@ -1,26 +1,35 @@
 #include "plotcommon.h"
 
-void syst_nt()
+void syst_mbd()
 {
   init_plot();
-  string varStr = "nt";
+  string varStr = "mbd";
   string savePath = "figures";
 
   TFile *f1 = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
-  TFile *f2 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_id1.root"));
+  TFile *f2 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_mbdeffup.root"));
+  TFile *f3 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_mbdeffdown.root"));
 
   string legf1 = "nominal";
-  string legf2 = "non-tight selection var";
+  string legf2 = "isolation cut var.";
+  string legup = "mbd var. up";
+  string legdown = "mbd var. down";
 
   /////////////////////////////
   // plotting
-  TH1F* h_res_1 = (TH1F *)f1->Get("h_unfold_sub_result");
-  TH1F* h_res_2 = (TH1F *)f2->Get("h_unfold_sub_result");
+  TH1F *h_res_1 = (TH1F *)f1->Get("h_unfold_sub_result");
+  TH1F *h_res_2 = (TH1F *)f2->Get("h_unfold_sub_result");
+  TH1F *h_res_3 = (TH1F *)f3->Get("h_unfold_sub_result");
 
   std::pair<TH1F *, TH1F *> h_dev_pair = calcDelta(h_res_2, h_res_1, "h_dev");
 
+  std::pair<TH1F *, TH1F *> h_dev_pair_neg = calcDelta(h_res_3, h_res_1, "h_dev_neg");
+
   TH1F *h_dev = h_dev_pair.first;
   TH1F *h_dev_rel = h_dev_pair.second;
+
+  TH1F *h_dev_neg = h_dev_pair_neg.first;
+  TH1F *h_dev_rel_neg = h_dev_pair_neg.second;
 
   TCanvas *c1 = new TCanvas("can", "", 800, 889);
   c1->Divide(1, 2);
@@ -73,16 +82,15 @@ void syst_nt()
 
   frame_et_truth->SetYTitle("Relative difference");
   frame_et_truth->GetYaxis()->SetNdivisions(506);
-  frame_et_truth->GetYaxis()->SetRangeUser(-0.5, 0.5);
+  frame_et_truth->GetYaxis()->SetRangeUser(-0.3, 0.3);
   frame_et_truth->GetXaxis()->SetRangeUser(10, 30);
-  frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset()*4/6.);
-  frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset()*4/6.);
-  frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize()*6/4.);
-  frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize()*6/4.);
-  frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize()*6/4.);
-  frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize()*6/4.);
+  frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
+  frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
+  frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);
+  frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
+  frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4.);
+  frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4.);
   frame_et_truth->GetXaxis()->SetNdivisions(505);
-
 
   frame_et_truth->Draw("axis");
 
@@ -90,7 +98,7 @@ void syst_nt()
   h_dev_rel->SetMarkerColor(kBlue);
   h_dev_rel->SetLineColor(kBlue);
 
-  h_dev_rel->Draw("same hist p");
+  h_dev_rel->Draw("same p hist");
 
   linezero->Draw("L");
 
@@ -99,8 +107,8 @@ void syst_nt()
   TCanvas *c2 = new TCanvas("can", "", 900, 600);
   init_plot();
   frame_et_truth->SetYTitle("Relative difference");
-  frame_et_truth->GetYaxis()->SetRangeUser(-0.5, 0.5);
-  frame_et_truth->GetXaxis()->SetRangeUser(10, 30);
+  frame_et_truth->GetYaxis()->SetRangeUser(-0.18, 0.18);
+  frame_et_truth->GetXaxis()->SetRangeUser(pTmin, pTmax);
   frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
 
   frame_et_truth->Draw("axis");
@@ -112,24 +120,34 @@ void syst_nt()
 
   h_dev_rel->Draw("same p hist");
 
-  myText(0.5, 0.9, 1, strleg1.c_str(), 0.05);
-  myText(0.5, 0.85, 1, strleg2.c_str(), 0.05);
-  myText(0.5, 0.80, 1, legf2.c_str(), 0.05);
+  h_dev_rel_neg->SetMarkerStyle(20);
+  h_dev_rel_neg->SetMarkerColor(kRed);
+  h_dev_rel_neg->SetLineColor(kRed);
+
+  h_dev_rel_neg->Draw("same p hist");
+
+  myText(0.6, 0.9, 1, strleg1.c_str(), 0.05);
+  myText(0.6, 0.85, 1, strleg2.c_str(), 0.05);
+  myText(0.6, 0.80, 1, legf2.c_str(), 0.05);
+
+  myMarkerLineText(0.25, 0.9, 1, kBlue, 20, kBlue, 1, legup.c_str(), 0.05, true);
+  myMarkerLineText(0.25, 0.85, 1, kRed, 20, kRed, 1, legdown.c_str(), 0.05, true);
 
   c2->SaveAs(Form("%s/syst_rel_%s.pdf", savePath.c_str(), varStr.c_str()));
 
-  TH1F* h_dev_low = (TH1F *)h_dev->Clone("h_dev_low");
-  TH1F* h_dev_high = (TH1F *)h_dev->Clone("h_dev_high");
+  TH1F *h_dev_low = (TH1F *)h_dev->Clone("h_dev_low");
+  TH1F *h_dev_high = (TH1F *)h_dev->Clone("h_dev_high");
 
-  TH1F* h_dev_rel_low = (TH1F *)h_dev_rel->Clone("h_dev_rel_low");
-  TH1F* h_dev_rel_high = (TH1F *)h_dev_rel->Clone("h_dev_rel_high");
+  TH1F *h_dev_rel_low = (TH1F *)h_dev_rel->Clone("h_dev_rel_low");
+  TH1F *h_dev_rel_high = (TH1F *)h_dev_rel->Clone("h_dev_rel_high");
 
-  for (int i = 1; i <= h_dev->GetNbinsX(); i++) {
-    h_dev_low->SetBinContent(i, abs(h_dev->GetBinContent(i)));
+  for (int i = 1; i <= h_dev->GetNbinsX(); i++)
+  {
+    h_dev_low->SetBinContent(i, abs(h_dev_neg->GetBinContent(i)));
     h_dev_high->SetBinContent(i, abs(h_dev->GetBinContent(i)));
 
-    h_dev_rel_low->SetBinContent(i, abs(h_dev_rel->GetBinContent(i)));
-    h_dev_rel_high->SetBinContent(i, abs(h_dev_rel->GetBinContent(i))); 
+    h_dev_rel_low->SetBinContent(i, abs(h_dev_rel_neg->GetBinContent(i)));
+    h_dev_rel_high->SetBinContent(i, abs(h_dev_rel->GetBinContent(i)));
   }
 
   TFile *systOut = new TFile(Form("rootFiles/syst_%s.root", varStr.c_str()), "RECREATE");

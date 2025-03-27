@@ -1,16 +1,16 @@
 #include "plotcommon.h"
 
-void syst_nt()
+void syst_fudge()
 {
   init_plot();
-  string varStr = "nt";
+  string varStr = "fudge";
   string savePath = "figures";
 
   TFile *f1 = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
-  TFile *f2 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_id1.root"));
+  TFile *f2 = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_scale0.root"));
 
   string legf1 = "nominal";
-  string legf2 = "non-tight selection var";
+  string legf2 = "w/o fudging isoET var.";
 
   /////////////////////////////
   // plotting
@@ -96,11 +96,12 @@ void syst_nt()
 
   c1->SaveAs(Form("%s/syst_spec_%s.pdf", savePath.c_str(), varStr.c_str()));
 
+
   TCanvas *c2 = new TCanvas("can", "", 900, 600);
   init_plot();
   frame_et_truth->SetYTitle("Relative difference");
-  frame_et_truth->GetYaxis()->SetRangeUser(-0.5, 0.5);
-  frame_et_truth->GetXaxis()->SetRangeUser(10, 30);
+  frame_et_truth->GetYaxis()->SetRangeUser(-0.2, 0.05);
+  frame_et_truth->GetXaxis()->SetRangeUser(pTmin, pTmax);
   frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
 
   frame_et_truth->Draw("axis");
@@ -112,9 +113,9 @@ void syst_nt()
 
   h_dev_rel->Draw("same p hist");
 
-  myText(0.5, 0.9, 1, strleg1.c_str(), 0.05);
-  myText(0.5, 0.85, 1, strleg2.c_str(), 0.05);
-  myText(0.5, 0.80, 1, legf2.c_str(), 0.05);
+  myText(0.6, 0.9, 1, strleg1.c_str(), 0.05);
+  myText(0.6, 0.85, 1, strleg2.c_str(), 0.05);
+  myText(0.6, 0.80, 1, legf2.c_str(), 0.05);
 
   c2->SaveAs(Form("%s/syst_rel_%s.pdf", savePath.c_str(), varStr.c_str()));
 

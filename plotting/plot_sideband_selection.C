@@ -1,30 +1,29 @@
 #include"plotcommon.h"
 
 
-void plot_sideband(){
+void plot_sideband_selection(const std::string suffix = "nomtest"){
 
   init_plot();
 
-  string savePath="../PPG12-analysis-note/Figures/analysis/";
+  string savePath="figures";
+  
+  std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_"+suffix+".root";
+  std::string mcsigname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_"+suffix+".root";
+  std::string mcbkgname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_"+suffix+".root";
 
+  //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet10_nom.root");
+  //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_nom.root");
+  //TFile* fmc   = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+  //TFile* fbkg = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
 
-  //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_iso0ni0nt0.root");
-  TFile* fdata = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_468.root");
-  TFile* fmc   = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_468.root");
- TFile* fbkg = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
+  TFile* fdata = new TFile(dataname.c_str());
+  TFile* fmc   = new TFile(mcsigname.c_str());
+  TFile* fbkg = new TFile(mcbkgname.c_str());
 
   TH1D* h_tight_iso_cluster       = (TH1D*) fdata->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster    = (TH1D*) fdata->Get("h_tight_noniso_cluster_0");
   TH1D* h_nontight_iso_cluster    = (TH1D*) fdata->Get("h_nontight_iso_cluster_0");
   TH1D* h_nontight_noniso_cluster = (TH1D*) fdata->Get("h_nontight_noniso_cluster_0");
-
-  TH1D* h_tight_iso_cluster_npb       = (TH1D*) fdata->Get("h_tight_iso_cluster_background_0");
-  TH1D* h_tight_noniso_cluster_npb    = (TH1D*) fdata->Get("h_tight_noniso_cluster_background_0");
-  TH1D* h_nontight_iso_cluster_npb    = (TH1D*) fdata->Get("h_nontight_iso_cluster_background_0");
-  TH1D* h_nontight_noniso_cluster_npb = (TH1D*) fdata->Get("h_nontight_noniso_cluster_background_0");
 
   TH1D* h_tight_iso_cluster_mcSig       = (TH1D*) fmc->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster_mcSig    = (TH1D*) fmc->Get("h_tight_noniso_cluster_0");
@@ -53,22 +52,17 @@ void plot_sideband(){
   TCanvas* c1 = new TCanvas("c1","c1",600,600);
   frame_et_rec->Draw("axis");
   frame_et_rec->GetXaxis()->SetRangeUser(8,35);
+  frame_et_rec->GetYaxis()->SetRangeUser(1, 5e5);
   h_tight_iso_cluster->Draw("same hist");
 
   h_tight_noniso_cluster->Draw("same hist");
   h_tight_noniso_cluster->SetLineColor(kRed);
-  h_tight_noniso_cluster->Draw("same ex0");
-  h_tight_noniso_cluster->SetMarkerSize(0);
 
   h_nontight_iso_cluster->Draw("same hist");
   h_nontight_iso_cluster->SetLineColor(kBlue);
-  h_nontight_iso_cluster->Draw("same ex0");
-  h_nontight_iso_cluster->SetMarkerSize(0);
 
   h_nontight_noniso_cluster->Draw("same hist");
   h_nontight_noniso_cluster->SetLineColor(kMagenta);
-  h_nontight_noniso_cluster->Draw("same ex0");
-  h_nontight_noniso_cluster->SetMarkerSize(0);
 
   myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.5,0.85,1,strleg2.c_str(),0.04);
@@ -79,50 +73,7 @@ void plot_sideband(){
   myMarkerLineText(0.55,0.60, 0, kMagenta, 0, kMagenta, 1,"D: nontight noniso", 0.05, true);
 
   gPad->SetLogy();
-  c1->SaveAs(Form("%s/et_sbs.pdf",savePath.c_str()));
-
-  TFile* fnpb_scale = new TFile("/sphenix/u/bseidlitz/work/ppg12/plotting/anaOut.root");
-  TH1F* h_npb_norm = (TH1F*) fnpb_scale->Get("h_npb_norm"); 
-  h_nontight_iso_cluster_npb->Multiply(h_npb_norm);
-  h_tight_iso_cluster_npb->Multiply(h_npb_norm);
-  h_tight_noniso_cluster_npb->Multiply(h_npb_norm);
-  h_nontight_noniso_cluster_npb->Multiply(h_npb_norm);
-
-  TCanvas* c5 = new TCanvas("c5","c5",600,600);
-  //frame_et_rec->Draw("axis");
-  //frame_et_rec->GetXaxis()->SetRangeUser(8,35);
-
-  h_nontight_iso_cluster_npb->Draw("");
-  h_nontight_iso_cluster_npb->GetYaxis()->SetRangeUser(0.8,500);
-
-  h_tight_iso_cluster_npb->Draw("same hist");
-   cout << h_nontight_iso_cluster_npb->GetEntries() << endl;
-  // cout << h_tight_noniso_cluster_npb->GetEntries() << endl;
-
-  h_tight_noniso_cluster_npb->Draw("same hist");
-  h_tight_noniso_cluster_npb->SetLineColor(kRed);
-  h_tight_noniso_cluster_npb->Draw("same ex0");
-  h_tight_noniso_cluster_npb->SetMarkerSize(0);
-
-  h_nontight_iso_cluster_npb->SetLineColor(kBlue);
-  h_nontight_iso_cluster_npb->Draw("same ex0");
-  h_nontight_iso_cluster_npb->SetMarkerSize(0);
-
-  h_nontight_noniso_cluster_npb->Draw("same hist");
-  h_nontight_noniso_cluster_npb->SetLineColor(kMagenta);
-  h_nontight_noniso_cluster_npb->Draw("same ex0");
-  h_nontight_noniso_cluster_npb->SetMarkerSize(0);
-
-  myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
-  myText(0.5,0.85,1,strleg2.c_str(),0.04);
-  myText(0.5,0.80,1,Form("NPB Data %s",strleg3.c_str()),0.04);
-  myMarkerLineText(0.55,0.75, 0, kBlack, 0, kBlack, 1,"A: tight iso", 0.05, true);
-  myMarkerLineText(0.55,0.70, 0, kRed, 0, kRed, 1,"B: tight noniso", 0.05, true);
-  myMarkerLineText(0.55,0.65, 0, kBlue, 0, kBlue, 1,"C: nontight iso", 0.05, true);
-  myMarkerLineText(0.55,0.60, 0, kMagenta, 0, kMagenta, 1,"D: nontight noniso", 0.05, true);
-
-  gPad->SetLogy();
-  c5->SaveAs(Form("%s/et_sbs_background.pdf",savePath.c_str()));
+  c1->SaveAs(Form("%s/et_sbs_%s.pdf",savePath.c_str(),suffix.c_str()));
 
     //unset logy
   gPad->SetLogy(0);
@@ -147,7 +98,7 @@ void plot_sideband(){
   myMarkerLineText(0.55,0.70+0.15, 0, kRed  , 0, kRed  ,1,"C/A: nontight iso", 0.05, true);
   myMarkerLineText(0.55,0.65+0.15, 0, kBlue , 0, kBlue ,1,"D/A: nontight noniso", 0.05, true);
 
-  c3->SaveAs(Form("%s/et_sbs_ratio.pdf",savePath.c_str()));
+  c3->SaveAs(Form("%s/et_sbs_ratio_%s.pdf",savePath.c_str(),suffix.c_str()));
 
 
   //////////////////////////////////////////
@@ -155,7 +106,7 @@ void plot_sideband(){
 
   TCanvas* c4 = new TCanvas("c4","c4",600,600);
   frame_et_rec->Draw("axis");
-  frame_et_rec->GetYaxis()->SetRangeUser(0,0.5);
+  frame_et_rec->GetYaxis()->SetRangeUser(1e-3,1.3);
   frame_et_rec->GetYaxis()->SetTitle("Signal leakage");
 
   h_BoverA_mcSig->Draw("same hist");
@@ -193,11 +144,11 @@ void plot_sideband(){
     h_nontight_isoET_mcBkg_pt[ipt] = (TH1D*) fbkg->Get(Form("h_nontight_isoET_0_%d",ipt));
     h_nontight_isoET_pt[ipt] = (TH1D*) fdata->Get(Form("h_nontight_isoET_0_%d",ipt));
 
-    h_tight_isoET_pt[ipt]      ->Rebin(8);
-    h_tight_isoET_mcSig_pt[ipt]->Rebin(8);
-    h_tight_isoET_mcBkg_pt[ipt]->Rebin(8);
-    h_nontight_isoET_mcBkg_pt[ipt]->Rebin(8);
-    h_nontight_isoET_pt[ipt]   ->Rebin(8);
+    h_tight_isoET_pt[ipt]      ->Rebin(4);
+    h_tight_isoET_mcSig_pt[ipt]->Rebin(4);
+    h_tight_isoET_mcBkg_pt[ipt]->Rebin(4);
+    h_nontight_isoET_mcBkg_pt[ipt]->Rebin(4);
+    h_nontight_isoET_pt[ipt]   ->Rebin(4);
 
     h_tight_isoET_pt[ipt]      ->Scale(1./h_tight_isoET_pt[ipt]->Integral(),"width");
     h_tight_isoET_mcSig_pt[ipt]->Scale(1./h_tight_isoET_mcSig_pt[ipt]->Integral(),"width");
