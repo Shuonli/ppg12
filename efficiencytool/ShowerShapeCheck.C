@@ -9,7 +9,6 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     bool isbackground = false;
 
-    int iso_threshold = (bool)configYaml["analysis"]["iso_threshold"].as<int>(0);
 
     if (filetype == "data")
     {
@@ -32,7 +31,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     std::cout << "infilename: " << infilename << std::endl;
 
     float bg_timing_cut = -0.5;
-    float bg_timing_cut_more = -0.6;
+    float bg_timing_cut_more = -0.4;
     float eta_bg_lower = 0.0;
 
     float max_photon_lower = 0;
@@ -61,18 +60,18 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     if (filetype == "photon5")
     {
         max_photon_lower = 5;
-        max_photon_upper = 12;
+        max_photon_upper = 14;
         weight = photon5cross / photon20cross;
     }
     else if (filetype == "photon10")
     {
-        max_photon_lower = 12;
-        max_photon_upper = 25;
+        max_photon_lower = 14;
+        max_photon_upper = 30;
         weight = photon10cross / photon20cross;
     }
     else if (filetype == "photon20")
     {
-        max_photon_lower = 25;
+        max_photon_lower = 30;
         max_photon_upper = 100;
         weight = 1.0;
     }
@@ -138,6 +137,25 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
 
+    int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
+
+    int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
+
+    int weta_fail = configYaml["analysis"]["weta_fail"].as<int>(0);
+    int wphi_fail = configYaml["analysis"]["wphi_fail"].as<int>(0);
+    int e11_to_e33_fail = configYaml["analysis"]["e11_to_e33_fail"].as<int>(0);
+    int e32_to_e35_fail = configYaml["analysis"]["e32_to_e35_fail"].as<int>(0);
+    int et1_fail = configYaml["analysis"]["et1_fail"].as<int>(0);
+
+    int weta_on = configYaml["analysis"]["weta_on"].as<int>(1);
+    int wphi_on = configYaml["analysis"]["wphi_on"].as<int>(1);
+    int e11_to_e33_on = configYaml["analysis"]["e11_to_e33_on"].as<int>(1);
+    int e32_to_e35_on = configYaml["analysis"]["e32_to_e35_on"].as<int>(1);
+    int et1_on = configYaml["analysis"]["et1_on"].as<int>(1);
+    int et2_on = configYaml["analysis"]["et2_on"].as<int>(1);
+    int et3_on = configYaml["analysis"]["et3_on"].as<int>(1);
+    int et4_on = configYaml["analysis"]["et3_on"].as<int>(1);
+
     float truthisocut = configYaml["analysis"]["truth_iso_max"].as<float>();
 
     float recoiso_min = configYaml["analysis"]["reco_iso_min"].as<float>();
@@ -153,14 +171,20 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     std::vector<float> pT_bins = configYaml["analysis"]["pT_bins"].as<std::vector<float>>();
     int n_pT_bins = pT_bins.size() - 1;
     double pT_bin_edges[n_pT_bins + 1];
+    double pTmin = pT_bins[0];
+    double pTmax = pT_bins[n_pT_bins];
 
     std::vector<float> pT_bins_truth = configYaml["analysis"]["pT_bins_truth"].as<std::vector<float>>();
     int n_pT_bins_truth = pT_bins_truth.size() - 1;
     double pT_bin_edges_truth[n_pT_bins_truth + 1];
+    double pTmin_truth = pT_bins_truth[0];
+    double pTmax_truth = pT_bins_truth[n_pT_bins_truth];
 
+    std::cout << "n_pT_bins_truth: " << n_pT_bins_truth << std::endl;
     for (int i = 0; i < n_pT_bins_truth + 1; i++)
     {
         pT_bin_edges_truth[i] = pT_bins_truth[i];
+        std::cout << "pT_bin_edges_truth: " << pT_bin_edges_truth[i] << std::endl;
     }
 
     std::copy(pT_bins.begin(), pT_bins.end(), pT_bin_edges);
@@ -174,6 +198,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     int trigger_used = configYaml["analysis"]["trigger_used"].as<int>();
 
     // getting cuts from the config file
+    std::cout << "tight cuts" << std::endl;
     float tight_reta77_min = configYaml["analysis"]["tight"]["reta77_min"].as<float>();
     float tight_reta77_max = configYaml["analysis"]["tight"]["reta77_max"].as<float>();
 
@@ -191,12 +216,27 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     float tight_weta_cogx_max = configYaml["analysis"]["tight"]["weta_cogx_max"].as<float>();
     float tight_weta_cogx_min = configYaml["analysis"]["tight"]["weta_cogx_min"].as<float>();
+    float tight_weta_cogx_max_b = configYaml["analysis"]["tight"]["weta_cogx_max_b"].as<float>();
+    float tight_weta_cogx_max_s = configYaml["analysis"]["tight"]["weta_cogx_max_s"].as<float>();
+
+    float tight_wphi_cogx_max = configYaml["analysis"]["tight"]["wphi_cogx_max"].as<float>();
+    float tight_wphi_cogx_min = configYaml["analysis"]["tight"]["wphi_cogx_min"].as<float>();
+    float tight_wphi_cogx_max_b = configYaml["analysis"]["tight"]["wphi_cogx_max_b"].as<float>();
+    float tight_wphi_cogx_max_s = configYaml["analysis"]["tight"]["wphi_cogx_max_s"].as<float>();
 
     float tight_e11_over_e33_max = configYaml["analysis"]["tight"]["e11_over_e33_max"].as<float>();
     float tight_e11_over_e33_min = configYaml["analysis"]["tight"]["e11_over_e33_min"].as<float>();
 
     float tight_et1_max = configYaml["analysis"]["tight"]["et1_max"].as<float>();
     float tight_et1_min = configYaml["analysis"]["tight"]["et1_min"].as<float>();
+    float tight_et1_min_b = configYaml["analysis"]["tight"]["et1_min_b"].as<float>();
+    float tight_et1_min_s = configYaml["analysis"]["tight"]["et1_min_s"].as<float>();
+
+    float tight_et2_max = configYaml["analysis"]["tight"]["et2_max"].as<float>(1.0);
+    float tight_et2_min = configYaml["analysis"]["tight"]["et2_min"].as<float>(0.0);
+
+    float tight_et3_max = configYaml["analysis"]["tight"]["et3_max"].as<float>(1.0);
+    float tight_et3_min = configYaml["analysis"]["tight"]["et3_min"].as<float>(0.0);
 
     float tight_e32_over_e35_max = configYaml["analysis"]["tight"]["e32_over_e35_max"].as<float>();
     float tight_e32_over_e35_min = configYaml["analysis"]["tight"]["e32_over_e35_min"].as<float>();
@@ -211,6 +251,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     float tight_w32_min = configYaml["analysis"]["tight"]["w32_min"].as<float>();
 
     // non tight cuts
+    std::cout << "non tight cuts" << std::endl;
     float non_tight_reta77_min = configYaml["analysis"]["non_tight"]["reta77_min"].as<float>();
     float non_tight_reta77_max = configYaml["analysis"]["non_tight"]["reta77_max"].as<float>();
 
@@ -228,6 +269,13 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
     float non_tight_weta_cogx_max = configYaml["analysis"]["non_tight"]["weta_cogx_max"].as<float>();
     float non_tight_weta_cogx_min = configYaml["analysis"]["non_tight"]["weta_cogx_min"].as<float>();
+    float non_tight_weta_cogx_max_b = configYaml["analysis"]["non_tight"]["weta_cogx_max_b"].as<float>();
+    float non_tight_weta_cogx_max_s = configYaml["analysis"]["non_tight"]["weta_cogx_max_s"].as<float>();
+
+    float non_tight_wphi_cogx_max = configYaml["analysis"]["non_tight"]["wphi_cogx_max"].as<float>();
+    float non_tight_wphi_cogx_min = configYaml["analysis"]["non_tight"]["wphi_cogx_min"].as<float>();
+    float non_tight_wphi_cogx_max_b = configYaml["analysis"]["non_tight"]["wphi_cogx_max_b"].as<float>();
+    float non_tight_wphi_cogx_max_s = configYaml["analysis"]["non_tight"]["wphi_cogx_max_s"].as<float>();
 
     float non_tight_prob_max = configYaml["analysis"]["non_tight"]["prob_max"].as<float>();
     float non_tight_prob_min = configYaml["analysis"]["non_tight"]["prob_min"].as<float>();
@@ -255,8 +303,18 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     float common_e11_over_e33_max = configYaml["analysis"]["common"]["e11_over_e33_max"].as<float>();
     float common_e11_over_e33_min = configYaml["analysis"]["common"]["e11_over_e33_min"].as<float>();
 
+    float common_e32_over_e35_max = configYaml["analysis"]["common"]["e32_over_e35_max"].as<float>(1.0);
+    float common_e32_over_e35_min = configYaml["analysis"]["common"]["e32_over_e35_min"].as<float>(0.8);
+
+    float common_et1_min = configYaml["analysis"]["common"]["et1_min"].as<float>(0.6);
+    float common_et1_max = configYaml["analysis"]["common"]["et1_max"].as<float>(1.0);
+
     float common_wr_cogx_bound = configYaml["analysis"]["common"]["wr_cogx_bound"].as<float>();
     float common_cluster_weta_cogx_bound = configYaml["analysis"]["common"]["cluster_weta_cogx_bound"].as<float>();
+
+    int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(); // 0 for no reweighting, 1 for reweighting
+
+    float clusterescale = configYaml["analysis"]["cluster_escale"].as<float>(1.0);
 
     int mbdnorthhit, mbdsouthhit;
     int pythiaid, nparticles;
@@ -592,7 +650,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
     // 2) Define your "histogram names" (the old map keys become string keys).
     //    For instance, you can directly populate them:
 
-    static const int ncuts = 6;
+    static const int ncuts = 7;
 
     h2d_all["h2d_prob"];
     h2d_all["h2d_CNN_prob"];
@@ -666,7 +724,7 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                              eta_bins[ieta + 1],
                              pT_bin_edges[ipt],
                              pT_bin_edges[ipt + 1]),
-                        300, -1, 2,   // X bins
+                        300, -1, 2,  // X bins
                         200, -10, 30 // Y bins
                     );
                     h2D->GetXaxis()->SetTitle(basename.c_str());
@@ -1128,14 +1186,22 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
             bool common_pass = false;
             bool tight = false;
             bool nontight = false;
+            bool pscut = false;
             if (cluster_prob[icluster] > common_prob_min &&
                 cluster_prob[icluster] < common_prob_max &&
                 e11_over_e33 > common_e11_over_e33_min &&
                 e11_over_e33 < common_e11_over_e33_max &&
                 //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
-                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound))
+                (cluster_weta_cogx[icluster] < 0.8))
             {
                 common_pass = true;
+                if(e32_over_e35 > common_e32_over_e35_min &&
+                e32_over_e35 < common_e32_over_e35_max &&
+                cluster_et1[icluster] > common_et1_min &&
+                cluster_et1[icluster] < common_et1_max )
+                {
+                    pscut = true;
+                }
             }
             if (!common_pass)
                 continue;
@@ -1143,46 +1209,71 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
 
             fillAllHists(1, icluster);
 
-            // need to update to a function to find tight and non tight
-            if (
-                // reta77 > tight_reta77_min &&
-                // reta77 < tight_reta77_max &&
-                // rhad33 > tight_rhad33_min &&
-                // rhad33 < tight_rhad33_max &&
-                // cluster_w72[icluster] > tight_w72_min &&
-                // cluster_w72[icluster] < tight_w72_max &&
-                // re11_E > tight_re11_E_min &&
-                // re11_E < tight_re11_E_max &&
-                // cluster_CNN_prob[icluster] > tight_CNN_min &&
-                // cluster_CNN_prob[icluster] < tight_CNN_max &&
-                cluster_weta_cogx[icluster] > tight_weta_cogx_min &&
-                cluster_weta_cogx[icluster] < tight_weta_cogx_max &&
-                e11_over_e33 > tight_e11_over_e33_min &&
-                e11_over_e33 < tight_e11_over_e33_max &&
-                e32_over_e35 > tight_e32_over_e35_min &&
-                e32_over_e35 < tight_e32_over_e35_max &&
-                cluster_et1[icluster] > tight_et1_min &&
-                cluster_et1[icluster] < tight_et1_max &&
-                cluster_et4[icluster] > tight_et4_min &&
-                cluster_et4[icluster] < tight_et4_max &&
-                cluster_prob[icluster] > tight_prob_min &&
-                cluster_prob[icluster] < tight_prob_max)
+            if(pscut)
             {
+                fillAllHists(6, icluster);
+            }
 
+            {
+                tight_weta_cogx_max = tight_weta_cogx_max_b + tight_weta_cogx_max_s * clusterET;
+                tight_wphi_cogx_max = tight_wphi_cogx_max_b + tight_wphi_cogx_max_s * clusterET;
+                tight_et1_min = tight_et1_min_b + tight_et1_min_s * clusterET;
+            }
+            // need to update to a function to find tight and non tight
+            bool is_cluster_weta_cogx_tight =
+                (cluster_weta_cogx[icluster] > tight_weta_cogx_min) &&
+                (cluster_weta_cogx[icluster] < tight_weta_cogx_max);
+
+            bool is_cluster_wphi_cogx_tight =
+                (cluster_wphi_cogx[icluster] > tight_wphi_cogx_min) &&
+                (cluster_wphi_cogx[icluster] < tight_wphi_cogx_max);
+
+            bool is_cluster_et1_tight =
+                (cluster_et1[icluster] > tight_et1_min) &&
+                (cluster_et1[icluster] < tight_et1_max);
+
+            bool is_cluster_et2_tight =
+                (cluster_et2[icluster] > tight_et2_min) &&
+                (cluster_et2[icluster] < tight_et2_max);
+
+            bool is_cluster_et3_tight =
+                (cluster_et3[icluster] > tight_et3_min) &&
+                (cluster_et3[icluster] < tight_et3_max);
+
+            bool is_e11_over_e33_tight =
+                (e11_over_e33 > tight_e11_over_e33_min) &&
+                (e11_over_e33 < tight_e11_over_e33_max);
+
+            bool is_e32_over_e35_tight =
+                (e32_over_e35 > tight_e32_over_e35_min) &&
+                (e32_over_e35 < tight_e32_over_e35_max);
+
+            bool is_cluster_et4_tight =
+                (cluster_et4[icluster] > tight_et4_min) &&
+                (cluster_et4[icluster] < tight_et4_max);
+
+            bool is_cluster_prob_tight =
+                (cluster_prob[icluster] > tight_prob_min) &&
+                (cluster_prob[icluster] < tight_prob_max);
+
+            // Combined condition
+            if (is_cluster_weta_cogx_tight &&
+                is_cluster_wphi_cogx_tight &&
+                is_cluster_et1_tight &&
+                is_cluster_et2_tight &&
+                is_cluster_et3_tight &&
+                is_e11_over_e33_tight &&
+                is_e32_over_e35_tight &&
+                is_cluster_et4_tight &&
+                is_cluster_prob_tight)
+            {
                 tight = true;
             }
-            if ( // reta77 > non_tight_reta77_min &&
-                 // reta77 < non_tight_reta77_max &&
-                 // rhad33 > non_tight_rhad33_min &&
-                 // rhad33 < non_tight_rhad33_max &&
-                 // cluster_w72[icluster] > non_tight_w72_min &&
-                 // cluster_w72[icluster] < non_tight_w72_max &&
-                 // re11_E > non_tight_re11_E_min &&
-                 // re11_E < non_tight_re11_E_max &&
-                 // cluster_CNN_prob[icluster] > non_tight_CNN_min &&
-                 // cluster_CNN_prob[icluster] < non_tight_CNN_max &&
+            if (
                 cluster_weta_cogx[icluster] > non_tight_weta_cogx_min &&
                 cluster_weta_cogx[icluster] < non_tight_weta_cogx_max &&
+                cluster_wphi_cogx[icluster] > non_tight_wphi_cogx_min &&
+                cluster_wphi_cogx[icluster] < non_tight_wphi_cogx_max &&
                 cluster_prob[icluster] > non_tight_prob_min &&
                 cluster_prob[icluster] < non_tight_prob_max &&
                 e11_over_e33 > non_tight_e11_over_e33_min &&
@@ -1195,17 +1286,89 @@ void ShowerShapeCheck(const std::string &configname = "config.yaml", const std::
                 cluster_et4[icluster] < non_tight_et4_max)
             {
                 // fail at least one of the tight cuts with small correlation
+                int nfail = 0;
+                if (!is_cluster_weta_cogx_tight)
+                {
+                    nfail += weta_on;
+                }
+                if (!is_cluster_wphi_cogx_tight)
+                {
+                    nfail += wphi_on;
+                }
+                if (!is_cluster_et1_tight)
+                {
+                    nfail += et1_on;
+                }
+                if (!is_cluster_et2_tight)
+                {
+                    nfail += et2_on;
+                }
+                if (!is_cluster_et3_tight)
+                {
+                    nfail += et3_on;
+                }
+                if (!is_e11_over_e33_tight)
+                {
+                    nfail += e11_to_e33_on;
+                }
+                if (!is_e32_over_e35_tight)
+                {
+                    nfail += e32_to_e35_on;
+                }
+                if (!is_cluster_et4_tight)
+                {
+                    nfail += et4_on;
+                }
+                if (!is_cluster_prob_tight)
+                {
+                    nfail++;
+                }
 
+                if ((nfail > n_nt_fail))
+                {
+                    bool all_flags_fail = true;
+                    if (weta_fail)
+                    {
+                        if (is_cluster_weta_cogx_tight)
+                            all_flags_fail = false;
+                    }
+                    if (wphi_fail)
+                    {
+                        if (is_cluster_wphi_cogx_tight)
+                            all_flags_fail = false;
+                    }
+                    if (et1_fail)
+                    {
+                        if (is_cluster_et1_tight)
+                            all_flags_fail = false;
+                    }
+                    if (e11_to_e33_fail)
+                    {
+                        if (is_e11_over_e33_tight)
+                            all_flags_fail = false;
+                    }
+                    if (e32_to_e35_fail)
+                    {
+                        if (is_e32_over_e35_tight)
+                            all_flags_fail = false;
+                    }
+
+                    if (all_flags_fail)
+                    {
+                        nontight = true;
+                    }
+                }
+                /*
                 if (
-                    !(e11_over_e33 > tight_e11_over_e33_min && e11_over_e33 < tight_e11_over_e33_max) ||
-                    !(cluster_et4[icluster] > tight_et4_min && cluster_et4[icluster] < tight_et4_max) ||
-                    !(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max)
-                    //||!(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max)
-                )
+                    //!(e11_over_e33 > tight_e11_over_e33_min && e11_over_e33 < tight_e11_over_e33_max) ||
+                    //!(cluster_et4[icluster] > tight_et4_min && cluster_et4[icluster] < tight_et4_max) ||
+                    //!(cluster_w32[icluster] > tight_w32_min && cluster_w32[icluster] < tight_w32_max)
+                    !(cluster_wphi_cogx[icluster] > tight_wphi_cogx_min && cluster_wphi_cogx[icluster] < tight_wphi_cogx_max) || !(cluster_weta_cogx[icluster] > tight_weta_cogx_min && cluster_weta_cogx[icluster] < tight_weta_cogx_max) || !(cluster_et1[icluster] > tight_et1_min && cluster_et1[icluster] < tight_et1_max))
                 {
 
                     nontight = true;
                 }
+                */
             }
 
             if (tight)
