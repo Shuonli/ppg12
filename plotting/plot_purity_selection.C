@@ -60,7 +60,7 @@ void plot_purity_selection(const std::string suffix = "nom")
         g_purity_truth->Draw("P same");
     }
 
-    float xpos(0.2), xpos2(0.915), ypos(0.885), ypos2(0.19), dy(0.056), dy1(0.075), fontsize(0.045);
+    float xpos(0.2), xpos2(0.915), ypos(0.88), ypos2(0.19), dy(0.056), dy1(0.075), fontsize(0.048);
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
     myText(xpos2,ypos-0*dy,1,strleg3.c_str(),fontsize,1);

@@ -5,7 +5,7 @@ void plot_sideband_sim(){
 
   init_plot();
 
-  string savePath="../PPG12-analysis-note/Figures/analysis/";
+  string savePath="./figures";
 
 
   TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
@@ -92,7 +92,7 @@ void plot_sideband_sim(){
 
   TCanvas* c4 = new TCanvas("c4","c4",600,600);
   frame_et_rec->Draw("axis");
-  frame_et_rec->GetYaxis()->SetRangeUser(1e-3,1.3);
+  frame_et_rec->GetYaxis()->SetRangeUser(1e-3,0.3);
   frame_et_rec->GetYaxis()->SetTitle("Signal leakage");
 
   h_BoverA_mcSig->Draw("same hist");

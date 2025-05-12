@@ -1,6 +1,6 @@
 #include "plotcommon.h"
 
-void CONF_plots(string tune = "nom", int lowbin = 1, int highbin = 1)
+void CONF_plots(string tune = "nom", int lowbin = 6, int highbin = 8)
 {
 
 
@@ -49,7 +49,7 @@ void CONF_plots(string tune = "nom", int lowbin = 1, int highbin = 1)
   while (i <= nbinsOrig)
   {
     // Decide the grouping size based on the lower edge of the current bin.
-    int groupSize = (h_tight_isoET->GetBinLowEdge(i) < 2.5) ? 1 : 5;
+    int groupSize = (h_tight_isoET->GetBinLowEdge(i) < 2.5) ? 2 : 5;
     int last = i + groupSize - 1;
     if (last > nbinsOrig)
       last = nbinsOrig; // Do not exceed available bins
@@ -137,13 +137,13 @@ void CONF_plots(string tune = "nom", int lowbin = 1, int highbin = 1)
   h_tight_isoET->GetXaxis()->SetTitleOffset(1.2);
 
   string st_etbin = Form("%0.0f < #kern[-0.25]{#it{E}_{T}^{#gamma}} < %0.0f GeV", ptRanges[sumBlow], ptRanges[sumBhigh + 1]);
-  float shift(0.05), xpos(0.915), ypos(0.875), dy(0.054), dy1(0.06), fontsize(0.04), fontsize1(0.045);
+  float shift(0.05), xpos(0.915), ypos(0.875), dy(0.054), dy1(0.06), fontsize(0.046), fontsize1(0.048);
   myText(xpos, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
   myText(xpos, ypos - 1 * dy, 1, strleg2.c_str(), fontsize, 1);
   myText(xpos, ypos - 2 * dy, 1, Form("%s", st_etbin.data()), fontsize, 1);
   myText(xpos, ypos - 3 * dy, 1, Form("%s", strleg3.c_str()), fontsize, 1);
   int nLegend(3), legOffset(3);
-  TLegend *l1 = new TLegend(0.56, ypos - (nLegend + legOffset) * dy1, xpos, ypos - legOffset * dy + 0.01);
+  TLegend *l1 = new TLegend(0.51, ypos - (nLegend + legOffset) * dy1, xpos, ypos - legOffset * dy + 0.03);
   legStyle(l1, 0.20, fontsize);
   l1->AddEntry(h_tight_isoET, "Data (Signal)", "pe");
   l1->AddEntry(h_nontight_isoET, "Data (Background)", "f");
@@ -218,8 +218,8 @@ void CONF_plots(string tune = "nom", int lowbin = 1, int highbin = 1)
   float fit2sigma = f2->GetParameter(2);
 
   nLegend = 2;
-  l1 = new TLegend(0.36, ypos - (nLegend + legOffset) * dy1, xpos, ypos - legOffset * dy + 0.01);
-  legStyle(l1, 0.20, fontsize);
+  l1 = new TLegend(0.36, ypos - (nLegend + legOffset) * dy1, xpos - 0.05, ypos - legOffset * dy + 0.01);
+  legStyle(l1, 0.20, fontsize); 
   l1->AddEntry(h_tight_isoET_sub, Form("Data Signal #mu= %.2f, #sigma= %.2f", fit1mean, fit1sigma), "pe");
   l1->AddEntry(h_tight_isoET_mcSig, Form("Signal MC #mu= %.2f, #sigma = %.2f", fit2mean, fit2sigma), "pe");
   l1->Draw("same");

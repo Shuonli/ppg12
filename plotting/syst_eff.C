@@ -1,19 +1,19 @@
 #include "plotcommon.h"
 
-void syst_purity()
+void syst_eff()
 {
 
     init_plot();
 
-    string varStr = "purity";
+    string varStr = "eff";
     string savePath = "figures";
     std::string file_path = "rootFiles/";
 
     std::vector<std::string> sys_names =
         {
-            "iso",
-            "ntf",
-            "fit"};
+            "tight",
+            "fudge"
+            };
 
     std::vector<TH1F *> h_dev_low_list;
     std::vector<TH1F *> h_dev_high_list;
