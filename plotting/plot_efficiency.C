@@ -22,8 +22,8 @@ void plot_efficiency()
 
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_truth->SetYTitle("Reconstruction Efficiency");
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.45,1.1);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 26);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.45, 1.1);
     frame_et_truth->Draw("axis");
 
     eff_reco->SetMarkerColor(kBlack);
@@ -31,7 +31,7 @@ void plot_efficiency()
     eff_reco->SetLineColor(kBlack);
     eff_reco->Draw("same");
 
-    float xpos(0.2), xpos2(0.915), ypos(0.885), ypos2(0.22), dy(0.054), dy1(0.08), fontsize(0.042), fontsize1(0.046);
+    float xpos(0.2), xpos2(0.915), ypos(0.885), ypos2(0.22), dy(0.054), dy1(0.08), fontsize(0.046), fontsize1(0.048);
     myText(xpos2,ypos-0*dy,1,strMC.c_str(),fontsize,1);
     myText(xpos2,ypos-1*dy,1,strleg3.c_str(),fontsize,1);
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
@@ -125,6 +125,7 @@ void plot_efficiency()
 
     TCanvas *c6 = new TCanvas("c6", "c6", 600, 600);
     frame_et_truth->SetYTitle("Efficiency");
+    frame_et_truth->GetYaxis()->SetRangeUser(0.35, 1.1);
     frame_et_truth->Draw("axis");
 
     eff_reco->SetMarkerColor(col[0]);

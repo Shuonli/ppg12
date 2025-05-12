@@ -13,10 +13,9 @@ void calcSyst()
             "purity",
             "escale",
             "eres",
-            "tight",
+            "eff",
             "nor",
-            "mbd"
-            };
+            "mbd"};
 
     std::vector<std::string> sys_names_leg =
         {
@@ -25,10 +24,9 @@ void calcSyst()
             "Energy resolution",
             "Efficiency",
             "Unfolding",
-            "MBD efficiency"
-        };
+            "MBD efficiency"};
 
-    std::vector<int> colors = {kPink+5,kGreen-2,kAzure+7,kRed-4,kBlue-3,kYellow+2,kPink-5,kGreen+3,kBlue-3,kBlack};
+    std::vector<int> colors = {kPink + 5, kGreen - 2, kAzure + 7, kRed - 4, kBlue - 3, kYellow + 2, kPink - 5, kGreen + 3, kBlue - 3, kBlack};
 
     std::vector<TH1F *> h_dev_low_list;
     std::vector<TH1F *> h_dev_high_list;
@@ -101,6 +99,26 @@ void calcSyst()
         h_sum_rel_low->SetBinContent(i, error_low_rel2);
         h_sum_rel_high->SetBinContent(i, error_high_rel2);
     }
+    // make lumi histo
+    float lumierror_up = (27.5 - 25.2) / 25.2;
+    float lumierror_down = (25.2 - 23.5) / 25.2;
+
+    TH1F *h_dev_rel_low_lumi = (TH1F *)h_dev_rel_low_list.at(0)->Clone("h_dev_rel_low_lumi");
+    h_dev_rel_low_lumi->Reset();
+    TH1F *h_dev_rel_high_lumi = (TH1F *)h_dev_rel_high_list.at(0)->Clone("h_dev_rel_high_lumi");
+    h_dev_rel_high_lumi->Reset();
+    
+    for (int i = 1; i < h_dev_rel_low_lumi->GetNbinsX() + 1; i++)
+    {
+        h_dev_rel_low_lumi->SetBinContent(i, lumierror_down);
+        h_dev_rel_high_lumi->SetBinContent(i, lumierror_up);
+    }
+    h_dev_rel_high_list.push_back(h_dev_rel_high_lumi);
+    h_dev_rel_low_list.push_back(h_dev_rel_low_lumi);
+
+    sys_names.push_back("lumi");
+    sys_names_leg.push_back("Luminosity");
+
     // place holder for plotting
     // low
     TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
@@ -125,7 +143,7 @@ void calcSyst()
     h_sum_rel_high->SetLineColor(kBlack);
     h_sum_rel_high->Draw("same ][ HIST");
 
-    myMarkerLineText(0.25, 0.42, 0, kBlack, 20, kBlack, 0, "Total", 0.05, true);
+    myMarkerLineText(0.25, 0.36, 0, kBlack, 20, kBlack, 0, "Total", 0.05, true);
 
     int switchover = 3;
 
@@ -145,13 +163,13 @@ void calcSyst()
         float xshift = 0;
         float yshift = 0;
 
-        if(isys >= switchover)
+        if (isys >= switchover)
         {
             xshift = 0.33;
-            yshift = 0.05 *switchover;
+            yshift = 0.05 * (switchover+1);
         }
 
-        myMarkerLineText(0.25 + xshift, 0.37 - 0.05 * isys + yshift, 0, colors.at(isys), 20, colors.at(isys), 0, sys_names_leg.at(isys).c_str(), 0.05, true);
+        myMarkerLineText(0.25 + xshift, 0.31 - 0.05 * isys + yshift, 0, colors.at(isys), 20, colors.at(isys), 0, sys_names_leg.at(isys).c_str(), 0.05, true);
     }
     myText(0.20, 0.88, 1, strleg1.c_str(), 0.05);
     myText(0.20, 0.83, 1, strleg2.c_str(), 0.05);
@@ -159,9 +177,7 @@ void calcSyst()
     c1->SaveAs(Form("%ssyst_sum_rel.pdf", savePath.c_str()));
 
     // add lumi error
-    float lumierror_up = 4.3/26.1;
-    float lumierror_down = 1.1/26.1;
-    
+
     for (int i = 1; i < h_sum_low->GetNbinsX() + 1; i++)
     {
         float error_low2 = h_sum_low->GetBinContent(i);
@@ -182,10 +198,9 @@ void calcSyst()
         h_sum_rel_low->SetBinContent(i, error_low_rel2);
         h_sum_rel_high->SetBinContent(i, error_high_rel2);
     }
-    
 
     // save to file
-    TFile *fout = new TFile(Form("%ssyst_sum.root",file_path.c_str()), "RECREATE");
+    TFile *fout = new TFile(Form("%ssyst_sum.root", file_path.c_str()), "RECREATE");
     h_sum_low->Write();
     h_sum_high->Write();
     h_sum_rel_low->Write();

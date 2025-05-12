@@ -7,7 +7,7 @@ void plot_purity_sim()
     
     string savePath = "figures/";
 
-    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nomtestv3_mc.root");
+    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom_mc.root");
 
     TGraphErrors *gpurity = (TGraphErrors *)fdata->Get("gpurity");
     TGraphErrors *gpurity_leak = (TGraphErrors *)fdata->Get("gpurity_leak");
