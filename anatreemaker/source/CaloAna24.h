@@ -87,18 +87,18 @@ private:
 
   bool isMC{true};
   bool isSingleParticle{false};
-  int m_scaledtrigger[32] = {0};
+  int m_scaledtrigger[64] = {0};
   bool initilized = false;
-  long long initscaler[32][3] = {0};
-  long long currentscaler[32][3] = {0};
-  long long currentscaler_raw[32] = {0};
-  long long currentscaler_live[32] = {0};
-  long long currentscaler_scaled[32] = {0};
-  bool scaledtrigger[32] = {false};
-  bool livetrigger[32] = {false};
-  int nscaledtrigger[32] = {0};
-  int nlivetrigger[32] = {0};
-  float trigger_prescale[32] = {-1};
+  long long initscaler[64][3] = {0};
+  long long currentscaler[64][3] = {0};
+  long long currentscaler_raw[64] = {0};
+  long long currentscaler_live[64] = {0};
+  long long currentscaler_scaled[64] = {0};
+  bool scaledtrigger[64] = {false};
+  bool livetrigger[64] = {false};
+  int nscaledtrigger[64] = {0};
+  int nlivetrigger[64] = {0};
+  float trigger_prescale[64] = {-1};
   int m_eventnumber{0};
 
   float vertexz{-9999};
@@ -305,9 +305,9 @@ private:
     float dr = sqrt(deta * deta + dphi * dphi);
     return dr;
   }
-  std::vector<int> using_trigger_bits{24, 25, 26, 27};
+  std::vector<int> using_trigger_bits{24, 25, 26, 27, 36, 37, 38};
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
-  float m_vertex_cut{30.0};
+  float m_vertex_cut{200.0};
   float m_shower_shape_min_tower_E{0.07};
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};

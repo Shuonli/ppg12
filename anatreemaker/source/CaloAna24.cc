@@ -109,12 +109,12 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
   slimtree->Branch("energy_scale", &m_energyscale, "energy_scale/F");
-  slimtree->Branch("scaledtrigger", scaledtrigger, "scaledtrigger[32]/O");
-  slimtree->Branch("livetrigger", livetrigger, "livetrigger[32]/O");
-  slimtree->Branch("currentscaler_raw", currentscaler_raw, "currentscaler_raw[32]/L");
-  slimtree->Branch("currentscaler_live", currentscaler_live, "currentscaler_live[32]/L");
-  slimtree->Branch("currentscaler_scaled", currentscaler_scaled, "currentscaler_scaled[32]/L");
-  slimtree->Branch("trigger_prescale", trigger_prescale, "trigger_prescale[32]/F");
+  slimtree->Branch("scaledtrigger", scaledtrigger, "scaledtrigger[64]/O");
+  slimtree->Branch("livetrigger", livetrigger, "livetrigger[64]/O");
+  slimtree->Branch("currentscaler_raw", currentscaler_raw, "currentscaler_raw[64]/L");
+  slimtree->Branch("currentscaler_live", currentscaler_live, "currentscaler_live[64]/L");
+  slimtree->Branch("currentscaler_scaled", currentscaler_scaled, "currentscaler_scaled[64]/L");
+  slimtree->Branch("trigger_prescale", trigger_prescale, "trigger_prescale[64]/F");
   slimtree->Branch("eventnumber", &m_eventnumber, "eventnumber/I");
 
   // particle level
@@ -303,7 +303,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         bool trig_decision = ((triggervec & 0x1U) == 0x1U);
         bool trig_decision_raw = ((triggervecraw & 0x1U) == 0x1U);
 
-        if (i < 32)
+        if (i < 64)
         {
           // reset it just to be safe
           scaledtrigger[i] = false;
@@ -336,8 +336,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           }
         }
 
-        triggervec = (triggervec >> 1U) & 0xffffffffU;
-        triggervecraw = (triggervecraw >> 1U) & 0xffffffffU;
+        triggervec = (triggervec >> 1U);
+        triggervecraw = (triggervecraw >> 1U);
       }
     }
 
@@ -944,14 +944,14 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
       }
 
-      float emcalET_04 = calculateET(eta, phi, 0.4, 0, 0.0);
+      float emcalET_04 = calculateET(eta, phi, 0.4, 0, -10.0);
       std::cout << "emcalET_04: " << emcalET_04 << std::endl;
-      float ihcalET_04 = calculateET(eta, phi, 0.4, 1, 0.0);
-      float ohcalET_04 = calculateET(eta, phi, 0.4, 2, 0.0);
+      float ihcalET_04 = calculateET(eta, phi, 0.4, 1, -10.0);
+      float ohcalET_04 = calculateET(eta, phi, 0.4, 2, -10.0);
 
-      float emcalET_03 = calculateET(eta, phi, 0.3, 0, 0.0);
-      float ihcalET_03 = calculateET(eta, phi, 0.3, 1, 0.0);
-      float ohcalET_03 = calculateET(eta, phi, 0.3, 2, 0.0);
+      float emcalET_03 = calculateET(eta, phi, 0.3, 0, -10.0);
+      float ihcalET_03 = calculateET(eta, phi, 0.3, 1, -10.0);
+      float ohcalET_03 = calculateET(eta, phi, 0.3, 2, -10.0);
 
       float emcalET_03_60 = calculateET(eta, phi, 0.3, 0, 0.06);
       float ihcalET_03_60 = calculateET(eta, phi, 0.3, 1, 0.06);
