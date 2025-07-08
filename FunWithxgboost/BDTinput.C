@@ -1,6 +1,6 @@
 #include <yaml-cpp/yaml.h>
 
-void BDTinput(const std::string &configname = "config_nom.yaml", const std::string filetype = "jet10")
+void BDTinput(const std::string &configname = "config_nom.yaml", const std::string filetype = "photon20")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -40,14 +40,14 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     if (filetype == "photon5")
     {
         max_photon_lower = 0;
-        max_photon_upper = 14;
-        // max_photon_upper = 200;
+        // max_photon_upper = 14;
+        //  max_photon_upper = 200;
         weight = photon5cross / photon20cross;
     }
     else if (filetype == "photon10")
     {
         max_photon_lower = 14;
-        max_photon_upper = 30;
+        // max_photon_upper = 30;
 
         // max_photon_lower = 0;
         // max_photon_upper = 200;
@@ -63,7 +63,7 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
-        max_jet_upper = 19;
+        // max_jet_upper = 19;
         energy_scale_lower = 10;
         energy_scale_upper = 16;
         cluster_ET_upper = 25;
@@ -73,7 +73,7 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     else if (filetype == "jet15")
     {
         max_jet_lower = 19;
-        max_jet_upper = 23;
+        // max_jet_upper = 23;
         energy_scale_lower = 16;
         energy_scale_upper = 20;
         cluster_ET_upper = 25;
@@ -83,7 +83,7 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     else if (filetype == "jet20")
     {
         max_jet_lower = 23;
-        max_jet_upper = 30;
+        // max_jet_upper = 30;
         energy_scale_lower = 20;
         energy_scale_upper = 30;
         weight = jet20cross / jet30cross;
@@ -536,9 +536,10 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
     // output text file for the showershapes
     std::ofstream outputfile;
+    std::string outputname = "shapes_" + filetype + ".txt";
     if (issim)
     {
-        outputfile.open("shapes_jet10.txt");
+        outputfile.open(outputname);
     }
 
     // header info
@@ -851,26 +852,29 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
                 {
                     nontight_noniso_clusters[runnumber] += 1;
                 }
-            }
-            int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
-            int pid = particle_pid[iparticle];
 
-            // save to output file
-            outputfile << cluster_Et[icluster] << " "
-                       << cluster_Eta[icluster] << " "
-                       << cluster_Phi[icluster] << " "
-                       << vertexz << " "
-                       << e11_over_e33 << " "
-                       << e32_over_e35 << " "
-                       << cluster_prob[icluster] << " "
-                       << cluster_weta_cogx[icluster] << " "
-                       << cluster_wphi_cogx[icluster] << " "
-                       << cluster_et1[icluster] << " "
-                       << cluster_et2[icluster] << " "
-                       << cluster_et3[icluster] << " "
-                       << cluster_et4[icluster] << " "
-                       << (tight ? 1 : 0) << " "
-                       << pid << std::endl;
+                int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
+                int pid = particle_pid[iparticle];
+                if (tight || nontight)
+                {
+                    // save to output file
+                    outputfile << cluster_Et[icluster] << " "
+                               << cluster_Eta[icluster] << " "
+                               << cluster_Phi[icluster] << " "
+                               << vertexz << " "
+                               << e11_over_e33 << " "
+                               << e32_over_e35 << " "
+                               << cluster_prob[icluster] << " "
+                               << cluster_weta_cogx[icluster] << " "
+                               << cluster_wphi_cogx[icluster] << " "
+                               << cluster_et1[icluster] << " "
+                               << cluster_et2[icluster] << " "
+                               << cluster_et3[icluster] << " "
+                               << cluster_et4[icluster] << " "
+                               << (tight ? 1 : 0) << " "
+                               << pid << std::endl;
+                }
+            }
         }
     }
 }
