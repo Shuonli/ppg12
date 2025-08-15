@@ -55,6 +55,11 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         infilename = configYaml["input"]["data_file"].as<std::string>();
     }
 
+    TFile *corrFile = new TFile("/sphenix/user/hanpuj/JES_MC_Calibration/offline/output_forshuhang.root", "READ");
+    TF1 *f_corr = (TF1 *)corrFile->Get("f_corr_run21_r04_z0_eta0123");
+
+    bool calibjes = true;
+
     std::cout << "infilename: " << infilename << std::endl;
 
     float max_photon_lower = 0;
@@ -632,6 +637,44 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
     // energy resolution
     std::vector<TH2D *> h_pT_truth_reco;
 
+    // xjgamma, why not?
+    // this is for sim only
+    std::vector<TH2D *> h_tight_iso_xjgamma_signal;
+    std::vector<TH2D *> h_tight_noniso_xjgamma_signal;
+    std::vector<TH2D *> h_nontight_iso_xjgamma_signal;
+    std::vector<TH2D *> h_nontight_noniso_xjgamma_signal;
+    std::vector<TH2D *> h_all_xjgamma_signal;
+    std::vector<TH2D *> h_tight_xjgamma_signal;
+
+    // using truth jet
+    std::vector<TH2D *> h_tight_iso_truthjet_xjgamma_signal;
+    std::vector<TH2D *> h_tight_noniso_truthjet_xjgamma_signal;
+    std::vector<TH2D *> h_nontight_iso_truthjet_xjgamma_signal;
+    std::vector<TH2D *> h_nontight_noniso_truthjet_xjgamma_signal;
+    std::vector<TH2D *> h_all_truthjet_xjgamma_signal;
+    std::vector<TH2D *> h_tight_truthjet_xjgamma_signal;
+
+    std::vector<TH2D *> h_tight_iso_xjgamma_background;
+    std::vector<TH2D *> h_tight_noniso_xjgamma_background;
+    std::vector<TH2D *> h_nontight_iso_xjgamma_background;
+    std::vector<TH2D *> h_nontight_noniso_xjgamma_background;
+
+    //
+    std::vector<TH2D *> h_tight_iso_pid_pt;
+    std::vector<TH2D *> h_tight_noniso_pid_pt;
+    std::vector<TH2D *> h_nontight_iso_pid_pt;
+    std::vector<TH2D *> h_nontight_noniso_pid_pt;
+    std::vector<TH2D *> h_common_pid_pt;
+
+    // for both data and sim
+    std::vector<TH2D *> h_tight_iso_xjgamma;
+    std::vector<TH2D *> h_tight_noniso_xjgamma;
+    std::vector<TH2D *> h_nontight_iso_xjgamma;
+    std::vector<TH2D *> h_nontight_noniso_xjgamma;
+    std::vector<TH2D *> h_common_xjgamma;
+    std::vector<TH2D *> h_all_xjgamma;
+    std::vector<TH2D *> h_tight_xjgamma;
+
     // isolation profile for debugging reasons
     std::vector<std::vector<TH1D *>> h_tight_cluster_pT;
     h_tight_cluster_pT.resize(eta_bins.size() - 1);
@@ -813,6 +856,97 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
         h_frag_pT_truth_isoET.push_back(new TH2D(Form("h_frag_pT_truth_isoET_%d", ieta),
                                                  Form("Fragmentation Photon pT vs Truth Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                  400, 0, 40, 400, 0, 40));
+
+        // xjgamma
+        h_tight_iso_xjgamma_signal.push_back(new TH2D(Form("h_tight_iso_xjgamma_signal_%d", ieta),
+                                                      Form("Tight Iso XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                      300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_noniso_xjgamma_signal.push_back(new TH2D(Form("h_tight_noniso_xjgamma_signal_%d", ieta),
+                                                         Form("Tight Non-Iso XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                         300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_iso_xjgamma_signal.push_back(new TH2D(Form("h_nontight_iso_xjgamma_signal_%d", ieta),
+                                                         Form("Non-Tight Iso XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                         300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_xjgamma_signal.push_back(new TH2D(Form("h_nontight_noniso_xjgamma_signal_%d", ieta),
+                                                            Form("Non-Tight Non-Iso XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                            150, 0, 1.5, n_pT_bins, pT_bin_edges));
+        h_all_xjgamma_signal.push_back(new TH2D(Form("h_all_xjgamma_signal_%d", ieta),
+                                                Form("All XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_xjgamma_signal.push_back(new TH2D(Form("h_tight_xjgamma_signal_%d", ieta),
+                                                  Form("Tight XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                  300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        // using truth jet
+        h_tight_iso_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_tight_iso_truthjet_xjgamma_signal_%d", ieta),
+                                                               Form("Tight Iso TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                               300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_noniso_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_tight_noniso_truthjet_xjgamma_signal_%d", ieta),
+                                                                  Form("Tight Non-Iso TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                                  300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_iso_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_nontight_iso_truthjet_xjgamma_signal_%d", ieta),
+                                                                  Form("Non-Tight Iso TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                                  300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_nontight_noniso_truthjet_xjgamma_signal_%d", ieta),
+                                                                     Form("Non-Tight Non-Iso TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                                     300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_all_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_all_truthjet_xjgamma_signal_%d", ieta),
+                                                         Form("All TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                         300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_truthjet_xjgamma_signal.push_back(new TH2D(Form("h_tight_truthjet_xjgamma_signal_%d", ieta),
+                                                           Form("Tight TruthJet XJGamma Signal %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                           300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        // background
+        h_tight_iso_xjgamma_background.push_back(new TH2D(Form("h_tight_iso_xjgamma_background_%d", ieta),
+                                                          Form("Tight Iso XJGamma Background %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                          300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_noniso_xjgamma_background.push_back(new TH2D(Form("h_tight_noniso_xjgamma_background_%d", ieta),
+                                                             Form("Tight Non-Iso XJGamma Background %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                             300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_iso_xjgamma_background.push_back(new TH2D(Form("h_nontight_iso_xjgamma_background_%d", ieta),
+                                                             Form("Non-Tight Iso XJGamma Background %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                             300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_xjgamma_background.push_back(new TH2D(Form("h_nontight_noniso_xjgamma_background_%d", ieta),
+                                                                Form("Non-Tight Non-Iso XJGamma Background %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                                300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        // pid vs pT
+        h_tight_iso_pid_pt.push_back(new TH2D(Form("h_tight_iso_pid_pt_%d", ieta),
+                                              Form("Tight Iso PID pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                              8000, -4000, 4000, n_pT_bins, pT_bin_edges));
+        h_tight_noniso_pid_pt.push_back(new TH2D(Form("h_tight_noniso_pid_pt_%d", ieta),
+                                                 Form("Tight Non-Iso PID pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                 8000, -4000, 4000, n_pT_bins, pT_bin_edges));
+        h_nontight_iso_pid_pt.push_back(new TH2D(Form("h_nontight_iso_pid_pt_%d", ieta),
+                                                    Form("Non-Tight Iso PID pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                    8000, -4000, 4000, n_pT_bins, pT_bin_edges));       
+        h_nontight_noniso_pid_pt.push_back(new TH2D(Form("h_nontight_noniso_pid_pt_%d", ieta),
+                                                        Form("Non-Tight Non-Iso PID pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                        8000, -4000, 4000, n_pT_bins, pT_bin_edges));                   
+        h_common_pid_pt.push_back(new TH2D(Form("h_common_pid_pt_%d", ieta),
+                                            Form("Common PID pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                            8000, -4000, 4000, n_pT_bins, pT_bin_edges));           
+
+
+        h_tight_iso_xjgamma.push_back(new TH2D(Form("h_tight_iso_xjgamma_%d", ieta),
+                                               Form("Tight Iso XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                               300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_noniso_xjgamma.push_back(new TH2D(Form("h_tight_noniso_xjgamma_%d", ieta),
+                                                  Form("Tight Non-Iso XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                  300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_iso_xjgamma.push_back(new TH2D(Form("h_nontight_iso_xjgamma_%d", ieta),
+                                                  Form("Non-Tight Iso XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                  300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_xjgamma.push_back(new TH2D(Form("h_nontight_noniso_xjgamma_%d", ieta),
+                                                     Form("Non-Tight Non-Iso XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                     300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_common_xjgamma.push_back(new TH2D(Form("h_common_xjgamma_%d", ieta),
+                                            Form("Common XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                            300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_all_xjgamma.push_back(new TH2D(Form("h_all_xjgamma_%d", ieta),
+                                         Form("All XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                         300, 0, 3.0, n_pT_bins, pT_bin_edges));
+        h_tight_xjgamma.push_back(new TH2D(Form("h_tight_xjgamma_%d", ieta),
+                                           Form("Tight XJGamma %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                           300, 0, 3.0, n_pT_bins, pT_bin_edges));
 
         for (int ipt = 0; ipt < n_pT_bins; ipt++)
         {
@@ -1131,8 +1265,36 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
         h_vertexz->Fill(vertexz, weight);
         float leading_common_cluster_ET = 0;
+        int leading_cluster_ET_index = -1;
+        float leading_cluster_ET = 0;
         for (int icluster = 0; icluster < ncluster; icluster++)
         {
+            if (issim)
+            {
+                cluster_Et[icluster] = cluster_Et[icluster] * clusterescale;
+                if (clustereres > 0)
+                {
+                    cluster_Et[icluster] = cluster_Et[icluster] * rand->Gaus(1, clustereres);
+                }
+            }
+            // need ET > 10 GeV
+            if (cluster_Et[icluster] < reco_min_ET)
+                continue;
+            if (nosat)
+            {
+                if (cluster_nsaturated[icluster] > 0)
+                    continue;
+            }
+            if (cluster_Et[icluster] > leading_common_cluster_ET)
+            {
+                leading_cluster_ET = cluster_Et[icluster];
+                leading_cluster_ET_index = icluster;
+            }
+        }
+
+        for (int icluster = 0; icluster < ncluster; icluster++)
+        {
+            bool is_leading_cluster = (icluster == leading_cluster_ET_index);
             // scale cluster ET
             if (issim)
             {
@@ -1201,7 +1363,6 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
             {
                 recoisoET = recoisoET * mc_iso_scale;
                 recoisoET += mc_iso_shift;
-
             }
 
             float cluster_eta = cluster_Eta[icluster];
@@ -1249,9 +1410,17 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
 
             bool otherside_jet = false;
 
-            for (int ijet = 0; ijet < (int)jetphi.size(); ijet++)
+            float max_b2bjet_pT = -1;
+
+            float max_b2btruthjet_pT = -1;
+
+            float b2bjet_dphi = 3 * M_PI / 4;
+
+            float jet_eta = 0.6;
+
+            for (int ijet = 0; ijet < njet; ijet++)
             {
-                float dphi = cluster_Phi[icluster] - jetphi[ijet];
+                float dphi = cluster_Phi[icluster] - jet_Phi[ijet];
 
                 while (dphi > M_PI)
                     dphi = dphi - 2 * M_PI;
@@ -1261,8 +1430,55 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 if (abs(dphi) > (M_PI / 2))
                 {
                     otherside_jet = true;
-                    break;
+                    // break;
                 }
+                float jescalib = f_corr->Eval(jet_Pt[ijet]) / jet_Pt[ijet];
+                if (!calibjes)
+                {
+                    jescalib = 1.0;
+                }
+                float calibrated_jet_pT = jet_Pt[ijet] * jescalib;
+                if (abs(jet_Eta[ijet]) < jet_eta)
+                {
+                    if (abs(dphi) > b2bjet_dphi)
+                    {
+                        if (calibrated_jet_pT > max_b2bjet_pT && calibrated_jet_pT > 5)
+                        {
+                            max_b2bjet_pT = calibrated_jet_pT;
+                        }
+                    }
+                }
+            }
+            if (issim)
+            {
+                for (int ijet = 0; ijet < njet_truth; ijet++)
+                {
+                    float dphi = cluster_Phi[icluster] - jet_truth_Phi[ijet];
+
+                    while (dphi > M_PI)
+                        dphi = dphi - 2 * M_PI;
+                    while (dphi < -M_PI)
+                        dphi = dphi + 2 * M_PI;
+
+                    if (abs(jet_truth_Eta[ijet]) < jet_eta)
+                    {
+                        if (abs(dphi) > b2bjet_dphi)
+                        {
+                            if (jet_truth_Pt[ijet] > max_b2btruthjet_pT && jet_truth_Pt[ijet] > 5)
+                            {
+                                max_b2btruthjet_pT = jet_truth_Pt[ijet];
+                            }
+                        }
+                    }
+                }
+            }
+            float xjgamma = -1;
+            float xjgamma_truthjet = -1;
+
+            if (is_leading_cluster)
+            {
+                xjgamma = max_b2bjet_pT / leading_cluster_ET;
+                xjgamma_truthjet = max_b2btruthjet_pT / leading_cluster_ET;
             }
 
             bool isnpb = badtime && !otherside_jet;
@@ -1462,6 +1678,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
             if (tight && iso)
             {
                 h_tight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_tight_iso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                 // h_pT_reco_response[etabin]->Fill(cluster_Et[icluster]);
                 if (isnpb)
                     h_tight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1469,28 +1686,33 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
             if (tight)
             {
                 h_tight_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_tight_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
             }
             if (tight && noniso)
             {
                 h_tight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_tight_noniso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                 if (isnpb)
                     h_tight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (nontight && iso)
             {
                 h_nontight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_nontight_iso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                 if (isnpb)
                     h_nontight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (nontight && noniso)
             {
                 h_nontight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_nontight_noniso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                 if (isnpb)
                     h_nontight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
             }
             if (common_pass)
             {
                 h_common_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+                h_common_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                 h_cluster_common_Et->Fill(cluster_Et[icluster], weight);
                 if (cluster_Et[icluster] > leading_common_cluster_ET)
                 {
@@ -1498,6 +1720,7 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                 }
             }
             h_all_cluster[etabin]->Fill(cluster_Et[icluster], weight);
+            h_all_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
             if (pTbin != -1)
             {
                 if (tight)
@@ -1537,6 +1760,29 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     dphi = 2 * M_PI - dphi;
                 }
                 float dR = sqrt(deta * deta + dphi * dphi);
+                //check the pid in each sideband region
+                int pid = particle_pid[iparticle];
+                if(common_pass)
+                {
+                    h_common_pid_pt[etabin]->Fill(pid, cluster_Et[icluster], weight);
+                }
+                if(tight && iso)
+                {
+                    h_tight_iso_pid_pt[etabin]->Fill(pid, cluster_Et[icluster], weight);
+                }
+                if(tight && noniso)
+                {
+                    h_tight_noniso_pid_pt[etabin]->Fill(pid, cluster_Et[icluster], weight);
+                }
+                if(nontight && iso)
+                {
+                    h_nontight_iso_pid_pt[etabin]->Fill(pid, cluster_Et[icluster], weight);
+                }
+                if(nontight && noniso)
+                {
+                    h_nontight_noniso_pid_pt[etabin]->Fill(pid, cluster_Et[icluster], weight);
+                }
+
 
                 // truth iso vs. reco iso
 
@@ -1597,9 +1843,12 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                         if (particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth && cluster_Et[icluster] > pTmin && cluster_Et[icluster] < pTmax)
                         {
                             h_tight_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                            h_tight_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                             if (iso)
                             {
                                 h_tight_iso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                                h_tight_iso_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                                h_tight_iso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                                 // fill the response matrix
                                 h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight);
                                 h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1629,14 +1878,20 @@ void RecoEffCalculator(const std::string &configname = "config.yaml", const std:
                     if (tight && noniso)
                     {
                         h_tight_noniso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                        h_tight_noniso_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                        h_tight_noniso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                     }
                     if (nontight && iso)
                     {
                         h_nontight_iso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                        h_nontight_iso_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                        h_nontight_iso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                     }
                     if (nontight && noniso)
                     {
                         h_nontight_noniso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                        h_nontight_noniso_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                        h_nontight_noniso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                     }
 
                     h_singal_reco_isoET[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
