@@ -1,6 +1,6 @@
 #include <yaml-cpp/yaml.h>
 
-void BDTinput(const std::string &configname = "config_nom.yaml", const std::string filetype = "photon20")
+void BDTinput(const std::string &configname = "config_nom.yaml", const std::string filetype = "jet10")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -544,10 +544,15 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
 
     // header info
     outputfile << "cluster_Et cluster_Eta cluster_Phi vertexz "
-               << "e11_over_e33 e32_over_e35 "
+               << "e11_over_e33 e32_over_e35 e11_over_e22 e11_over_e13 "
+               << "e11_over_e15 e11_over_e17 e11_over_e31 "
+               << "e11_over_e51 e11_over_e71 e22_over_e33 "
+               << "e22_over_e35 e22_over_e37 e22_over_e53 "
                << "cluster_prob cluster_weta_cogx cluster_wphi_cogx "
                << "cluster_et1 cluster_et2 cluster_et3 cluster_et4 "
-               << " is_tight pid " << std::endl;
+               << "cluster_w32 cluster_w52 cluster_w72 "
+               << "recoisoET "
+               << "is_tight pid " << std::endl;
 
     int nentries = slimtree->GetEntries();
     for (int ientry = 0; ientry < nentries; ientry++)
@@ -622,6 +627,28 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
             float e11_over_e33 = cluster_e11[icluster] / cluster_e33[icluster];
 
             float e32_over_e35 = cluster_e32[icluster] / cluster_e35[icluster];
+
+            float e11_over_e22 = cluster_e11[icluster] / cluster_e22[icluster];
+
+            float e11_over_e13 = cluster_e11[icluster] / cluster_e13[icluster];
+
+            float e11_over_e15 = cluster_e11[icluster] / cluster_e15[icluster];
+
+            float e11_over_e17 = cluster_e11[icluster] / cluster_e17[icluster];
+
+            float e11_over_e31 = cluster_e11[icluster] / cluster_e31[icluster];
+
+            float e11_over_e51 = cluster_e11[icluster] / cluster_e51[icluster];
+
+            float e11_over_e71 = cluster_e11[icluster] / cluster_e71[icluster];
+
+            float e22_over_e33 = cluster_e22[icluster] / cluster_e33[icluster];
+
+            float e22_over_e35 = cluster_e22[icluster] / cluster_e35[icluster];
+
+            float e22_over_e37 = cluster_e22[icluster] / cluster_e37[icluster];
+
+            float e22_over_e53 = cluster_e22[icluster] / cluster_e53[icluster];
 
             // reco cut
             float recoisoET = -999;
@@ -854,8 +881,23 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
                 }
 
                 int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
-                int pid = particle_pid[iparticle];
-                if (tight || nontight)
+                int pid = particle_photonclass[iparticle];
+
+                /*
+                    outputfile << "cluster_Et cluster_Eta cluster_Phi vertexz "
+               << "e11_over_e33 e32_over_e35 e11_over_e22 e11_over_e13 "
+               << "e11_over_e15 e11_over_e17 e11_over_e31 "
+               << "e11_over_e51 e11_over_e71 e22_over_e33 "
+               << "e22_over_e35 e22_over_e37 e22_over_e53 "
+               << "cluster_prob cluster_weta_cogx cluster_wphi_cogx "
+               << "cluster_et1 cluster_et2 cluster_et3 cluster_et4 "
+               << "cluster_w32 cluster_w52 cluster_w72 "
+               << "recoisoET "
+               << "is_tight pid " << std::endl;
+
+                */
+
+                // if (tight || nontight)
                 {
                     // save to output file
                     outputfile << cluster_Et[icluster] << " "
@@ -864,6 +906,17 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
                                << vertexz << " "
                                << e11_over_e33 << " "
                                << e32_over_e35 << " "
+                               << e11_over_e22 << " "
+                               << e11_over_e13 << " "
+                               << e11_over_e15 << " "
+                               << e11_over_e17 << " "
+                               << e11_over_e31 << " "
+                               << e11_over_e51 << " "
+                               << e11_over_e71 << " "
+                               << e22_over_e33 << " "
+                               << e22_over_e35 << " "
+                               << e22_over_e37 << " "
+                               << e22_over_e53 << " "
                                << cluster_prob[icluster] << " "
                                << cluster_weta_cogx[icluster] << " "
                                << cluster_wphi_cogx[icluster] << " "
@@ -871,6 +924,10 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
                                << cluster_et2[icluster] << " "
                                << cluster_et3[icluster] << " "
                                << cluster_et4[icluster] << " "
+                               << cluster_w32[icluster] << " "
+                               << cluster_w52[icluster] << " "
+                               << cluster_w72[icluster] << " "
+                               << recoisoET << " "
                                << (tight ? 1 : 0) << " "
                                << pid << std::endl;
                 }
