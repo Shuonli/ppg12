@@ -100,6 +100,9 @@ private:
   int nlivetrigger[64] = {0};
   float trigger_prescale[64] = {-1};
   int m_eventnumber{0};
+  float m_totalEMCal_energy{0};
+  float m_totalIHCal_energy{0};
+  float m_totalOHCal_energy{0};
 
   float vertexz{-9999};
   int mbdnorthhit{0};

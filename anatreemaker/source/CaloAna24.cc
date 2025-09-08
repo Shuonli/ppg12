@@ -116,6 +116,9 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("currentscaler_scaled", currentscaler_scaled, "currentscaler_scaled[64]/L");
   slimtree->Branch("trigger_prescale", trigger_prescale, "trigger_prescale[64]/F");
   slimtree->Branch("eventnumber", &m_eventnumber, "eventnumber/I");
+  slimtree->Branch("totalEMCal_energy", &m_totalEMCal_energy, "totalEMCal_energy/F");
+  slimtree->Branch("totalIHCal_energy", &m_totalIHCal_energy, "totalIHCal_energy/F");
+  slimtree->Branch("totalOHCal_energy", &m_totalOHCal_energy, "totalOHCal_energy/F");
 
   // particle level
   slimtree->Branch("nparticles", &nparticles, "nparticles/I");
@@ -890,6 +893,39 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
               << std::endl;
     return Fun4AllReturnCodes::ABORTEVENT;
   }
+  //loop over all towers in the container
+  m_totalEMCal_energy = 0;
+  m_totalIHCal_energy = 0;
+  m_totalOHCal_energy = 0;
+  const int emcsize = emcTowerContainer->size();
+  const int ihsize = ihcalTowerContainer->size();
+  const int ohsize = ohcalTowerContainer->size();
+  for (int i = 0; i < emcsize; i++)
+  {
+    TowerInfo *towerinfo = emcTowerContainer->get_tower_at_channel(i);
+    if(towerinfo->get_isGood())
+    {
+      m_totalEMCal_energy += towerinfo->get_energy();
+    }
+  }
+  for (int i = 0; i < ihsize; i++)
+  {
+    TowerInfo *towerinfo = ihcalTowerContainer->get_tower_at_channel(i);
+    if(towerinfo->get_isGood())
+    {
+      m_totalIHCal_energy += towerinfo->get_energy();
+    }
+  }
+  for (int i = 0; i < ohsize; i++)
+  {
+    TowerInfo *towerinfo = ohcalTowerContainer->get_tower_at_channel(i);
+    if(towerinfo->get_isGood())
+    {
+      m_totalOHCal_energy += towerinfo->get_energy();
+    }
+  }
+
+
 
   std::cout << "size of photonsfrompi0: " << photonsfrompi0.size() << std::endl;
   for (int i = 0; i < nclustercontainer; i++)
