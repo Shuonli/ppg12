@@ -99,12 +99,19 @@ int CaloAna24::Init(PHCompositeNode *topNode)
 
   slimtree = new TTree("slimtree", "slimtree");
   slimtree->Branch("runnumber", &runnumber, "runnumber/I");
+  slimtree->Branch("mbd_time", &mbd_time, "mbd_time/F");
+  slimtree->Branch("mbd_north_time", &mbd_north_time, "mbd_north_time/F");
+  slimtree->Branch("mbd_south_time", &mbd_south_time, "mbd_south_time/F");
   slimtree->Branch("mbdnorthhit", &mbdnorthhit, "mbdnorthhit/I");
   slimtree->Branch("mbdsouthhit", &mbdsouthhit, "mbdsouthhit/I");
   slimtree->Branch("mbdnorthq", mbdnorthq, "mbdnorthq[64]/F");
   slimtree->Branch("mbdsouthq", mbdsouthq, "mbdsouthq[64]/F");
+  slimtree->Branch("mbdnortht", mbdnorthq, "mbdnortht[64]/F");
+  slimtree->Branch("mbdsoutht", mbdsouthq, "mbdsoutht[64]/F");
   slimtree->Branch("mbdnorthqsum", &mbdnorthqsum, "mbdnorthqsum/F");
   slimtree->Branch("mbdsouthqsum", &mbdsouthqsum, "mbdsouthqsum/F");
+  slimtree->Branch("mbdnorthtmean", &mbdnorthtmean, "mbdnorthtmean/F");
+  slimtree->Branch("mbdsouthtmean", &mbdsouthtmean, "mbdsouthtmean/F");
   slimtree->Branch("vertexz", &vertexz, "vertexz/F");
   slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
@@ -167,6 +174,12 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_iso_03_60_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_60_emcal[i], Form("cluster_iso_03_60_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_60_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_60_hcalin[i], Form("cluster_iso_03_60_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_60_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_60_hcalout[i], Form("cluster_iso_03_60_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_70_emcal[i], Form("cluster_iso_03_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_70_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_70_hcalin[i], Form("cluster_iso_03_70_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_03_70_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_70_hcalout[i], Form("cluster_iso_03_70_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_005_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_005_70_emcal[i], Form("cluster_iso_005_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_01_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_01_70_emcal[i], Form("cluster_iso_01_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_02_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_02_70_emcal[i], Form("cluster_iso_02_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_120_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_120_emcal[i], Form("cluster_iso_03_120_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_120_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_120_hcalin[i], Form("cluster_iso_03_120_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_120_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_120_hcalout[i], Form("cluster_iso_03_120_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -288,7 +301,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
   if (!isMC)
   {
     Gl1Packet *gl1PacketInfo =
-        findNode::getClass<Gl1Packet>(topNode, "GL1Packet");
+        findNode::getClass<Gl1Packet>(topNode, "14001");
     if (!gl1PacketInfo)
     {
       std::cout << PHWHERE << "caloTreeGen::process_event: "
@@ -431,6 +444,15 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
     MbdPmtContainer *mbdtow = findNode::getClass<MbdPmtContainer>(topNode, "MbdPmtContainer");
 
+    MbdOut * mbdout = static_cast<MbdOut*>(findNode::getClass<MbdOut>(topNode,"MbdOut"));
+
+    if (mbdout)
+    {
+      mbd_time = mbdout->get_t0();
+      mbd_north_time = mbdout->get_time(1);
+      mbd_south_time = mbdout->get_time(0);
+    }
+
     // bool mbdevent = false;
     if (mbdtow)
     {
@@ -440,6 +462,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float mbenrgy[128] = {0};
       mbdnorthqsum = 0;
       mbdsouthqsum = 0;
+      mbdnorthtmean = 0;
+      mbdsouthtmean = 0;
       // if(_debug) cout << "Got " << sectormb << " mbd sectors in sim." << endl;
       for (int i = 0; i < sectormb; ++i)
       {
@@ -448,22 +472,32 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         mbenrgy[i] = mbdhit->get_q();
         // std::cout<<mbenrgy[i]<<std::endl;
         if (mbenrgy[i] > 0.4 && i < 64)
+        {
           northhit += 1;
+          mbdnorthtmean += mbdhit->get_time();
+        }
         if (mbenrgy[i] > 0.4 && i > 63)
+        {
           southhit += 1;
+          mbdsouthtmean += mbdhit->get_time();
+        }
         if (i < 64)
         {
           mbdnorthq[i] = mbenrgy[i];
+          mbdnortht[i] = mbdhit->get_time();
           mbdnorthqsum += mbenrgy[i];
         }
         if (i > 63)
         {
           mbdsouthq[i - 64] = mbenrgy[i];
+          mbdsoutht[i - 64] = mbdhit->get_time();
           mbdsouthqsum += mbenrgy[i];
         }
       }
       mbdnorthhit = northhit;
       mbdsouthhit = southhit;
+      mbdnorthtmean = mbdnorthtmean / northhit;
+      mbdsouthtmean = mbdsouthtmean / southhit;
     }
 
     MbdVertexMap *vertexmap = findNode::getClass<MbdVertexMap>(topNode, "MbdVertexMap");
@@ -993,6 +1027,14 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float ihcalET_03_60 = calculateET(eta, phi, 0.3, 1, 0.06);
       float ohcalET_03_60 = calculateET(eta, phi, 0.3, 2, 0.06);
 
+      float emcalET_03_70 = calculateET(eta, phi, 0.3, 0, 0.07);
+      float ihcalET_03_70 = calculateET(eta, phi, 0.3, 1, 0.07);
+      float ohcalET_03_70 = calculateET(eta, phi, 0.3, 2, 0.07);
+
+      float emcalET_005_70 = calculateET(eta, phi, 0.05, 0, 0.07);
+      float emcalET_01_70 = calculateET(eta, phi, 0.1, 0, 0.07);
+      float emcalET_02_70 = calculateET(eta, phi, 0.2, 0, 0.07);
+
       float emcalET_03_120 = calculateET(eta, phi, 0.3, 0, 0.12);
       float ihcalET_03_120 = calculateET(eta, phi, 0.3, 1, 0.12);
       float ohcalET_03_120 = calculateET(eta, phi, 0.3, 2, 0.12);
@@ -1218,7 +1260,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           // check the isgood flag
           cluster_e_array[i][ncluster[i]][arraykey] = towerinfo->get_energy();
           cluster_adc_array[i][ncluster[i]][arraykey] = towerinforaw->get_energy();
-          cluster_time_array[i][ncluster[i]][arraykey] = towerinfo->get_time_float();
+          cluster_time_array[i][ncluster[i]][arraykey] = towerinfo->get_time();
           if (towerinfo->get_isGood() == false)
           {
             // std::cout<<"tower E: "<<towerinfo->get_energy()<<" is good: "<<towerinfo->get_isGood()<< " is hot: "<<towerinfo->get_isHot()<< " is bad chi2: "<<towerinfo->get_isBadChi2()<< " is saturated: "<<towerinfo->get_isSaturated()<<std::endl;
@@ -1548,6 +1590,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_03_60_emcal[i][ncluster[i]] = emcalET_03_60 - ET;
       cluster_iso_03_60_hcalin[i][ncluster[i]] = ihcalET_03_60;
       cluster_iso_03_60_hcalout[i][ncluster[i]] = ohcalET_03_60;
+      cluster_iso_03_70_emcal[i][ncluster[i]] = emcalET_03_70 - ET;
+      cluster_iso_03_70_hcalin[i][ncluster[i]] = ihcalET_03_70;
+      cluster_iso_03_70_hcalout[i][ncluster[i]] = ohcalET_03_70;
+      cluster_iso_005_70_emcal[i][ncluster[i]] = emcalET_005_70 - ET;
+      cluster_iso_01_70_emcal[i][ncluster[i]] = emcalET_01_70 - ET;
+      cluster_iso_02_70_emcal[i][ncluster[i]] = emcalET_02_70 - ET;
       cluster_iso_03_120_emcal[i][ncluster[i]] = emcalET_03_120 - ET;
       cluster_iso_03_120_hcalin[i][ncluster[i]] = ihcalET_03_120;
       cluster_iso_03_120_hcalout[i][ncluster[i]] = ohcalET_03_120;
