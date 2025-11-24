@@ -46,9 +46,9 @@ void scale_histogram(TH1 *h, float lumi)
     }
 }
 
-void CalculatePhotonYield(const std::string &configname = "config.yaml", bool isMC = false)
+void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", bool isMC = false)
 {
-    float luminosity = 15.2036; // pb^-1
+    float luminosity = 16.5501; // pb^-1
     float mbdcorr = 25.2/42 / 0.57;
     //MBD correction factor
     //luminosity = luminosity * mbdcorr;
@@ -262,7 +262,7 @@ void CalculatePhotonYield(const std::string &configname = "config.yaml", bool is
     h_R->Divide(h_tight_noniso_cluster_background_data);
     h_R->Multiply(h_nontight_noniso_cluster_background_data);
     h_R->Divide(h_nontight_iso_cluster_background_data);
-
+    
 
     TH1F *h_common_cluster_data = (TH1F *)fdatain->Get(common_cluster_name_data.c_str());
 

@@ -231,7 +231,7 @@ void FindTruthETCut()
     gStyle->SetPadTickY(1);
 
     // Open the input file.
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_merge.root", "READ");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_noiso.root", "READ");
     if (!fin || fin->IsZombie()) {
         std::cerr << "Error opening input file!" << std::endl;
         return;
@@ -383,7 +383,8 @@ void FindTruthETCut()
     texts.clear();
     texts.push_back("Pythia, #sqrt{s}=200 GeV");
     texts.push_back("|#eta^{#gamma}| < 0.7");
-    texts.push_back("R = 0.3, E_{T}^{iso} < 4 GeV");
+    //texts.push_back("R = 0.3, E_{T}^{iso} < 4 GeV");
+    texts.push_back("no E_{T}^{iso} requirement");
     
     draw_1D_multiple_plot_ratio(h_spec, colors, spec_markers,
                           false, 1, false,
@@ -394,7 +395,7 @@ void FindTruthETCut()
                           false, "Photon Jet Samples",
                           true, texts, 0.25, 0.85, 0.035,
                           true, spec_legend, 0.6, 0.80, 0.035,
-                          "plots/pT_Spectrum_IsoET_4GeV_Cut.pdf");
+                          "plots/pT_Spectrum_IsoET_200GeV_Cut.pdf");
 
     // Optionally, close the file.
     // fin->Close();
