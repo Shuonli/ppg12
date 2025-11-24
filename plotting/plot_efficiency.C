@@ -10,7 +10,8 @@ void plot_efficiency()
 
     // string savePath = "test/";
     string savePath = "figures/";
-    TFile *fmc = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+    TFile *fmc = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_base_v3E_2.root");
+    //TFile *fmc = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
     TFile *fdata = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
 
     TEfficiency *eff_reco = (TEfficiency *)fmc->Get("eff_reco_eta_0");

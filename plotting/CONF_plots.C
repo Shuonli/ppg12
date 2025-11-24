@@ -49,7 +49,7 @@ void CONF_plots(string tune = "nom", int lowbin = 6, int highbin = 8)
   while (i <= nbinsOrig)
   {
     // Decide the grouping size based on the lower edge of the current bin.
-    int groupSize = (h_tight_isoET->GetBinLowEdge(i) < 2.5) ? 2 : 5;
+    int groupSize = (h_tight_isoET->GetBinLowEdge(i) < 2.5) ? 1 : 5;
     int last = i + groupSize - 1;
     if (last > nbinsOrig)
       last = nbinsOrig; // Do not exceed available bins
