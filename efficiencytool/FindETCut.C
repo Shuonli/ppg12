@@ -80,7 +80,7 @@ void FindETCut()
     bool is_signal = true;
 
     //TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_base_2.root", "READ");
 
     if(!is_signal){
         fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
@@ -90,7 +90,7 @@ void FindETCut()
     TH2D *h_eff = (TH2D *)fin->Get("h_singal_truth_isoET_0");
 
     if(!x_is_truth){
-        h_eff = (TH2D *)fin->Get("h_ET_isoET_eta0");
+        h_eff = (TH2D *)fin->Get("h_singal_reco_isoET_0");
     }
 
     
@@ -177,7 +177,7 @@ void FindETCut()
         {h_eff90, h_eff80, h_eff70}, colors, markers,
         false, 1, false,                                   // Rebin/Normalize
         true, 10, 3, false,                                // X-axis
-        true, 0.5, 3.5, false,                                 // Y-axis
+        true, -0.5, 5.0, false,                                 // Y-axis
         true, xtitle, "E^{iso}_{T} Cutoff [GeV]", // Titles
         false, "",                                         // Data/Run status
         true, fitTexts, 0.15, 0.85, 0.035,                 // Text annotations
@@ -185,7 +185,7 @@ void FindETCut()
         "ETCut_FitResults.pdf"                             // Output
     );
 
-    float scale = 1.3;
+    float scale = 1.0;
     //print the fit result
     std::cout << "90% Efficiency Fit: EisoT = " << fit90->GetParameter(0)*scale << " + " << fit90->GetParameter(1)*scale << "pT" << std::endl;
     std::cout << "80% Efficiency Fit: EisoT = " << fit80->GetParameter(0)*scale << " + " << fit80->GetParameter(1)*scale << "pT" << std::endl;

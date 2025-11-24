@@ -1,6 +1,6 @@
 #include <yaml-cpp/yaml.h>
 
-void Cluster_rbr(const std::string &configname = "config_nom468.yaml", const std::string filetype = "data")
+void Cluster_rbr(const std::string &configname = "config_nom.yaml", const std::string filetype = "data")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -23,7 +23,7 @@ void Cluster_rbr(const std::string &configname = "config_nom468.yaml", const std
     }
 
     // read in lumi file
-    std::string lumifilename = "/sphenix/user/jocl/projects/LumiList/list_RN_18_26_30.list";
+    std::string lumifilename = "/sphenix/user/jocl/projects/LumiList/list_468_RN_18_26_30_2.list";
 
     std::map<int, float> lumivals;
     std::map<int, float> lumivals_nc;
@@ -698,6 +698,9 @@ void Cluster_rbr(const std::string &configname = "config_nom468.yaml", const std
         if ((runnumber.second < 10) || lumi == 0)
         {
             // set to 0
+	    if((runnumber.second >0) && lumi ==0){
+	    	std::cout<<runnumber.first<<std::endl;
+	    }
             common_clusters[runnumber.first] = 0;
             tight_iso_clusters[runnumber.first] = 0;
             tight_noniso_clusters[runnumber.first] = 0;

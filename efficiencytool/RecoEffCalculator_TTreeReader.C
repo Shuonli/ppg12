@@ -6,6 +6,10 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TTree.h>
+#include <TChain.h>
+#include <TTreeReader.h>
+#include <TTreeReaderValue.h>
+#include <TTreeReaderArray.h>
 #include <TF1.h>
 #include <TSystem.h>
 #include <TEfficiency.h>
@@ -17,7 +21,7 @@
 #include <RooUnfoldBayes.h>
 
 // R__LOAD_LIBRARY(/sphenix/user/egm2153/calib_study/JetValidation/analysis/roounfold/libRooUnfold.so)
-
+const float TIME_SAMPLE_NS = 17.6;
 void SaveYamlToRoot(TFile *f, const char *yaml_filename)
 {
     // Read YAML file into a string
@@ -31,9 +35,9 @@ void SaveYamlToRoot(TFile *f, const char *yaml_filename)
     yaml_obj.Write("config");
 }
 
-void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", const std::string filetype = "jet10")
+void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_none.yaml", const std::string filetype = "data")
 {
-    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
+    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so"); 
     YAML::Node configYaml = YAML::LoadFile(configname);
 
     bool issim = true;
@@ -168,7 +172,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     f_vertex_reweight->SetParameters(1.07368e+00, -1.73712e+00, 4.47289e+01);
 
     // std::string infilename = "/sphenix/tg/tg01/commissioning/CaloCalibWG/sli/ppg12/ana450/condorout/combine.root";
-    TFile *ftreein = new TFile(infilename.c_str(), "READ");
+    // Build input chain and connect reader
+    std::string treename = configYaml["input"]["tree"].as<std::string>();
+    TChain chain(treename.c_str());
+    chain.Add(infilename.c_str());
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
     std::string outfilename = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + filetype + "_" + var_type + ".root";
@@ -185,13 +192,17 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     std::cout << "outfilename: " << outfilename << std::endl;
     std::cout << "responsefilename: " << responsefilename << std::endl;
 
-    TTree *slimtree = (TTree *)ftreein->Get(configYaml["input"]["tree"].as<std::string>().c_str());
+    // TChain is used instead of a single TTree
 
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
 
     std::string bdt_model_name = configYaml["input"]["bdt_model_name"].as<std::string>("base");
     //std::string bdt_model_name = "base";
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
+    int iso_hcalonly = configYaml["analysis"]["iso_hcalonly"].as<int>(0);
+    // we have 0, 0.05, 0.1, 0.2 options
+    float iso_emcalinnerr = configYaml["analysis"]["iso_emcalinnerr"].as<float>(0.0);
+    std::cout<<"iso_emcalinnerr: "<<iso_emcalinnerr<<std::endl;
 
     int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
 
@@ -389,290 +400,159 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     // f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
     f_reweight->SetParameters(0.714962, -0.0856443, -0.125383, 0.00345831, 0.00462972);
 
-    int mbdnorthhit, mbdsouthhit;
-    int pythiaid, nparticles;
-    int ncluster;
-    int runnumber;
-    Bool_t scaledtrigger[32] = {0};
-    Bool_t livetrigger[32] = {0};
+    //load MBD t0 correction
+    std::cout << "loading MBD t0 correction" << std::endl;
+    std::map<int, float> mbd_t0_correction;
+    ifstream file = ifstream("/sphenix/user/shuhangli/ppg12/efficiencytool/MbdOut.corr");
+    string line;
+    while (getline(file, line))
+    {
+        std::istringstream iss(line);
+        int runnumber;
+        float t0;
+        iss >> runnumber >> t0;
+        mbd_t0_correction[runnumber] = t0;
+        std::cout << "runnumber: " << runnumber << " t0: " << t0 << std::endl;
+    }
+    std::cout << "loaded MBD t0 correction" << std::endl;
 
-    float energy_scale;
+    // TTreeReader setup
+    TTreeReader reader(&chain);
+    
+    // Basic event variables
+    TTreeReaderValue<int> mbdnorthhit(reader, "mbdnorthhit");
+    TTreeReaderValue<int> mbdsouthhit(reader, "mbdsouthhit");
+    TTreeReaderValue<int> pythiaid(reader, "pythiaid");
+    TTreeReaderValue<int> nparticles(reader, "nparticles");
+    TTreeReaderValue<int> ncluster(reader, Form("ncluster_%s", clusternodename.c_str()));
+    TTreeReaderValue<int> runnumber(reader, "runnumber");
+    TTreeReaderArray<Bool_t> scaledtrigger(reader, "scaledtrigger");
+    TTreeReaderArray<Bool_t> livetrigger(reader, "livetrigger");
+    TTreeReaderValue<float> energy_scale(reader, "energy_scale");
+    TTreeReaderValue<float> vertexz(reader, "vertexz");
+    TTreeReaderValue<float> vertexz_truth(reader, "vertexz_truth");
+    TTreeReaderValue<float> mbdnorthtmean(reader, "mbdnorthtmean");
+    TTreeReaderValue<float> mbdsouthtmean(reader, "mbdsouthtmean");
+    TTreeReaderValue<float> mbd_time(reader, "mbd_time");
+    TTreeReaderArray<float> trigger_prescale(reader, "trigger_prescale");
 
-    float vertexz;
-    float vertexz_truth;
+    // Particle arrays
+    TTreeReaderArray<float> particle_E(reader, "particle_E");
+    TTreeReaderArray<float> particle_Pt(reader, "particle_Pt");
+    TTreeReaderArray<float> particle_Eta(reader, "particle_Eta");
+    TTreeReaderArray<float> particle_Phi(reader, "particle_Phi");
+    TTreeReaderArray<float> particle_truth_iso_02(reader, "particle_truth_iso_02");
+    TTreeReaderArray<float> particle_truth_iso_03(reader, "particle_truth_iso_03");
+    TTreeReaderArray<float> particle_truth_iso_04(reader, "particle_truth_iso_04");
+    TTreeReaderArray<int> particle_pid(reader, "particle_pid");
+    TTreeReaderArray<int> particle_trkid(reader, "particle_trkid");
+    TTreeReaderArray<int> particle_photonclass(reader, "particle_photonclass");
+    TTreeReaderArray<int> particle_converted(reader, "particle_converted");
+    // Cluster arrays
+    TTreeReaderArray<float> cluster_E(reader, Form("cluster_E_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_Et(reader, Form("cluster_Et_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_Eta(reader, Form("cluster_Eta_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_Phi(reader, Form("cluster_Phi_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_prob(reader, Form("cluster_prob_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_CNN_prob(reader, Form("cluster_CNN_prob_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_truthtrkID(reader, Form("cluster_truthtrkID_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_pid(reader, Form("cluster_pid_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e1(reader, Form("cluster_e1_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e2(reader, Form("cluster_e2_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e3(reader, Form("cluster_e3_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e4(reader, Form("cluster_e4_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_et1(reader, Form("cluster_et1_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_et2(reader, Form("cluster_et2_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_et3(reader, Form("cluster_et3_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_et4(reader, Form("cluster_et4_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_weta(reader, Form("cluster_weta_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_wphi(reader, Form("cluster_wphi_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ietacent(reader, Form("cluster_ietacent_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iphicent(reader, Form("cluster_iphicent_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_detamax(reader, Form("cluster_detamax_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_dphimax(reader, Form("cluster_dphimax_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_weta_cogx(reader, Form("cluster_weta_cogx_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_wphi_cogx(reader, Form("cluster_wphi_cogx_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_nsaturated(reader, Form("cluster_nsaturated_%s", clusternodename.c_str()));
 
-    float trigger_prescale[32] = {0};
+    // Cluster energy arrays
+    TTreeReaderArray<float> cluster_e11(reader, Form("cluster_e11_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e22(reader, Form("cluster_e22_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e13(reader, Form("cluster_e13_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e15(reader, Form("cluster_e15_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e17(reader, Form("cluster_e17_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e31(reader, Form("cluster_e31_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e51(reader, Form("cluster_e51_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e71(reader, Form("cluster_e71_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e33(reader, Form("cluster_e33_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e35(reader, Form("cluster_e35_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e37(reader, Form("cluster_e37_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e53(reader, Form("cluster_e53_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e73(reader, Form("cluster_e73_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e55(reader, Form("cluster_e55_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e57(reader, Form("cluster_e57_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e75(reader, Form("cluster_e75_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e77(reader, Form("cluster_e77_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_w32(reader, Form("cluster_w32_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e32(reader, Form("cluster_e32_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_w72(reader, Form("cluster_w72_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_e72(reader, Form("cluster_e72_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_w52(reader, Form("cluster_w52_%s", clusternodename.c_str()));
 
-    static const int nparticlesmax = 100;
-    static const int nclustercontainermx = 50;
+    // Cluster arrays for 2D data - using regular TTreeReaderArray for 2D arrays
+    TTreeReaderArray<float> cluster_e_array(reader, Form("cluster_e_array_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_time_array(reader, Form("cluster_time_array_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_ownership_array(reader, Form("cluster_ownership_array_%s", clusternodename.c_str()));
 
-    float particle_E[nparticlesmax], particle_Pt[nparticlesmax], particle_Eta[nparticlesmax], particle_Phi[nparticlesmax], particle_truth_iso_02[nparticlesmax], particle_truth_iso_03[nparticlesmax], particle_truth_iso_04[nparticlesmax];
-    int particle_pid[nparticlesmax], particle_trkid[nparticlesmax], particle_photonclass[nparticlesmax], particle_converted[nparticlesmax];
-    float cluster_E[nclustercontainermx], cluster_Et[nclustercontainermx], cluster_Eta[nclustercontainermx], cluster_Phi[nclustercontainermx], cluster_prob[nclustercontainermx], cluster_iso_02[nclustercontainermx], cluster_iso_03[nclustercontainermx], cluster_iso_04[nclustercontainermx], cluster_e1[nclustercontainermx], cluster_e2[nclustercontainermx], cluster_e3[nclustercontainermx], cluster_e4[nclustercontainermx], cluster_et1[nclustercontainermx], cluster_et2[nclustercontainermx], cluster_et3[nclustercontainermx], cluster_et4[nclustercontainermx], cluster_weta[nclustercontainermx], cluster_wphi[nclustercontainermx], cluster_ietacent[nclustercontainermx], cluster_iphicent[nclustercontainermx], cluster_e11[nclustercontainermx], cluster_e22[nclustercontainermx], cluster_e13[nclustercontainermx], cluster_e15[nclustercontainermx], cluster_e17[nclustercontainermx], cluster_e31[nclustercontainermx], cluster_e51[nclustercontainermx], cluster_e71[nclustercontainermx], cluster_e33[nclustercontainermx], cluster_e35[nclustercontainermx], cluster_e37[nclustercontainermx], cluster_e53[nclustercontainermx], cluster_e73[nclustercontainermx], cluster_e55[nclustercontainermx], cluster_e57[nclustercontainermx], cluster_e75[nclustercontainermx], cluster_e77[nclustercontainermx], cluster_w32[nclustercontainermx], cluster_e32[nclustercontainermx], cluster_w72[nclustercontainermx], cluster_e72[nclustercontainermx], cluster_ihcal_et[nclustercontainermx], cluster_ohcal_et[nclustercontainermx], cluster_ihcal_et22[nclustercontainermx], cluster_ohcal_et22[nclustercontainermx], cluster_ihcal_et33[nclustercontainermx], cluster_ohcal_et33[nclustercontainermx];
-    float cluster_w52[nclustercontainermx];
-    int cluster_truthtrkID[nclustercontainermx], cluster_pid[nclustercontainermx];
+    // Cluster isolation arrays
+    TTreeReaderArray<float> cluster_iso_03_emcal(reader, Form("cluster_iso_03_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_hcalin(reader, Form("cluster_iso_03_hcalin_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_hcalout(reader, Form("cluster_iso_03_hcalout_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_70_emcal(reader, Form("cluster_iso_03_70_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_02_70_emcal(reader, Form("cluster_iso_02_70_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_005_70_emcal(reader, Form("cluster_iso_005_70_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_01_70_emcal(reader, Form("cluster_iso_01_70_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_70_hcalin(reader, Form("cluster_iso_03_70_hcalin_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_70_hcalout(reader, Form("cluster_iso_03_70_hcalout_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_120_emcal(reader, Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_120_hcalin(reader, Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_120_hcalout(reader, Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_60_emcal(reader, Form("cluster_iso_03_60_emcal_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_60_hcalin(reader, Form("cluster_iso_03_60_hcalin_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_03_60_hcalout(reader, Form("cluster_iso_03_60_hcalout_%s", clusternodename.c_str()));
 
-    int cluster_detamax[nclustercontainermx], cluster_dphimax[nclustercontainermx], cluster_ihcal_ieta[nclustercontainermx], cluster_ihcal_iphi[nclustercontainermx], cluster_ohcal_ieta[nclustercontainermx], cluster_ohcal_iphi[nclustercontainermx];
-    float cluster_CNN_prob[nclustercontainermx];
+    // Cluster HCal arrays
+    TTreeReaderArray<float> cluster_ihcal_et(reader, Form("cluster_ihcal_et_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ohcal_et(reader, Form("cluster_ohcal_et_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ihcal_et22(reader, Form("cluster_ihcal_et22_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ohcal_et22(reader, Form("cluster_ohcal_et22_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ihcal_et33(reader, Form("cluster_ihcal_et33_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_ohcal_et33(reader, Form("cluster_ohcal_et33_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_ihcal_ieta(reader, Form("cluster_ihcal_ieta_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_ihcal_iphi(reader, Form("cluster_ihcal_iphi_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_ohcal_ieta(reader, Form("cluster_ohcal_ieta_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_ohcal_iphi(reader, Form("cluster_ohcal_iphi_%s", clusternodename.c_str()));
 
-    float cluster_weta_cogx[nclustercontainermx], cluster_wphi_cogx[nclustercontainermx];
+    // BDT score
+    TTreeReaderArray<float> cluster_bdt(reader, Form("cluster_bdt_%s_%s", clusternodename.c_str(), bdt_model_name.c_str()));
 
-    static const int arraysize = 49;
+    // Truth jet arrays
+    TTreeReaderValue<int> njet_truth(reader, "njet_truth");
+    TTreeReaderArray<float> jet_truth_E(reader, "jet_truth_E");
+    TTreeReaderArray<float> jet_truth_Pt(reader, "jet_truth_Pt");
+    TTreeReaderArray<float> jet_truth_Eta(reader, "jet_truth_Eta");
+    TTreeReaderArray<float> jet_truth_Phi(reader, "jet_truth_Phi");
 
-    int cluster_ownership_array[nclustercontainermx][arraysize] = {0};
+    // Reco jet arrays
+    TTreeReaderValue<int> njet(reader, "njet");
+    TTreeReaderArray<float> jet_E(reader, "jet_E");
+    TTreeReaderArray<float> jet_Pt(reader, "jet_Pt");
+    TTreeReaderArray<float> jet_Eta(reader, "jet_Eta");
+    TTreeReaderArray<float> jet_Phi(reader, "jet_Phi");
 
-    float cluster_time_array[nclustercontainermx][arraysize] = {0};
-
-    float cluster_e_array[nclustercontainermx][arraysize] = {0};
-
-    float cluster_adc_array[nclustercontainermx][arraysize] = {0};
-
-    int cluster_e_array_idx[nclustercontainermx][arraysize] = {0};
-
-    int cluster_status_array[nclustercontainermx][arraysize] = {0};
-
-    float cluster_iso_03_emcal[nclustercontainermx], cluster_iso_03_hcalin[nclustercontainermx], cluster_iso_03_hcalout[nclustercontainermx];
-    float cluster_iso_03_60_emcal[nclustercontainermx], cluster_iso_03_60_hcalin[nclustercontainermx], cluster_iso_03_60_hcalout[nclustercontainermx];
-    float cluster_iso_03_120_emcal[nclustercontainermx], cluster_iso_03_120_hcalin[nclustercontainermx], cluster_iso_03_120_hcalout[nclustercontainermx];
-    int cluster_nsaturated[nclustercontainermx];
-    float cluster_bdt[nclustercontainermx];
-
-    static const int njettruthmax = 100;
-    int njet_truth;
-    float jet_truth_E[njettruthmax], jet_truth_Pt[njettruthmax], jet_truth_Eta[njettruthmax], jet_truth_Phi[njettruthmax];
-
-    int njet;
-
-    static const int njetmax = 100;
-
-    float jet_E[njetmax], jet_Pt[njetmax], jet_Eta[njetmax], jet_Phi[njetmax];
-
-    slimtree->SetBranchStatus("*", 0);
-
-    slimtree->SetBranchStatus("mbdnorthhit", 1);
-    slimtree->SetBranchAddress("mbdnorthhit", &mbdnorthhit);
-    slimtree->SetBranchStatus("mbdsouthhit", 1);
-    slimtree->SetBranchAddress("mbdsouthhit", &mbdsouthhit);
-    slimtree->SetBranchStatus("pythiaid", 1);
-    slimtree->SetBranchAddress("pythiaid", &pythiaid);
-    slimtree->SetBranchStatus("nparticles", 1);
-    slimtree->SetBranchAddress("nparticles", &nparticles);
-    slimtree->SetBranchStatus("vertexz", 1);
-    slimtree->SetBranchAddress("vertexz", &vertexz);
-    slimtree->SetBranchStatus("vertexz_truth", 1);
-    slimtree->SetBranchAddress("vertexz_truth", &vertexz_truth);
-    slimtree->SetBranchStatus("energy_scale", 1);
-    slimtree->SetBranchAddress("energy_scale", &energy_scale);
-    slimtree->SetBranchStatus("scaledtrigger", 1);
-    slimtree->SetBranchAddress("scaledtrigger", scaledtrigger);
-    slimtree->SetBranchStatus("livetrigger", 1);
-    slimtree->SetBranchAddress("livetrigger", livetrigger);
-    slimtree->SetBranchStatus("trigger_prescale", 1);
-    slimtree->SetBranchAddress("trigger_prescale", trigger_prescale);
-    slimtree->SetBranchStatus("runnumber", 1);
-    slimtree->SetBranchAddress("runnumber", &runnumber);
-    slimtree->SetBranchStatus(Form("ncluster_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("ncluster_%s", clusternodename.c_str()), &ncluster);
-
-    slimtree->SetBranchStatus("particle_E", 1);
-    slimtree->SetBranchAddress("particle_E", particle_E);
-    slimtree->SetBranchStatus("particle_Pt", 1);
-    slimtree->SetBranchAddress("particle_Pt", particle_Pt);
-    slimtree->SetBranchStatus("particle_Eta", 1);
-    slimtree->SetBranchAddress("particle_Eta", particle_Eta);
-    slimtree->SetBranchStatus("particle_Phi", 1);
-    slimtree->SetBranchAddress("particle_Phi", particle_Phi);
-    slimtree->SetBranchStatus("particle_truth_iso_02", 1);
-    slimtree->SetBranchAddress("particle_truth_iso_02", particle_truth_iso_02);
-    slimtree->SetBranchStatus("particle_truth_iso_03", 1);
-    slimtree->SetBranchAddress("particle_truth_iso_03", particle_truth_iso_03);
-    slimtree->SetBranchStatus("particle_truth_iso_04", 1);
-    slimtree->SetBranchAddress("particle_truth_iso_04", particle_truth_iso_04);
-    slimtree->SetBranchStatus("particle_pid", 1);
-    slimtree->SetBranchAddress("particle_pid", particle_pid);
-    slimtree->SetBranchStatus("particle_trkid", 1);
-    slimtree->SetBranchAddress("particle_trkid", particle_trkid);
-    slimtree->SetBranchStatus("particle_photonclass", 1);
-    slimtree->SetBranchAddress("particle_photonclass", particle_photonclass);
-    slimtree->SetBranchStatus("particle_converted", 1);
-    slimtree->SetBranchAddress("particle_converted", particle_converted);
-
-    slimtree->SetBranchStatus(Form("cluster_E_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_E_%s", clusternodename.c_str()), cluster_E);
-    slimtree->SetBranchStatus(Form("cluster_Et_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_Et_%s", clusternodename.c_str()), cluster_Et);
-    slimtree->SetBranchStatus(Form("cluster_Eta_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_Eta_%s", clusternodename.c_str()), cluster_Eta);
-    slimtree->SetBranchStatus(Form("cluster_Phi_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_Phi_%s", clusternodename.c_str()), cluster_Phi);
-    slimtree->SetBranchStatus(Form("cluster_prob_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_prob_%s", clusternodename.c_str()), cluster_prob);
-    slimtree->SetBranchStatus(Form("cluster_CNN_prob_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_CNN_prob_%s", clusternodename.c_str()), cluster_CNN_prob);
-    slimtree->SetBranchStatus(Form("cluster_truthtrkID_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_truthtrkID_%s", clusternodename.c_str()), cluster_truthtrkID);
-    slimtree->SetBranchStatus(Form("cluster_pid_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_pid_%s", clusternodename.c_str()), cluster_pid);
-    slimtree->SetBranchStatus(Form("cluster_iso_02_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_02_%s", clusternodename.c_str()), cluster_iso_02);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_%s", clusternodename.c_str()), cluster_iso_03);
-    slimtree->SetBranchStatus(Form("cluster_iso_04_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_04_%s", clusternodename.c_str()), cluster_iso_04);
-    slimtree->SetBranchStatus(Form("cluster_e1_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e1_%s", clusternodename.c_str()), cluster_e1);
-    slimtree->SetBranchStatus(Form("cluster_e2_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e2_%s", clusternodename.c_str()), cluster_e2);
-    slimtree->SetBranchStatus(Form("cluster_e3_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e3_%s", clusternodename.c_str()), cluster_e3);
-    slimtree->SetBranchStatus(Form("cluster_e4_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e4_%s", clusternodename.c_str()), cluster_e4);
-    slimtree->SetBranchStatus(Form("cluster_et1_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_et1_%s", clusternodename.c_str()), cluster_et1);
-    slimtree->SetBranchStatus(Form("cluster_et2_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_et2_%s", clusternodename.c_str()), cluster_et2);
-    slimtree->SetBranchStatus(Form("cluster_et3_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_et3_%s", clusternodename.c_str()), cluster_et3);
-    slimtree->SetBranchStatus(Form("cluster_et4_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_et4_%s", clusternodename.c_str()), cluster_et4);
-    slimtree->SetBranchStatus(Form("cluster_weta_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_weta_%s", clusternodename.c_str()), cluster_weta);
-    slimtree->SetBranchStatus(Form("cluster_wphi_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_wphi_%s", clusternodename.c_str()), cluster_wphi);
-    slimtree->SetBranchStatus(Form("cluster_ietacent_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ietacent_%s", clusternodename.c_str()), cluster_ietacent);
-    slimtree->SetBranchStatus(Form("cluster_iphicent_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iphicent_%s", clusternodename.c_str()), cluster_iphicent);
-    slimtree->SetBranchStatus(Form("cluster_detamax_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_detamax_%s", clusternodename.c_str()), cluster_detamax);
-    slimtree->SetBranchStatus(Form("cluster_dphimax_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_dphimax_%s", clusternodename.c_str()), cluster_dphimax);
-    slimtree->SetBranchStatus(Form("cluster_weta_cogx_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_weta_cogx_%s", clusternodename.c_str()), cluster_weta_cogx);
-    slimtree->SetBranchStatus(Form("cluster_wphi_cogx_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_wphi_cogx_%s", clusternodename.c_str()), cluster_wphi_cogx);
-    slimtree->SetBranchStatus(Form("cluster_nsaturated_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_nsaturated_%s", clusternodename.c_str()), cluster_nsaturated);
-
-    slimtree->SetBranchStatus(Form("cluster_e11_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e11_%s", clusternodename.c_str()), cluster_e11);
-    slimtree->SetBranchStatus(Form("cluster_e22_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e22_%s", clusternodename.c_str()), cluster_e22);
-    slimtree->SetBranchStatus(Form("cluster_e13_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e13_%s", clusternodename.c_str()), cluster_e13);
-    slimtree->SetBranchStatus(Form("cluster_e15_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e15_%s", clusternodename.c_str()), cluster_e15);
-    slimtree->SetBranchStatus(Form("cluster_e17_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e17_%s", clusternodename.c_str()), cluster_e17);
-    slimtree->SetBranchStatus(Form("cluster_e31_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e31_%s", clusternodename.c_str()), cluster_e31);
-    slimtree->SetBranchStatus(Form("cluster_e51_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e51_%s", clusternodename.c_str()), cluster_e51);
-    slimtree->SetBranchStatus(Form("cluster_e71_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e71_%s", clusternodename.c_str()), cluster_e71);
-    slimtree->SetBranchStatus(Form("cluster_e33_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e33_%s", clusternodename.c_str()), cluster_e33);
-    slimtree->SetBranchStatus(Form("cluster_e35_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e35_%s", clusternodename.c_str()), cluster_e35);
-    slimtree->SetBranchStatus(Form("cluster_e37_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e37_%s", clusternodename.c_str()), cluster_e37);
-    slimtree->SetBranchStatus(Form("cluster_e53_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e53_%s", clusternodename.c_str()), cluster_e53);
-    slimtree->SetBranchStatus(Form("cluster_e73_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e73_%s", clusternodename.c_str()), cluster_e73);
-    slimtree->SetBranchStatus(Form("cluster_e55_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e55_%s", clusternodename.c_str()), cluster_e55);
-    slimtree->SetBranchStatus(Form("cluster_e57_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e57_%s", clusternodename.c_str()), cluster_e57);
-    slimtree->SetBranchStatus(Form("cluster_e75_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e75_%s", clusternodename.c_str()), cluster_e75);
-    slimtree->SetBranchStatus(Form("cluster_e77_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e77_%s", clusternodename.c_str()), cluster_e77);
-    slimtree->SetBranchStatus(Form("cluster_w32_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_w32_%s", clusternodename.c_str()), cluster_w32);
-    slimtree->SetBranchStatus(Form("cluster_e32_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e32_%s", clusternodename.c_str()), cluster_e32);
-    slimtree->SetBranchStatus(Form("cluster_w72_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_w72_%s", clusternodename.c_str()), cluster_w72);
-    slimtree->SetBranchStatus(Form("cluster_e72_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e72_%s", clusternodename.c_str()), cluster_e72);
-    slimtree->SetBranchStatus(Form("cluster_w52_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_w52_%s", clusternodename.c_str()), cluster_w52);
-
-    slimtree->SetBranchStatus(Form("cluster_e_array_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_e_array_%s", clusternodename.c_str()), cluster_e_array);
-    // slimtree->SetBranchAddress(Form("cluster_adc_array_%s", clusternodename.c_str()), &cluster_adc_array);
-    // slimtree->SetBranchAddress(Form("cluster_e_array_idx_%s", clusternodename.c_str()), &cluster_e_array_idx);
-    // slimtree->SetBranchAddress(Form("cluster_status_array_%s", clusternodename.c_str()), &cluster_status_array);
-    slimtree->SetBranchStatus(Form("cluster_time_array_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_time_array_%s", clusternodename.c_str()), cluster_time_array);
-    slimtree->SetBranchStatus(Form("cluster_ownership_array_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ownership_array_%s", clusternodename.c_str()), cluster_ownership_array);
-
-    slimtree->SetBranchStatus(Form("cluster_iso_03_emcal_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_emcal_%s", clusternodename.c_str()), cluster_iso_03_emcal);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_hcalin_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalin_%s", clusternodename.c_str()), cluster_iso_03_hcalin);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_hcalout_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_hcalout_%s", clusternodename.c_str()), cluster_iso_03_hcalout);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_60_emcal_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_60_emcal_%s", clusternodename.c_str()), cluster_iso_03_60_emcal);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_60_hcalin_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalin_%s", clusternodename.c_str()), cluster_iso_03_60_hcalin);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_60_hcalout_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_60_hcalout_%s", clusternodename.c_str()), cluster_iso_03_60_hcalout);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()), cluster_iso_03_120_emcal);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()), cluster_iso_03_120_hcalin);
-    slimtree->SetBranchStatus(Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()), cluster_iso_03_120_hcalout);
-
-    slimtree->SetBranchStatus(Form("cluster_ihcal_et_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ihcal_et_%s", clusternodename.c_str()), cluster_ihcal_et);
-    slimtree->SetBranchStatus(Form("cluster_ohcal_et_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ohcal_et_%s", clusternodename.c_str()), cluster_ohcal_et);
-    slimtree->SetBranchStatus(Form("cluster_ihcal_et22_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ihcal_et22_%s", clusternodename.c_str()), cluster_ihcal_et22);
-    slimtree->SetBranchStatus(Form("cluster_ohcal_et22_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ohcal_et22_%s", clusternodename.c_str()), cluster_ohcal_et22);
-    slimtree->SetBranchStatus(Form("cluster_ihcal_et33_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ihcal_et33_%s", clusternodename.c_str()), cluster_ihcal_et33);
-    slimtree->SetBranchStatus(Form("cluster_ohcal_et33_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ohcal_et33_%s", clusternodename.c_str()), cluster_ohcal_et33);
-    slimtree->SetBranchStatus(Form("cluster_ihcal_ieta_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ihcal_ieta_%s", clusternodename.c_str()), cluster_ihcal_ieta);
-    slimtree->SetBranchStatus(Form("cluster_ihcal_iphi_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ihcal_iphi_%s", clusternodename.c_str()), cluster_ihcal_iphi);
-    slimtree->SetBranchStatus(Form("cluster_ohcal_ieta_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ohcal_ieta_%s", clusternodename.c_str()), cluster_ohcal_ieta);
-    slimtree->SetBranchStatus(Form("cluster_ohcal_iphi_%s", clusternodename.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_ohcal_iphi_%s", clusternodename.c_str()), cluster_ohcal_iphi);
-    //bdt score
-    slimtree->SetBranchStatus(Form("cluster_bdt_%s_%s", clusternodename.c_str(), bdt_model_name.c_str()), 1);
-    slimtree->SetBranchAddress(Form("cluster_bdt_%s_%s", clusternodename.c_str(), bdt_model_name.c_str()), cluster_bdt);
-
-    slimtree->SetBranchStatus("njet_truth", 1);
-    slimtree->SetBranchAddress("njet_truth", &njet_truth);
-    slimtree->SetBranchStatus("jet_truth_E", 1);
-    slimtree->SetBranchAddress("jet_truth_E", jet_truth_E);
-    slimtree->SetBranchStatus("jet_truth_Pt", 1);
-    slimtree->SetBranchAddress("jet_truth_Pt", jet_truth_Pt);
-    slimtree->SetBranchStatus("jet_truth_Eta", 1);
-    slimtree->SetBranchAddress("jet_truth_Eta", jet_truth_Eta);
-    slimtree->SetBranchStatus("jet_truth_Phi", 1);
-    slimtree->SetBranchAddress("jet_truth_Phi", jet_truth_Phi);
-
-    slimtree->SetBranchStatus("njet", 1);
-    slimtree->SetBranchAddress("njet", &njet);
-    slimtree->SetBranchStatus("jet_E", 1);
-    slimtree->SetBranchAddress("jet_E", jet_E);
-    slimtree->SetBranchStatus("jet_Pt", 1);
-    slimtree->SetBranchAddress("jet_Pt", jet_Pt);
-    slimtree->SetBranchStatus("jet_Eta", 1);
-    slimtree->SetBranchAddress("jet_Eta", jet_Eta);
-    slimtree->SetBranchStatus("jet_Phi", 1);
-    slimtree->SetBranchAddress("jet_Phi", jet_Phi);
 
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
     TH1F *h_max_photon_pT = new TH1F("h_max_photon_pT", "Max Photon pT", 1000, 0, 100);
@@ -685,7 +565,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     TH1F *h_decay_photon_pT = new TH1F("h_decay_photon_pT", "Decay Photon pT", 1000, 0, 100);
     TH1F *h_vertexz = new TH1F("h_vertexz", "Vertex z", 100, -50, 50);
     TH1F *h_cluster_common_Et = new TH1F("h_cluster_common_E", "Cluster Common E", 1000, 0, 100);
-    TH1F *h_cluster_common_leaking_Et = new TH1F("h_cluster_common_leaking_E", "Cluster Common Leaking E", 1000, 0, 100);
+    TH1F *h_cluster_common_leading_Et = new TH1F("h_cluster_common_leading_E", "Cluster Common Leading E", 1000, 0, 100);
 
     TH1F *h_max_truth_jet_pT = new TH1F("h_max_truth_jet_pT", "Max Truth Jet pT", 1000, 0, 100);
 
@@ -720,6 +600,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     std::vector<TH1D *> h_nontight_iso_cluster_signal;
     std::vector<TH1D *> h_nontight_noniso_cluster_signal;
     std::vector<TH1D *> h_all_cluster_signal;
+    std::vector<TH2D *> h_all_cluster_Et_max_b2bjet; // max cluster Et vs max backtobjets Et
     std::vector<TH1D *> h_tight_cluster_signal;
 
     std::vector<TH1D *> h_tight_iso_cluster_background;
@@ -729,6 +610,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
     std::vector<TH2D *> h_singal_reco_isoET;
     std::vector<TH2D *> h_singal_truth_isoET;
+    std::vector<TH2D *> h_background_truth_isoET;
 
     // here are for the plots we gonna make for both data and simulation
     std::vector<TH1D *> h_tight_iso_cluster;
@@ -738,6 +620,21 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     std::vector<TH1D *> h_common_cluster;
     std::vector<TH1D *> h_all_cluster;
     std::vector<TH1D *> h_tight_cluster;
+    // delta t between cluster and mbd
+    std::vector<TH2D *> h_delta_t_all_cluster;
+    std::vector<TH2D *> h_delta_t_tight_iso_cluster;
+    std::vector<TH2D *> h_delta_t_tight_noniso_cluster;
+    std::vector<TH2D *> h_delta_t_nontight_iso_cluster;
+    std::vector<TH2D *> h_delta_t_nontight_noniso_cluster;
+    std::vector<TH2D *> h_delta_t_common_cluster;
+    std::vector<TH2D *> h_delta_t_tight_cluster;
+    std::vector<TH2D *> h_delta_t_tight_cluster_b2bjet;
+    std::vector<TH2D *> h_delta_t_nontight_iso_cluster_b2bjet;
+    std::vector<TH2D *> h_delta_t_nontight_noniso_cluster_b2bjet;
+    std::vector<TH2D *> h_delta_t_npb_cluster;
+    //mbd t vs cluster t
+    TH2D* h_mbd_t_vs_cluster_t = new TH2D("h_mbd_t_vs_cluster_t", "MBD T vs Cluster T", 160, -40, 40, 160, -40, 40);
+
 
     // unfold response matrix
     std::vector<RooUnfoldResponse *> responses_full;
@@ -813,6 +710,8 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
     // truth iso vs reco iso for different pT bins and eta bins
     std::vector<std::vector<TH2D *>> h_iso_truth_reco;
     h_iso_truth_reco.resize(eta_bins.size() - 1);
+    std::vector<std::vector<TH2D *>> h_background_iso_truth_reco;
+    h_background_iso_truth_reco.resize(eta_bins.size() - 1);
     // response vs. isoET
     std::vector<std::vector<TH2D *>> h_response_isoET;
     h_response_isoET.resize(eta_bins.size() - 1);
@@ -938,6 +837,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         h_all_cluster_signal.push_back(new TH1D(Form("h_all_cluster_signal_%d", ieta),
                                                 Form("All Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                 n_pT_bins, pT_bin_edges));
+        h_all_cluster_Et_max_b2bjet.push_back(new TH2D(Form("h_all_cluster_Et_max_b2bjet_%d", ieta),
+                                                       Form("All Cluster Et Max Backtobjets %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                       n_pT_bins, pT_bin_edges, 100, 0, 100));
+
         h_tight_cluster_signal.push_back(new TH1D(Form("h_tight_cluster_signal_%d", ieta),
                                                   Form("Tight Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                   n_pT_bins, pT_bin_edges));
@@ -963,6 +866,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                                                 Form("Signal Truth Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                 400, 0, 50, 4400, -5, 50));
 
+        h_background_truth_isoET.push_back(new TH2D(Form("h_background_truth_isoET_%d", ieta),
+                                                    Form("Background Truth Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                    400, 0, 50, 4400, -5, 50));
+
         // plot for both data and simulation
         h_tight_iso_cluster.push_back(new TH1D(Form("h_tight_iso_cluster_%d", ieta),
                                                Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -986,7 +893,40 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                                            Form("Tight Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                            n_pT_bins, pT_bin_edges));
 
-        // unfold histograms
+        h_delta_t_all_cluster.push_back(new TH2D(Form("h_delta_t_all_cluster_%d", ieta),
+                                                  Form("Delta T Between All Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_tight_iso_cluster.push_back(new TH2D(Form("h_delta_t_tight_iso_cluster_%d", ieta),
+                                                  Form("Delta T Between Tight Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_tight_noniso_cluster.push_back(new TH2D(Form("h_delta_t_tight_noniso_cluster_%d", ieta),
+                                                  Form("Delta T Between Tight Non-Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_nontight_iso_cluster.push_back(new TH2D(Form("h_delta_t_nontight_iso_cluster_%d", ieta),
+                                                  Form("Delta T Between Non-Tight Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_nontight_noniso_cluster.push_back(new TH2D(Form("h_delta_t_nontight_noniso_cluster_%d", ieta),
+                                                  Form("Delta T Between Non-Tight Non-Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_common_cluster.push_back(new TH2D(Form("h_delta_t_common_cluster_%d", ieta),
+                                                  Form("Delta T Between Common Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_tight_cluster.push_back(new TH2D(Form("h_delta_t_tight_cluster_%d", ieta),
+                                                  Form("Delta T Between Tight Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_tight_cluster_b2bjet.push_back(new TH2D(Form("h_delta_t_tight_cluster_b2bjet_%d", ieta),
+                                                  Form("Delta T Between Tight Cluster and B2BJet %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_nontight_iso_cluster_b2bjet.push_back(new TH2D(Form("h_delta_t_nontight_iso_cluster_b2bjet_%d", ieta),
+                                                  Form("Delta T Between Non-Tight Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_nontight_noniso_cluster_b2bjet.push_back(new TH2D(Form("h_delta_t_nontight_noniso_cluster_b2bjet_%d", ieta),
+                                                  Form("Delta T Between Non-Tight Non-Iso Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+        h_delta_t_npb_cluster.push_back(new TH2D(Form("h_delta_t_npb_cluster_%d", ieta),
+                                                  Form("Delta T Between NPB Cluster and MBD %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                n_pT_bins, pT_bin_edges, 160, -40, 40));
+                                                  // unfold histograms
         h_pT_truth_response.push_back(new TH1D(Form("h_pT_truth_response_%d", ieta),
                                                Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                n_pT_bins_truth, pT_bin_edges_truth));
@@ -1152,6 +1092,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                                                       Form("Iso Truth Reco %.1f < eta < %.1f %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
                                                       300, 0, 30, 400, -10, 30));
 
+            h_background_iso_truth_reco[ieta].push_back(new TH2D(Form("h_background_iso_truth_reco_%d_%d", ieta, ipt),
+                                                              Form("Background Truth Iso ET %.1f < eta < %.1f %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
+                                                              300, 0, 30, 400, -10, 30));
+            
             h_response_isoET[ieta].push_back(new TH2D(Form("h_response_isoET_%d_%d", ieta, ipt),
                                                       Form("Response Iso ET %.1f < eta < %.1f %.1f < pT < %.1f", eta_bins[ieta], eta_bins[ieta + 1], pT_bin_edges[ipt], pT_bin_edges[ipt + 1]),
                                                       150, 0, 1.5, 400, -10, 30));
@@ -1160,12 +1104,17 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
     TRandom3 *rand = new TRandom3(0);
     std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
-    int nentries = slimtree->GetEntries();
-    for (int ientry = 0; ientry < nentries; ientry++)
-    {
+    int nentries = chain.GetEntries();
+    int ientry = 0;
 
-        if (ientry == 16152886)
+    while (reader.Next())
+    {
+        if (ientry < 0)
+        {
+            ientry++;
             continue;
+        }
+        //std::cout<<"ientry: "<<ientry<<std::endl;
         // new calib entry
         // if (ientry == 16095884)
         //     continue;
@@ -1176,21 +1125,26 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         // std::cout<<ientry<<std::endl;
         if (ientry % 10000 == 0)
             std::cout << "Processing entry " << ientry << " / " << nentries << std::endl;
-        Long64_t bytesRead = slimtree->GetEntry(ientry);
-        if (bytesRead <= 0) {
-            std::cout << "Error reading entry " << ientry << std::endl;
-            continue;
-        }
-        std::cout<<"vertexz: "<<vertexz<<std::endl;
+        
+        //std::cout<<"vertexz: "<<*vertexz<<std::endl;
+
+
+        
+
+
         if (!issim)
         {
-            if (skiprunnumbers.find(runnumber) != skiprunnumbers.end())
+            if (skiprunnumbers.find(*runnumber) != skiprunnumbers.end())
             {
+                ientry++;
                 continue;
             }
 
             if (scaledtrigger[trigger_used] == 0)
+            {
+                ientry++;
                 continue;
+            }
             /*
             float trigger_weight = 1.0;
             if (trigger_prescale[trigger_used] != 0)
@@ -1220,6 +1174,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         // map for iso eff
         std::map<int, bool> photon_iso;
         std::map<int, float> photon_iso_ET;
+        std::map<int, float> all_iso_ET;
         // map for id eff
         std::map<int, bool> photon_id;
         // map for n cluster per truth photon
@@ -1228,10 +1183,28 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         {
             float maxphotonpT = 0;
             int maxphotonclass = 0;
-            for (int iparticle = 0; iparticle < nparticles; iparticle++)
+            for (int iparticle = 0; iparticle < *nparticles; iparticle++)
             {
                 particle_trkidmap[particle_trkid[iparticle]] = iparticle;
                 // if (!isbackground)
+                float truthisoET = 0;
+                if (conesize == 4)
+                {
+                    truthisoET = particle_truth_iso_04[iparticle];
+                }
+                else if (conesize == 3)
+                {
+                    truthisoET = particle_truth_iso_03[iparticle];
+                }
+                else if (conesize == 2)
+                {
+                    truthisoET = particle_truth_iso_02[iparticle];
+                }
+                else
+                {
+                    std::cout << "Error: conesize not supported" << std::endl;
+                    continue;
+                }
 
                 if (particle_pid[iparticle] == 22)
                 {
@@ -1241,24 +1214,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                         maxphotonclass = particle_photonclass[iparticle];
                     }
 
-                    float truthisoET = 0;
-                    if (conesize == 4)
-                    {
-                        truthisoET = particle_truth_iso_04[iparticle];
-                    }
-                    else if (conesize == 3)
-                    {
-                        truthisoET = particle_truth_iso_03[iparticle];
-                    }
-                    else if (conesize == 2)
-                    {
-                        truthisoET = particle_truth_iso_02[iparticle];
-                    }
-                    else
-                    {
-                        std::cout << "Error: conesize not supported" << std::endl;
-                        continue;
-                    }
+
                     if (particle_photonclass[iparticle] < 3) // direct or fragmentation
                     {
                         if (truthisoET < truthisocut)
@@ -1295,11 +1251,13 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                         photon_iso_ET[iparticle] = truthisoET;
                     }
                 }
+                all_iso_ET[iparticle] = truthisoET;
             }
             if (!isbackground)
             {
                 if ((maxphotonpT > max_photon_upper) || (maxphotonpT < max_photon_lower))
                 {
+                    ientry++;
                     continue;
                 }
             }
@@ -1325,7 +1283,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             if (isbackground)
             {
                 float maxjetpT = 0;
-                for (int ijet = 0; ijet < njet_truth; ijet++)
+                for (int ijet = 0; ijet < *njet_truth; ijet++)
                 {
                     if (jet_truth_Pt[ijet] > maxjetpT)
                     {
@@ -1336,15 +1294,17 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
                 if ((maxjetpT > max_jet_upper) )
                 {
+                    ientry++;
                     continue;
                 }
                 if (maxjetpT < max_jet_lower){
+                    ientry++;
                     continue;
                 }
 
                 // energy scale cut for now
                 /*
-                if ((energy_scale > energy_scale_upper) || (energy_scale < energy_scale_lower))
+                if ((*energy_scale > energy_scale_upper) || (*energy_scale < energy_scale_lower))
                 {
                     continue;
                 }
@@ -1355,7 +1315,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             //std::cout<<"at line 1350"<<std::endl;
             if (!isbackground)
             {
-                for (int iparticle = 0; iparticle < nparticles; iparticle++)
+                for (int iparticle = 0; iparticle < *nparticles; iparticle++)
                 {
                     particle_trkidmap[particle_trkid[iparticle]] = iparticle;
 
@@ -1430,10 +1390,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                                 h_truth_pT[etabin]->Fill(photonpT, weight);
 
                                 // check if truth vertex is within the vertex cut
-                                if (abs(vertexz_truth) < vertexcut)
+                                if (abs(*vertexz_truth) < vertexcut)
                                 {
                                     h_truth_pT_vertexcut[etabin]->Fill(photonpT, weight);
-                                    if (mbdnorthhit >= 1 && mbdsouthhit >= 1 && abs(vertexz) < vertexcut)
+                                    if (*mbdnorthhit >= 1 && *mbdsouthhit >= 1 && abs(*vertexz) < vertexcut)
                                     {
                                         h_truth_pT_vertexcut_mbd_cut[etabin]->Fill(photonpT, weight);
                                     }
@@ -1446,43 +1406,77 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         }
         //std::cout<<"at line 1442"<<std::endl;
         // check vertex cut
-        //std::cout<<"vertexz: "<<vertexz<<std::endl;
-        if (abs(vertexz) > vertexcut)
+        //std::cout<<"vertexz: "<<*vertexz<<std::endl;
+        if (abs(*vertexz) > vertexcut)
+        {
+            ientry++;
             continue;
+        }
         int vertex_bin = -1;
         for (int ivtx = 0; ivtx < (int)vertex_bins.size() - 1; ivtx++)
         {
-            if ((abs(vertexz) > vertex_bins[ivtx]) && (abs(vertexz) < vertex_bins[ivtx + 1]))
+            if ((abs(*vertexz) >= vertex_bins[ivtx]) && (abs(*vertexz) < vertex_bins[ivtx + 1]))
             {
                 vertex_bin = ivtx;
                 break;
             }
         }
-        //std::cout<<"accepted vertexz: "<<vertexz<<std::endl;
-        //std::cout<<"mbdnorthhit: "<<mbdnorthhit<<std::endl;
-        //std::cout<<"mbdsouthhit: "<<mbdsouthhit<<std::endl;
-        if (!(mbdnorthhit >= 1 && mbdsouthhit >= 1))
+
+        //std::cout<<"accepted vertexz: "<<*vertexz<<std::endl;
+        //std::cout<<"mbdnorthhit: "<<*mbdnorthhit<<std::endl;
+        //std::cout<<"mbdsouthhit: "<<*mbdsouthhit<<std::endl;
+        if (!(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
+        {
+            ientry++;
             continue;
+        }
+
+        float mbd_mean_time = -999;
+        {
+            //mbd_mean_time = (*mbdnorthtmean * *mbdnorthhit + *mbdsouthtmean * *mbdsouthhit) / (*mbdnorthhit + *mbdsouthhit);
+
+            //// now check if MBD time is available, and if so, apply the stricter cut
+            //double mbdoffset = -2.07;
+            //if (*runnumber > 49375 && *runnumber < 49700) mbdoffset += +2.5;
+            //if (*runnumber > 48600 && *runnumber < 49375) mbdoffset += -7.5;
+            //if (*runnumber > 48180 && *runnumber < 48270) mbdoffset += -7.5;
+            //if (*runnumber > 48050 && *runnumber < 48090) mbdoffset += -7.5;
+
+            mbd_mean_time = *mbd_time;
+            float mbdoffset =0;
+            if(mbd_t0_correction.find(*runnumber) != mbd_t0_correction.end())
+            {
+                mbdoffset = mbd_t0_correction[*runnumber];
+            }
+
+            if(issim)
+            {
+                mbdoffset = 0.0;
+            }
+
+            mbd_mean_time =  mbd_mean_time - mbdoffset;
+            
+        }
         //std::cout<<"at line 1459"<<std::endl;
         if (issim)
         {
-            vertex_weight = f_vertex_reweight->Eval(vertexz);
+            vertex_weight = f_vertex_reweight->Eval(*vertexz);
         }
 
         std::vector<float> jetphi;
 
-        for (int ijet = 0; ijet < njet; ijet++)
+        for (int ijet = 0; ijet < *njet; ijet++)
         {
             if (jet_Pt[ijet] < 10)
                 continue;
             jetphi.push_back(jet_Phi[ijet]);
         }
 
-        h_vertexz->Fill(vertexz, weight);
+        h_vertexz->Fill(*vertexz, weight);
         float leading_common_cluster_ET = 0;
         int leading_cluster_ET_index = -1;
         float leading_cluster_ET = 0;
-        for (int icluster = 0; icluster < ncluster; icluster++)
+        for (int icluster = 0; icluster < *ncluster; icluster++)
         {
             if (issim)
             {
@@ -1507,7 +1501,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             }
         }
 
-        for (int icluster = 0; icluster < ncluster; icluster++)
+        for (int icluster = 0; icluster < *ncluster; icluster++)
         {
             bool is_leading_cluster = (icluster == leading_cluster_ET_index);
             // scale cluster ET
@@ -1522,11 +1516,11 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
                 continue;
-
-
+            
             // for jet 10 event we want to remove some high ET clusters to reduce the fluctuation
             if (isbackground)
             {
+                //std::cout<<"cluster_Et[icluster]: "<<cluster_Et[icluster]<<" cluster_ET_upper: "<<cluster_ET_upper<<std::endl;
                 if (cluster_Et[icluster] > cluster_ET_upper)
                 {
                     continue;
@@ -1581,7 +1575,35 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
             if (iso_threshold)
             {
-                recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+                if (iso_hcalonly)
+                {
+                    recoisoET = cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
+                }
+                else
+                {
+                    //recoisoET = cluster_iso_03_70_emcal[icluster] + cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
+                    recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+                    if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
+                    {
+                        //std::cout<<"using 0.05 emcal inner"<<std::endl;
+                        recoisoET -= cluster_iso_005_70_emcal[icluster];
+                    }
+                    else if (iso_emcalinnerr > 0.09 && iso_emcalinnerr < 0.11)
+                    {
+                        //std::cout<<"using 0.1 emcal inner"<<std::endl;
+                        recoisoET -= cluster_iso_01_70_emcal[icluster];
+                    }
+                    else if (iso_emcalinnerr > 0.19 && iso_emcalinnerr < 0.21)
+                    {
+                        //std::cout<<"using 0.2 emcal inner"<<std::endl;
+                        recoisoET -= cluster_iso_02_70_emcal[icluster];
+                    }
+                    //if(recoisoET < 0)
+                    //{
+                    //    std::cout<<"recoisoET < 0, icluster: "<<icluster<<" recoisoET: "<<recoisoET<<std::endl;
+                    //}
+
+                }
             }
             // fudge the MC isoET
             if (issim)
@@ -1622,14 +1644,15 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             for (int i = 0; i < 49; i++)
             {
 
-                if (cluster_ownership_array[icluster][i] == 1)
+                if (cluster_ownership_array[icluster * 49 + i] == 1)
                 {
-                    clusteravgtime += cluster_time_array[icluster][i] * cluster_e_array[icluster][i];
-                    // std::cout<<"cluster_time_array[icluster][i]: "<<cluster_time_array[icluster][i]<<std::endl;
-                    cluster_total_e += cluster_e_array[icluster][i];
+                    clusteravgtime += cluster_time_array[icluster * 49 + i] * cluster_e_array[icluster * 49 + i];
+                    // std::cout<<"cluster_time_array[icluster][i]: "<<cluster_time_array[icluster * 49 + i]<<std::endl;
+                    cluster_total_e += cluster_e_array[icluster * 49 + i];
                 }
             }
             clusteravgtime = cluster_total_e > 0 ? clusteravgtime / cluster_total_e : 0;
+            clusteravgtime = clusteravgtime * TIME_SAMPLE_NS;
 
             bool badtime = clusteravgtime < bg_timing_cut;
 
@@ -1643,7 +1666,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
             float jet_eta = 0.6;
 
-            for (int ijet = 0; ijet < njet; ijet++)
+            for (int ijet = 0; ijet < *njet; ijet++)
             {
                 float dphi = cluster_Phi[icluster] - jet_Phi[ijet];
 
@@ -1676,7 +1699,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             }
             if (issim)
             {
-                for (int ijet = 0; ijet < njet_truth; ijet++)
+                for (int ijet = 0; ijet < *njet_truth; ijet++)
                 {
                     float dphi = cluster_Phi[icluster] - jet_truth_Phi[ijet];
 
@@ -1925,7 +1948,9 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             {
                 h_tight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_tight_iso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_tight_iso_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
                 // h_pT_reco_response[etabin]->Fill(cluster_Et[icluster]);
+                //std::cout<<"vertex_bin: "<<vertex_bin<<std::endl;
                 h_vertex_tight_iso_cluster_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                 if (isnpb)
                     h_tight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1934,11 +1959,16 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             {
                 h_tight_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_tight_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_tight_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                if(max_b2bjet_pT > 10){
+                    h_delta_t_tight_cluster_b2bjet[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                }
             }
             if (tight && noniso)
             {
                 h_tight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_tight_noniso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_tight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
                 h_vertex_tight_noniso_cluster_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                 if (isnpb)
                     h_tight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1947,6 +1977,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             {
                 h_nontight_iso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_nontight_iso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_nontight_iso_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                if(max_b2bjet_pT > 10){
+                    h_delta_t_nontight_iso_cluster_b2bjet[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                }
                 h_vertex_nontight_iso_cluster_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                 if (isnpb)
                     h_nontight_iso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1955,6 +1989,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             {
                 h_nontight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_nontight_noniso_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_nontight_noniso_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                if(max_b2bjet_pT > 10){
+                    h_delta_t_nontight_noniso_cluster_b2bjet[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+                }
                 h_vertex_nontight_noniso_cluster_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                 if (isnpb)
                     h_nontight_noniso_cluster_background[etabin]->Fill(cluster_Et[icluster], weight);
@@ -1963,6 +2001,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             {
                 h_common_cluster[etabin]->Fill(cluster_Et[icluster], weight);
                 h_common_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+                h_delta_t_common_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
                 h_cluster_common_Et->Fill(cluster_Et[icluster], weight);
                 if (cluster_Et[icluster] > leading_common_cluster_ET)
                 {
@@ -1971,6 +2010,12 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
             }
             h_all_cluster[etabin]->Fill(cluster_Et[icluster], weight);
             h_all_xjgamma[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
+            h_delta_t_all_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+            h_mbd_t_vs_cluster_t->Fill(mbd_mean_time, clusteravgtime, weight);
+            if (isnpb)
+            {
+                h_delta_t_npb_cluster[etabin]->Fill(cluster_Et[icluster], clusteravgtime - mbd_mean_time, weight);
+            }
             if (pTbin != -1)
             {
                 if (tight)
@@ -2048,6 +2093,13 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                 // iparticle has to be in the photon map
                 if (photon_reco.find(iparticle) == photon_reco.end())
                 {
+                    // this is non-photon background
+                    if (pTbin != -1)
+                    {
+
+                        h_background_iso_truth_reco[etabin][pTbin]->Fill(all_iso_ET[iparticle], recoisoET, weight);
+                    }
+                    h_background_truth_isoET[etabin]->Fill(particle_Pt[iparticle], recoisoET, weight);
                     continue;
                 }
 
@@ -2079,6 +2131,8 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                     if (particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth && cluster_Et[icluster] > pTmin && cluster_Et[icluster] < pTmax)
                     {
                         h_all_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
+                        // fill the max backtobjets
+                        h_all_cluster_Et_max_b2bjet[etabin]->Fill(cluster_Et[icluster], max_b2bjet_pT, weight);
                     }
 
                     if (tight)
@@ -2148,7 +2202,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         } // end of cluster loop
         if (leading_common_cluster_ET > 0)
         {
-            h_cluster_common_leaking_Et->Fill(leading_common_cluster_ET, weight);
+            h_cluster_common_leading_Et->Fill(leading_common_cluster_ET, weight);
         }
 
         // go over the map and fill the TEfficiency
@@ -2198,6 +2252,7 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                 }
             }
         }
+        ientry++;
     }
     TFile *fresponse = new TFile(responsefilename.c_str(), "RECREATE");
     for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
