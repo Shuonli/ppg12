@@ -67,6 +67,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.5,0.85,1,strleg2.c_str(),0.04);
   myText(0.5,0.80,1,Form("Data   %s",strleg3.c_str()),0.04);
+  myText(0.18,0.75,1,suffix.c_str(),0.04);
   myMarkerLineText(0.55,0.75, 0, kBlack, 0, kBlack, 1,"A: tight iso", 0.05, true);
   myMarkerLineText(0.55,0.70, 0, kRed, 0, kRed, 1,"B: tight noniso", 0.05, true);
   myMarkerLineText(0.55,0.65, 0, kBlue, 0, kBlue, 1,"C: nontight iso", 0.05, true);
@@ -80,7 +81,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   TCanvas* c3 = new TCanvas("c3","c3",600,600);
   frame_et_rec->Draw("axis");
   frame_et_rec->GetYaxis()->SetRangeUser(7e-3,2);
-  frame_et_rec->GetXaxis()->SetRangeUser(10,30);
+  frame_et_rec->GetXaxis()->SetRangeUser(10,35);
   frame_et_rec->GetYaxis()->SetTitle("Ratio");
   h_BoverA->Draw("same hist");
 
@@ -94,6 +95,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   myText(0.18,0.85,1,strleg2.c_str(),0.04);
   myText(0.18,0.80,1,strleg3.c_str(),0.04);
   myText(0.18,0.75,1,"Data",0.04);
+  myText(0.18,0.70,1,suffix.c_str(),0.04);
   myMarkerLineText(0.55,0.75+0.15, 0, kBlack, 0, kBlack,1,"B/A: tight noniso"   , 0.05, true);
   myMarkerLineText(0.55,0.70+0.15, 0, kRed  , 0, kRed  ,1,"C/A: nontight iso", 0.05, true);
   myMarkerLineText(0.55,0.65+0.15, 0, kBlue , 0, kBlue ,1,"D/A: nontight noniso", 0.05, true);
@@ -124,7 +126,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   myMarkerLineText(0.53,0.61+0.15, 0, kBlue , 0, kBlue ,1,"#it{N}^{sig}_{D}/#it{N}^{sig}_{A} nontight noniso", 0.05, true);
 
   //gPad->SetLogy();
-  c4->SaveAs(Form("%s/leakage_fraction_et.pdf",savePath.c_str()));
+  c4->SaveAs(Form("%s/leakage_fraction_et_%s.pdf",savePath.c_str(),suffix.c_str()));
 
 
 
@@ -188,6 +190,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
     myText          (0.60,0.9 ,1,strleg1.c_str(),0.04);
     myText          (0.60,0.85,1,strleg2.c_str(),0.04);
     myText          (0.60,0.80,1,strleg3.c_str(),0.04);
+    myText          (0.60,0.75,1,suffix.c_str(),0.04);
     myMarkerLineText(0.50,0.75, 1, kBlack, 20, kBlack, 1,"tight data", 0.05, true);
     myMarkerLineText(0.50,0.70, 0, kBlack, 0, kBlack, 1,"tight inclusive MC", 0.05, true);
     myMarkerLineText(0.50,0.65, 1, kRed, 24, kRed, 1,"nontight data", 0.05, true);
@@ -214,6 +217,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
     myText          (0.50,0.9 -0.1,1,strleg1.c_str(),0.04);
     myText          (0.50,0.85-0.1,1,strleg2.c_str(),0.04);
     myText          (0.50,0.80-0.1,1,strleg3.c_str(),0.04);
+    myText          (0.50,0.75-0.1,1,suffix.c_str(),0.04);
     myMarkerLineText(0.55,0.75-0.1, 0, kBlack, 0, kBlack, 1,"tight data", 0.05, true);
     myMarkerLineText(0.55,0.70-0.1, 0, kRed, 0, kRed, 1,"nontight data", 0.05, true);
     myMarkerLineText(0.55,0.65-0.1, 0, kBlue, 0, kBlue, 1,"tight signal MC", 0.05, true);

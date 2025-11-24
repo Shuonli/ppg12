@@ -10,7 +10,6 @@ void plot_purity_selection(const std::string suffix = "nom")
 
     std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_"+suffix+".root";
 
-
     TFile *fdata = new TFile(dataname.c_str());
 
     TFile *fMC = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nomtestv3_mc.root");
@@ -26,7 +25,7 @@ void plot_purity_selection(const std::string suffix = "nom")
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];Purity");
     frame_et_rec->GetYaxis()->SetRangeUser(0.0, 1.1);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 26);
+    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
     frame_et_rec->Draw("axis");
     
     gpurity->SetMarkerColor(kBlack);
@@ -64,6 +63,7 @@ void plot_purity_selection(const std::string suffix = "nom")
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
     myText(xpos2,ypos-0*dy,1,strleg3.c_str(),fontsize,1);
+    myText(xpos,ypos-2*dy,1,suffix.c_str(),fontsize,0);
     if(plotMC_truth)
       myText(xpos2,ypos-1*dy,1,strIncMC.c_str(),fontsize,1);
 

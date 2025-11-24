@@ -1,6 +1,6 @@
 #include "plotcommon.h"
 
-void plot_purity_sim_selection(const std::string suffix = "nomtest")
+void plot_purity_sim_selection(const std::string suffix = "bdt_base")
 {
 
     init_plot();
@@ -42,6 +42,7 @@ void plot_purity_sim_selection(const std::string suffix = "nomtest")
     myText(0.5, 0.9, 1, strleg1.c_str(), 0.04);
     myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
     myText(0.5, 0.80, 1, strMC.c_str(), 0.04);
+    myText(0.5, 0.75, 1, suffix.c_str(), 0.04);
 
     myMarkerLineText(0.30, 0.25, 1, kBlack, 20, kBlack, 1, "w/o signal leakage correction", 0.05, true);
     myMarkerLineText(0.30, 0.20, 1, kBlue, 20, kBlue, 1, "w/ signal leakage correction", 0.05, true);
