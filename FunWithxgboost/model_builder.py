@@ -22,7 +22,17 @@ class ModelBuilder:
         self.config = config
         self.model_config = config['model']
         self.global_seed = config['training']['global_seed']
-    
+
+    def update_params(self, tuned_params: Dict) -> None:
+        """Update model parameters with tuned hyperparameters.
+
+        Args:
+            tuned_params: Dictionary of hyperparameters from Optuna
+        """
+        if tuned_params is not None:
+            self.model_config["params"].update(tuned_params)
+            print(f"Updated model with tuned hyperparameters: {tuned_params}")
+
     def build_pipeline(self) -> Pipeline:
         """Build the complete preprocessing and model pipeline."""
         steps = []
@@ -47,7 +57,6 @@ class ModelBuilder:
                 **params,
                 objective="binary:logistic",
                 eval_metric="auc",
-                use_label_encoder=False,
             )
         elif clf_type == "hgb":
             hgb_params = {

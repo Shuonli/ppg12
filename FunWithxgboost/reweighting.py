@@ -102,6 +102,56 @@ class KinematicReweighter:
         
         return df_out
     
+    def apply_vertex_reweighting(self, df: pd.DataFrame, label: int) -> pd.DataFrame:
+        """Apply vertex z reweighting for a specific class to flatten the distribution."""
+        print(f"DEBUG: apply_vertex_reweighting called for label {label}")
+        print(f"DEBUG: vertex_reweight config = {self.reweight_config.get('vertex_reweight', False)}")
+        print(f"DEBUG: 'vertexz' in df = {'vertexz' in df.columns}")
+        
+        df_out = df.copy()
+        mask = df_out[self.label_col] == label
+        
+        if not mask.any():
+            print(f"DEBUG: No samples for label {label}")
+            return df_out
+        
+        if not self.reweight_config.get('vertex_reweight', False):
+            print(f"DEBUG: Vertex reweighting disabled, skipping")
+            return df_out
+        
+        # Vertex z Reweighting
+        vertex_vals = df_out.loc[mask, "vertexz"].values
+        if len(vertex_vals) == 0:
+            print(f"DEBUG: No vertex values for label {label}")
+            return df_out
+        
+        print(f"DEBUG: ✓ Applying vertex reweighting for label {label}")
+        print(f"DEBUG: Vertex range: {vertex_vals.min():.2f} to {vertex_vals.max():.2f} cm")
+        print(f"DEBUG: Number of samples: {len(vertex_vals)}")
+        
+        # Use the actual vertex range from the data for binning
+        vertex_min, vertex_max = vertex_vals.min(), vertex_vals.max()
+        n_bins = self.reweight_config.get('vertex_reweight_bins', 20)
+        
+        vertex_bins = np.linspace(vertex_min, vertex_max, n_bins + 1)
+        hist_vertex, bin_edges_vertex = np.histogram(vertex_vals, bins=vertex_bins, density=True)
+        hist_vertex = hist_vertex * n_bins
+        x_centers_vertex = 0.5 * (bin_edges_vertex[:-1] + bin_edges_vertex[1:])
+        
+        spline_vertex = UnivariateSpline(x_centers_vertex, hist_vertex, s=0.0)
+        pdf_vertex_vals = spline_vertex(vertex_vals)
+        pdf_vertex_vals = np.clip(pdf_vertex_vals, a_min=1e-3, a_max=None)
+        
+        weights_vertex = 1.0 / pdf_vertex_vals
+        # Apply weight cap if specified
+        weight_cap = self.reweight_config.get("vertex_reweight_max", None)
+        if weight_cap is not None:
+            weights_vertex = np.clip(weights_vertex, a_min=None, a_max=weight_cap)
+        weights_vertex /= np.mean(weights_vertex)
+        df_out.loc[mask, "weight"] *= weights_vertex
+        
+        return df_out
+    
     def apply_all_reweighting(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply all reweighting steps."""
         df_out = self.apply_class_reweighting(df)
@@ -110,5 +160,6 @@ class KinematicReweighter:
         for label in [0, 1]:
             df_out = self.apply_eta_reweighting(df_out, label)
             df_out = self.apply_et_reweighting(df_out, label)
+            df_out = self.apply_vertex_reweighting(df_out, label)
         
         return df_out

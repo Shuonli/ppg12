@@ -1,0 +1,201 @@
+binning:
+  # Binning mode: "pt" for pT/ET binning, "vertex" for vertex z binning
+  mode: pt  # Options: "pt", "vertex"
+
+  # pT/ET binning configuration (used when mode="pt")
+  pt_edges:
+  - 6
+  - 10
+  - 15
+  - 20
+  - 25
+  - 35
+  pt_labels:
+  - '6_10'
+  - '10_15'
+  - '15_20'
+  - '20_25'
+  - '25_35'
+
+  # Vertex z binning configuration (used when mode="vertex")
+  vertex_edges:
+  - -100.0
+  - -30.0
+  - 30.0
+  - 100.0
+  vertex_labels:
+  - '-100_-30'
+  - '-30_30'
+  - '30_100'
+
+  # For backward compatibility
+  edges:
+  - 6
+  - 10
+  - 15
+  - 20
+  - 25
+  - 35
+  labels:
+  - '6_10'
+  - '10_15'
+  - '15_20'
+  - '20_25'
+  - '25_35'
+data:
+  iso_column: recoisoET
+  label_column: label
+  features:
+  - cluster_Et
+  - cluster_weta_cogx
+  - cluster_wphi_cogx
+  - vertexz
+  - cluster_Eta
+  - e11_over_e33
+  - cluster_et1
+  - cluster_et2
+  - cluster_et3
+  - cluster_et4
+  - e32_over_e35
+  - cluster_w32
+  - cluster_w52
+  - cluster_w72
+  #'e11_over_e22', 'e11_over_e13', 'e11_over_e15', 'e11_over_e17', 'e11_over_e31', 'e11_over_e51', 'e11_over_e71', 'e22_over_e33', 'e22_over_e35', 'e22_over_e37', 'e22_over_e53'
+  - e11_over_e22
+  - e11_over_e13
+  - e11_over_e15
+  - e11_over_e17
+  - e11_over_e31
+  - e11_over_e51
+  - e11_over_e71
+  - e22_over_e33
+  - e22_over_e35
+  - e22_over_e37
+  - e22_over_e53
+  per_bin_file_sets:
+    '15_25':
+      background:
+      - shapes_jet20.txt
+      signal:
+      - shapes_photon10.txt
+    '25_35':
+      background:
+      - shapes_jet30.txt
+      signal:
+      - shapes_photon20.txt
+    '5_15':
+      background:
+      - shapes_jet15.txt
+      signal:
+      - shapes_photon5.txt
+  pt_column: cluster_Et
+  single_file_set:
+    background:
+    - NOSPLIT/shapes_jet50.txt
+    - NOSPLIT/shapes_jet30.txt
+    - NOSPLIT/shapes_jet20.txt
+    - NOSPLIT/shapes_jet15.txt
+    - NOSPLIT/shapes_jet10.txt
+    signal:
+    - NOSPLIT/shapes_photon20.txt
+    - NOSPLIT/shapes_photon10.txt
+    - NOSPLIT/shapes_photon5.txt
+  use_single_file_set: true
+  # Background subsampling configuration
+  background_subsampling:
+    enabled: true
+    et_threshold: 15.0  # GeV - subsample background samples below this ET
+    flatten_distribution: true  # Flatten ET distribution below threshold (vs fixed fraction)
+    n_et_bins: 20  # Number of ET bins for flattening (only used if flatten_distribution=true)
+    subsample_fraction: 0.3  # Fraction to keep (only used if flatten_distribution=false)
+    random_seed: 42  # For reproducibility
+model:
+  classifier: xgb
+  params:
+    colsample_bylevel: 1.0
+    colsample_bytree: 0.6
+    grow_policy: lossguide
+    learning_rate: 0.1
+    max_bin: 256
+    max_depth: 5
+    n_estimators: 750
+    n_jobs: 4
+    reg_alpha: 5.0
+    reg_lambda: 0.3
+    subsample: 0.5
+    tree_method: hist
+  use_scaler: false
+output:
+  output_dir: binned_models
+  save_metrics: true
+  save_models: true
+  save_plots: true
+  save_tmva: true  # Save TMVA/ROOT format models for C++ compatibility
+  root_file_prefix: "model_insitu_E"  # Prefix for ROOT/TMVA model files (e.g., "model_single_tmva.root")
+plotting:
+  context: talk
+  density: true
+  figure_size:
+  - 7.5
+  - 5
+  grid: true
+  n_bins: 50
+  zoom_y_axis: true  # Zoom y-axis for 2D correlation plots to focus on relevant isoET range
+reweighting:
+  class_reweight: true
+  et_reweight: true
+  et_reweight_bins: 20
+  et_reweight_max: 800.0
+  eta_reweight: true
+  eta_reweight_bins: 20
+  eta_reweight_range:
+  - -2.5
+  - 2.5
+  vertex_reweight: false  # Set to true to flatten vertex z distribution
+  vertex_reweight_bins: 20
+  vertex_reweight_max: 50.0  # Maximum weight for vertex reweighting
+training:
+  global_seed: 42
+  stratify: true
+  train_single_model: true
+  train_size: 0.7  # 70% for training
+  val_size: 0.1    # 10% for validation (for future hyperparameter tuning)
+  test_size: 0.2   # 20% for final unbiased evaluation
+  # Hyperparameter tuning configuration
+  enable_hyperparameter_tuning: false  # Set true to enable Optuna tuning
+  n_trials: 5                          # Number of Optuna trials
+  n_cv_folds: 3                         # K-fold splits for cross-validation
+  tuning_timeout_seconds: null          # Optional timeout (null = no timeout)
+  tuning_data_fraction: 1.0            # Fraction of data to use for tuning (0.1 = 10%, 1.0 = 100%)
+tuning:
+  # Baseline AUC threshold for fallback to defaults
+  baseline_auc_threshold: 0.50
+
+  # Learning rate: log-uniform scale
+  learning_rate_min: 0.001
+  learning_rate_max: 0.3
+
+  # Max depth: integer
+  max_depth_min: 3
+  max_depth_max: 10
+
+  # N estimators: steps of 50
+  n_estimators_min: 100
+  n_estimators_max: 1000
+  n_estimators_step: 50
+
+  # Subsample: continuous [0.5, 1.0]
+  subsample_min: 0.5
+  subsample_max: 1.0
+
+  # L1 regularization (alpha): log-uniform scale
+  reg_alpha_min: 1.0e-8
+  reg_alpha_max: 10.0
+
+  # L2 regularization (lambda): log-uniform scale
+  reg_lambda_min: 1.0e-8
+  reg_lambda_max: 10.0
+
+  # Column sampling: continuous [0.5, 1.0]
+  colsample_bytree_min: 0.5
+  colsample_bytree_max: 1.0

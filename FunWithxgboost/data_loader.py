@@ -316,18 +316,19 @@ class DataLoader:
         return feats
     
     def get_all_bin_data(self, bin_edges: List[float], bin_labels: List[str]) -> List[pd.DataFrame]:
-        """Load data for all bins."""
-        all_dfs = []
-        if self.use_single_file_set:
-            df_all = self._load_single_file_set_once()
-            for i in range(len(bin_edges) - 1):
-                et_min, et_max = bin_edges[i], bin_edges[i+1]
-                bin_label = bin_labels[i]
-                print(f"Loading data for bin {bin_label} (slicing cached single_file_set)...")
-                df_bin = df_all[(df_all[self.pt_col] >= et_min) & (df_all[self.pt_col] < et_max)]
-                all_dfs.append(df_bin)
-            return all_dfs
+        """Load data for all bins.
         
+        When using single_file_set mode, returns a single DataFrame for global processing.
+        When using per_bin_file_sets mode, loads separate data for each bin.
+        """
+        if self.use_single_file_set:
+            # Load all data once for global reweighting and then bin splitting
+            df_all = self._load_single_file_set_once()
+            print(f"Loaded single file set with {len(df_all)} samples for global processing")
+            return [df_all]  # Return as single-element list for consistency
+        
+        # Load per-bin data (legacy mode)
+        all_dfs = []
         for i in range(len(bin_edges) - 1):
             et_min, et_max = bin_edges[i], bin_edges[i+1]
             bin_label = bin_labels[i]
