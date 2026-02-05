@@ -8,6 +8,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <yaml-cpp/yaml.h>
+#include <TSystem.h>
 
 #include "plotcommon.h"
 
@@ -17,11 +19,15 @@ void plot_showershapes()
     string savePath = "../PPG12-analysis-note/Figures/showershapes/";
 
     std::vector<double> eta_bins = {-0.7, 0.7};
-    // std::vector<double> pT_bin_edges = {8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50};
-    std::vector<double> pT_bin_edges = {8, 10, 12, 15, 20, 25};
-    // Number of bins is one less than the number of edges
+
+    // Load pT bins from config file
+    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
+    YAML::Node config = YAML::LoadFile("../efficiencytool/config_nom.yaml");
+    std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
+
     int nEtaBins = eta_bins.size() - 1;
     int nPtBins = pT_bin_edges.size() - 1;
+    std::cout << "Using " << nPtBins << " pT bins from config file" << std::endl;
     int nCuts = 4; // e.g. 0 or 1 (two cut options)
 
     //------------------------------------------------------------------------------
@@ -88,7 +94,8 @@ void plot_showershapes()
         //"h2d_weta_cog",
         //"h2d_wphi_cog",
         "h2d_weta_cogx",
-        "h2d_wphi_cogx"};
+        "h2d_wphi_cogx",
+        "h2d_bdt"};
 
     //------------------------------------------------------------------------------
     // Helper lambda to scale a TH1D to unit area
@@ -152,7 +159,13 @@ void plot_showershapes()
                         nrebin = 1;
                     }
 
-
+                    // BDT handling
+                    if (xaxisname.CompareTo("bdt") == 0)
+                    {
+                        xaxismax = 1.0;
+                        xaxismin = 0.0;
+                        nrebin = 2;
+                    }
 
                     TString histNameFull = Form(
                         "%s_eta%d_pt%d_cut%d",

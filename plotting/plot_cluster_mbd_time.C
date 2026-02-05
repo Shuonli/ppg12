@@ -9,7 +9,7 @@ void plot_cluster_mbd_time()
     bool plot_sim = false;
     init_plot();
 
-    TFile *f_in_time = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_bdt_none.root");
+    TFile *f_in_time = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_showershape.root");
     if (plot_sim)
     {
         f_in_time = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_bdt_none.root");
@@ -26,6 +26,7 @@ void plot_cluster_mbd_time()
     TH2D* h_delta_t_nontight_iso_cluster_b2bjet = (TH2D*)f_in_time->Get("h_delta_t_nontight_iso_cluster_b2bjet_0");
     TH2D* h_delta_t_nontight_noniso_cluster_b2bjet = (TH2D*)f_in_time->Get("h_delta_t_nontight_noniso_cluster_b2bjet_0");
     TH2D* h_delta_t_npb_cluster = (TH2D*)f_in_time->Get("h_delta_t_npb_cluster_0");
+    TH2D* h_mbd_t_vs_cluster_t = (TH2D*)f_in_time->Get("h_mbd_t_vs_cluster_t");
 
     // Define pT ranges
     const int n_ranges = 3;
@@ -71,6 +72,9 @@ void plot_cluster_mbd_time()
         pt_b2bjet_fnames[1] = "cluster_mbd_time_15_20_b2bjet_sim.pdf";
         pt_b2bjet_fnames[2] = "cluster_mbd_time_20_30_b2bjet_sim.pdf";
     }
+
+    const std::string ana_label = plot_sim ? "inclusive MC" : "ana521";
+    std::string mbd_time_fname = plot_sim ? "mbd_time_sim.pdf" : "mbd_time.pdf";
 
     for(int irange=0; irange<n_ranges; ++irange)
     {
@@ -173,12 +177,7 @@ void plot_cluster_mbd_time()
         myMarkerLineText(0.25, 0.8, 1, kBlue, 20, kBlue, 1, "Nontight iso clusters", 0.05, true);
         myMarkerLineText(0.25, 0.75, 1, kPink + 5, 20, kPink + 5, 1, "Nontight noniso clusters", 0.05, true);
         myText(0.25, 0.70, 1, "|#eta^{#gamma}|<0.7", 0.05);
-        std::string ana_string = "ana509";
-        if (plot_sim)
-        {
-            ana_string = "inclusive MC";
-        }
-        myText(0.25, 0.65, 1, ana_string.c_str(), 0.05);
+        myText(0.25, 0.65, 1, ana_label.c_str(), 0.05);
         myText(0.25, 0.60, 1, pt_labels[irange].c_str(), 0.05);
 
         c2->SaveAs(pt_sideband_fnames[irange].c_str());
@@ -225,7 +224,7 @@ void plot_cluster_mbd_time()
         myMarkerLineText(0.25, 0.80, 1, col_ratio[3], 20, col_ratio[3], 1, "Nontight noniso", 0.05, true);
         myMarkerLineText(0.25, 0.75, 1, col_ratio[1], 20, col_ratio[1], 2, "Nontight noniso w/ B2BJet", 0.05, true);
         myText(0.25, 0.70, 1, "|#eta^{#gamma}|<0.7", 0.05);
-        myText(0.25, 0.65, 1, ana_string.c_str(), 0.05);
+        myText(0.25, 0.65, 1, ana_label.c_str(), 0.05);
         myText(0.25, 0.60, 1, pt_labels[irange].c_str(), 0.05);
 
         c3->SaveAs(pt_b2bjet_fnames[irange].c_str());
@@ -248,5 +247,38 @@ void plot_cluster_mbd_time()
         delete c1;
         delete c2;
         delete c3;
+    }
+
+    if (h_mbd_t_vs_cluster_t)
+    {
+        TH1D* h_mbd_time_proj = (TH1D*)h_mbd_t_vs_cluster_t->ProjectionX("h_mbd_time_proj");
+        h_mbd_time_proj->Rebin(2);
+        double integral_mbd = h_mbd_time_proj->Integral();
+        if (integral_mbd > 0)
+        {
+            h_mbd_time_proj->Scale(1.0 / integral_mbd);
+        }
+        double ymax_mbd = 1.2 * h_mbd_time_proj->GetMaximum();
+        if (ymax_mbd <= 0)
+        {
+            ymax_mbd = 1.0;
+        }
+
+        TCanvas *c_mbd = new TCanvas("c_mbd", "", 600, 600);
+        h_mbd_time_proj->GetXaxis()->SetRangeUser(-10, 10);
+        h_mbd_time_proj->GetYaxis()->SetRangeUser(0, ymax_mbd);
+        h_mbd_time_proj->SetLineColor(kBlack);
+        h_mbd_time_proj->SetMarkerColor(kBlack);
+        h_mbd_time_proj->SetLineWidth(2);
+        h_mbd_time_proj->GetXaxis()->SetTitle("MBD Time [ns]");
+        h_mbd_time_proj->GetYaxis()->SetTitle("Probability");
+        h_mbd_time_proj->Draw("hist");
+
+        myText(0.25, 0.85, 1, ana_label.c_str(), 0.05);
+
+        c_mbd->SaveAs(mbd_time_fname.c_str());
+
+        delete h_mbd_time_proj;
+        delete c_mbd;
     }
 }
