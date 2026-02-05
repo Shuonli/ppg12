@@ -80,7 +80,7 @@ void FindETCut()
     bool is_signal = true;
 
     //TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_base_2.root", "READ");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_base_1.root", "READ");
 
     if(!is_signal){
         fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");

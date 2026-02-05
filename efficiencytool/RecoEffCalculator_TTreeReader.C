@@ -2,6 +2,10 @@
 #include <string>
 #include <fstream>
 #include <iterator>
+#include <vector>
+#include <sstream>
+#include <cmath>
+#include <limits>
 #include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
@@ -35,7 +39,7 @@ void SaveYamlToRoot(TFile *f, const char *yaml_filename)
     yaml_obj.Write("config");
 }
 
-void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_none.yaml", const std::string filetype = "data")
+void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showershape.yaml", const std::string filetype = "data")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so"); 
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -74,9 +78,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     float max_photon_lower = 0;
     float max_photon_upper = 100;
     // unit in pb
-    const float photon5cross = 2.017e+08 * 0.000442571;
-    const float photon10cross = 3.688e+07 * 0.000181474;
-    const float photon20cross = 1.571e+05 * 0.000673448;
+    //9.26915e+10 146359.3
+    //const float photon5cross = 2.017e+08 * 0.000442571;
+    const float photon5cross = 146359.3;
+    //1.2613e+08 6944.675
+    //const float photon10cross = 3.688e+07 * 0.000181474;
+    const float photon10cross = 6944.675;
+    //5.2244e+06 130.4461
+    //const float photon20cross = 1.571e+05 * 0.000673448;
+    const float photon20cross = 130.4461;
 
     // Hanpu uses unit in b
     const float jet10cross = 3.997e+06;
@@ -167,9 +177,55 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 2  Mean        -1.73712e+00   8.31735e-02  -1.32021e-04  -1.25750e-03
 3  Sigma        4.47289e+01   2.37499e-01   2.37499e-01  -5.45865e-02
 */
-    // gaussian vertex reweight with a gaussian function
-    TF1 *f_vertex_reweight = new TF1("f_vertex_reweight", "gaus", -50, 50);
-    f_vertex_reweight->SetParameters(1.07368e+00, -1.73712e+00, 4.47289e+01);
+    // Vertex reweighting for simulation (required when enabled):
+    //   results/vertex_reweight_bdt_none.root : h_vertexz_ratio_data_over_mccombined
+    TH1* h_vertex_reweight = nullptr;
+    int vertex_reweight_on = 1;
+    std::string vertex_reweight_file = "results/vertex_reweight_bdt_none.root";
+    if (issim)
+    {
+        // optional config knobs (safe defaults)
+        vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
+        vertex_reweight_file =
+            configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
+
+        if (vertex_reweight_on)
+        {
+            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
+            if (!fvtx || fvtx->IsZombie())
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
+                          << vertex_reweight_file << std::endl;
+                return;
+            }
+
+            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
+            if (!htmp)
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
+                          << vertex_reweight_file << std::endl;
+                fvtx->Close();
+                delete fvtx;
+                return;
+            }
+
+            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
+            fvtx->Close();
+            delete fvtx;
+
+            if (!h_vertex_reweight)
+            {
+                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
+                          << vertex_reweight_file << std::endl;
+                return;
+            }
+
+            h_vertex_reweight->SetDirectory(nullptr);
+            h_vertex_reweight->Sumw2();
+            std::cout << "[VertexReweight] Using histogram weights from "
+                      << vertex_reweight_file << " : " << htmp->GetName() << std::endl;
+        }
+    }
 
     // std::string infilename = "/sphenix/tg/tg01/commissioning/CaloCalibWG/sli/ppg12/ana450/condorout/combine.root";
     // Build input chain and connect reader
@@ -223,6 +279,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     int et4_on = configYaml["analysis"]["et4_on"].as<int>(1);
     int bdt_on = configYaml["analysis"]["bdt_on"].as<int>(1);
     int nosat = configYaml["analysis"]["nosat"].as<int>(0);
+    int common_b2bjet_cut = configYaml["analysis"]["common_b2bjet_cut"].as<int>(0);
+    float common_b2bjet_pt_min = configYaml["analysis"]["common_b2bjet_pt_min"].as<float>(7.0);
 
 
     float truthisocut = configYaml["analysis"]["truth_iso_max"].as<float>();
@@ -267,7 +325,21 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     float eff_dR = configYaml["analysis"]["eff_dR"].as<float>();
 
-    int trigger_used = configYaml["analysis"]["trigger_used"].as<int>();
+    // trigger_used can be either a scalar int or a YAML sequence of ints.
+    // Example: trigger_used: [26, 29, 30, 31, 36, 37, 38]
+    std::vector<int> trigger_used;
+    {
+        YAML::Node trigNode = configYaml["analysis"]["trigger_used"];
+        if (trigNode && trigNode.IsSequence())
+        {
+            trigger_used = trigNode.as<std::vector<int>>();
+        }
+        else
+        {
+            // backward-compatible: allow single int
+            trigger_used.push_back(configYaml["analysis"]["trigger_used"].as<int>());
+        }
+    }
 
     float mc_iso_shift = configYaml["analysis"]["mc_iso_shift"].as<float>(0.0);
     float mc_iso_scale = configYaml["analysis"]["mc_iso_scale"].as<float>(1.2);
@@ -422,6 +494,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     // Basic event variables
     TTreeReaderValue<int> mbdnorthhit(reader, "mbdnorthhit");
     TTreeReaderValue<int> mbdsouthhit(reader, "mbdsouthhit");
+    // Per-channel MBD info (64 channels per side)
+    TTreeReaderArray<float> mbdnorthq(reader, "mbdnorthq");
+    TTreeReaderArray<float> mbdsouthq(reader, "mbdsouthq");
+    TTreeReaderArray<float> mbdnortht(reader, "mbdnortht");
+    TTreeReaderArray<float> mbdsoutht(reader, "mbdsoutht");
     TTreeReaderValue<int> pythiaid(reader, "pythiaid");
     TTreeReaderValue<int> nparticles(reader, "nparticles");
     TTreeReaderValue<int> ncluster(reader, Form("ncluster_%s", clusternodename.c_str()));
@@ -504,7 +581,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     // Cluster arrays for 2D data - using regular TTreeReaderArray for 2D arrays
     TTreeReaderArray<float> cluster_e_array(reader, Form("cluster_e_array_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_adc_array(reader, Form("cluster_adc_array_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_time_array(reader, Form("cluster_time_array_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_status_array(reader, Form("cluster_status_array_%s", clusternodename.c_str()));
     TTreeReaderArray<int> cluster_ownership_array(reader, Form("cluster_ownership_array_%s", clusternodename.c_str()));
 
     // Cluster isolation arrays
@@ -563,7 +642,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     TH1F *h_frag_pT = new TH1F("h_frag_pT", "Fragmentation Photon pT", 1000, 0, 100);
     TH1F *h_max_decay_pT = new TH1F("h_max_decay_pT", "Max Decay Photon pT", 1000, 0, 100);
     TH1F *h_decay_photon_pT = new TH1F("h_decay_photon_pT", "Decay Photon pT", 1000, 0, 100);
-    TH1F *h_vertexz = new TH1F("h_vertexz", "Vertex z", 100, -50, 50);
+    TH1F *h_vertexz = new TH1F("h_vertexz", "Vertex z", 200, -100, 100);
     TH1F *h_cluster_common_Et = new TH1F("h_cluster_common_E", "Cluster Common E", 1000, 0, 100);
     TH1F *h_cluster_common_leading_Et = new TH1F("h_cluster_common_leading_E", "Cluster Common Leading E", 1000, 0, 100);
 
@@ -634,6 +713,13 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     std::vector<TH2D *> h_delta_t_npb_cluster;
     //mbd t vs cluster t
     TH2D* h_mbd_t_vs_cluster_t = new TH2D("h_mbd_t_vs_cluster_t", "MBD T vs Cluster T", 160, -40, 40, 160, -40, 40);
+
+    // Per-event std dev of MBD per-channel times (q>0.1) north vs south
+    TH2D* h_mbd_time_std_north_vs_south = new TH2D(
+        "h_mbd_time_std_north_vs_south",
+        "MBD per-event time std dev (channels with q>0.1);#sigma(t_{north}) [ns];#sigma(t_{south}) [ns]",
+        200, 0, 20,
+        200, 0, 20);
 
 
     // unfold response matrix
@@ -1109,6 +1195,36 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     while (reader.Next())
     {
+        // Event-by-event MC vertex reweighting.
+        // We directly update `weight` so all existing Fill(..., weight) calls use the per-event weight.
+        weight = cross_weight;
+        vertex_weight = 1.0;
+        if (issim)
+        {
+            if (vertex_reweight_on)
+            {
+                if (!h_vertex_reweight)
+                {
+                    std::cerr << "[VertexReweight] ERROR: vertex reweighting is enabled but histogram is not loaded."
+                              << std::endl;
+                    return;
+                }
+                int bin = h_vertex_reweight->FindBin(*vertexz);
+                if (bin < 1) bin = 1;
+                if (bin > h_vertex_reweight->GetNbinsX()) bin = h_vertex_reweight->GetNbinsX();
+                vertex_weight = h_vertex_reweight->GetBinContent(bin);
+            }
+
+            if (!std::isfinite(vertex_weight) || vertex_weight <= 0.0)
+            {
+                std::cout << "Warning: vertex weight is nan or inf" << std::endl;
+                std::cout << "vertexz: " << *vertexz << std::endl;
+                vertex_weight = 1.0;
+            }
+
+            weight *= vertex_weight;
+        }
+
         if (ientry < 0)
         {
             ientry++;
@@ -1140,27 +1256,57 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 continue;
             }
 
-            if (scaledtrigger[trigger_used] == 0)
+            // Accept event if ANY trigger in trigger_used fired.
+            bool any_trigger_fired = false;
+            const auto ntrig = scaledtrigger.GetSize();
+            for (int itrig : trigger_used)
+            {
+                if (itrig < 0 || (unsigned int)itrig >= ntrig)
+                {
+                    continue;
+                }
+                if (scaledtrigger[itrig] != 0)
+                {
+                    any_trigger_fired = true;
+                    break;
+                }
+            }
+
+            if (!any_trigger_fired)
             {
                 ientry++;
                 continue;
             }
             /*
             float trigger_weight = 1.0;
-            if (trigger_prescale[trigger_used] != 0)
+            // If you later want a prescale-based weight, decide how to combine
+            // prescales when multiple triggers are accepted (min/max/first-fired/etc).
+            // For now we keep the old single-trigger logic as an example.
+            if (!trigger_used.empty())
             {
-                trigger_weight = trigger_prescale[trigger_used];
-            }
-            else
-            {
-                std::cout << "Warning: trigger prescale is 0" << std::endl;
+                const int itrig = trigger_used.front();
+                if (itrig >= 0 && (unsigned int)itrig < trigger_prescale.GetSize() && trigger_prescale[itrig] != 0)
+                {
+                    trigger_weight = trigger_prescale[itrig];
+                }
+                else
+                {
+                    std::cout << "Warning: trigger prescale is 0 or trigger index out of range" << std::endl;
+                }
             }
             weight = trigger_weight;
             // check for nan and inf
             if (std::isnan(weight) || std::isinf(weight))
             {
                 std::cout << "Warning: weight is nan or inf" << std::endl;
-                std::cout << trigger_prescale[trigger_used] << std::endl;
+                if (!trigger_used.empty())
+                {
+                    const int itrig = trigger_used.front();
+                    if (itrig >= 0 && (unsigned int)itrig < trigger_prescale.GetSize())
+                    {
+                        std::cout << trigger_prescale[itrig] << std::endl;
+                    }
+                }
                 continue;
             }
             */
@@ -1431,6 +1577,40 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             continue;
         }
 
+        // ------------------------------------------------------------------
+        // Event-level MBD channel-time std dev, using channels with q > 0.1
+        // ------------------------------------------------------------------
+        auto compute_std_time = [](const TTreeReaderArray<float>& t,
+                                   const TTreeReaderArray<float>& q,
+                                   const float qmin) -> double {
+            const int n = std::min((int)t.GetSize(), (int)q.GetSize());
+            if (n <= 0) return 0.0;
+            double sum = 0.0;
+            double sumsq = 0.0;
+            int nsel = 0;
+            for (int i = 0; i < n; ++i)
+            {
+                if (q[i] <= qmin) continue;
+                const double ti = t[i];
+                if (!std::isfinite(ti)) continue;
+                sum += ti;
+                sumsq += ti * ti;
+                ++nsel;
+            }
+            if (nsel < 2) return 0.0;
+            const double mean = sum / nsel;
+            // population variance: E[x^2] - mean^2
+            const double var = std::max(0.0, (sumsq / nsel) - mean * mean);
+            return std::sqrt(var);
+        };
+
+        const double mbd_std_north = compute_std_time(mbdnortht, mbdnorthq, 0.1f);
+        const double mbd_std_south = compute_std_time(mbdsoutht, mbdsouthq, 0.1f);
+        if (mbd_std_north > 0.0 || mbd_std_south > 0.0)
+        {
+            h_mbd_time_std_north_vs_south->Fill(mbd_std_north, mbd_std_south, weight);
+        }
+
         float mbd_mean_time = -999;
         {
             //mbd_mean_time = (*mbdnorthtmean * *mbdnorthhit + *mbdsouthtmean * *mbdsouthhit) / (*mbdnorthhit + *mbdsouthhit);
@@ -1458,10 +1638,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             
         }
         //std::cout<<"at line 1459"<<std::endl;
-        if (issim)
-        {
-            vertex_weight = f_vertex_reweight->Eval(*vertexz);
-        }
+        // vertex_weight is already computed above for MC (and equals 1 for data).
 
         std::vector<float> jetphi;
 
@@ -1581,8 +1758,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 }
                 else
                 {
-                    //recoisoET = cluster_iso_03_70_emcal[icluster] + cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
-                    recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+                    recoisoET = cluster_iso_03_70_emcal[icluster] + cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
+                    //recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
                     if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
                     {
                         //std::cout<<"using 0.05 emcal inner"<<std::endl;
@@ -1646,6 +1823,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
                 if (cluster_ownership_array[icluster * 49 + i] == 1)
                 {
+                    int status = cluster_status_array[icluster * 49 + i];
+                    //check bit 5 is set then it is ZS tower
+                    if (status & (1 << 5))
+                    {
+                        continue;
+                    }
                     clusteravgtime += cluster_time_array[icluster * 49 + i] * cluster_e_array[icluster * 49 + i];
                     // std::cout<<"cluster_time_array[icluster][i]: "<<cluster_time_array[icluster * 49 + i]<<std::endl;
                     cluster_total_e += cluster_e_array[icluster * 49 + i];
@@ -1720,6 +1903,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                     }
                 }
             }
+            bool passes_common_b2bjet = (!common_b2bjet_cut) || (max_b2bjet_pT >= common_b2bjet_pt_min);
             float xjgamma = -1;
             float xjgamma_truthjet = -1;
 
@@ -1753,12 +1937,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             }
 
             // common cuts
-            if (cluster_prob[icluster] > common_prob_min &&
+            bool passes_common_shape =
+                cluster_prob[icluster] > common_prob_min &&
                 cluster_prob[icluster] < common_prob_max &&
                 e11_over_e33 > common_e11_over_e33_min &&
                 e11_over_e33 < common_e11_over_e33_max &&
                 //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
-                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound))
+                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound);
+
+            if (passes_common_shape && passes_common_b2bjet)
             {
                 common_pass = true;
             }
@@ -2148,14 +2335,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 h_tight_iso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                                 h_vertex_tight_iso_cluster_signal_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                                 // fill the response matrix
-                                h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight);
+
                                 float response_reweight = 1.0;
-                                if (!reweight)
+                                if (reweight)
                                 {
                                     response_reweight = cluster_Et[icluster] > 30 ? f_reweight->Eval(30) : f_reweight->Eval(cluster_Et[icluster]);
-                                    response_reweight = response_reweight * vertex_weight;
                                 }
+                                h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight*response_reweight);
+                                h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight*response_reweight);
                                 responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
                                 h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
                                 if (ientry < (nentries / 2))
@@ -2167,8 +2354,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 }
                                 else
                                 {
-                                    h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight * response_reweight);
-                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight * response_reweight);
+                                    h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
+                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
                                 }
                             }
                         }
