@@ -343,6 +343,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
     float mc_iso_shift = configYaml["analysis"]["mc_iso_shift"].as<float>(0.0);
     float mc_iso_scale = configYaml["analysis"]["mc_iso_scale"].as<float>(1.2);
+    float mbd_avg_sigma_min = configYaml["analysis"]["mbd_avg_sigma_min"].as<float>(
+        -std::numeric_limits<float>::infinity());
+    float mbd_avg_sigma_max = configYaml["analysis"]["mbd_avg_sigma_max"].as<float>(
+        std::numeric_limits<float>::infinity());
 
     // getting cuts from the config file
     std::cout << "tight cuts" << std::endl;
@@ -1606,9 +1610,26 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
         const double mbd_std_north = compute_std_time(mbdnortht, mbdnorthq, 0.1f);
         const double mbd_std_south = compute_std_time(mbdsoutht, mbdsouthq, 0.1f);
+        double mbd_avg_sigma = 0.0;
         if (mbd_std_north > 0.0 || mbd_std_south > 0.0)
         {
             h_mbd_time_std_north_vs_south->Fill(mbd_std_north, mbd_std_south, weight);
+            if (mbd_std_north > 0.0 && mbd_std_south > 0.0)
+            {
+                mbd_avg_sigma = 0.5 * (mbd_std_north + mbd_std_south);
+            }
+            else
+            {
+                mbd_avg_sigma = std::max(mbd_std_north, mbd_std_south);
+            }
+        }
+        if (std::isfinite(mbd_avg_sigma))
+        {
+            if (mbd_avg_sigma < mbd_avg_sigma_min || mbd_avg_sigma > mbd_avg_sigma_max)
+            {
+                ientry++;
+                continue;
+            }
         }
 
         float mbd_mean_time = -999;
