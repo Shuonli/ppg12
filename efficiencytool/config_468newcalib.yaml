@@ -1,0 +1,187 @@
+#config.yaml
+#var from nomtestv5, adding pT dependent weta, wphi cut and et1 cut, rm et2, et3
+input:
+  photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run21/"
+  photon_jet_file_branch_dir: "/condorout_waveform/caloana0220.root"
+  data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana468newcalib/condoroutalma9/caloana031.root"
+  tree: "slimtree"
+  cluster_node_name: "CLUSTERINFO_CEMC_NO_SPLIT"
+  unfold_input: "results/MC_efficiency_photon5.root"
+
+output:
+  eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
+  response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
+  data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
+  var_type: "468newcalib"
+  final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
+
+analysis:
+  isbackground: 0
+  eta_bins: [-0.7, 0.7]
+  vertex_cut: 30.0
+  truth_iso_max: 4.0
+  reco_iso_min: -20.0
+  reco_iso_max_b: 1.08128
+  reco_iso_max_s: 0.0299107
+  #reco_iso_max_b: 3.0
+  #reco_iso_max_s: 0.0
+  reco_noniso_min_shift: 1.0
+  reco_noniso_max: 20.0
+  reco_min_ET: 5.0
+  cone_size: 3
+  eff_dR: 0.1
+  trigger_used: 26
+  pT_bins: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35]
+  pT_bins_truth:  [7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35, 40]
+  iso_threshold: 1
+  n_nt_fail: 2
+  weta_fail: 0
+  wphi_fail: 0
+  et1_fail: 0
+  e11_to_e33_fail: 0
+  e32_to_e35_fail: 0
+  weta_on: 1
+  wphi_on: 1
+  et1_on: 1
+  e11_to_e33_on: 1
+  e32_to_e35_on: 1
+
+  tight:
+    reta77_min: 0.0
+    reta77_max: 1.0
+
+    rhad33_max: 1.0
+    rhad33_min: 0.00
+
+    w72_max: 1.0
+    w72_min: 0.0
+
+    re11_E_max: 1.0
+    re11_E_min: 0.0
+
+    CNN_max: 1.0
+    CNN_min: 0.0
+    #CNN_min: 0.8
+
+    #correlation
+    et1_max: 1.0
+    et1_min: 0.5
+    et1_min_b: 0.9
+    et1_min_s: 0.0
+    #correlation
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.92
+
+    #correlation
+    weta_cogx_max: 0.20
+    weta_cogx_min: 0.0
+    weta_cogx_max_b: 0.15
+    weta_cogx_max_s: 0.006
+
+    wphi_cogx_max: 2.0
+    wphi_cogx_min: 0.0
+    wphi_cogx_max_b: 0.15
+    wphi_cogx_max_s: 0.006
+
+    #correlation
+    prob_max: 1.0
+    prob_min: 0.0
+
+    #small correlation
+    e11_over_e33_max: 1.0
+    e11_over_e33_min: 0.4
+
+    #small correlation
+    et4_max: 1.0
+    et4_min: 0.0
+
+    et2_max: 1.0
+    et2_min: 0.0
+
+    et3_max: 1.0
+    et3_min: 0.0
+
+    #w32 small correlation
+    w32_max: 1.0
+    w32_min: 0.0
+
+
+  non_tight:
+    reta77_min: 0.0
+    reta77_max: 1.0
+
+    rhad33_max: 1.0
+    rhad33_min: 0.00
+
+    w72_max: 1.0
+    w72_min: 0.0
+
+    re11_E_max: 1.0
+    re11_E_min: 0.0
+
+    CNN_max: 1.0
+    CNN_min: 0.0
+    #correlation
+    et1_max: 1.0
+    et1_min: 0.6
+    #correlation
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.8
+
+    #correlation
+    weta_cogx_max: 0.6
+    weta_cogx_min: 0.0
+    weta_cogx_max_b: 0.6
+    weta_cogx_max_s: 0.0
+
+
+    wphi_cogx_max: 0.8
+    wphi_cogx_min: 0.0
+    wphi_cogx_max_b: 0.8
+    wphi_cogx_max_s: 0.0
+
+    #correlation
+    prob_max: 1.0
+    prob_min: 0.0
+
+    #small correlation
+    e11_over_e33_max: 1.0
+    e11_over_e33_min: 0.0
+  
+    #small correlation
+    et4_max: 1.0
+    et4_min: 0.0
+
+    #w32 small correlation
+    w32_max: 1.0
+    w32_min: 0.0
+
+  common:
+    wr_cogx_bound: 0.4
+    cluster_weta_cogx_bound: 0.6
+
+    prob_max: 1.0
+    prob_min: 0.0
+
+    e11_over_e33_max: 0.98
+    e11_over_e33_min: 0.0
+
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.8
+
+    et1_max: 1.0
+    et1_min: 0.6
+
+
+
+
+
+
+  unfold:
+    resultit: 2
+    resultleak: 1
+    reweight: 1
+
+
+
+
