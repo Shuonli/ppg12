@@ -1,26 +1,38 @@
 #include "BlairUtils.C"
 #include "sPhenixStyle.C"
 
-const int NptBins = 7;
-const float ptRanges[NptBins + 1] = {10, 12, 14, 16, 20, 25, 30, 35};
+
+const int NptBins = 10;
+const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35};
+
+const float pTmin = 10;
+const float pTmax = 26;
 
 TH1F *frame_et_rec;
 TH1F *frame_isoET;
 TH1F *frame_et_truth;
+TH1F *frame_iteration;
 TH2F *frame_response;
 TGraph *lineone;
 TGraph *linezero;
 
 string strleg1 = "#bf{#it{sPHENIX}} Internal";
-string strleg2 = "#it{p}+#it{p} #sqrt{s}=200 GeV";
-string strleg3 = "|#it{#eta^{#gamma}}|<0.7";
-string strSigMC = "Pythia signal";
-string strMC = "Pythia";
-string strIncMC = "Inclusive Pythia jet";
+string strleg2 = "#it{p}+#it{p} #kern[-0.1]{#sqrt{#it{s}} = 200 GeV}";
+string strleg2_1 = "#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, 16.6 pb^{-1}}";
+string strleg3 = "|#it{#eta^{#gamma}}| < 0.7";
+string strlegphotonjet = "|#it{#eta^{#gamma}}| < 0.7, |#it{#eta^{jet}}| < 0.6";
+string strleg4 = "#it{E}_{T}^{iso, #kern[-0.2]{#it{R}=0.3}}< 4 GeV";
+string strleg5 = "         = 16.6 pb^{-1}";
+string strdijet = "#Delta#it{#phi} > 3#pi/4";
+string strSigMC = "PYTHIA Signal";
+string strMC = "PYTHIA8";
+string strIncMC = "PYTHIA Inclusive Jet";
 
 void init_plot()
 {
   SetsPhenixStyle();
+
+  gStyle->SetHatchesLineWidth(4);
 
   const float et_low = 7;
   const float et_high = 50;
@@ -30,7 +42,7 @@ void init_plot()
   frame_et_rec->SetYTitle("Counts");
   frame_et_rec->GetYaxis()->SetRangeUser(5, 5e5);
 
-  frame_et_truth = new TH1F("frame_et_truth", "", 43, et_low, et_high);
+  frame_et_truth = new TH1F("frame_et_truth", "", 430, et_low, et_high);
   frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
   frame_et_truth->GetXaxis()->SetRangeUser(8, 40);
   frame_et_truth->SetYTitle("Efficiency");
@@ -40,10 +52,16 @@ void init_plot()
   const float isoet_high = 15;
   frame_isoET = new TH1F("frame_et", "", 43, isoet_low, isoet_high);
   frame_isoET->SetXTitle("#it{E}_{T}^{iso} [GeV]");
-   frame_isoET->GetXaxis()->SetRangeUser(-3,15);
+  frame_isoET->GetXaxis()->SetRangeUser(-3,15);
   frame_isoET->SetYTitle("scaled counts");
   frame_isoET->GetYaxis()->SetTitleOffset(1.5);
   // frame_isoET->GetYaxis()->SetRangeUser(5,5e5);
+
+  frame_iteration = new TH1F("frame_iteration", "", 10, 0, 10);
+  frame_iteration->SetXTitle("Iteration");
+  frame_iteration->SetYTitle("Relative changes");
+  frame_iteration->GetYaxis()->SetRangeUser(0, 0.5);
+  frame_iteration->GetXaxis()->SetRangeUser(0, 10);
 
   frame_response = new TH2F("frame_response", "", 43, et_low, et_high, 43, et_low, et_high);
   frame_response->SetXTitle("#it{E}_{T}^{#gamma,rec} [GeV]");
