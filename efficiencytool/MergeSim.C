@@ -18,11 +18,12 @@ void MergeSim(const std::string &configname = "config.yaml") {
 
     std::string outfilename = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
-    std::string infilenamejet10 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet10" + "_" + var_type + ".root";
-    std::string infilenamejet15 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet15" + "_" + var_type + ".root";
+    std::string infilenamejet5 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet5" + "_" + var_type + ".root";
+    std::string infilenamejet8 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet8" + "_" + var_type + ".root";
+    std::string infilenamejet12 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet12" + "_" + var_type + ".root";
     std::string infilenamejet20 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet20" + "_" + var_type + ".root";
     std::string infilenamejet30 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet30" + "_" + var_type + ".root";
-    std::string infilenamejet50 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet50" + "_" + var_type + ".root";
+    std::string infilenamejet40 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet40" + "_" + var_type + ".root";
 
     std::string outfilenamejet = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet" + "_" + var_type + ".root";
 
@@ -55,11 +56,12 @@ void MergeSim(const std::string &configname = "config.yaml") {
     
     merger_jet.OutputFile(outfilenamejet.c_str(), "RECREATE");
 
-    merger_jet.AddFile(infilenamejet10.c_str());
-    merger_jet.AddFile(infilenamejet15.c_str());
+    merger_jet.AddFile(infilenamejet5.c_str());
+    merger_jet.AddFile(infilenamejet8.c_str());
+    merger_jet.AddFile(infilenamejet12.c_str());
     merger_jet.AddFile(infilenamejet20.c_str());
     merger_jet.AddFile(infilenamejet30.c_str());
-    //merger_jet.AddFile(infilenamejet50.c_str());
+    merger_jet.AddFile(infilenamejet40.c_str());
 
     // Perform the merge
     if (!merger_jet.Merge()) {

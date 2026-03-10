@@ -48,40 +48,34 @@ void scale_histogram(TH1 *h, float lumi)
 
 void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", bool isMC = false)
 {
-    float luminosity = 16.5501; // pb^-1
     float mbdcorr = 25.2/42 / 0.57;
-    //MBD correction factor
-    //luminosity = luminosity * mbdcorr;
     float solid_angle = 2 * M_PI * 0.7 * 2;
     // lumi times cross section is events
     float nsimevents = 1E7;
     // float nsimevents = 2417664.0;
-    const float photon20cross = 1.571e+05 * 0.000673448;
+    //const float photon20cross = 1.571e+05 * 0.000673448;
+    const float photon20cross = 130.4461;
     float simluminosity = nsimevents / photon20cross;
 
     // float jetevents = 2194879.0;
     float jetevents = 0.3555 * 1E7;
-    const float jetcross = 2.505e+3;
+    const float jetcross = 7.3113;
 
     float jetluminosity = jetevents / jetcross;
     bool fit_purity = true;
     bool fit_purity_dis = true;
 
+    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
+    YAML::Node configYaml = YAML::LoadFile(configname);
 
-
-    
-    // float jetluminosity = jetevents / photon20cross;
+    // luminosity: read from config (pb^-1), default 49.562
+    float luminosity = configYaml["analysis"]["lumi"].as<float>(49.562);
 
     // for mc we can check the actual purity
-    // bool isMC =true;
-
     if (isMC)
     {
         luminosity = jetluminosity;
     }
-
-    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node configYaml = YAML::LoadFile(configname);
 
     int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
 
@@ -127,6 +121,11 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     std::string nontight_noniso_cluster_signal_name = nontight_noniso_cluster_name + "_signal" + histogram_postfix; // D
 
+    std::string tight_iso_cluster_notmatch_name     = tight_iso_cluster_name     + "_notmatch" + histogram_postfix; // A
+    std::string tight_noniso_cluster_notmatch_name  = tight_noniso_cluster_name  + "_notmatch" + histogram_postfix; // B
+    std::string nontight_iso_cluster_notmatch_name  = nontight_iso_cluster_name  + "_notmatch" + histogram_postfix; // C
+    std::string nontight_noniso_cluster_notmatch_name = nontight_noniso_cluster_name + "_notmatch" + histogram_postfix; // D
+
     std::string reco_efficiency_name = "eff_reco_eta" + histogram_postfix;
 
     std::string reco_efficiency_iso_name = "eff_iso_eta" + histogram_postfix;
@@ -138,6 +137,8 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     std::string truth_with_vertex_name = "h_truth_pT_vertexcut" + histogram_postfix;
 
     std::string truth_with_vertex_mbd_name = "h_truth_pT_vertexcut_mbd_cut" + histogram_postfix;
+    std::string truth_with_vertex_mbd_north_name = "h_truth_pT_vertexcut_mbd_north_cut" + histogram_postfix;
+    std::string truth_with_vertex_mbd_south_name = "h_truth_pT_vertexcut_mbd_south_cut" + histogram_postfix;
 
     // calculate the signal leakage from simulation
 
@@ -151,9 +152,16 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     TH1F *h_nontight_noniso_cluster_signal = (TH1F *)fsimin->Get(nontight_noniso_cluster_signal_name.c_str());
 
+    TH1F *h_tight_iso_cluster_notmatch     = (TH1F *)fsimin->Get(tight_iso_cluster_notmatch_name.c_str());
+    TH1F *h_tight_noniso_cluster_notmatch  = (TH1F *)fsimin->Get(tight_noniso_cluster_notmatch_name.c_str());
+    TH1F *h_nontight_iso_cluster_notmatch  = (TH1F *)fsimin->Get(nontight_iso_cluster_notmatch_name.c_str());
+    TH1F *h_nontight_noniso_cluster_notmatch = (TH1F *)fsimin->Get(nontight_noniso_cluster_notmatch_name.c_str());
+
     TH1F *h_truth_pT_vertexcut = (TH1F *)fsimin->Get(truth_with_vertex_name.c_str());
 
     TH1F *h_truth_pT_vertexcut_mbd_cut = (TH1F *)fsimin->Get(truth_with_vertex_mbd_name.c_str());
+    TH1F *h_truth_pT_vertexcut_mbd_north_cut = (TH1F *)fsimin->Get(truth_with_vertex_mbd_north_name.c_str());
+    TH1F *h_truth_pT_vertexcut_mbd_south_cut = (TH1F *)fsimin->Get(truth_with_vertex_mbd_south_name.c_str());
 
     TH1F *h_leak_B = (TH1F *)h_tight_noniso_cluster_signal->Clone("h_leak_B");
     TH1F *h_leak_C = (TH1F *)h_nontight_iso_cluster_signal->Clone("h_leak_C");
@@ -257,11 +265,17 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     h_nontight_iso_cluster_background_data->Add(h_nontight_iso_cluster_signal_inclusive, -1);
     h_nontight_noniso_cluster_background_data->Add(h_nontight_noniso_cluster_signal_inclusive, -1);
 
-    // R = A/B*D/C
+    // R = A/B*D/C  (data-driven: background = data - signal leak)
     TH1F *h_R = (TH1F *)h_tight_iso_cluster_background_data->Clone("h_R");
     h_R->Divide(h_tight_noniso_cluster_background_data);
     h_R->Multiply(h_nontight_noniso_cluster_background_data);
     h_R->Divide(h_nontight_iso_cluster_background_data);
+
+    // R = A/B*D/C  (MC truth: background = non-truth-matched clusters directly from simulation)
+    TH1F *h_R_notmatch = (TH1F *)h_tight_iso_cluster_notmatch->Clone("h_R_notmatch");
+    h_R_notmatch->Divide(h_tight_noniso_cluster_notmatch);
+    h_R_notmatch->Multiply(h_nontight_noniso_cluster_notmatch);
+    h_R_notmatch->Divide(h_nontight_iso_cluster_notmatch);
     
 
     TH1F *h_common_cluster_data = (TH1F *)fdatain->Get(common_cluster_name_data.c_str());
@@ -289,6 +303,10 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     TGraphAsymmErrors *g_mbd_eff = new TGraphAsymmErrors(h_truth_pT_vertexcut_mbd_cut, h_truth_pT_vertexcut);
     g_mbd_eff->SetName("g_mbd_eff");
+    TGraphAsymmErrors *g_mbd_eff_north = new TGraphAsymmErrors(h_truth_pT_vertexcut_mbd_north_cut, h_truth_pT_vertexcut);
+    g_mbd_eff_north->SetName("g_mbd_eff_north");
+    TGraphAsymmErrors *g_mbd_eff_south = new TGraphAsymmErrors(h_truth_pT_vertexcut_mbd_south_cut, h_truth_pT_vertexcut);
+    g_mbd_eff_south->SetName("g_mbd_eff_south");
 
     // calculate the purity
     //std::vector<TH1F *> h_NA_sig_list;
@@ -527,7 +545,7 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     int nFinePoints = 1000; // Number of points for granular intervals
     double xMin = 8;        // Fit range start
-    double xMax = 26;       // Fit range end
+    double xMax = 28;       // Fit range end
 
     TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
     f_purity_fit->SetParameters(1.0, 15.0, 5.0);
@@ -1004,12 +1022,15 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     gpurity_leak->Write();
     g_purity_truth->Write();
     g_mbd_eff->Write();
+    g_mbd_eff_north->Write();
+    g_mbd_eff_south->Write();
     std::cout << "saving histograms" << std::endl;
 
     h_data_sub_copy->Write();
     h_data_sub_leak_copy->Write();
     h_tight_iso_cluster_signal_copy->Write();
     h_R->Write();
+    h_R_notmatch->Write();
     h_leak_B->Write();
     h_leak_C->Write();
     h_leak_D->Write();
