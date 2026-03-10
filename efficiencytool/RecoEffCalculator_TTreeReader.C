@@ -39,7 +39,7 @@ void SaveYamlToRoot(TFile *f, const char *yaml_filename)
     yaml_obj.Write("config");
 }
 
-void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showershape.yaml", const std::string filetype = "data")
+void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_nom.yaml", const std::string filetype = "jet40")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so"); 
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -62,14 +62,24 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     std::string infilename_branch_dir = configYaml["input"]["photon_jet_file_branch_dir"].as<std::string>();
 
     std::string infilename = infilename_root_dir + filetype + infilename_branch_dir;
-
+    //infilename = "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/auau_test/caloana_with_bdt.root";
     if (!issim)
     {
         infilename = configYaml["input"]["data_file"].as<std::string>();
     }
 
-    TFile *corrFile = new TFile("/sphenix/user/hanpuj/JES_MC_Calibration/offline/output_forshuhang.root", "READ");
-    TF1 *f_corr = (TF1 *)corrFile->Get("f_corr_run21_r04_z0_eta0123");
+    TFile *corrFile = TFile::Open("/sphenix/user/hanpuj/JES_MC_Calibration/offline/output_forshuhang.root", "READ");
+    if (!corrFile || corrFile->IsZombie())
+    {
+        std::cerr << "[JESCalib] ERROR: cannot open JES calibration file\n";
+        return;
+    }
+    TF1 *f_corr = dynamic_cast<TF1*>(corrFile->Get("f_corr_run21_r04_z0_eta0123"));
+    if (!f_corr)
+    {
+        std::cerr << "[JESCalib] ERROR: f_corr not found in JES calibration file\n";
+        return;
+    }
 
     bool calibjes = true;
 
@@ -91,9 +101,16 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     // Hanpu uses unit in b
     const float jet10cross = 3.997e+06;
     const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
+    //const float jet20cross = 6.218e+04;
+    //const float jet30cross = 2.502e+03;
+    //const float jet50cross = 7.2695;
+    const float jet5cross = 1.3878e+08;
+    const float jet8cross = 1.3013e+07*0.7;
+    const float jet12cross = 1.4903e+06;
+    const float jet20cross = 6.2623e+04;
+    const float jet30cross = 2.5298e+03;
+    const float jet40cross = 1.3553e+02;
+    const float jet50cross = 7.3113;
 
     float max_jet_lower = 0;
     float max_jet_upper = 100;
@@ -130,6 +147,30 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         max_photon_upper = 200;
         weight = 1.0;
     }
+    else if (filetype == "jet5")
+    {
+        max_jet_lower = 7;
+        max_jet_upper = 9;
+        cluster_ET_upper = 10;
+        weight = jet5cross / jet50cross;
+        //isbackground = true;
+    }
+    else if (filetype == "jet8")
+    {
+        max_jet_lower = 9;
+        max_jet_upper = 14;
+        cluster_ET_upper = 15;
+        weight = jet8cross / jet50cross;
+        //isbackground = true;
+    }
+    else if (filetype == "jet12")
+    {
+        max_jet_lower = 14;
+        max_jet_upper = 21;
+        cluster_ET_upper = 23;
+        weight = jet12cross / jet50cross;
+        //isbackground = true;
+    }
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
@@ -141,30 +182,38 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     else if (filetype == "jet15")
     {
         max_jet_lower = 15;
-        max_jet_upper = 20;
+        max_jet_upper = 21;
         cluster_ET_upper = 23;
         weight = jet15cross / jet50cross;
         //isbackground = true;
     }
     else if (filetype == "jet20")
     {
-        max_jet_lower = 20;
-        max_jet_upper = 30;
-        cluster_ET_upper = 33;
+        max_jet_lower = 21;
+        max_jet_upper = 32;
+        cluster_ET_upper = 35;
         weight = jet20cross / jet50cross;
         //isbackground = true;
     }
     else if (filetype == "jet30")
     {
-        max_jet_lower = 30;
-        max_jet_upper = 50;
+        max_jet_lower = 32;
+        max_jet_upper = 42;
         cluster_ET_upper = 45;
         weight = jet30cross / jet50cross;
         //isbackground = true;
     }
+    else if (filetype == "jet40")
+    {
+        max_jet_lower = 42;
+        max_jet_upper = 100;
+        cluster_ET_upper = 100;
+        weight = jet40cross / jet50cross;
+        //isbackground = true;
+    }
     else if (filetype == "jet50")
     {
-        max_jet_lower = 50;
+        max_jet_lower = 52;
         max_jet_upper = 100;
         weight = jet50cross / jet50cross;
         //isbackground = true;
@@ -188,7 +237,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
-
+        //vertex_reweight_on = false;
         if (vertex_reweight_on)
         {
             TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
@@ -209,9 +258,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 return;
             }
 
-            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
-            fvtx->Close();
-            delete fvtx;
+            std::string vtx_histname = htmp->GetName();  // save before Close() invalidates htmp
+	    std::cout<<vtx_histname<<std::endl;
+	    h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
+            //fvtx->Close();
+            //delete fvtx;
 
             if (!h_vertex_reweight)
             {
@@ -223,7 +274,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
             h_vertex_reweight->SetDirectory(nullptr);
             h_vertex_reweight->Sumw2();
             std::cout << "[VertexReweight] Using histogram weights from "
-                      << vertex_reweight_file << " : " << htmp->GetName() << std::endl;
+                      << vertex_reweight_file << " : " << vtx_histname << std::endl;
         }
     }
 
@@ -254,8 +305,23 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
     std::string bdt_model_name = configYaml["input"]["bdt_model_name"].as<std::string>("base");
     //std::string bdt_model_name = "base";
+
+    std::vector<float> bdt_et_bin_edges;
+    std::vector<std::string> bdt_et_bin_models;
+    bool use_et_binned_bdt = false;
+
+    if (configYaml["input"]["bdt_et_bin_edges"] && configYaml["input"]["bdt_et_bin_models"]) {
+        for (auto v : configYaml["input"]["bdt_et_bin_edges"])
+            bdt_et_bin_edges.push_back(v.as<float>());
+        for (auto v : configYaml["input"]["bdt_et_bin_models"])
+            bdt_et_bin_models.push_back(v.as<std::string>());
+        use_et_binned_bdt = (bdt_et_bin_models.size() == bdt_et_bin_edges.size() - 1);
+        if (!use_et_binned_bdt)
+            std::cout << "WARNING: bdt_et_bin_edges/bdt_et_bin_models size mismatch; falling back to single model" << std::endl;
+    }
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
     int iso_hcalonly = configYaml["analysis"]["iso_hcalonly"].as<int>(0);
+    int use_topo_iso = configYaml["analysis"]["use_topo_iso"].as<int>(0);
     // we have 0, 0.05, 0.1, 0.2 options
     float iso_emcalinnerr = configYaml["analysis"]["iso_emcalinnerr"].as<float>(0.0);
     std::cout<<"iso_emcalinnerr: "<<iso_emcalinnerr<<std::endl;
@@ -282,6 +348,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     int common_b2bjet_cut = configYaml["analysis"]["common_b2bjet_cut"].as<int>(0);
     float common_b2bjet_pt_min = configYaml["analysis"]["common_b2bjet_pt_min"].as<float>(7.0);
 
+    float cluster_mbd_time_min = configYaml["analysis"]["cluster_mbd_time_min"].as<float>(-999.0f);
+    float cluster_mbd_time_max = configYaml["analysis"]["cluster_mbd_time_max"].as<float>(999.0f);
+    std::cout << "cluster_mbd_time_min: " << cluster_mbd_time_min
+              << "  cluster_mbd_time_max: " << cluster_mbd_time_max << std::endl;
 
     float truthisocut = configYaml["analysis"]["truth_iso_max"].as<float>();
 
@@ -342,7 +412,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     }
 
     float mc_iso_shift = configYaml["analysis"]["mc_iso_shift"].as<float>(0.0);
-    float mc_iso_scale = configYaml["analysis"]["mc_iso_scale"].as<float>(1.2);
+    float mc_iso_scale = configYaml["analysis"]["mc_iso_scale"].as<float>(1.0);
     float mbd_avg_sigma_min = configYaml["analysis"]["mbd_avg_sigma_min"].as<float>(
         -std::numeric_limits<float>::infinity());
     float mbd_avg_sigma_max = configYaml["analysis"]["mbd_avg_sigma_max"].as<float>(
@@ -403,6 +473,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
     float tight_bdt_max = configYaml["analysis"]["tight"]["bdt_max"].as<float>(1);
     float tight_bdt_min = configYaml["analysis"]["tight"]["bdt_min"].as<float>(0);
+    float tight_bdt_min_slope = configYaml["analysis"]["tight"]["bdt_min_slope"].as<float>(0);
+    float tight_bdt_min_intercept = configYaml["analysis"]["tight"]["bdt_min_intercept"].as<float>(tight_bdt_min);
 
     // non tight cuts
     std::cout << "non tight cuts" << std::endl;
@@ -451,6 +523,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
     float non_tight_bdt_max = configYaml["analysis"]["non_tight"]["bdt_max"].as<float>(1);
     float non_tight_bdt_min = configYaml["analysis"]["non_tight"]["bdt_min"].as<float>(0);
+    float non_tight_bdt_max_slope = configYaml["analysis"]["non_tight"]["bdt_max_slope"].as<float>(0);
+    float non_tight_bdt_max_intercept = configYaml["analysis"]["non_tight"]["bdt_max_intercept"].as<float>(non_tight_bdt_max);
 
     // common cuts for both tight and non tight
 
@@ -462,6 +536,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
     float common_wr_cogx_bound = configYaml["analysis"]["common"]["wr_cogx_bound"].as<float>();
     float common_cluster_weta_cogx_bound = configYaml["analysis"]["common"]["cluster_weta_cogx_bound"].as<float>();
+
+    int common_npb_cut_on = configYaml["analysis"]["common"]["npb_cut_on"].as<int>(0);
+    float common_npb_score_cut = configYaml["analysis"]["common"]["npb_score_cut"].as<float>(0.5);
 
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(); // 0 for no reweighting, 1 for reweighting
 
@@ -541,6 +618,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e1(reader, Form("cluster_e1_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e2(reader, Form("cluster_e2_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e3(reader, Form("cluster_e3_%s", clusternodename.c_str()));
@@ -619,8 +698,21 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     TTreeReaderArray<int> cluster_ohcal_ieta(reader, Form("cluster_ohcal_ieta_%s", clusternodename.c_str()));
     TTreeReaderArray<int> cluster_ohcal_iphi(reader, Form("cluster_ohcal_iphi_%s", clusternodename.c_str()));
 
-    // BDT score
-    TTreeReaderArray<float> cluster_bdt(reader, Form("cluster_bdt_%s_%s", clusternodename.c_str(), bdt_model_name.c_str()));
+    // BDT score — build one TTreeReaderArray per unique model name
+    std::vector<std::string> all_bdt_models = {bdt_model_name};
+    if (use_et_binned_bdt)
+        all_bdt_models.insert(all_bdt_models.end(), bdt_et_bin_models.begin(), bdt_et_bin_models.end());
+    std::sort(all_bdt_models.begin(), all_bdt_models.end());
+    all_bdt_models.erase(std::unique(all_bdt_models.begin(), all_bdt_models.end()), all_bdt_models.end());
+
+    std::map<std::string, TTreeReaderArray<float>*> bdt_arrays;
+    for (auto& mname : all_bdt_models) {
+        bdt_arrays[mname] = new TTreeReaderArray<float>(reader,
+            Form("cluster_bdt_%s_%s", clusternodename.c_str(), mname.c_str()));
+    }
+
+    // NPB score
+    TTreeReaderArray<float> cluster_npb_score(reader, Form("cluster_npb_score_%s", clusternodename.c_str()));
 
     // Truth jet arrays
     TTreeReaderValue<int> njet_truth(reader, "njet_truth");
@@ -638,6 +730,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
 
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
+    TH1::SetDefaultSumw2(kTRUE);
     TH1F *h_max_photon_pT = new TH1F("h_max_photon_pT", "Max Photon pT", 1000, 0, 100);
     TH1F *h_photon_pT = new TH1F("h_photon_pT", "Photon pT", 1000, 0, 100);
     TH1F *h_max_direct_pT = new TH1F("h_max_direct_pT", "Max Direct Photon pT", 1000, 0, 100);
@@ -677,11 +770,17 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
     std::vector<TH1D *> h_truth_pT_vertexcut;
 
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_cut;
+    std::vector<TH1D *> h_truth_pT_vertexcut_mbd_north_cut;
+    std::vector<TH1D *> h_truth_pT_vertexcut_mbd_south_cut;
 
     std::vector<TH1D *> h_tight_iso_cluster_signal;
     std::vector<TH1D *> h_tight_noniso_cluster_signal;
     std::vector<TH1D *> h_nontight_iso_cluster_signal;
     std::vector<TH1D *> h_nontight_noniso_cluster_signal;
+    std::vector<TH1D *> h_tight_iso_cluster_notmatch;
+    std::vector<TH1D *> h_tight_noniso_cluster_notmatch;
+    std::vector<TH1D *> h_nontight_iso_cluster_notmatch;
+    std::vector<TH1D *> h_nontight_noniso_cluster_notmatch;
     std::vector<TH1D *> h_all_cluster_signal;
     std::vector<TH2D *> h_all_cluster_Et_max_b2bjet; // max cluster Et vs max backtobjets Et
     std::vector<TH1D *> h_tight_cluster_signal;
@@ -911,6 +1010,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         h_truth_pT_vertexcut_mbd_cut.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_cut_%d", ieta),
                                                         Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                         n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_vertexcut_mbd_north_cut.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_north_cut_%d", ieta),
+                                                              Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                              n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_vertexcut_mbd_south_cut.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_south_cut_%d", ieta),
+                                                              Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                              n_pT_bins_truth, pT_bin_edges_truth));
 
         h_tight_iso_cluster_signal.push_back(new TH1D(Form("h_tight_iso_cluster_signal_%d", ieta),
                                                       Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -924,6 +1029,18 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         h_nontight_noniso_cluster_signal.push_back(new TH1D(Form("h_nontight_noniso_cluster_signal_%d", ieta),
                                                             Form("Non-Tight Non-Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                             n_pT_bins, pT_bin_edges));
+        h_tight_iso_cluster_notmatch.push_back(new TH1D(Form("h_tight_iso_cluster_notmatch_%d", ieta),
+                                                        Form("Tight Iso Not Matched %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                        n_pT_bins, pT_bin_edges));
+        h_tight_noniso_cluster_notmatch.push_back(new TH1D(Form("h_tight_noniso_cluster_notmatch_%d", ieta),
+                                                           Form("Tight Non-Iso Not Matched %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                           n_pT_bins, pT_bin_edges));
+        h_nontight_iso_cluster_notmatch.push_back(new TH1D(Form("h_nontight_iso_cluster_notmatch_%d", ieta),
+                                                           Form("Non-Tight Iso Not Matched %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                           n_pT_bins, pT_bin_edges));
+        h_nontight_noniso_cluster_notmatch.push_back(new TH1D(Form("h_nontight_noniso_cluster_notmatch_%d", ieta),
+                                                              Form("Non-Tight Non-Iso Not Matched %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                              n_pT_bins, pT_bin_edges));
         h_all_cluster_signal.push_back(new TH1D(Form("h_all_cluster_signal_%d", ieta),
                                                 Form("All Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                 n_pT_bins, pT_bin_edges));
@@ -1192,8 +1309,31 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         }
     }
 
+    int run_min = configYaml["analysis"]["run_min"].as<int>(-1);
+    int run_max = configYaml["analysis"]["run_max"].as<int>(-1);
+    if (run_min > 0 || run_max > 0)
+        std::cout << "Run range filter: [" << run_min << ", " << run_max << "]" << std::endl;
+
+    // Optional run list: if set, only events from runs in the list are processed.
+    std::set<int> allowed_runnumbers;
+    std::string run_list_file = configYaml["analysis"]["run_list_file"].as<std::string>("");
+    if (!run_list_file.empty())
+    {
+        std::ifstream rlf(run_list_file);
+        if (!rlf.is_open())
+        {
+            std::cerr << "[RunList] ERROR: cannot open run list file: " << run_list_file << std::endl;
+            return;
+        }
+        int rn;
+        while (rlf >> rn)
+            allowed_runnumbers.insert(rn);
+        std::cout << "[RunList] Loaded " << allowed_runnumbers.size()
+                  << " runs from " << run_list_file << std::endl;
+    }
+
     TRandom3 *rand = new TRandom3(0);
-    std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
+    std::set<int> skiprunnumbers = {0};
     int nentries = chain.GetEntries();
     int ientry = 0;
 
@@ -1255,6 +1395,21 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
         if (!issim)
         {
             if (skiprunnumbers.find(*runnumber) != skiprunnumbers.end())
+            {
+                ientry++;
+                continue;
+            }
+
+            bool in_run_range = (run_min <= 0 || *runnumber >= run_min) &&
+                                (run_max <= 0 || *runnumber <= run_max);
+            if (!in_run_range)
+            {
+                ientry++;
+                continue;
+            }
+
+            if (!allowed_runnumbers.empty() &&
+                allowed_runnumbers.find(*runnumber) == allowed_runnumbers.end())
             {
                 ientry++;
                 continue;
@@ -1543,10 +1698,23 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                                 if (abs(*vertexz_truth) < vertexcut)
                                 {
                                     h_truth_pT_vertexcut[etabin]->Fill(photonpT, weight);
+                                    if (*mbdnorthhit >= 1 && abs(*vertexz) < vertexcut)
+                                    {
+                                        h_truth_pT_vertexcut_mbd_north_cut[etabin]->Fill(photonpT, weight);
+                                    }
+                                    if (*mbdsouthhit >= 1 && abs(*vertexz) < vertexcut)
+                                    {
+                                        h_truth_pT_vertexcut_mbd_south_cut[etabin]->Fill(photonpT, weight);
+                                    }
                                     if (*mbdnorthhit >= 1 && *mbdsouthhit >= 1 && abs(*vertexz) < vertexcut)
                                     {
                                         h_truth_pT_vertexcut_mbd_cut[etabin]->Fill(photonpT, weight);
                                     }
+
+                                    //if (abs(*vertexz) < vertexcut)
+                                    //{
+                                    //    h_truth_pT_vertexcut_mbd_cut[etabin]->Fill(photonpT, weight);
+                                    //}
                                 }
                             }
                         }
@@ -1571,15 +1739,22 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 break;
             }
         }
-
-        //std::cout<<"accepted vertexz: "<<*vertexz<<std::endl;
-        //std::cout<<"mbdnorthhit: "<<*mbdnorthhit<<std::endl;
-        //std::cout<<"mbdsouthhit: "<<*mbdsouthhit<<std::endl;
-        if (!(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
+        // Guard: skip events whose |vertexz| falls outside all vertex_bins ranges.
+        // This can happen when vertex_cut > vertex_bins.back() or at the exact boundary.
+        if (vertex_bin < 0)
         {
             ientry++;
             continue;
         }
+
+        //std::cout<<"accepted vertexz: "<<*vertexz<<std::endl;
+        //std::cout<<"mbdnorthhit: "<<*mbdnorthhit<<std::endl;
+        //std::cout<<"mbdsouthhit: "<<*mbdsouthhit<<std::endl;
+        //if (!(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
+        //{
+        //    ientry++;
+        //    continue;
+        //}
 
         // ------------------------------------------------------------------
         // Event-level MBD channel-time std dev, using channels with q > 0.1
@@ -1753,7 +1928,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
 
             // reco cut
             float recoisoET = -999;
-            if (conesize == 4)
+            if (use_topo_iso == 2)
+            {
+                recoisoET = cluster_iso_topo_04[icluster];
+            }
+            else if (use_topo_iso == 1)
+            {
+                recoisoET = cluster_iso_topo_03[icluster];
+            }
+            else if (conesize == 4)
             {
                 recoisoET = cluster_iso_04[icluster];
             }
@@ -1771,7 +1954,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 continue;
             }
 
-            if (iso_threshold)
+            if (!use_topo_iso && iso_threshold)
             {
                 if (iso_hcalonly)
                 {
@@ -1779,7 +1962,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 }
                 else
                 {
-                    recoisoET = cluster_iso_03_70_emcal[icluster] + cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
+                    //recoisoET = cluster_iso_03_70_emcal[icluster] + cluster_iso_03_70_hcalin[icluster] + cluster_iso_03_70_hcalout[icluster];
+                    recoisoET = cluster_iso_03_120_emcal[icluster] + cluster_iso_03_120_hcalin[icluster] + cluster_iso_03_120_hcalout[icluster];
                     //recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
                     if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
                     {
@@ -1859,6 +2043,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
             clusteravgtime = clusteravgtime * TIME_SAMPLE_NS;
 
             bool badtime = clusteravgtime < bg_timing_cut;
+
+            // Cluster-MBD time window cut (data only)
+            if (!issim && mbd_mean_time > -990)
+            {
+                float delta_t = clusteravgtime - mbd_mean_time;
+                if (delta_t < cluster_mbd_time_min || delta_t > cluster_mbd_time_max)
+                    continue;
+            }
 
             bool otherside_jet = false;
 
@@ -1964,7 +2156,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 e11_over_e33 > common_e11_over_e33_min &&
                 e11_over_e33 < common_e11_over_e33_max &&
                 //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
-                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound);
+                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound) &&
+                (!common_npb_cut_on || cluster_npb_score[icluster] > common_npb_score_cut);
 
             if (passes_common_shape && passes_common_b2bjet)
             {
@@ -2019,10 +2212,24 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                     (cluster_prob[icluster] > tight_prob_min) &&
                     (cluster_prob[icluster] < tight_prob_max);
                 
-                //std::cout<<"cluster_bdt[icluster]: "<<cluster_bdt[icluster]<<std::endl;
+                // Select BDT model based on cluster ET (ET-binned or fallback)
+                std::string selected_bdt_model = bdt_model_name;
+                if (use_et_binned_bdt) {
+                    float et = cluster_Et[icluster];
+                    for (int ib = 0; ib < (int)bdt_et_bin_models.size(); ++ib) {
+                        if (et >= bdt_et_bin_edges[ib] && et < bdt_et_bin_edges[ib + 1]) {
+                            selected_bdt_model = bdt_et_bin_models[ib];
+                            break;
+                        }
+                    }
+                }
+                float bdt_score = (*bdt_arrays[selected_bdt_model])[icluster];
+
+                //std::cout<<"bdt_score: "<<bdt_score<<std::endl;
+                float tight_bdt_min_et = tight_bdt_min_slope * cluster_Et[icluster] + tight_bdt_min_intercept;
                 bool is_bdt_tight =
-                    (cluster_bdt[icluster] > tight_bdt_min) &&
-                    (cluster_bdt[icluster] < tight_bdt_max);
+                    (bdt_score > tight_bdt_min_et) &&
+                    (bdt_score < tight_bdt_max);
 
                 // Combined condition
                 if (is_cluster_weta_cogx_tight &&
@@ -2053,8 +2260,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                     cluster_et1[icluster] < non_tight_et1_max &&
                     cluster_et4[icluster] > non_tight_et4_min &&
                     cluster_et4[icluster] < non_tight_et4_max &&
-                    cluster_bdt[icluster] > non_tight_bdt_min &&
-                    cluster_bdt[icluster] < non_tight_bdt_max)
+                    bdt_score > non_tight_bdt_min &&
+                    bdt_score < non_tight_bdt_max_slope * cluster_Et[icluster] + non_tight_bdt_max_intercept)
                 {
                     // fail at least one of the tight cuts with small correlation
                     int nfail = 0;
@@ -2253,7 +2460,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                 float dphi = cluster_Phi[icluster] - particle_Phi[iparticle];
                 if (dphi > M_PI)
                 {
-                    dphi = 2 * M_PI - dphi;
+                    dphi -= 2 * M_PI;
+                }
+                else if (dphi < -M_PI)
+                {
+                    dphi += 2 * M_PI;
                 }
                 float dR = sqrt(deta * deta + dphi * dphi);
                 //check the pid in each sideband region
@@ -2304,10 +2515,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_showe
                     // this is non-photon background
                     if (pTbin != -1)
                     {
-
                         h_background_iso_truth_reco[etabin][pTbin]->Fill(all_iso_ET[iparticle], recoisoET, weight);
                     }
                     h_background_truth_isoET[etabin]->Fill(particle_Pt[iparticle], recoisoET, weight);
+                    // not matched to a direct or fragmentation photon — fill ABCD background yield
+                    if (tight && iso)      h_tight_iso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
+                    if (tight && noniso)   h_tight_noniso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
+                    if (nontight && iso)   h_nontight_iso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
+                    if (nontight && noniso) h_nontight_noniso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
                     continue;
                 }
 

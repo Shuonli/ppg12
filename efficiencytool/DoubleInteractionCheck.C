@@ -558,6 +558,18 @@ void DoubleInteractionCheck(
     std::vector<TH1D *> h_tight_iso_single_incsig, h_tight_noniso_single_incsig, h_nontight_iso_single_incsig, h_nontight_noniso_single_incsig;
     std::vector<TH1D *> h_tight_iso_double_incsig, h_tight_noniso_double_incsig, h_nontight_iso_double_incsig, h_nontight_noniso_double_incsig;
 
+    // Additional smearing levels for double vertex (in cm)
+    std::vector<float> smear_sigmas = {5.0, 10.0, 15.0, 20.0};
+    int n_smear = smear_sigmas.size();
+
+    // Histograms for each smearing level: outer index = smearing level, inner index = eta bin
+    std::vector<std::vector<TH1D *>> h_tight_iso_double_smear(n_smear), h_tight_noniso_double_smear(n_smear),
+        h_nontight_iso_double_smear(n_smear), h_nontight_noniso_double_smear(n_smear);
+    std::vector<std::vector<TH1D *>> h_tight_iso_double_smear_signal(n_smear), h_tight_noniso_double_smear_signal(n_smear),
+        h_nontight_iso_double_smear_signal(n_smear), h_nontight_noniso_double_smear_signal(n_smear);
+    std::vector<std::vector<TH1D *>> h_tight_iso_double_smear_incsig(n_smear), h_tight_noniso_double_smear_incsig(n_smear),
+        h_nontight_iso_double_smear_incsig(n_smear), h_nontight_noniso_double_smear_incsig(n_smear);
+
     for (int ieta = 0; ieta < n_eta_bins; ieta++)
     {
         // Task 1: NPB score vs ET (2D)
@@ -672,6 +684,62 @@ void DoubleInteractionCheck(
             h_nontight_noniso_double_incsig.push_back(new TH1D(Form("h_nontight_noniso_cluster_double_incsig_%d", ieta),
                 Form("NonTight NonIso Double IncSig %.1f<#eta<%.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                 n_pT_bins, pT_bin_edges));
+
+            // Smeared double interaction histograms
+            for (int ism = 0; ism < n_smear; ism++)
+            {
+                int sm_int = (int)smear_sigmas[ism];
+                h_tight_iso_double_smear[ism].push_back(new TH1D(
+                    Form("h_tight_iso_cluster_double_smear%d_%d", sm_int, ieta),
+                    Form("Tight Iso Double Smear%dcm %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_tight_noniso_double_smear[ism].push_back(new TH1D(
+                    Form("h_tight_noniso_cluster_double_smear%d_%d", sm_int, ieta),
+                    Form("Tight NonIso Double Smear%dcm %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_iso_double_smear[ism].push_back(new TH1D(
+                    Form("h_nontight_iso_cluster_double_smear%d_%d", sm_int, ieta),
+                    Form("NonTight Iso Double Smear%dcm %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_noniso_double_smear[ism].push_back(new TH1D(
+                    Form("h_nontight_noniso_cluster_double_smear%d_%d", sm_int, ieta),
+                    Form("NonTight NonIso Double Smear%dcm %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+
+                h_tight_iso_double_smear_signal[ism].push_back(new TH1D(
+                    Form("h_tight_iso_cluster_double_smear%d_signal_%d", sm_int, ieta),
+                    Form("Tight Iso Double Smear%dcm Signal %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_tight_noniso_double_smear_signal[ism].push_back(new TH1D(
+                    Form("h_tight_noniso_cluster_double_smear%d_signal_%d", sm_int, ieta),
+                    Form("Tight NonIso Double Smear%dcm Signal %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_iso_double_smear_signal[ism].push_back(new TH1D(
+                    Form("h_nontight_iso_cluster_double_smear%d_signal_%d", sm_int, ieta),
+                    Form("NonTight Iso Double Smear%dcm Signal %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_noniso_double_smear_signal[ism].push_back(new TH1D(
+                    Form("h_nontight_noniso_cluster_double_smear%d_signal_%d", sm_int, ieta),
+                    Form("NonTight NonIso Double Smear%dcm Signal %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+
+                h_tight_iso_double_smear_incsig[ism].push_back(new TH1D(
+                    Form("h_tight_iso_cluster_double_smear%d_incsig_%d", sm_int, ieta),
+                    Form("Tight Iso Double Smear%dcm IncSig %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_tight_noniso_double_smear_incsig[ism].push_back(new TH1D(
+                    Form("h_tight_noniso_cluster_double_smear%d_incsig_%d", sm_int, ieta),
+                    Form("Tight NonIso Double Smear%dcm IncSig %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_iso_double_smear_incsig[ism].push_back(new TH1D(
+                    Form("h_nontight_iso_cluster_double_smear%d_incsig_%d", sm_int, ieta),
+                    Form("NonTight Iso Double Smear%dcm IncSig %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+                h_nontight_noniso_double_smear_incsig[ism].push_back(new TH1D(
+                    Form("h_nontight_noniso_cluster_double_smear%d_incsig_%d", sm_int, ieta),
+                    Form("NonTight NonIso Double Smear%dcm IncSig %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
+                    n_pT_bins, pT_bin_edges));
+            }
         }
     }
 
@@ -1125,6 +1193,35 @@ void DoubleInteractionCheck(
                                                     if (is_signal) h_nontight_noniso_double_signal[etabin]->Fill(clusterET, weight);
                                                     if (is_signal_inclusive) h_nontight_noniso_double_incsig[etabin]->Fill(clusterET, weight); }
                     }
+                }
+
+                // Smeared double interaction: add additional Gaussian smearing to double_vtx
+                for (int ism = 0; ism < n_smear; ism++)
+                {
+                    float smeared_vtx = double_vtx + rng.Gaus(0, smear_sigmas[ism]);
+                    if (std::abs(smeared_vtx) > vertexcut) continue;
+
+                    std::vector<float> x_npb_sm = buildNpbFeatureVector(icl, smeared_vtx);
+                    float npb_score_sm = npb_bdt_ptr->Compute(x_npb_sm)[0];
+                    if (npb_score_sm < npb_score_cut) continue;
+
+                    std::vector<float> x_bdt_sm = buildSsBdtFeatureVector(icl, smeared_vtx);
+                    float bdt_score_sm = ss_bdt_ptr->Compute(x_bdt_sm)[0];
+
+                    auto [tight_sm, nontight_sm] = classifyTightNonTight(icl, clusterET, e11_over_e33, e32_over_e35, bdt_score_sm);
+
+                    if (tight_sm && iso)    { h_tight_iso_double_smear[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal) h_tight_iso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal_inclusive) h_tight_iso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
+                    if (tight_sm && noniso) { h_tight_noniso_double_smear[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal) h_tight_noniso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal_inclusive) h_tight_noniso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
+                    if (nontight_sm && iso) { h_nontight_iso_double_smear[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal) h_nontight_iso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
+                                              if (is_signal_inclusive) h_nontight_iso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
+                    if (nontight_sm && noniso) { h_nontight_noniso_double_smear[ism][etabin]->Fill(clusterET, weight);
+                                                 if (is_signal) h_nontight_noniso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
+                                                 if (is_signal_inclusive) h_nontight_noniso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
                 }
             }
         } // end cluster loop
