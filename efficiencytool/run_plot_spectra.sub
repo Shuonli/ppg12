@@ -1,0 +1,55 @@
+# Condor submission file for PlotSpectra macro
+# Submit with: condor_submit run_plot_spectra.sub
+
+Universe        = vanilla
+Executable      = run_plot_spectra_condor.sh
+Output          = logs/plot_spectra_$(sample).out
+Error           = logs/plot_spectra_$(sample).err
+Log             = logs/plot_spectra_$(sample).log
+Initialdir      = /gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool
+PeriodicHold    = (NumJobStarts>=1 && JobStatus == 1)
+request_memory  = 4GB
+Priority        = 20
+job_lease_duration = 3600
+
+# Photon samples with pT filters
+Arguments       = photon5 5 12 -1 -1
+Queue sample from (
+    photon5
+)
+
+Arguments       = photon10 12 25 -1 -1
+Queue sample from (
+    photon10
+)
+
+Arguments       = photon20 25 100 -1 -1
+Queue sample from (
+    photon20
+)
+
+# Jet samples with pT filters
+Arguments       = jet10 -1 -1 10 15
+Queue sample from (
+    jet10
+)
+
+Arguments       = jet15 -1 -1 15 20
+Queue sample from (
+    jet15
+)
+
+Arguments       = jet20 -1 -1 20 30
+Queue sample from (
+    jet20
+)
+
+Arguments       = jet30 -1 -1 30 50
+Queue sample from (
+    jet30
+)
+
+Arguments       = jet50 -1 -1 50 100
+Queue sample from (
+    jet50
+)

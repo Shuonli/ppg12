@@ -25,8 +25,8 @@
 const float TIME_SAMPLE_NS = 17.6;
 
 // TODO: fill in actual run ranges for crossing angle classification
-bool is_0mrad(int run) { return (run >= 47000 && run <= 48000); }
-bool is_1p5mrad(int run) { return (run >= 49000 && run <= 53500); }
+bool is_0mrad(int run) { return (run >= 47000 && run <= 51274); }
+bool is_1p5mrad(int run) { return (run >= 51274 && run <= 54000); }
 
 void DoubleInteractionCheck(
     const std::string &configname = "config_showershape.yaml",
@@ -61,6 +61,9 @@ void DoubleInteractionCheck(
     // NPB score configuration
     // ---------------------------------------------------------------
     float npb_score_cut = configYaml["analysis"]["npb_score_cut"].as<float>(0.5);
+
+    std::string vertex_scan_data_file =
+        configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
 
     int mbd_t0_correction_on = configYaml["analysis"]["mbd_t0_correction_on"].as<int>(1);
     std::string mbd_t0_correction_file =
@@ -99,11 +102,15 @@ void DoubleInteractionCheck(
     const float photon10cross = 6944.675;
     const float photon20cross = 130.4461;
 
+    const float jet5cross  = 1.3878e+08;
+    const float jet8cross  = 1.3013e+07 * 0.7;
     const float jet10cross = 3.997e+06;
+    const float jet12cross = 1.4903e+06;
     const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
+    const float jet20cross = 6.2623e+04;
+    const float jet30cross = 2.5298e+03;
+    const float jet40cross = 1.3553e+02;
+    const float jet50cross = 7.3113;
 
     float max_jet_lower = 0;
     float max_jet_upper = 100;
@@ -130,6 +137,30 @@ void DoubleInteractionCheck(
         max_photon_upper = 200;
         weight = 1.0;
     }
+    else if (filetype == "jet5")
+    {
+        max_jet_lower = 7;
+        max_jet_upper = 9;
+        cluster_ET_upper = 10;
+        weight = jet5cross / jet50cross;
+        isbackground = true;
+    }
+    else if (filetype == "jet8")
+    {
+        max_jet_lower = 9;
+        max_jet_upper = 14;
+        cluster_ET_upper = 15;
+        weight = jet8cross / jet50cross;
+        isbackground = true;
+    }
+    else if (filetype == "jet12")
+    {
+        max_jet_lower = 14;
+        max_jet_upper = 21;
+        cluster_ET_upper = 23;
+        weight = jet12cross / jet50cross;
+        isbackground = true;
+    }
     else if (filetype == "jet10")
     {
         max_jet_lower = 10;
@@ -141,30 +172,38 @@ void DoubleInteractionCheck(
     else if (filetype == "jet15")
     {
         max_jet_lower = 15;
-        max_jet_upper = 20;
+        max_jet_upper = 21;
         cluster_ET_upper = 23;
         weight = jet15cross / jet50cross;
         isbackground = true;
     }
     else if (filetype == "jet20")
     {
-        max_jet_lower = 20;
-        max_jet_upper = 30;
-        cluster_ET_upper = 33;
+        max_jet_lower = 21;
+        max_jet_upper = 32;
+        cluster_ET_upper = 35;
         weight = jet20cross / jet50cross;
         isbackground = true;
     }
     else if (filetype == "jet30")
     {
-        max_jet_lower = 30;
-        max_jet_upper = 50;
+        max_jet_lower = 32;
+        max_jet_upper = 42;
         cluster_ET_upper = 45;
         weight = jet30cross / jet50cross;
         isbackground = true;
     }
+    else if (filetype == "jet40")
+    {
+        max_jet_lower = 42;
+        max_jet_upper = 100;
+        cluster_ET_upper = 100;
+        weight = jet40cross / jet50cross;
+        isbackground = true;
+    }
     else if (filetype == "jet50")
     {
-        max_jet_lower = 50;
+        max_jet_lower = 52;
         max_jet_upper = 100;
         weight = jet50cross / jet50cross;
         isbackground = true;
@@ -180,6 +219,7 @@ void DoubleInteractionCheck(
 
     TFile *fvtx = nullptr;
     TH1D *h_vertexz_data = nullptr;
+    TH1D *h_vertexz_data_nocut = nullptr;
 
     if (issim)
     {
@@ -220,6 +260,35 @@ void DoubleInteractionCheck(
         h_vertexz_data = dynamic_cast<TH1D *>(htmp_data->Clone("h_vertexz_data_clone"));
         h_vertexz_data->SetDirectory(nullptr);
         std::cout << "[VertexData] Loaded data vertex distribution (" << h_vertexz_data->GetEntries() << " entries)" << std::endl;
+
+        // For double-interaction toy: load unrestricted data vertex distribution
+        // from the vertex scan output (no vertex range cut applied)
+        if (!vertex_scan_data_file.empty())
+        {
+            TFile *fvtxscan = TFile::Open(vertex_scan_data_file.c_str(), "READ");
+            if (!fvtxscan || fvtxscan->IsZombie())
+            {
+                std::cerr << "[VtxScan] ERROR: cannot open " << vertex_scan_data_file << std::endl;
+                return;
+            }
+            TH1D *htmp = dynamic_cast<TH1D *>(fvtxscan->Get("h_vertexz"));
+            if (!htmp)
+            {
+                std::cerr << "[VtxScan] ERROR: h_vertexz not found in " << vertex_scan_data_file << std::endl;
+                return;
+            }
+            h_vertexz_data_nocut = dynamic_cast<TH1D *>(htmp->Clone("h_vertexz_data_nocut_clone"));
+            h_vertexz_data_nocut->SetDirectory(nullptr);
+            fvtxscan->Close();
+            std::cout << "[VtxScan] Loaded unrestricted vertex distribution ("
+                      << h_vertexz_data_nocut->GetEntries() << " entries)" << std::endl;
+        }
+        else
+        {
+            // Fallback: use the cut vertex distribution from vertex_reweight.root (biased but backward-compatible)
+            std::cerr << "[VtxScan] WARNING: vertex_scan_data_file not set, falling back to h_vertexz_data" << std::endl;
+            h_vertexz_data_nocut = h_vertexz_data;
+        }
     }
 
     TRandom3 rng(42);
@@ -228,12 +297,18 @@ void DoubleInteractionCheck(
     // NPB TMVA model (sim only, for rescoring)
     // ---------------------------------------------------------------
     TMVA::Experimental::RBDT *npb_bdt_ptr = nullptr;
-    TMVA::Experimental::RBDT *ss_bdt_ptr = nullptr;
-    std::string ss_bdt_model_name = "base_v3E";
+    std::vector<std::string>                ss_bdt_model_names;
+    std::vector<std::pair<float, float>>    ss_bdt_et_ranges;
+    std::vector<TMVA::Experimental::RBDT *> ss_bdt_models;
 
     if (issim)
     {
-        std::string npb_tmva_file = "/sphenix/user/shuhangli/ppg12/FunWithxgboost/npb_models/npb_score_tmva.root";
+        // SS-BDT: split vs single model selection (matches apply_BDT.C convention)
+        const bool use_split_bdt = configYaml["analysis"]["use_split_bdt"].as<int>(0) != 0;
+
+        std::string npb_tmva_file = use_split_bdt
+            ? "/sphenix/user/shuhangli/ppg12/FunWithxgboost/npb_models/npb_score_split_tmva.root"
+            : "/sphenix/user/shuhangli/ppg12/FunWithxgboost/npb_models/npb_score_tmva.root";
         if (configYaml["analysis"] && configYaml["analysis"]["npb_tmva_file"])
         {
             npb_tmva_file = configYaml["analysis"]["npb_tmva_file"].as<std::string>();
@@ -245,21 +320,39 @@ void DoubleInteractionCheck(
         }
         std::cout << "[NPB] Loading TMVA model from " << npb_tmva_file << std::endl;
         npb_bdt_ptr = new TMVA::Experimental::RBDT("myBDT", npb_tmva_file);
+        const std::string model_suffix = use_split_bdt ? "_split" : "";
+        std::cout << "[SS-BDT] Model set: " << (use_split_bdt ? "split" : "single") << std::endl;
 
-        // Showershape BDT TMVA model
-        if (configYaml["input"] && configYaml["input"]["bdt_model_name"])
+        // ET-binned model config (bdt_et_bin_edges / bdt_et_bin_models); fallback to bdt_model_name
+        std::string fallback_model = configYaml["input"]["bdt_model_name"].as<std::string>("base_v3E");
+        std::vector<float>       bin_edges  = {0.0f, 1e9f};
+        std::vector<std::string> bin_models = {fallback_model};
         {
-            ss_bdt_model_name = configYaml["input"]["bdt_model_name"].as<std::string>();
+            YAML::Node edgesNode  = configYaml["input"]["bdt_et_bin_edges"];
+            YAML::Node modelsNode = configYaml["input"]["bdt_et_bin_models"];
+            if (edgesNode && edgesNode.IsSequence() && modelsNode && modelsNode.IsSequence()
+                && modelsNode.size() + 1 == edgesNode.size())
+            {
+                bin_edges  = edgesNode.as<std::vector<float>>();
+                bin_models = modelsNode.as<std::vector<std::string>>();
+            }
         }
-        std::string ss_bdt_file = "/sphenix/user/shuhangli/ppg12/FunWithxgboost/binned_models/model_"
-                                  + ss_bdt_model_name + "_single_tmva.root";
-        if (gSystem->AccessPathName(ss_bdt_file.c_str()))
+        for (int ib = 0; ib < (int)bin_models.size(); ib++)
         {
-            std::cerr << "ERROR: SS BDT model not found at '" << ss_bdt_file << "'" << std::endl;
-            return;
+            const std::string &mname = bin_models[ib];
+            std::string mfile = "/sphenix/user/shuhangli/ppg12/FunWithxgboost/binned_models/model_"
+                                + mname + model_suffix + "_single_tmva.root";
+            if (gSystem->AccessPathName(mfile.c_str()))
+            {
+                std::cerr << "ERROR: SS BDT model not found at '" << mfile << "'" << std::endl;
+                return;
+            }
+            std::cout << "[SS-BDT] ET [" << bin_edges[ib] << ", " << bin_edges[ib + 1]
+                      << "): model=" << mname << " file=" << mfile << std::endl;
+            ss_bdt_model_names.push_back(mname);
+            ss_bdt_et_ranges.push_back({bin_edges[ib], bin_edges[ib + 1]});
+            ss_bdt_models.push_back(new TMVA::Experimental::RBDT("myBDT", mfile));
         }
-        std::cout << "[SS-BDT] Loading model (" << ss_bdt_model_name << ") from " << ss_bdt_file << std::endl;
-        ss_bdt_ptr = new TMVA::Experimental::RBDT("myBDT", ss_bdt_file);
     }
 
     // ---------------------------------------------------------------
@@ -570,6 +663,33 @@ void DoubleInteractionCheck(
     std::vector<std::vector<TH1D *>> h_tight_iso_double_smear_incsig(n_smear), h_tight_noniso_double_smear_incsig(n_smear),
         h_nontight_iso_double_smear_incsig(n_smear), h_nontight_noniso_double_smear_incsig(n_smear);
 
+    // Shower shape distribution histograms (sim only)
+    std::vector<std::string> ss_vars = {
+        "weta_cogx", "wphi_cogx", "et1", "et2", "et3", "et4",
+        "e11_to_e33", "e32_to_e35", "bdt_score", "npb_score"};
+    std::map<std::string, std::array<double, 3>> ss_binning = {
+        {"weta_cogx",  {100, 0.0, 2.0}},
+        {"wphi_cogx",  {100, 0.0, 2.0}},
+        {"et1",        {100, 0.0, 1.0}},
+        {"et2",        {100, 0.0, 1.0}},
+        {"et3",        {100, 0.0, 1.0}},
+        {"et4",        {100, 0.0, 0.5}},
+        {"e11_to_e33", {100, 0.0, 1.0}},
+        {"e32_to_e35", {100, 0.5, 1.0}},
+        {"bdt_score",  {100, 0.0, 1.0}},
+        {"npb_score",  {100, 0.0, 1.0}}};
+    std::vector<std::string> interaction_types = {
+        "single", "double",
+        "double_smear5", "double_smear10", "double_smear15", "double_smear20"};
+    // [interaction_type][varname][ieta][ipt]
+    std::map<std::string, std::map<std::string, std::vector<std::vector<TH1D *>>>> h_ss;
+    if (issim)
+    {
+        for (const auto &itype : interaction_types)
+            for (const auto &var : ss_vars)
+                h_ss[itype][var].resize(n_eta_bins);
+    }
+
     for (int ieta = 0; ieta < n_eta_bins; ieta++)
     {
         // Task 1: NPB score vs ET (2D)
@@ -740,6 +860,15 @@ void DoubleInteractionCheck(
                     Form("NonTight NonIso Double Smear%dcm IncSig %.1f<#eta<%.1f", sm_int, eta_bins[ieta], eta_bins[ieta + 1]),
                     n_pT_bins, pT_bin_edges));
             }
+
+            // Shower shape distribution histograms per (ieta, ipt)
+            for (const auto &itype : interaction_types)
+                for (const auto &var : ss_vars)
+                    for (int ipt = 0; ipt < n_pT_bins; ipt++)
+                        h_ss[itype][var][ieta].push_back(new TH1D(
+                            Form("h_ss_%s_%s_eta%d_pt%d", itype.c_str(), var.c_str(), ieta, ipt),
+                            Form(";%s;counts", var.c_str()),
+                            (int)ss_binning[var][0], ss_binning[var][1], ss_binning[var][2]));
         }
     }
 
@@ -772,50 +901,50 @@ void DoubleInteractionCheck(
         };
     };
 
-    auto buildSsBdtFeatureVector = [&](int icl, float vtxz) -> std::vector<float> {
+    auto buildSsBdtFeatureVector = [&](int icl, float vtxz, const std::string &model_name) -> std::vector<float> {
         const float e11_over_e33 = (cluster_e33[icl] > 0) ? cluster_e11[icl] / cluster_e33[icl] : 0.0f;
         const float e32_over_e35 = (cluster_e35[icl] > 0) ? cluster_e32[icl] / cluster_e35[icl] : 0.0f;
-        if (ss_bdt_model_name == "base_v3E")
+        if (model_name == "base_v3E")
         {
             return { cluster_Et[icl], cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
-        else if (ss_bdt_model_name == "base_v3")
+        else if (model_name == "base_v3")
         {
             return { cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
-        else if (ss_bdt_model_name == "base_v2E")
+        else if (model_name == "base_v2E")
         {
             return { cluster_Et[icl], cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
-        else if (ss_bdt_model_name == "base_v2")
+        else if (model_name == "base_v2")
         {
             return { cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
-        else if (ss_bdt_model_name == "base_v1E")
+        else if (model_name == "base_v1E")
         {
             return { cluster_Et[icl], cluster_weta_cogx[icl], vtxz,
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
-        else if (ss_bdt_model_name == "base_v1")
+        else if (model_name == "base_v1")
         {
             return { cluster_weta_cogx[icl], vtxz, cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
-        else if (ss_bdt_model_name == "base_E")
+        else if (model_name == "base_E")
         {
             return { cluster_Et[icl], vtxz, cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
-        else if (ss_bdt_model_name == "base" || ss_bdt_model_name == "base_vr")
+        else if (model_name == "base" || model_name == "base_vr")
         {
             return { vtxz, cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
@@ -827,6 +956,13 @@ void DoubleInteractionCheck(
                      cluster_Eta[icl], e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
+    };
+
+    auto getSsBdtForET = [&](float ET) -> std::pair<TMVA::Experimental::RBDT *, std::string> {
+        for (int i = 0; i < (int)ss_bdt_models.size(); i++)
+            if (ET >= ss_bdt_et_ranges[i].first && ET < ss_bdt_et_ranges[i].second)
+                return {ss_bdt_models[i], ss_bdt_model_names[i]};
+        return {ss_bdt_models.back(), ss_bdt_model_names.back()};
     };
 
     // ---------------------------------------------------------------
@@ -891,6 +1027,32 @@ void DoubleInteractionCheck(
         }
 
         return {tight, nontight};
+    };
+
+    // ---------------------------------------------------------------
+    // Shower shape fill helpers (sim only)
+    // ---------------------------------------------------------------
+    auto findPtBin = [&](float et) -> int {
+        for (int i = 0; i < n_pT_bins; i++)
+            if (et >= pT_bins[i] && et < pT_bins[i + 1]) return i;
+        return -1;
+    };
+
+    auto fillSS = [&](const std::string &itype, int icl_param, int ieta, int ptbin,
+                       float bdt_fill, float npb_fill) {
+        if (ptbin < 0 || ptbin >= n_pT_bins) return;
+        float e11_e33 = (cluster_e33[icl_param] > 0) ? cluster_e11[icl_param] / cluster_e33[icl_param] : 0.0f;
+        float e32_e35 = (cluster_e35[icl_param] > 0) ? cluster_e32[icl_param] / cluster_e35[icl_param] : 0.0f;
+        h_ss[itype]["weta_cogx"][ieta][ptbin]->Fill(cluster_weta_cogx[icl_param], weight);
+        h_ss[itype]["wphi_cogx"][ieta][ptbin]->Fill(cluster_wphi_cogx[icl_param], weight);
+        h_ss[itype]["et1"][ieta][ptbin]->Fill(cluster_et1[icl_param], weight);
+        h_ss[itype]["et2"][ieta][ptbin]->Fill(cluster_et2[icl_param], weight);
+        h_ss[itype]["et3"][ieta][ptbin]->Fill(cluster_et3[icl_param], weight);
+        h_ss[itype]["et4"][ieta][ptbin]->Fill(cluster_et4[icl_param], weight);
+        h_ss[itype]["e11_to_e33"][ieta][ptbin]->Fill(e11_e33, weight);
+        h_ss[itype]["e32_to_e35"][ieta][ptbin]->Fill(e32_e35, weight);
+        h_ss[itype]["bdt_score"][ieta][ptbin]->Fill(bdt_fill, weight);
+        h_ss[itype]["npb_score"][ieta][ptbin]->Fill(npb_fill, weight);
     };
 
     // ---------------------------------------------------------------
@@ -1010,9 +1172,9 @@ void DoubleInteractionCheck(
 
         // For sim: draw random second vertex for double interaction
         float double_vtx = 0;
-        if (issim && h_vertexz_data)
+        if (issim && (h_vertexz_data_nocut || h_vertexz_data))
         {
-            float random_vertex = h_vertexz_data->GetRandom();
+            float random_vertex = (h_vertexz_data_nocut ? h_vertexz_data_nocut : h_vertexz_data)->GetRandom();
             double_vtx = (*vertexz + random_vertex) / 2.0;
         }
 
@@ -1148,7 +1310,7 @@ void DoubleInteractionCheck(
             // ---------------------------------------------------------------
             // Task 4: Single vs double interaction purity (sim only)
             // ---------------------------------------------------------------
-            if (issim && npb_bdt_ptr && ss_bdt_ptr)
+            if (issim && npb_bdt_ptr && !ss_bdt_models.empty())
             {
                 // Single interaction: requires original vertex in range
                 if (vtx_pass)
@@ -1165,6 +1327,7 @@ void DoubleInteractionCheck(
                     if (nontight && noniso) { h_nontight_noniso_single[etabin]->Fill(clusterET, weight);
                                               if (is_signal) h_nontight_noniso_single_signal[etabin]->Fill(clusterET, weight);
                                               if (is_signal_inclusive) h_nontight_noniso_single_incsig[etabin]->Fill(clusterET, weight); }
+                    fillSS("single", icl, etabin, findPtBin(clusterET), bdt_score_original, npb_score_val);
                 }
 
                 // Double interaction: requires double_vtx in range (not original vertex)
@@ -1175,8 +1338,9 @@ void DoubleInteractionCheck(
 
                     if (npb_score_shifted >= npb_score_cut)
                     {
-                        std::vector<float> x_bdt_shifted = buildSsBdtFeatureVector(icl, double_vtx);
-                        float bdt_score_shifted = ss_bdt_ptr->Compute(x_bdt_shifted)[0];
+                        auto [bdt_ptr_shifted, bdt_name_shifted] = getSsBdtForET(clusterET);
+                        std::vector<float> x_bdt_shifted = buildSsBdtFeatureVector(icl, double_vtx, bdt_name_shifted);
+                        float bdt_score_shifted = bdt_ptr_shifted->Compute(x_bdt_shifted)[0];
 
                         auto [tight_d, nontight_d] = classifyTightNonTight(icl, clusterET, e11_over_e33, e32_over_e35, bdt_score_shifted);
 
@@ -1192,6 +1356,7 @@ void DoubleInteractionCheck(
                         if (nontight_d && noniso) { h_nontight_noniso_double[etabin]->Fill(clusterET, weight);
                                                     if (is_signal) h_nontight_noniso_double_signal[etabin]->Fill(clusterET, weight);
                                                     if (is_signal_inclusive) h_nontight_noniso_double_incsig[etabin]->Fill(clusterET, weight); }
+                        fillSS("double", icl, etabin, findPtBin(clusterET), bdt_score_shifted, npb_score_shifted);
                     }
                 }
 
@@ -1205,8 +1370,9 @@ void DoubleInteractionCheck(
                     float npb_score_sm = npb_bdt_ptr->Compute(x_npb_sm)[0];
                     if (npb_score_sm < npb_score_cut) continue;
 
-                    std::vector<float> x_bdt_sm = buildSsBdtFeatureVector(icl, smeared_vtx);
-                    float bdt_score_sm = ss_bdt_ptr->Compute(x_bdt_sm)[0];
+                    auto [bdt_ptr_sm, bdt_name_sm] = getSsBdtForET(clusterET);
+                    std::vector<float> x_bdt_sm = buildSsBdtFeatureVector(icl, smeared_vtx, bdt_name_sm);
+                    float bdt_score_sm = bdt_ptr_sm->Compute(x_bdt_sm)[0];
 
                     auto [tight_sm, nontight_sm] = classifyTightNonTight(icl, clusterET, e11_over_e33, e32_over_e35, bdt_score_sm);
 
@@ -1222,6 +1388,7 @@ void DoubleInteractionCheck(
                     if (nontight_sm && noniso) { h_nontight_noniso_double_smear[ism][etabin]->Fill(clusterET, weight);
                                                  if (is_signal) h_nontight_noniso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
                                                  if (is_signal_inclusive) h_nontight_noniso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
+                    fillSS(Form("double_smear%d", (int)smear_sigmas[ism]), icl, etabin, findPtBin(clusterET), bdt_score_sm, npb_score_sm);
                 }
             }
         } // end cluster loop
@@ -1297,7 +1464,7 @@ void DoubleInteractionCheck(
 
     // Cleanup
     if (npb_bdt_ptr) delete npb_bdt_ptr;
-    if (ss_bdt_ptr) delete ss_bdt_ptr;
+    for (auto *p : ss_bdt_models) delete p;
 
     std::cout << "Done. Output written to " << outfilename << std::endl;
 }

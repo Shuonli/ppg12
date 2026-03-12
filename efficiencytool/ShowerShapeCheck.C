@@ -16,7 +16,7 @@
 // EMCAL time sample period used in RecoEffCalculator_TTreeReader.C
 const float TIME_SAMPLE_NS = 17.6;
 
-void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml", const std::string filetype = "jet8", bool doinclusive = true)
+void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml", const std::string filetype = "jet8", bool doinclusive = true, bool do_vertex_scan = false)
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -224,6 +224,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     TH1* h_vertex_reweight = nullptr;
     int vertex_reweight_on = 1;
     std::string vertex_reweight_file = "results/vertex_reweight.root";
+    std::string vtx_scan_data_file = "";
     std::cout << "loading vertex reweight file: " << vertex_reweight_file << std::endl;
     if (issim)
     {
@@ -231,7 +232,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
-        if (vertex_reweight_on)
+        vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
+        if (!do_vertex_scan && vertex_reweight_on && vtx_scan_data_file.empty())
         {
             TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
 
@@ -300,6 +302,53 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
 
     std::cout << "outfilename: " << outfilename << std::endl;
     std::cout << "responsefilename: " << responsefilename << std::endl;
+
+    // Derive the vertex-scan output filename from outfilename
+    std::string vtxscan_outfilename = outfilename;
+    {
+        size_t pos = vtxscan_outfilename.rfind(".root");
+        if (pos != std::string::npos) vtxscan_outfilename.replace(pos, 5, "_vtxscan.root");
+    }
+
+    // On-the-fly vertex reweighting: derive ratio from data and sim scan outputs
+    if (!do_vertex_scan && issim && vertex_reweight_on && !vtx_scan_data_file.empty())
+    {
+        TFile* fvtx_data = TFile::Open(vtx_scan_data_file.c_str(), "READ");
+        if (!fvtx_data || fvtx_data->IsZombie())
+        {
+            std::cerr << "[VertexReweight] ERROR: cannot open data scan file: " << vtx_scan_data_file << std::endl;
+            return;
+        }
+        TFile* fvtx_sim = TFile::Open(vtxscan_outfilename.c_str(), "READ");
+        if (!fvtx_sim || fvtx_sim->IsZombie())
+        {
+            std::cerr << "[VertexReweight] ERROR: cannot open sim scan file: " << vtxscan_outfilename << std::endl;
+            return;
+        }
+        TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
+        TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
+        if (!hdata_vtx)
+        {
+            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtx_scan_data_file << std::endl;
+            return;
+        }
+        if (!hsim_vtx)
+        {
+            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtxscan_outfilename << std::endl;
+            return;
+        }
+        TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
+        TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
+        hdata_clone->SetDirectory(nullptr);
+        hsim_clone->SetDirectory(nullptr);
+        if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
+        if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
+        hdata_clone->Divide(hsim_clone);
+        h_vertex_reweight = hdata_clone;
+        h_vertex_reweight->SetDirectory(nullptr);
+        std::cout << "[VertexReweight] On-the-fly weights derived from "
+                  << vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+    }
 
     // Create TChain instead of TTree
     std::string treename = configYaml["input"]["tree"].as<std::string>();
@@ -1133,7 +1182,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         // Apply vertex reweighting for MC
         weight = cross_weight;
         vertex_weight = 1.0;
-        if (issim && vertex_reweight_on)
+        if (issim && vertex_reweight_on && !do_vertex_scan)
         {
             if (!h_vertex_reweight)
             {
@@ -1152,6 +1201,14 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 vertex_weight = 1.0;
             }
             weight *= vertex_weight;
+        }
+
+        // Scan mode: fill vertex histogram and skip all downstream processing
+        if (do_vertex_scan)
+        {
+            h_vertexz->Fill(*vertexz);
+            ientry++;
+            continue;
         }
 
         // Calculate MBD pileup metrics for strict pileup selection
@@ -1882,6 +1939,17 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         }
         ientry++;
     }
+
+    // Scan mode: write only the vertex histogram and return early
+    if (do_vertex_scan)
+    {
+        TFile* fscan = new TFile(vtxscan_outfilename.c_str(), "RECREATE");
+        h_vertexz->Write();
+        fscan->Close();
+        std::cout << "[VertexScan] Written vertex histogram to " << vtxscan_outfilename << std::endl;
+        return;
+    }
+
     fout->cd();
     fout->Write();
     fout->Close();
