@@ -1,0 +1,23 @@
+# Specify the HTCondor universe
+universe              = vanilla
+
+PeriodicHold                  = (NumJobStarts>=1 && JobStatus == 1)
+request_memory         = 8GB
+Notification                  = Never
+# The executable we are actually running
+# We use /bin/bash so we can pass our script and arguments
+executable            = /bin/bash
+
+# We'll pass the config file name as argument to run_showershape.sh
+arguments             = "run_showershape.sh $(cfg)"
+
+# Log, output, and error will be written per file
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+# If the 'logs' directory doesn't exist, be sure to create it before submitting
+#   mkdir logs
+
+# Queue one job for each showershape YAML config
+queue cfg matching (config_showershape*.yaml)

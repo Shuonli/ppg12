@@ -24,5 +24,5 @@ CONFIGNAME=$1
 root -l -b -q 'MergeSim.C("'"${CONFIGNAME}"'")'
 
 # Calculate photon yield
-root -l -b -q 'CalculatePhotonYield.C("'"${CONFIGNAME}"'", false)' & #isMC = false
+root -l -b -q 'CalculatePhotonYield.C("'"${CONFIGNAME}"'", false)' #isMC = false
 root -l -b -q 'CalculatePhotonYield.C("'"${CONFIGNAME}"'", true)' #isMC = true

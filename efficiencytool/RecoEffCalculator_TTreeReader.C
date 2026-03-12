@@ -39,7 +39,7 @@ void SaveYamlToRoot(TFile *f, const char *yaml_filename)
     yaml_obj.Write("config");
 }
 
-void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_nom.yaml", const std::string filetype = "jet40")
+void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_nom.yaml", const std::string filetype = "jet40", bool do_vertex_scan = false)
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so"); 
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -231,14 +231,16 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     TH1* h_vertex_reweight = nullptr;
     int vertex_reweight_on = 1;
     std::string vertex_reweight_file = "results/vertex_reweight_bdt_none.root";
+    std::string vtx_scan_data_file = "";
     if (issim)
     {
         // optional config knobs (safe defaults)
         vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
+        vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
         //vertex_reweight_on = false;
-        if (vertex_reweight_on)
+        if (!do_vertex_scan && vertex_reweight_on && vtx_scan_data_file.empty())
         {
             TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
             if (!fvtx || fvtx->IsZombie())
@@ -298,6 +300,53 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     std::cout << "outfilename: " << outfilename << std::endl;
     std::cout << "responsefilename: " << responsefilename << std::endl;
+
+    // Derive the vertex-scan output filename from outfilename
+    std::string vtxscan_outfilename = outfilename;
+    {
+        size_t pos = vtxscan_outfilename.rfind(".root");
+        if (pos != std::string::npos) vtxscan_outfilename.replace(pos, 5, "_vtxscan.root");
+    }
+
+    // On-the-fly vertex reweighting: derive ratio from data and sim scan outputs
+    if (!do_vertex_scan && issim && vertex_reweight_on && !vtx_scan_data_file.empty())
+    {
+        TFile* fvtx_data = TFile::Open(vtx_scan_data_file.c_str(), "READ");
+        if (!fvtx_data || fvtx_data->IsZombie())
+        {
+            std::cerr << "[VertexReweight] ERROR: cannot open data scan file: " << vtx_scan_data_file << std::endl;
+            return;
+        }
+        TFile* fvtx_sim = TFile::Open(vtxscan_outfilename.c_str(), "READ");
+        if (!fvtx_sim || fvtx_sim->IsZombie())
+        {
+            std::cerr << "[VertexReweight] ERROR: cannot open sim scan file: " << vtxscan_outfilename << std::endl;
+            return;
+        }
+        TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
+        TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
+        if (!hdata_vtx)
+        {
+            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtx_scan_data_file << std::endl;
+            return;
+        }
+        if (!hsim_vtx)
+        {
+            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtxscan_outfilename << std::endl;
+            return;
+        }
+        TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
+        TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
+        hdata_clone->SetDirectory(nullptr);
+        hsim_clone->SetDirectory(nullptr);
+        if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
+        if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
+        hdata_clone->Divide(hsim_clone);
+        h_vertex_reweight = hdata_clone;
+        h_vertex_reweight->SetDirectory(nullptr);
+        std::cout << "[VertexReweight] On-the-fly weights derived from "
+                  << vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+    }
 
     // TChain is used instead of a single TTree
 
@@ -772,6 +821,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_cut;
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_north_cut;
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_south_cut;
+    std::vector<TH1D *> h_truth_pT_vertexcut_mbd_only_north;
+    std::vector<TH1D *> h_truth_pT_vertexcut_mbd_only_south;
+    std::vector<TH1D *> h_truth_pT_vertexcut_mbd_neither;
 
     std::vector<TH1D *> h_tight_iso_cluster_signal;
     std::vector<TH1D *> h_tight_noniso_cluster_signal;
@@ -1016,6 +1068,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         h_truth_pT_vertexcut_mbd_south_cut.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_south_cut_%d", ieta),
                                                               Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                               n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_vertexcut_mbd_only_north.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_only_north_%d", ieta),
+                                                               Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                               n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_vertexcut_mbd_only_south.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_only_south_%d", ieta),
+                                                               Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                               n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_vertexcut_mbd_neither.push_back(new TH1D(Form("h_truth_pT_vertexcut_mbd_neither_%d", ieta),
+                                                            Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                            n_pT_bins_truth, pT_bin_edges_truth));
 
         h_tight_iso_cluster_signal.push_back(new TH1D(Form("h_tight_iso_cluster_signal_%d", ieta),
                                                       Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -1345,7 +1406,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         vertex_weight = 1.0;
         if (issim)
         {
-            if (vertex_reweight_on)
+            if (vertex_reweight_on && !do_vertex_scan)
             {
                 if (!h_vertex_reweight)
                 {
@@ -1469,6 +1530,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 continue;
             }
             */
+        }
+
+        // Scan mode: fill vertex histogram and skip all downstream processing
+        if (do_vertex_scan)
+        {
+            h_vertexz->Fill(*vertexz);
+            ientry++;
+            continue;
         }
 
         std::map<int, int> particle_trkidmap;
@@ -1710,6 +1779,18 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                     {
                                         h_truth_pT_vertexcut_mbd_cut[etabin]->Fill(photonpT, weight);
                                     }
+                                    if (*mbdnorthhit >= 1 && *mbdsouthhit < 1)
+                                    {
+                                        h_truth_pT_vertexcut_mbd_only_north[etabin]->Fill(photonpT, weight);
+                                    }
+                                    if (*mbdsouthhit >= 1 && *mbdnorthhit < 1)
+                                    {
+                                        h_truth_pT_vertexcut_mbd_only_south[etabin]->Fill(photonpT, weight);
+                                    }
+                                    if (*mbdnorthhit < 1 && *mbdsouthhit < 1)
+                                    {
+                                        h_truth_pT_vertexcut_mbd_neither[etabin]->Fill(photonpT, weight);
+                                    }
 
                                     //if (abs(*vertexz) < vertexcut)
                                     //{
@@ -1877,15 +1958,6 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         for (int icluster = 0; icluster < *ncluster; icluster++)
         {
             bool is_leading_cluster = (icluster == leading_cluster_ET_index);
-            // scale cluster ET
-            if (issim)
-            {
-                cluster_Et[icluster] = cluster_Et[icluster] * clusterescale;
-                if (clustereres > 0)
-                {
-                    cluster_Et[icluster] = cluster_Et[icluster] * rand->Gaus(1, clustereres);
-                }
-            }
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
                 continue;
@@ -2677,6 +2749,17 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         }
         ientry++;
     }
+
+    // Scan mode: write only the vertex histogram and return early
+    if (do_vertex_scan)
+    {
+        TFile* fscan = new TFile(vtxscan_outfilename.c_str(), "RECREATE");
+        h_vertexz->Write();
+        fscan->Close();
+        std::cout << "[VertexScan] Written vertex histogram to " << vtxscan_outfilename << std::endl;
+        return;
+    }
+
     TFile *fresponse = new TFile(responsefilename.c_str(), "RECREATE");
     for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
     {
