@@ -1,6 +1,6 @@
 #include "plotcommon.h"
 
-void plot_purity_selection(const std::string suffix = "nom")
+void plot_purity_selection(const std::string suffix = "bdt_nom")
 {
     init_plot();
 
@@ -12,7 +12,8 @@ void plot_purity_selection(const std::string suffix = "nom")
 
     TFile *fdata = new TFile(dataname.c_str());
 
-    TFile *fMC = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nomtestv3_mc.root");
+    std::string mcname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_"+suffix+"_mc.root";
+    TFile *fMC = new TFile(mcname.c_str());
 
     TGraphErrors *gpurity = (TGraphErrors *)fdata->Get("gpurity");
     TGraphErrors *gpurity_leak = (TGraphErrors *)fdata->Get("gpurity_leak");
@@ -21,6 +22,26 @@ void plot_purity_selection(const std::string suffix = "nom")
     TF1 *f_purity_fit = (TF1 *)fdata->Get("f_purity_fit");
     TF1 *f_purity_leak_fit = (TF1 *)fdata->Get("f_purity_leak_fit");
     TGraphAsymmErrors *g_purity_truth = (TGraphAsymmErrors *)fMC->Get("g_purity_truth");
+    TF1 *f_purity_mc_fit = (TF1 *)fMC->Get("f_purity_leak_fit");
+    TGraphErrors *grFineConf_mc = (TGraphErrors *)fMC->Get("grFineConf_leak");
+
+    if (f_purity_leak_fit)
+    {
+        std::cout << "data fit range: " << f_purity_leak_fit->GetXmin() << " to " << f_purity_leak_fit->GetXmax() << std::endl;
+    }
+    else
+    {
+        std::cout << "data fit range: f_purity_leak_fit is null" << std::endl;
+    }
+
+    if (f_purity_mc_fit)
+    {
+        std::cout << "mc fit range:   " << f_purity_mc_fit->GetXmin() << " to " << f_purity_mc_fit->GetXmax() << std::endl;
+    }
+    else
+    {
+        std::cout << "mc fit range:   f_purity_mc_fit is null" << std::endl;
+    }
     
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];Purity");
@@ -52,8 +73,16 @@ void plot_purity_selection(const std::string suffix = "nom")
     f_purity_leak_fit->Draw("same");
     if(plotMC_truth)
     {
+        grFineConf_mc->SetMarkerColor(kRed);
+        grFineConf_mc->SetLineColor(kRed);
+        grFineConf_mc->SetFillColorAlpha(kRed, 0.2);
+        grFineConf_mc->Draw("e3 same");
+
+        f_purity_mc_fit->SetLineColor(kRed);
+        f_purity_mc_fit->Draw("same");
+
         g_purity_truth->SetMarkerColor(kRed);
-        g_purity_truth->SetMarkerStyle(20);
+        g_purity_truth->SetMarkerStyle(24);
         g_purity_truth->SetMarkerSize(1.5);
         g_purity_truth->SetLineColor(kRed);
         g_purity_truth->Draw("P same");
@@ -67,11 +96,14 @@ void plot_purity_selection(const std::string suffix = "nom")
     if(plotMC_truth)
       myText(xpos2,ypos-1*dy,1,strIncMC.c_str(),fontsize,1);
 
-    int nEntry = plotMC_truth ? 4 : 3;
+    int nEntry = plotMC_truth ? 5 : 3;
     TLegend* l1 = new TLegend(xpos, ypos2, xpos2, ypos2+nEntry*dy1);
     legStyle(l1, 0.14, fontsize);
     if(plotMC_truth)
-      l1->AddEntry(g_purity_truth, "truth purity", "pl");
+    {
+      l1->AddEntry(g_purity_truth, "Inc. MC purity", "pl");
+      l1->AddEntry(grFineConf_mc, "Inc. MC fit w/ 68\% C.L.", "fl");
+    }
     l1->AddEntry(gpurity_leak, "w/ sig. leak. corr.", "pl");
     l1->AddEntry(gpurity, "w/o sig. leak. corr.", "pl");
     l1->AddEntry(grFineConf_leak, "fit w/ 68\% C.L.", "fl");

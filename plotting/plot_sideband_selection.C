@@ -53,16 +53,19 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   frame_et_rec->Draw("axis");
   frame_et_rec->GetXaxis()->SetRangeUser(8,35);
   frame_et_rec->GetYaxis()->SetRangeUser(1, 5e5);
-  h_tight_iso_cluster->Draw("same hist");
+  h_tight_iso_cluster->Draw("same e");
 
-  h_tight_noniso_cluster->Draw("same hist");
   h_tight_noniso_cluster->SetLineColor(kRed);
+  h_tight_noniso_cluster->SetMarkerColor(kRed);
+  h_tight_noniso_cluster->Draw("same e");
 
-  h_nontight_iso_cluster->Draw("same hist");
   h_nontight_iso_cluster->SetLineColor(kBlue);
+  h_nontight_iso_cluster->SetMarkerColor(kBlue);
+  h_nontight_iso_cluster->Draw("same e");
 
-  h_nontight_noniso_cluster->Draw("same hist");
   h_nontight_noniso_cluster->SetLineColor(kMagenta);
+  h_nontight_noniso_cluster->SetMarkerColor(kMagenta);
+  h_nontight_noniso_cluster->Draw("same e");
 
   myText(0.5,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.5,0.85,1,strleg2.c_str(),0.04);
@@ -83,13 +86,15 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
   frame_et_rec->GetYaxis()->SetRangeUser(7e-3,2);
   frame_et_rec->GetXaxis()->SetRangeUser(10,35);
   frame_et_rec->GetYaxis()->SetTitle("Ratio");
-  h_BoverA->Draw("same hist");
+  h_BoverA->Draw("same e");
 
-  h_CoverA->Draw("same hist");
   h_CoverA->SetLineColor(kRed);
+  h_CoverA->SetMarkerColor(kRed);
+  h_CoverA->Draw("same e");
 
-  h_DoverA->Draw("same hist");
   h_DoverA->SetLineColor(kBlue);
+  h_DoverA->SetMarkerColor(kBlue);
+  h_DoverA->Draw("same e");
 
   myText(0.18,0.9 ,1,strleg1.c_str(),0.04);
   myText(0.18,0.85,1,strleg2.c_str(),0.04);

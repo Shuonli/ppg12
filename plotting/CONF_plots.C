@@ -80,7 +80,7 @@ void CONF_plots(string tune = "nom", int lowbin = 6, int highbin = 8)
 
   ////////////
   // normalize
-  float ptcutnorm = 4;
+  float ptcutnorm = 6;
   int ptB = h_tight_isoET->FindBin(ptcutnorm);
   int ptBs = h_tight_isoET->GetNbinsX();
   float normTight = h_tight_isoET->Integral(ptB, ptBs);

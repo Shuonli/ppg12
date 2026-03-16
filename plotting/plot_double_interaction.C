@@ -9,21 +9,34 @@
 #include <TGraphAsymmErrors.h>
 #include <TLegend.h>
 
-void plot_double_interaction(const std::string &suffix = "double_interaction_check")
+void plot_double_interaction(
+    const std::string &configname = "config_showershape.yaml",
+    std::vector<int> smear_levels = {})
 {
     init_plot();
-    string savePath = "figures";
 
-    // Load pT bins from config
+    // Load yaml
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node config = YAML::LoadFile("../efficiencytool/config_nom.yaml");
+    YAML::Node config = YAML::LoadFile(("../efficiencytool/" + configname).c_str());
+
+    std::string eff_outfile  = config["output"]["eff_outfile"].as<std::string>();
+    std::string data_outfile = config["output"]["data_outfile"].as<std::string>();
+
     std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
-    int n_pT_bins = pT_bin_edges.size() - 1;
+    int n_pT_bins = (int)pT_bin_edges.size() - 1;
+    std::vector<double> eta_bins = config["analysis"]["eta_bins"].as<std::vector<double>>();
+    int n_eta_bins = (int)eta_bins.size() - 1;
 
     // Open files
-    TFile *f_data = TFile::Open(Form("../efficiencytool/results/data_histo_%s.root", suffix.c_str()));
-    TFile *f_sig  = TFile::Open(Form("../efficiencytool/results/MC_efficiency_%s_signal.root", suffix.c_str()));
-    TFile *f_jet  = TFile::Open(Form("../efficiencytool/results/MC_efficiency_%s_jet.root", suffix.c_str()));
+    // f_sig:  hadd of photon5+10+20 double_interaction_check outputs
+    // f_incl: jet MC with doinclusive=true (hadd of jet bins)
+    // f_data: data double_interaction_check output
+    TFile *f_data = TFile::Open((data_outfile + "_double_interaction_check.root").c_str());
+    TFile *f_sig  = TFile::Open((eff_outfile  + "_double_interaction_check_signal.root").c_str());
+    TFile *f_jet  = TFile::Open((eff_outfile  + "_double_interaction_check_jet.root").c_str());
+
+    string savePath = "figures";
+    gSystem->Exec("mkdir -p figures/double_interaction");
 
     int ieta = 0;
 
@@ -56,7 +69,6 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
 
         TCanvas *c = new TCanvas(Form("c_abcd_%s", tag.c_str()), "", 600, 600);
         frame_et_rec->Draw("axis");
-	//frame_et_rec->GetYaxis()->SetRangeUser(0,0.5);
         frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
         float ymax = h_A->GetMaximum() * 5;
         float ymin = 0.5;
@@ -160,8 +172,8 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
     // ---------------------------------------------------------------
     if (f_data && !f_data->IsZombie())
     {
-        TProfile *h_run_all    = (TProfile *)f_data->Get("h_mbd_avgsigma_vs_run_all");
-        TProfile *h_run_0mrad  = (TProfile *)f_data->Get("h_mbd_avgsigma_vs_run_0mrad");
+        TProfile *h_run_all     = (TProfile *)f_data->Get("h_mbd_avgsigma_vs_run_all");
+        TProfile *h_run_0mrad   = (TProfile *)f_data->Get("h_mbd_avgsigma_vs_run_0mrad");
         TProfile *h_run_1p5mrad = (TProfile *)f_data->Get("h_mbd_avgsigma_vs_run_1p5mrad");
 
         if (h_run_all && h_run_0mrad && h_run_1p5mrad)
@@ -195,7 +207,7 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
             //myMarkerLineText(0.55, 0.85, 0.4, kRed, 21, kRed, 1, "0 mrad", 0.04, true);
             //myMarkerLineText(0.55, 0.80, 0.4, kBlue, 22, kBlue, 1, "1.5 mrad", 0.04, true);
 
-            c2->SaveAs(Form("%s/mbd_avgsigma_vs_run.pdf", savePath.c_str()));
+            c2->SaveAs(Form("%s/double_interaction/mbd_avgsigma_vs_run.pdf", savePath.c_str()));
             delete c2;
         }
         else
@@ -207,15 +219,11 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
     // ---------------------------------------------------------------
     // Plot 3: NPB score distribution under tight selection (iso + noniso)
     //         Data vs inclusive jet MC, wider pT bins
-    // pT_bin_edges: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35]
-    // Wider bins:   [8-12, 12-16, 16-20, 20-26, 26-35]
-    //               bins 1-2, 3-4, 5-6, 7-9, 10
     // ---------------------------------------------------------------
     {
         bool have_data_npb = (f_data && !f_data->IsZombie());
         bool have_jet_npb  = (f_jet && !f_jet->IsZombie());
 
-        // Tight iso + noniso TH2Ds
         TH2D *h2_data_tight_iso    = have_data_npb ? (TH2D *)f_data->Get(Form("h_tight_iso_cluster_npb_%d", ieta))    : nullptr;
         TH2D *h2_data_tight_noniso = have_data_npb ? (TH2D *)f_data->Get(Form("h_tight_noniso_cluster_npb_%d", ieta)) : nullptr;
         TH2D *h2_jet_tight_iso     = have_jet_npb  ? (TH2D *)f_jet->Get(Form("h_tight_iso_cluster_npb_%d", ieta))     : nullptr;
@@ -223,16 +231,14 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
 
         if (h2_data_tight_iso || h2_jet_tight_iso)
         {
-            // Wider pT bin ranges (indices into pT_bin_edges)
-            std::vector<int> wide_bin_lo = {1, 3, 5, 7, 10};  // X-axis bin numbers (1-indexed)
+            std::vector<int> wide_bin_lo = {1, 3, 5, 7, 10};
             std::vector<int> wide_bin_hi = {2, 4, 6, 9, 10};
             std::vector<double> wide_pt_lo = {8, 12, 16, 20, 26};
             std::vector<double> wide_pt_hi = {12, 16, 20, 26, 35};
-            int n_wide = wide_bin_lo.size();
+            int n_wide = (int)wide_bin_lo.size();
 
             for (int iw = 0; iw < n_wide; iw++)
             {
-                // Project tight iso + noniso for data
                 TH1D *h_npb_data = nullptr;
                 if (h2_data_tight_iso)
                 {
@@ -245,7 +251,6 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
                     }
                 }
 
-                // Project tight iso + noniso for jet MC
                 TH1D *h_npb_jet = nullptr;
                 if (h2_jet_tight_iso)
                 {
@@ -258,7 +263,6 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
                     }
                 }
 
-                // Normalize to unit area
                 if (h_npb_data && h_npb_data->Integral() > 0) h_npb_data->Scale(1.0 / h_npb_data->Integral());
                 if (h_npb_jet  && h_npb_jet->Integral() > 0)  h_npb_jet->Scale(1.0 / h_npb_jet->Integral());
 
@@ -305,9 +309,6 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
 
     // ---------------------------------------------------------------
     // Plot 4: Truth purity single vs double interaction (inclusive jet MC)
-    // Uses _incsig histograms (signal tagged for all MC including jet)
-    // Both numerator and denominator from the inclusive jet MC file
-    // Overlays additional smearing levels (5, 10, 15, 20 cm)
     // ---------------------------------------------------------------
     bool have_jet = (f_jet && !f_jet->IsZombie());
     if (have_jet)
@@ -335,7 +336,6 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
             g_purity_double->SetMarkerColor(kRed);
             g_purity_double->SetLineColor(kRed);
 
-            // Smeared double interaction purity curves
             std::vector<int> smear_sigmas = {5, 10, 15, 20};
             int smear_markers[] = {22, 23, 33, 34};
             int smear_colors[]  = {kBlue, kGreen + 2, kMagenta, kOrange + 1};
@@ -395,13 +395,235 @@ void plot_double_interaction(const std::string &suffix = "double_interaction_che
                 }
             }
 
-            c4->SaveAs(Form("%s/truth_purity_single_vs_double.pdf", savePath.c_str()));
+            c4->SaveAs(Form("%s/double_interaction/truth_purity_single_vs_double.pdf", savePath.c_str()));
             delete c4;
         }
         else
         {
             std::cout << "Missing single/double or incsig histograms in jet MC file" << std::endl;
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Plot 5: Shower shape overlays, split into two canvases per (var, eta, pT):
+    //
+    //   Plot A (_data_incl): Data 0mrad + Data 1.5mrad + Incl MC single + Incl MC double
+    //                        + optional smeared incl MC doubles
+    //   Plot B (_signal):    Signal MC single + Signal MC double
+    //
+    // Axis ranges and rebinning follow the same conventions as plot_showershapes_selections.C
+    // ---------------------------------------------------------------
+    {
+        bool have_sig  = (f_sig  && !f_sig->IsZombie());
+        bool have_incl = (f_jet  && !f_jet->IsZombie());
+        bool have_data = (f_data && !f_data->IsZombie());
+
+        std::vector<std::string> ss_vars = {
+            "weta_cogx", "wphi_cogx", "wr_cogx", "et1", "et2", "et3", "et4",
+            "e11_to_e33", "e32_to_e35", "bdt_score", "npb_score"};
+
+        // Axis settings per variable (mirrors plot_showershapes_selections.C getAxisSettings)
+        auto getAxisSettings = [](const std::string &var, float &xmin, float &xmax, int &nrebin)
+        {
+            xmin = 0.0; xmax = 1.0; nrebin = 4;
+            if (var[0] == 'w')                          { xmax = 2.0; }          // weta_cogx, wphi_cogx
+            if (var == "wr_cogx")                       { xmax = 5.0; nrebin = 2; }
+            if (var == "et4")                           { xmax = 0.3; nrebin = 1; }
+            if (var == "et1")                           { xmin = 0.3; xmax = 1.0; nrebin = 1; }
+            if (var == "e32_to_e35")                    { xmin = 0.4; xmax = 1.0; nrebin = 1; }
+            if (var == "bdt_score" || var == "npb_score") { xmin = 0.0; xmax = 1.0; nrebin = 2; }
+        };
+
+        // Smear variant colors (for requested smear_levels)
+        std::vector<int> smear_colors_dots = {kViolet, kViolet+2, kViolet-4, kViolet+7};
+
+        // Clone, rebin, set axis range, normalize to unit area
+        auto prepHist = [&](TH1D *h, const char *newname, const std::string &var) -> TH1D *
+        {
+            if (!h || h->Integral() <= 0) return nullptr;
+            TH1D *hc = (TH1D *)h->Clone(newname);
+            hc->SetDirectory(nullptr);
+            float xmin, xmax; int nrebin;
+            getAxisSettings(var, xmin, xmax, nrebin);
+            hc->Rebin(nrebin);
+            hc->GetXaxis()->SetRangeUser(xmin, xmax);
+            if (hc->Integral() > 0) hc->Scale(1.0 / hc->Integral());
+            hc->SetStats(0);
+            hc->SetTitle("");
+            return hc;
+        };
+
+        auto overlayVerticalErrors = [](TH1 *h)
+        {
+            if (!h) return;
+            TH1 *herr = dynamic_cast<TH1 *>(h->Clone(Form("%s_err", h->GetName())));
+            if (!herr) return;
+            herr->SetDirectory(nullptr);
+            herr->SetFillStyle(0);
+            herr->SetMarkerStyle(1);
+            herr->SetMarkerSize(0);
+            herr->SetLineColor(h->GetLineColor());
+            herr->SetLineWidth(h->GetLineWidth());
+            herr->SetMarkerColor(h->GetLineColor());
+            herr->SetBit(kCanDelete);
+            herr->Draw("E0 SAME");
+        };
+
+        auto drawCanvas = [&](const std::string &cname,
+                              std::vector<std::pair<TH1D *, std::string>> mc_hists,   // {hist, legend entry}
+                              std::vector<std::pair<TH1D *, std::string>> data_hists,
+                              int ie, int ipt, const std::string &var, const std::string &suffix)
+        {
+            // Check at least one drawable histogram
+            bool any = false;
+            for (auto &p : mc_hists)   if (p.first) { any = true; break; }
+            for (auto &p : data_hists) if (p.first) { any = true; break; }
+            if (!any) return;
+
+            float ymax = 0;
+            for (auto &p : mc_hists)   if (p.first && p.first->GetMaximum() > ymax) ymax = p.first->GetMaximum();
+            for (auto &p : data_hists) if (p.first && p.first->GetMaximum() > ymax) ymax = p.first->GetMaximum();
+            ymax *= 1.6;
+            if (ymax <= 0) ymax = 1.0;
+
+            TCanvas *c = new TCanvas(cname.c_str(), "", 600, 600);
+            c->SetLeftMargin(0.15);
+            c->SetBottomMargin(0.15);
+            c->SetTopMargin(0.07);
+            c->SetRightMargin(0.05);
+
+            // Draw first MC histogram as frame, then rest
+            bool first = true;
+            for (auto &p : mc_hists)
+            {
+                if (!p.first) continue;
+                if (first) { p.first->GetYaxis()->SetRangeUser(0, ymax); p.first->Draw("HIST"); first = false; }
+                else        { p.first->Draw("HIST SAME"); }
+                overlayVerticalErrors(p.first);
+            }
+            // If no MC, use first data as frame
+            if (first)
+            {
+                for (auto &p : data_hists)
+                {
+                    if (!p.first) continue;
+                    p.first->GetYaxis()->SetRangeUser(0, ymax); p.first->Draw("E"); first = false; break;
+                }
+            }
+            for (auto &p : data_hists) if (p.first) p.first->Draw("E SAME");
+
+            // Legend — place upper right
+            float leg_x1 = 0.47, leg_x2 = 0.92;
+            int n_entries = 0;
+            for (auto &p : mc_hists)   if (p.first) n_entries++;
+            for (auto &p : data_hists) if (p.first) n_entries++;
+            float leg_y2 = 0.90, leg_y1 = leg_y2 - n_entries * 0.055;
+            if (leg_y1 < 0.40) leg_y1 = 0.40;
+
+            TLegend *leg = new TLegend(leg_x1, leg_y1, leg_x2, leg_y2);
+            leg->SetBorderSize(0);
+            leg->SetFillStyle(0);
+            leg->SetTextSize(0.035);
+            for (auto &p : mc_hists)   if (p.first) leg->AddEntry(p.first, p.second.c_str(), "l");
+            for (auto &p : data_hists) if (p.first) leg->AddEntry(p.first, p.second.c_str(), "p");
+            leg->Draw();
+
+            myText(0.20, 0.90, 1, "#bf{#it{sPHENIX}} Internal", 0.04);
+            myText(0.20, 0.85, 1,
+                Form("%.0f < #it{E}_{T} < %.0f GeV", pT_bin_edges[ipt], pT_bin_edges[ipt+1]), 0.035);
+            myText(0.20, 0.80, 1,
+                Form("%.1f < #it{#eta} < %.1f", eta_bins[ie], eta_bins[ie+1]), 0.035);
+
+            c->SaveAs(Form("%s/double_interaction/%s_eta%d_pt%d_%s.pdf",
+                          savePath.c_str(), var.c_str(), ie, ipt, suffix.c_str()));
+            delete c;
+        };
+
+        for (int ie = 0; ie < n_eta_bins; ie++)
+        {
+            for (int ipt = 0; ipt < n_pT_bins; ipt++)
+            {
+                for (const auto &var : ss_vars)
+                {
+                    const char *v = var.c_str();
+
+                    // --- retrieve and prepare all histograms ---
+                    TH1D *hi_single = have_incl ? prepHist(
+                        (TH1D *)f_jet->Get(Form("h_ss_single_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hi_single_%s_%d_%d", v, ie, ipt), var) : nullptr;
+                    TH1D *hi_double = have_incl ? prepHist(
+                        (TH1D *)f_jet->Get(Form("h_ss_double_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hi_double_%s_%d_%d", v, ie, ipt), var) : nullptr;
+                    TH1D *hs_single = have_sig ? prepHist(
+                        (TH1D *)f_sig->Get(Form("h_ss_single_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hs_single_%s_%d_%d", v, ie, ipt), var) : nullptr;
+                    TH1D *hs_double = have_sig ? prepHist(
+                        (TH1D *)f_sig->Get(Form("h_ss_double_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hs_double_%s_%d_%d", v, ie, ipt), var) : nullptr;
+                    TH1D *hd0 = have_data ? prepHist(
+                        (TH1D *)f_data->Get(Form("h_ss_data_0mrad_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hd0_%s_%d_%d", v, ie, ipt), var) : nullptr;
+                    TH1D *hd1 = have_data ? prepHist(
+                        (TH1D *)f_data->Get(Form("h_ss_data_1p5mrad_%s_eta%d_pt%d", v, ie, ipt)),
+                        Form("hd1_%s_%d_%d", v, ie, ipt), var) : nullptr;
+
+                    // Smeared incl MC doubles (from f_jet, not f_sig)
+                    std::vector<TH1D *> h_smears;
+                    for (int ism = 0; ism < (int)smear_levels.size(); ism++)
+                    {
+                        int N = smear_levels[ism];
+                        TH1D *hsm = have_incl ? prepHist(
+                            (TH1D *)f_jet->Get(Form("h_ss_double_smear%d_%s_eta%d_pt%d", N, v, ie, ipt)),
+                            Form("hism%d_%s_%d_%d", N, v, ie, ipt), var) : nullptr;
+                        if (hsm)
+                        {
+                            int col = smear_colors_dots[ism % (int)smear_colors_dots.size()];
+                            hsm->SetLineColor(col);
+                            hsm->SetLineStyle(3);
+                            hsm->SetLineWidth(2);
+                        }
+                        h_smears.push_back(hsm);
+                    }
+
+                    // Style incl MC
+                    if (hi_single) { hi_single->SetLineColor(kRed);  hi_single->SetLineStyle(1); hi_single->SetLineWidth(2); }
+                    if (hi_double) { hi_double->SetLineColor(kBlue); hi_double->SetLineStyle(1); hi_double->SetLineWidth(2); }
+                    // Style signal MC
+                    if (hs_single) { hs_single->SetLineColor(kRed);  hs_single->SetLineStyle(1); hs_single->SetLineWidth(2); }
+                    if (hs_double) { hs_double->SetLineColor(kBlue); hs_double->SetLineStyle(1); hs_double->SetLineWidth(2); }
+                    // Style data
+                    if (hd0) { hd0->SetMarkerStyle(20); hd0->SetMarkerColor(kBlack);   hd0->SetLineColor(kBlack); }
+                    if (hd1) { hd1->SetMarkerStyle(24); hd1->SetMarkerColor(kGreen+2); hd1->SetLineColor(kGreen+2); }
+
+                    // Plot A: data 0mrad + 1.5mrad + incl MC single + incl MC double + smeared
+                    {
+                        std::vector<std::pair<TH1D *, std::string>> mc_hists;
+                        mc_hists.push_back({hi_single, "Incl. MC single"});
+                        mc_hists.push_back({hi_double, "Incl. MC double"});
+                        for (int ism = 0; ism < (int)smear_levels.size(); ism++)
+                            mc_hists.push_back({h_smears[ism],
+                                Form("Incl. MC double +%dcm smear", smear_levels[ism])});
+
+                        std::vector<std::pair<TH1D *, std::string>> data_hists;
+                        data_hists.push_back({hd0, "Data 0 mrad"});
+                        data_hists.push_back({hd1, "Data 1.5 mrad"});
+
+                        drawCanvas(Form("c_ss_di_%s_%d_%d", v, ie, ipt),
+                                   mc_hists, data_hists, ie, ipt, var, "data_incl");
+                    }
+
+                    // Plot B: signal MC single + signal MC double
+                    {
+                        std::vector<std::pair<TH1D *, std::string>> mc_hists;
+                        mc_hists.push_back({hs_single, "Signal MC single"});
+                        mc_hists.push_back({hs_double, "Signal MC double"});
+
+                        drawCanvas(Form("c_ss_sig_%s_%d_%d", v, ie, ipt),
+                                   mc_hists, {}, ie, ipt, var, "signal");
+                    }
+                } // var loop
+            } // pT bin loop
+        } // eta bin loop
     }
 
     std::cout << "Done. Plots saved to " << savePath << "/" << std::endl;

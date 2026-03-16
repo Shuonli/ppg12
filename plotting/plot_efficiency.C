@@ -3,16 +3,16 @@
 const int col[]={kBlack,kPink+5,kGreen-2,kAzure+7,kRed-4,kBlack,kBlue-3,kYellow+2,kPink-5,kGreen+3,kBlue-3};
 const int mkStyle[]={21,20,34,33,25,27,28,24,29,28,22};
 const float mkSize[]={1.2,1.2,1.6,1.1,1,1,1,1,1,1,1,1};
-void plot_efficiency()
+void plot_efficiency(const std::string suffix = "bdt_nom")
 {
 
     init_plot();
 
     // string savePath = "test/";
     string savePath = "figures/";
-    TFile *fmc = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_base_v3E_2.root");
-    //TFile *fmc = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
-    TFile *fdata = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
+    const string resdir = "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results";
+    TFile *fmc = new TFile(Form("%s/MC_efficiency_%s.root", resdir.c_str(), suffix.c_str()));
+    TFile *fdata = new TFile(Form("%s/Photon_final_%s.root", resdir.c_str(), suffix.c_str()));
 
     TEfficiency *eff_reco = (TEfficiency *)fmc->Get("eff_reco_eta_0");
     TEfficiency *eff_iso = (TEfficiency *)fmc->Get("eff_iso_eta_0");
@@ -20,6 +20,8 @@ void plot_efficiency()
     TEfficiency *eff_all = (TEfficiency *)fmc->Get("eff_all_eta_0");
 
     TGraphAsymmErrors *g_mbd_eff = (TGraphAsymmErrors *)fdata->Get("g_mbd_eff");
+    TGraphAsymmErrors *g_mbd_eff_north = (TGraphAsymmErrors *)fdata->Get("g_mbd_eff_north");
+    TGraphAsymmErrors *g_mbd_eff_south = (TGraphAsymmErrors *)fdata->Get("g_mbd_eff_south");
 
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_truth->SetYTitle("Reconstruction Efficiency");
@@ -38,7 +40,7 @@ void plot_efficiency()
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
 
-    c1->SaveAs(Form("%s/eff_reco.pdf", savePath.c_str()));
+    c1->SaveAs(Form("%s/eff_reco_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
     frame_et_truth->SetYTitle("Isolation Efficiency");
@@ -53,7 +55,7 @@ void plot_efficiency()
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
 
-    c2->SaveAs(Form("%s/eff_iso.pdf", savePath.c_str()));
+    c2->SaveAs(Form("%s/eff_iso_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TCanvas *c3 = new TCanvas("c3", "c3", 600, 600);
     frame_et_truth->SetYTitle("Identification Efficiency");
@@ -68,7 +70,7 @@ void plot_efficiency()
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
 
-    c3->SaveAs(Form("%s/eff_id.pdf", savePath.c_str()));
+    c3->SaveAs(Form("%s/eff_id_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TCanvas *c4 = new TCanvas("c4", "c4", 600, 600);
     frame_et_truth->SetYTitle("Total Efficiency");
@@ -83,7 +85,7 @@ void plot_efficiency()
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
 
-    c4->SaveAs(Form("%s/eff_total.pdf", savePath.c_str()));
+    c4->SaveAs(Form("%s/eff_total_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TCanvas *c5 = new TCanvas("c5", "c5", 600, 600);
     frame_et_truth->SetYTitle("MBD Trigger Efficiency");
@@ -94,13 +96,104 @@ void plot_efficiency()
     g_mbd_eff->SetMarkerStyle(20);
     g_mbd_eff->SetLineColor(kBlack);
     g_mbd_eff->Draw("same p");
+    if (g_mbd_eff_north)
+    {
+        g_mbd_eff_north->SetMarkerColor(kBlue + 1);
+        g_mbd_eff_north->SetMarkerStyle(24);
+        g_mbd_eff_north->SetLineColor(kBlue + 1);
+        g_mbd_eff_north->Draw("same p");
+    }
+    if (g_mbd_eff_south)
+    {
+        g_mbd_eff_south->SetMarkerColor(kRed + 1);
+        g_mbd_eff_south->SetMarkerStyle(25);
+        g_mbd_eff_south->SetLineColor(kRed + 1);
+        g_mbd_eff_south->Draw("same p");
+    }
+
+    TLegend* lmbd = new TLegend(0.50, 0.24, 0.90, 0.40);
+    legStyle(lmbd, 0.20, 0.05);
+    lmbd->AddEntry(g_mbd_eff, "MBD north & south", "pl");
+    if (g_mbd_eff_north) lmbd->AddEntry(g_mbd_eff_north, "MBD north only", "pl");
+    if (g_mbd_eff_south) lmbd->AddEntry(g_mbd_eff_south, "MBD south only", "pl");
+    lmbd->Draw("same");
 
     myText(xpos2,ypos-0*dy,1,strMC.c_str(),fontsize,1);
     myText(xpos2,ypos-1*dy,1,strleg3.c_str(),fontsize,1);
     myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
     myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
 
-    c5->SaveAs(Form("%s/eff_mbd.pdf", savePath.c_str()));
+    c5->SaveAs(Form("%s/eff_mbd_%s.pdf", savePath.c_str(), suffix.c_str()));
+
+    // MBD hit configuration fractions from MC truth
+    TH1D *h_denom        = (TH1D *)fmc->Get("h_truth_pT_vertexcut_0");
+    TH1D *h_both         = (TH1D *)fmc->Get("h_truth_pT_vertexcut_mbd_cut_0");
+    TH1D *h_only_north   = (TH1D *)fmc->Get("h_truth_pT_vertexcut_mbd_only_north_0");
+    TH1D *h_only_south   = (TH1D *)fmc->Get("h_truth_pT_vertexcut_mbd_only_south_0");
+    TH1D *h_neither      = (TH1D *)fmc->Get("h_truth_pT_vertexcut_mbd_neither_0");
+
+    auto makeRatioGraph = [](TH1D *hnum, TH1D *hdenom, const char *name) -> TGraphAsymmErrors * {
+        TEfficiency *eff = new TEfficiency(*hnum, *hdenom);
+        int n = hdenom->GetNbinsX();
+        TGraphAsymmErrors *g = new TGraphAsymmErrors(n);
+        for (int i = 1; i <= n; i++) {
+            double x = hdenom->GetBinCenter(i);
+            double y = eff->GetEfficiency(i);
+            double el = eff->GetEfficiencyErrorLow(i);
+            double eh = eff->GetEfficiencyErrorUp(i);
+            g->SetPoint(i-1, x, y);
+            g->SetPointError(i-1, hdenom->GetBinWidth(i)/2., hdenom->GetBinWidth(i)/2., el, eh);
+        }
+        g->SetName(name);
+        delete eff;
+        return g;
+    };
+
+    TGraphAsymmErrors *g_frac_both       = h_both       ? makeRatioGraph(h_both,       h_denom, "g_frac_both")       : nullptr;
+    TGraphAsymmErrors *g_frac_only_north = h_only_north ? makeRatioGraph(h_only_north, h_denom, "g_frac_only_north") : nullptr;
+    TGraphAsymmErrors *g_frac_only_south = h_only_south ? makeRatioGraph(h_only_south, h_denom, "g_frac_only_south") : nullptr;
+    TGraphAsymmErrors *g_frac_neither    = h_neither    ? makeRatioGraph(h_neither,    h_denom, "g_frac_neither")    : nullptr;
+
+    TCanvas *c_mbdfrac = new TCanvas("c_mbdfrac", "c_mbdfrac", 600, 600);
+    frame_et_truth->SetYTitle("Fraction of events");
+    frame_et_truth->GetYaxis()->SetRangeUser(0., 0.2);
+    frame_et_truth->Draw("axis");
+
+    if (g_frac_only_north) {
+        g_frac_only_north->SetMarkerColor(kBlue+1);
+        g_frac_only_north->SetMarkerStyle(24);
+        g_frac_only_north->SetMarkerSize(1.2);
+        g_frac_only_north->SetLineColor(kBlue+1);
+        g_frac_only_north->Draw("same p");
+    }
+    if (g_frac_only_south) {
+        g_frac_only_south->SetMarkerColor(kRed+1);
+        g_frac_only_south->SetMarkerStyle(25);
+        g_frac_only_south->SetMarkerSize(1.2);
+        g_frac_only_south->SetLineColor(kRed+1);
+        g_frac_only_south->Draw("same p");
+    }
+    if (g_frac_neither) {
+        g_frac_neither->SetMarkerColor(kGreen+2);
+        g_frac_neither->SetMarkerStyle(26);
+        g_frac_neither->SetMarkerSize(1.2);
+        g_frac_neither->SetLineColor(kGreen+2);
+        g_frac_neither->Draw("same p");
+    }
+
+    TLegend *lmbdfrac = new TLegend(0.45, 0.65, 0.90, 0.80);
+    legStyle(lmbdfrac, 0.20, 0.05);
+    if (g_frac_only_north) lmbdfrac->AddEntry(g_frac_only_north, "North only",    "pl");
+    if (g_frac_only_south) lmbdfrac->AddEntry(g_frac_only_south, "South only",    "pl");
+    if (g_frac_neither)    lmbdfrac->AddEntry(g_frac_neither,    "Neither",       "pl");
+    lmbdfrac->Draw("same");
+
+    myText(xpos2,ypos-0*dy,1,strMC.c_str(),fontsize,1);
+    myText(xpos2,ypos-1*dy,1,strleg3.c_str(),fontsize,1);
+    myText(xpos,ypos-0*dy,1,strleg1.c_str(),fontsize,0);
+    myText(xpos,ypos-1*dy,1,strleg2.c_str(),fontsize,0);
+
+    c_mbdfrac->SaveAs(Form("%s/eff_mbd_frac_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TGraphAsymmErrors *g_reco_id_product = (TGraphAsymmErrors *)g_mbd_eff->Clone("g_reco_id_product");
 
@@ -161,5 +254,5 @@ void plot_efficiency()
     l1->AddEntry(eff_all, "#varepsilon_{reco}#times#varepsilon_{ID}#times#varepsilon_{iso}", "pl");
     l1->Draw("same");
 
-    c6->SaveAs(Form("%s/eff_photon.pdf", savePath.c_str()));
+    c6->SaveAs(Form("%s/eff_photon_%s.pdf", savePath.c_str(), suffix.c_str()));
 }

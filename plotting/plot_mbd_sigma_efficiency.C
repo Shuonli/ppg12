@@ -12,10 +12,19 @@ void plot_mbd_sigma_efficiency()
     init_plot();
 
     // Open data file
-    TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root", "READ");
+    TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_showershape_0rad.root", "READ");
     if (!f_data || f_data->IsZombie())
     {
         std::cerr << "Error: Could not open data file!" << std::endl;
+        return;
+    }
+
+    // Open inclusive MC file
+    TFile *f_mc = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet12_inclusive_showershape_0rad.root", "READ");
+    if (!f_mc || f_mc->IsZombie())
+    {
+        std::cerr << "Error: Could not open MC file!" << std::endl;
+        f_data->Close();
         return;
     }
 
@@ -24,106 +33,121 @@ void plot_mbd_sigma_efficiency()
     int nPtBins = pT_bin_edges.size() - 1;
     int ieta = 0;
 
-    // Combine MBD sigma distributions from all pT bins
-    TH1D *h_mbd_combined = nullptr;
-
-    for (int ipt = 0; ipt < nPtBins; ++ipt)
-    {
-        TString hist_name = Form("h_mbd_avgsigma_vs_npb_score_eta%d_pt%d", ieta, ipt);
-        TH2D *h2 = dynamic_cast<TH2D*>(f_data->Get(hist_name));
-
-        if (!h2)
+    // Helper lambda: combine MBD sigma projections across pT bins from a given file
+    auto buildCombined = [&](TFile *f, const char *tag) -> TH1D* {
+        TH1D *h_combined = nullptr;
+        for (int ipt = 0; ipt < nPtBins; ++ipt)
         {
-            std::cerr << "Warning: Could not retrieve " << hist_name << std::endl;
-            continue;
+            TString hist_name = Form("h_mbd_avgsigma_vs_npb_score_eta%d_pt%d", ieta, ipt);
+            TH2D *h2 = dynamic_cast<TH2D*>(f->Get(hist_name));
+            if (!h2)
+            {
+                std::cerr << "Warning: Could not retrieve " << hist_name << " from " << tag << std::endl;
+                continue;
+            }
+            TH1D *h_mbd = h2->ProjectionY(Form("h_mbd_sigma_%s_pt%d", tag, ipt));
+            if (!h_mbd || h_mbd->Integral() < 1) continue;
+            if (!h_combined)
+            {
+                h_combined = (TH1D*)h_mbd->Clone(Form("h_mbd_combined_%s", tag));
+                h_combined->SetDirectory(nullptr);
+            }
+            else
+            {
+                h_combined->Add(h_mbd);
+            }
         }
+        return h_combined;
+    };
 
-        // Project onto Y-axis (MBD sigma)
-        TH1D *h_mbd = h2->ProjectionY(Form("h_mbd_sigma_pt%d", ipt));
-        if (!h_mbd || h_mbd->Integral() < 1)
-        {
-            std::cerr << "Warning: Empty histogram for pt bin " << ipt << std::endl;
-            continue;
-        }
+    TH1D *h_mbd_data = buildCombined(f_data, "data");
+    TH1D *h_mbd_mc   = buildCombined(f_mc,   "mc");
 
-        if (!h_mbd_combined)
-        {
-            h_mbd_combined = (TH1D*)h_mbd->Clone("h_mbd_combined");
-            h_mbd_combined->SetDirectory(nullptr);
-        }
-        else
-        {
-            h_mbd_combined->Add(h_mbd);
-        }
-    }
-
-    if (!h_mbd_combined || h_mbd_combined->Integral() < 1)
+    if (!h_mbd_data || h_mbd_data->Integral() < 1)
     {
         std::cerr << "Error: No data to plot!" << std::endl;
-        f_data->Close();
+        f_data->Close(); f_mc->Close();
+        return;
+    }
+    if (!h_mbd_mc || h_mbd_mc->Integral() < 1)
+    {
+        std::cerr << "Error: No MC to plot!" << std::endl;
+        f_data->Close(); f_mc->Close();
         return;
     }
 
-    // Create efficiency histogram
-    int nbins = h_mbd_combined->GetNbinsX();
-    double xmin = h_mbd_combined->GetXaxis()->GetXmin();
-    double xmax = h_mbd_combined->GetXaxis()->GetXmax();
+    // Build cumulative fraction histogram from a raw distribution
+    auto buildFraction = [](TH1D *h_raw, const char *name) -> TH1D* {
+        int nbins = h_raw->GetNbinsX();
+        double xmin = h_raw->GetXaxis()->GetXmin();
+        double xmax = h_raw->GetXaxis()->GetXmax();
+        TH1D *h_frac = new TH1D(name, "", nbins, xmin, xmax);
+        h_frac->SetDirectory(nullptr);
+        double total = h_raw->Integral(1, nbins);
+        for (int ibin = 1; ibin <= nbins; ++ibin)
+        {
+            double passing = h_raw->Integral(1, ibin);
+            double frac = (total > 0) ? passing / total : 0.0;
+            double err  = (total > 0) ? sqrt(frac * (1 - frac) / total) : 0.0;
+            h_frac->SetBinContent(ibin, frac);
+            h_frac->SetBinError(ibin, err);
+        }
+        return h_frac;
+    };
 
-    TH1D *h_eff = new TH1D("h_eff_mbd_sigma", "", nbins, xmin, xmax);
-    h_eff->SetDirectory(nullptr);
-
-    // Calculate efficiency: fraction passing cut (MBD sigma < threshold)
-    double total = h_mbd_combined->Integral(1, nbins);
-    for (int ibin = 1; ibin <= nbins; ++ibin)
-    {
-        double passing = h_mbd_combined->Integral(1, ibin);
-        double eff = (total > 0) ? passing / total : 0.0;
-        double eff_err = (total > 0) ? sqrt(eff * (1 - eff) / total) : 0.0;
-        h_eff->SetBinContent(ibin, eff);
-        h_eff->SetBinError(ibin, eff_err);
-    }
+    TH1D *h_frac_data = buildFraction(h_mbd_data, "h_frac_data");
+    TH1D *h_frac_mc   = buildFraction(h_mbd_mc,   "h_frac_mc");
 
     // Create canvas
-    TCanvas *c = new TCanvas("c_mbd_sigma_eff", "MBD Sigma Selection Efficiency", 600, 600);
+    TCanvas *c = new TCanvas("c_mbd_sigma_eff", "MBD Sigma Fraction of Events", 600, 600);
 
-    // Style
-    h_eff->SetLineColor(kBlack);
-    h_eff->SetMarkerColor(kBlack);
-    h_eff->SetMarkerStyle(20);
-    h_eff->SetMarkerSize(1.0);
-    h_eff->SetLineWidth(2);
-    h_eff->SetStats(0);
-    h_eff->SetTitle("");
+    // Style — data
+    h_frac_data->SetLineColor(kBlack);
+    h_frac_data->SetMarkerColor(kBlack);
+    h_frac_data->SetMarkerStyle(20);
+    h_frac_data->SetMarkerSize(1.0);
+    h_frac_data->SetLineWidth(2);
+    h_frac_data->SetStats(0);
+    h_frac_data->SetTitle("");
 
-    h_eff->GetXaxis()->SetTitle("MBD Avg #sigma_{t} Cut [ns]");
-    h_eff->GetXaxis()->SetNdivisions(505);
-    h_eff->GetXaxis()->SetRangeUser(0, 5);
-    h_eff->GetYaxis()->SetTitle("Selection Efficiency");
-    h_eff->GetYaxis()->SetTitleOffset(1.5);
-    h_eff->GetYaxis()->SetRangeUser(0, 1.1);
+    h_frac_data->GetXaxis()->SetTitle("MBD Avg #sigma_{t} Cut [ns]");
+    h_frac_data->GetXaxis()->SetNdivisions(505);
+    h_frac_data->GetXaxis()->SetRangeUser(0, 5);
+    h_frac_data->GetYaxis()->SetTitle("Fraction of Events");
+    h_frac_data->GetYaxis()->SetTitleOffset(1.5);
+    h_frac_data->GetYaxis()->SetRangeUser(0.5, 1.3);
 
-    h_eff->Draw("L P");
+    // Style — MC
+    h_frac_mc->SetLineColor(kRed+1);
+    h_frac_mc->SetMarkerColor(kRed+1);
+    h_frac_mc->SetMarkerStyle(24);
+    h_frac_mc->SetMarkerSize(1.0);
+    h_frac_mc->SetLineWidth(2);
+    h_frac_mc->SetStats(0);
+
+    h_frac_data->Draw("L P");
+    h_frac_mc->Draw("L P SAME");
 
     // Draw reference lines at common cut values
-    TLine *line1 = new TLine(0.5, 0, 0.5, 1.0);
+    TLine *line1 = new TLine(0.5, 0.5, 0.5, 1.0);
     line1->SetLineStyle(2);
     line1->SetLineColor(kGray+2);
     line1->Draw("SAME");
 
-    TLine *line2 = new TLine(2.0, 0, 2.0, 1.0);
+    TLine *line2 = new TLine(2.0, 0.5, 2.0, 1.0);
     line2->SetLineStyle(2);
     line2->SetLineColor(kGray+2);
     line2->Draw("SAME");
 
-    // Labels
+    // Labels — top left
     myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
     myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
     myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
-    myText(0.20, 0.75, 1, "Data", 0.04);
-    myText(0.20, 0.70, 1, "10 < #it{E}_{T} < 30 GeV", 0.04);
+    myText(0.20, 0.75, 1, "10 < #it{E}_{T} < 30 GeV", 0.04);
 
-    myMarkerLineText(0.55, 0.30, 1.5, kBlack, 20, kBlack, 2,
-                     "Eff = N(#sigma_{t} < cut) / N_{total}", 0.035, true);
+    // Legend — top right
+    myMarkerLineText(0.60, 0.90, 1.5, kBlack, 20, kBlack, 2, "Data", 0.035, true);
+    myMarkerLineText(0.60, 0.83, 1.5, kRed+1, 24, kRed+1, 2, "Inclusive MC", 0.035, true);
 
     // Save
     c->SaveAs("mbd_sigma_selection_efficiency.pdf");
@@ -131,7 +155,10 @@ void plot_mbd_sigma_efficiency()
     std::cout << "Plot saved to mbd_sigma_selection_efficiency.pdf" << std::endl;
 
     // Cleanup
-    delete h_eff;
-    delete h_mbd_combined;
+    delete h_frac_data;
+    delete h_frac_mc;
+    delete h_mbd_data;
+    delete h_mbd_mc;
     f_data->Close();
+    f_mc->Close();
 }

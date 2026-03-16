@@ -1,9 +1,14 @@
 #include "plotcommon.h"
 
-const int col[] = {kAzure + 2, kPink + 5, kGreen - 2, kBlack, kRed - 4, kBlack, kBlue - 3, kYellow + 2, kPink - 5, kGreen + 3, kBlue - 3};
-const int mkStyle[] = {20, 21, 33, 34, 33, 25, 27, 28, 24, 29, 28, 22};
-const float mkSize[] = {1.4, 1.4, 1.5, 1.5, 1.1, 1, 1, 1, 1, 1, 1, 1, 1};
-void plot_final_backup()
+// 0: our data, 1: PHENIX, 2: JETPHOX, 3: PYTHIA, 4: Werner
+const int col[] = {kAzure + 2, kPink + 5, kPink + 5, kCyan + 4, kYellow + 2, kSpring - 7, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+const int mkcol[] = {kAzure + 2, kPink + 5, kPink + 4, kCyan + 4, kSpring - 7, kSpring - 7, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+const float trans[] = {0.35, 0.5, 0.45, 0.65, 0.65};
+const int mkStyle[] = {20, 21, 25, 27, 47, 33, 25, 27, 28, 24, 29, 28, 22};
+const float mkSize[] = {1.4, 1.4, 1.2, 2.0, 1.5, 1, 1, 1, 1, 1, 1, 1, 1};
+const int lineWidth[] = {2, 2, 2, 2, 2};
+const int fillStyle[] = {1, 1, 1001, 1, 1001};
+void plot_final_selection(string tune = "bdt_nom")
 {
     init_plot();
 
@@ -23,15 +28,15 @@ void plot_final_backup()
 
     float lowery = 0.5;
     float lowerx = 10;
-    float upperx = 26;
+    float upperx = 32;
 
-    TFile *fin_data = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root");
+    TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
     TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
     TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_10.root");
     TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_05.root");
     TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_20.root");
-    TFile *fin_mc = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom_mc.root");
+    TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
     h_data->Scale(1.0 / deta);
@@ -70,7 +75,9 @@ void plot_final_backup()
     h_pythia_data->Divide(h_data);
 
     TH1F *h_syst_low = (TH1F *)fin_syst->Get("h_sum_low");
+    h_syst_low->Scale(1.0 / deta);
     TH1F *h_syst_high = (TH1F *)fin_syst->Get("h_sum_high");
+    h_syst_high->Scale(1.0 / deta);
 
     TH1F *h_syst_rel_low = (TH1F *)fin_syst->Get("h_sum_rel_low");
     TH1F *h_syst_rel_high = (TH1F *)fin_syst->Get("h_sum_rel_high");
@@ -300,8 +307,8 @@ void plot_final_backup()
     TF1 *fphoton02 = new TF1("f02", [&](double *x, double *)
                              { return tphoton02->Eval(x[0]); }, lowerx, upperx, 0);
 
-    // TGraphAsymmErrors *g_syst_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_syst_NLO_werner");
-    // TGraphAsymmErrors *g_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_NLO_werner");
+    TGraphAsymmErrors *g_syst_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_syst_NLO_werner");
+    TGraphAsymmErrors *g_NLO_werner = (TGraphAsymmErrors *)g_syst_NLO->Clone("g_NLO_werner");
     TGraphAsymmErrors *g_syst_rel_NLO_werner = (TGraphAsymmErrors *)g_syst_rel_NLO->Clone("g_syst_rel_NLO_werner");
     TGraphAsymmErrors *g_rel_NLO_werner = (TGraphAsymmErrors *)g_syst_rel_NLO->Clone("g_rel_NLO_werner");
 
@@ -330,6 +337,12 @@ void plot_final_backup()
         float ratio05 = y_yield05 / y_data;
         float ratio20 = y_yield02 / y_data;
 
+        g_NLO_werner->SetPoint(i, x, y_yield);
+        g_NLO_werner->SetPointError(i, xlow, xup, 0, 0);
+
+        g_syst_NLO_werner->SetPoint(i, x, y_yield);
+        g_syst_NLO_werner->SetPointError(i, xlow, xup, y_yield - y_yield02, y_yield05 - y_yield);
+
         g_rel_NLO_werner->SetPoint(i, x, ratio);
         g_rel_NLO_werner->SetPointError(i, xlow, xup, ratio_err, ratio_err);
 
@@ -337,78 +350,80 @@ void plot_final_backup()
         g_syst_rel_NLO_werner->SetPointError(i, xlow, xup, ratio - ratio20, ratio05 - ratio);
     }
 
-    tphoton->SetMarkerStyle(21);
-    tphoton->SetMarkerColor(col[7]);
-    tphoton->SetLineColor(col[7]);
-    tphoton->Draw(" l,same");
+    tphoton->SetMarkerColor(mkcol[4]);
+    tphoton->SetLineColor(mkcol[4]);
+    // tphoton->Draw(" l,same");
 
-    tphoton05->SetMarkerStyle(21);
-    tphoton05->SetMarkerColor(col[7]);
-    tphoton05->SetLineColor(col[7]);
+    tphoton05->SetMarkerColor(mkcol[4]);
+    tphoton05->SetLineColor(mkcol[4]);
     tphoton05->SetLineStyle(7);
-    tphoton05->Draw("l,same");
+    // tphoton05->Draw("l,same");
 
-    tphoton02->SetMarkerStyle(21);
-    tphoton02->SetMarkerColor(col[7]);
-    tphoton02->SetLineColor(col[7]);
+    tphoton02->SetMarkerColor(mkcol[4]);
+    tphoton02->SetLineColor(mkcol[4]);
     tphoton02->SetLineStyle(7);
-    tphoton02->Draw("l,same");
+    // tphoton02->Draw("l,same");
 
-    gStat_PHENIX->SetMarkerStyle(28);
-    gStat_PHENIX->SetMarkerSize(1.5);
-    gStat_PHENIX->SetMarkerColor(kRed + 1);
-    gStat_PHENIX->SetLineColor(kRed + 1);
     // gStat_PHENIX->Draw("P");
-
-    gSys_PHENIX->SetMarkerStyle(28);
-    gSys_PHENIX->SetMarkerSize(1.5);
-    gSys_PHENIX->SetMarkerColor(kRed);
-    gSys_PHENIX->SetLineColor(kRed);
-    gSys_PHENIX->SetFillColorAlpha(kRed, 0.25);
     // gSys_PHENIX->Draw("2 same");
 
-    g_syst->SetMarkerStyle(20);
-    g_syst->SetMarkerColor(kAzure + 2);
-    g_syst->SetLineColor(kAzure + 2);
-    g_syst->SetFillColorAlpha(kAzure + 2, 0.35);
+    // Werner
+    g_syst_NLO_werner->SetMarkerStyle(mkStyle[4]);
+    g_syst_NLO_werner->SetMarkerSize(mkSize[4]);
+    g_syst_NLO_werner->SetMarkerColor(mkcol[4]);
+    g_syst_NLO_werner->SetLineColor(mkcol[4]);
+    g_syst_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
+    g_syst_NLO_werner->Draw("2,same");
 
+    // Data syst
+    g_syst->SetMarkerStyle(mkStyle[0]);
+    g_syst->SetMarkerColor(col[0]);
+    g_syst->SetLineColor(col[0]);
+    g_syst->SetFillColorAlpha(col[0], trans[0]);
     g_syst->Draw("2 same");
 
-    h_NLO->SetMarkerStyle(25);
-    h_NLO->SetMarkerSize(1.2);
-    h_NLO->SetMarkerColor(kPink + 5);
-    h_NLO->SetLineColor(kPink + 5);
-    h_NLO->SetLineWidth(2);
-
-    h_NLO->Draw("same");
-
-    g_syst_NLO->SetMarkerStyle(25);
-    g_syst_NLO->SetMarkerColor(col[1]);
-    g_syst_NLO->SetLineColor(col[1]);
-    g_syst_NLO->SetFillColorAlpha(col[1], 0.25);
-
+    // JETPHOX syst
+    g_syst_NLO->SetMarkerStyle(mkStyle[2]);
+    g_syst_NLO->SetMarkerColor(mkcol[2]);
+    g_syst_NLO->SetLineColor(mkcol[2]);
+    g_syst_NLO->SetFillColorAlpha(col[2], trans[2]);
     g_syst_NLO->Draw("2 same");
 
-    h_pythia->SetMarkerStyle(27);
-    h_pythia->SetMarkerColor(kSpring - 7);
-    h_pythia->SetLineColor(kSpring - 7);
-    h_pythia->SetMarkerSize(2);
+    // Werner points
+    g_NLO_werner->SetMarkerStyle(mkStyle[4]);
+    g_NLO_werner->SetMarkerSize(mkSize[4]);
+    g_NLO_werner->SetMarkerColor(mkcol[4]);
+    g_NLO_werner->SetLineColor(mkcol[4]);
+    g_NLO_werner->SetLineWidth(lineWidth[4]);
+    g_NLO_werner->Draw("p same");
 
+    // JETPHOX
+    h_NLO->SetMarkerStyle(mkStyle[2]);
+    h_NLO->SetMarkerSize(mkSize[2]);
+    h_NLO->SetMarkerColor(mkcol[2]);
+    h_NLO->SetLineColor(mkcol[2]);
+    h_NLO->SetFillColorAlpha(col[2], trans[2]);
+    h_NLO->SetLineWidth(lineWidth[2]);
+    h_NLO->Draw("same");
+
+    h_pythia->SetMarkerStyle(mkStyle[3]);
+    h_pythia->SetMarkerSize(mkSize[3]);
+    h_pythia->SetMarkerColor(col[3]);
+    h_pythia->SetLineColor(col[3]);
+    h_pythia->SetLineWidth(lineWidth[3]);
     h_pythia->Draw("same");
 
-    h_data->SetMarkerStyle(20);
+    h_data->SetMarkerStyle(mkStyle[0]);
+    h_data->SetMarkerSize(mkSize[0]);
     h_data->SetMarkerColor(col[0]);
     h_data->SetLineColor(col[0]);
-    h_data->SetLineWidth(2);
-    // h_data->SetMarkerColor(kBlack);
-    // h_data->SetLineColor(kBlack);
-
+    h_data->SetLineWidth(lineWidth[0]);
     h_data->Draw("same");
 
     TH1F *htemp_data = (TH1F *)h_data->Clone("htemp");
-    htemp_data->SetFillColorAlpha(kAzure + 2, 0.35);
+    htemp_data->SetFillColorAlpha(col[0], trans[0]);
     TH1F *htemp_NLO = (TH1F *)h_NLO->Clone("htemp_NLO");
-    htemp_NLO->SetFillColorAlpha(col[1], 0.35);
+    htemp_NLO->SetFillColorAlpha(col[2], trans[2]);
 
     //--------------------------------------------------lower panel
 
@@ -434,7 +449,7 @@ void plot_final_backup()
     l1->AddEntry((TObject *)0, "", "");
     myText(xpos + 0.085, ypos2 + 1 * dy1 + 0.015, 1, st_thScale.c_str(), fontsize, 0);
     // l1->AddEntry((TObject*)0, "#it{#mu}_{f} = #it{#mu}_{f} = #it{#mu}_{R} = #it{E}_{T}^{#gamma}", "");
-    l1->AddEntry(tphoton, "NLO pQCD by W. Vogelsang", "l");
+    l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fpl");
     l1->Draw("same");
     myText(xpos + 0.07, ypos2 - 0.05, 1, Form("(#scale[0.93]{no #kern[-0.4]{#it{E}_{T}^{iso}} / }%s)", st_thScale.data()), fontsize, 0);
 
@@ -448,7 +463,7 @@ void plot_final_backup()
     frame_et_truth->SetYTitle("Theory / Data");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
     frame_et_truth->GetYaxis()->SetNdivisions(506);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.2, 2);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.2, 3);
     frame_et_truth->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
@@ -460,51 +475,56 @@ void plot_final_backup()
     frame_et_truth->GetXaxis()->SetNdivisions(505);
     frame_et_truth->Draw("axis");
 
-    g_syst_rel->SetMarkerStyle(20);
-    g_syst_rel->SetMarkerColor(kAzure + 2);
-    g_syst_rel->SetLineColor(kAzure + 2);
-    g_syst_rel->SetFillColorAlpha(kAzure + 2, 0.35);
+    g_syst_rel->SetMarkerStyle(mkStyle[0]);
+    g_syst_rel->SetMarkerColor(col[0]);
+    g_syst_rel->SetLineColor(col[0]);
+    g_syst_rel->SetFillColorAlpha(col[0], trans[0]);
 
     lineone->Draw("L");
 
     g_syst_rel->Draw("2 same");
 
-    h_NLO_data->SetMarkerStyle(25);
-    h_NLO_data->SetMarkerColor(kPink + 8);
-    h_NLO_data->SetLineColor(kPink + 8);
-
-    h_NLO_data->Draw("same");
-
-    g_syst_rel_NLO->SetMarkerStyle(25);
-    g_syst_rel_NLO->SetMarkerColor(col[1]);
-    g_syst_rel_NLO->SetLineColor(col[1]);
-    g_syst_rel_NLO->SetFillColorAlpha(col[1], 0.25);
-
+    // JETPHOX syst
+    g_syst_rel_NLO->SetMarkerStyle(mkStyle[2]);
+    g_syst_rel_NLO->SetMarkerColor(mkcol[2]);
+    g_syst_rel_NLO->SetLineColor(mkcol[2]);
+    g_syst_rel_NLO->SetLineWidth(lineWidth[2]);
+    g_syst_rel_NLO->SetFillColorAlpha(col[2], trans[2]);
     g_syst_rel_NLO->Draw("2 same");
 
-    g_rel_NLO_werner->SetMarkerStyle(47);
-    g_rel_NLO_werner->SetMarkerSize(1.5);
-    g_rel_NLO_werner->SetMarkerColor(col[7]);
-    g_rel_NLO_werner->SetLineColor(col[7]);
-    g_rel_NLO_werner->SetFillColorAlpha(col[7], 0.35);
-
-    g_rel_NLO_werner->Draw("p same");
-
-    g_syst_rel_NLO_werner->SetMarkerStyle(21);
-    g_syst_rel_NLO_werner->SetMarkerColor(col[7]);
-    g_syst_rel_NLO_werner->SetLineColor(col[7]);
-    g_syst_rel_NLO_werner->SetFillColorAlpha(col[7], 0.35);
-
+    // Werner syst
+    g_syst_rel_NLO_werner->SetMarkerStyle(mkStyle[4]);
+    g_syst_rel_NLO_werner->SetMarkerColor(mkcol[4]);
+    g_syst_rel_NLO_werner->SetLineColor(mkcol[4]);
+    g_syst_rel_NLO_werner->SetLineWidth(lineWidth[4]);
+    g_syst_rel_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
     g_syst_rel_NLO_werner->Draw("2 same");
 
-    h_pythia_data->SetMarkerStyle(27);
-    h_pythia_data->SetMarkerColor(kSpring - 7);
-    h_pythia_data->SetLineColor(kSpring - 7);
-    h_pythia_data->SetMarkerSize(2);
+    // JETPHOX/Data
+    h_NLO_data->SetMarkerStyle(mkStyle[2]);
+    h_NLO_data->SetMarkerSize(mkSize[2]);
+    h_NLO_data->SetMarkerColor(mkcol[2]);
+    h_NLO_data->SetLineColor(mkcol[2]);
+    h_NLO_data->SetLineWidth(lineWidth[2]);
+    h_NLO_data->Draw("same");
 
+    // Werner/Data
+    g_rel_NLO_werner->SetMarkerStyle(mkStyle[4]);
+    g_rel_NLO_werner->SetMarkerSize(mkSize[4]);
+    g_rel_NLO_werner->SetMarkerColor(mkcol[4]);
+    g_rel_NLO_werner->SetLineColor(mkcol[4]);
+    g_rel_NLO_werner->SetLineWidth(lineWidth[4]);
+    g_rel_NLO_werner->Draw("p same");
+
+    // Pythia/Data
+    h_pythia_data->SetMarkerStyle(mkStyle[3]);
+    h_pythia_data->SetMarkerColor(col[3]);
+    h_pythia_data->SetLineColor(col[3]);
+    h_pythia_data->SetMarkerSize(mkSize[3]);
+    h_pythia_data->SetLineWidth(lineWidth[3]);
     h_pythia_data->Draw("same");
 
-    std::string outputname = "figures/final_bdt_nom.pdf";
+    std::string outputname = Form("figures/final_%s.pdf", tune.data());
 
     c1->SaveAs(outputname.c_str());
 
@@ -533,16 +553,16 @@ void plot_final_backup()
     myMarkerLineText(0.25, 0.20, 1, kPink + 8, 24, kPink + 8, 1, bg_MCstring.c_str(), 0.05, true);
 
     pad_2->cd();
-    frame_et_truth->GetYaxis()->SetRangeUser(0.5, 1.5);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.5, 3.0);
     frame_et_truth->GetXaxis()->SetRangeUser(10, 30);
-    frame_et_truth->SetYTitle("data/MC");
+    frame_et_truth->SetYTitle("MC/data");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
     frame_et_truth->Draw("axis");
 
     lineone->Draw("L");
 
-    TH1F *h_common_cluster_data_ratio = (TH1F *)h_common_cluster_data->Clone("h_common_cluster_data_ratio");
-    h_common_cluster_data_ratio->Divide(h_common_cluster_mc);
+    TH1F *h_common_cluster_data_ratio = (TH1F *)h_common_cluster_mc->Clone("h_common_cluster_data_ratio");
+    h_common_cluster_data_ratio->Divide(h_common_cluster_data);
 
     h_common_cluster_data_ratio->SetMarkerStyle(20);
     h_common_cluster_data_ratio->SetMarkerColor(kBlack);
@@ -550,7 +570,7 @@ void plot_final_backup()
 
     h_common_cluster_data_ratio->Draw("same");
 
-    c1->SaveAs("figures/final_common_cluster_bdt_nom.pdf");
+    c1->SaveAs(Form("figures/final_common_cluster_%s.pdf", tune.data()));
 
     pad_1->cd();
     frame_et_rec->GetYaxis()->SetRangeUser(0.1, 1e3);
@@ -577,16 +597,16 @@ void plot_final_backup()
     myMarkerLineText(0.25, 0.20, 1, kPink + 8, 24, kPink + 8, 1, bg_MCstring.c_str(), 0.05, true);
 
     pad_2->cd();
-    frame_et_truth->GetYaxis()->SetRangeUser(0.2, 1.5);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.2, 3.0);
     frame_et_truth->GetXaxis()->SetRangeUser(10, 30);
-    frame_et_truth->SetYTitle("data/MC");
+    frame_et_truth->SetYTitle("MC/data");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
     frame_et_truth->Draw("axis");
 
     lineone->Draw("L");
 
-    TH1F *h_tight_iso_cluster_data_ratio = (TH1F *)h_tight_iso_cluster_data->Clone("h_tight_iso_cluster_data_ratio");
-    h_tight_iso_cluster_data_ratio->Divide(h_tight_iso_cluster_mc);
+    TH1F *h_tight_iso_cluster_data_ratio = (TH1F *)h_tight_iso_cluster_mc->Clone("h_tight_iso_cluster_data_ratio");
+    h_tight_iso_cluster_data_ratio->Divide(h_tight_iso_cluster_data);
 
     h_tight_iso_cluster_data_ratio->SetMarkerStyle(20);
     h_tight_iso_cluster_data_ratio->SetMarkerColor(kBlack);
@@ -594,7 +614,7 @@ void plot_final_backup()
 
     h_tight_iso_cluster_data_ratio->Draw("same");
 
-    c1->SaveAs("figures/final_tight_iso_cluster_bdt_nom.pdf");
+    c1->SaveAs(Form("figures/final_tight_iso_cluster_%s.pdf", tune.data()));
 
     /*
     TCanvas *c2 = new TCanvas("can", "", 800, 900);
@@ -698,7 +718,7 @@ void plot_final_backup()
     h_unfold_ratio->SetMarkerSize(marker_sizes[3]);
     h_unfold_ratio->Draw("same");
 
-    c1->SaveAs("figures/final_all_bdt_nom.pdf");
+    c1->SaveAs(Form("figures/final_all_%s.pdf", tune.data()));
 
     //-----------------------------------------------------------------
     // only compare to PHENIX
@@ -777,7 +797,7 @@ void plot_final_backup()
     l2->Draw("same");
     myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
 
-    c2->SaveAs("figures/final_phenix_bdt_nom.pdf");
+    c2->SaveAs(Form("figures/final_phenix_%s.pdf", tune.data()));
 
     //-----------------------------------------------------------------
 }
