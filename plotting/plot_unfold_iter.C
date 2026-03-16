@@ -41,11 +41,11 @@ void plot_unfold_iter()
 
     string savePath = "figures/";
 
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nr.root");
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root");
     static const int ntotal_iterations = 10;
-    TFile *fresponsein = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response_nom.root");
+    TFile *fresponsein = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response_bdt_nom.root");
 
-    TFile *fresponsehist = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+    TFile *fresponsehist = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_nom.root");
 
     // RooUnfoldResponse *response_full = (RooUnfoldResponse *)fresponsein->Get("response_matrix_full_0");
     // RooUnfoldResponse *response_half = (RooUnfoldResponse *)fresponsein->Get("response_matrix_half_0");

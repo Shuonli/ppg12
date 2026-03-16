@@ -15,7 +15,7 @@
 
 #include "plotcommon.h"
 
-void plot_showershapes_selections()
+void plot_showershapes_selections(const std::string &configname = "config_showershape_1p5rad.yaml")
 {
     init_plot();
     string savePath = "../PPG12-analysis-note/Figures/showershapes_selections/";
@@ -23,9 +23,21 @@ void plot_showershapes_selections()
     // Create output directory if it doesn't exist
     gSystem->Exec(Form("mkdir -p %s", savePath.c_str()));
 
+    // Derive suffix from configname: strip path, "config_" prefix, ".yaml" extension
+    std::string config_suffix = configname;
+    {
+        size_t slash = config_suffix.rfind('/');
+        if (slash != std::string::npos) config_suffix = config_suffix.substr(slash + 1);
+        if (config_suffix.size() > 5 && config_suffix.substr(config_suffix.size() - 5) == ".yaml")
+            config_suffix = config_suffix.substr(0, config_suffix.size() - 5);
+        if (config_suffix.size() > 7 && config_suffix.substr(0, 7) == "config_")
+            config_suffix = config_suffix.substr(7);
+    }
+    std::cout << "Config suffix: " << config_suffix << std::endl;
+
     // Load config for BDT bins
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node config = YAML::LoadFile("../efficiencytool/config_showershape.yaml");
+    YAML::Node config = YAML::LoadFile(("../efficiencytool/" + configname).c_str());
 
     // Optional plotting toggles
     const bool makeDataMinusNPB = true;
@@ -57,14 +69,14 @@ void plot_showershapes_selections()
     std::vector<Color_t> npb_time_colors = {kBlue, kGreen+2, kOrange+7, kMagenta+1, kRed};
 
     // Open files (keep these paths in one place; allows swapping inclusive vs background-only inputs)
-    const std::string dataFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root";
-    const std::string sigFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root";
+    const std::string dataFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_" + config_suffix + ".root";
+    const std::string sigFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root";
 
     // Background MC: you may want BOTH
     // - inclusive: produced with doinclusive=true (default in ShowerShapeCheck)
     // - bkgOnly: produced with doinclusive=false (truth-matched background-only for jet samples)
-    const std::string bkgInclusiveFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive.root";
-    const std::string bkgOnlyFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root"; // set this to a background-only file if you have it
+    const std::string bkgInclusiveFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_" + config_suffix + ".root";
+    const std::string bkgOnlyFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_" + config_suffix + ".root";
 
     TFile *f_data = TFile::Open(dataFile.c_str(), "READ");
     TFile *f_sig = TFile::Open(sigFile.c_str(), "READ");
@@ -101,7 +113,7 @@ void plot_showershapes_selections()
 
     // Histogram base names for standard data/MC comparison (also used in Part 5)
     std::vector<std::string> histNames = {
-        "h2d_weta_cogx", "h2d_wphi_cogx", "h2d_et1", "h2d_et2", "h2d_et3", "h2d_et4",
+        "h2d_weta_cogx", "h2d_wphi_cogx", "h2d_wr", "h2d_et1", "h2d_et2", "h2d_et3", "h2d_et4",
         "h2d_e11_to_e33", "h2d_e17_to_e77", "h2d_e32_to_e35", "h2d_bdt", "h2d_npb_score"
     };
 

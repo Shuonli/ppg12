@@ -74,7 +74,7 @@ void plot_npb_time_bkgsub()
     gSystem->Exec(Form("mkdir -p %s", savePath.c_str()));
 
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node config = YAML::LoadFile("../efficiencytool/config_showershape.yaml");
+    YAML::Node config = YAML::LoadFile("../efficiencytool/config_bdt_nom.yaml");
 
     std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
     const int nPtBins = pT_bin_edges.size() - 1;

@@ -13,16 +13,28 @@
 
 #include "plotcommon.h"
 
-void plot_showershapes()
+void plot_showershapes(const std::string &configname = "config_showershape.yaml")
 {
     init_plot();
     string savePath = "../PPG12-analysis-note/Figures/showershapes/";
+
+    // Derive suffix from configname: strip path, "config_" prefix, ".yaml" extension
+    std::string config_suffix = configname;
+    {
+        size_t slash = config_suffix.rfind('/');
+        if (slash != std::string::npos) config_suffix = config_suffix.substr(slash + 1);
+        if (config_suffix.size() > 5 && config_suffix.substr(config_suffix.size() - 5) == ".yaml")
+            config_suffix = config_suffix.substr(0, config_suffix.size() - 5);
+        if (config_suffix.size() > 7 && config_suffix.substr(0, 7) == "config_")
+            config_suffix = config_suffix.substr(7);
+    }
+    std::cout << "Config suffix: " << config_suffix << std::endl;
 
     std::vector<double> eta_bins = {-0.7, 0.7};
 
     // Load pT bins from config file
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node config = YAML::LoadFile("../efficiencytool/config_nom.yaml");
+    YAML::Node config = YAML::LoadFile(("../efficiencytool/" + configname).c_str());
     std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
 
     int nEtaBins = eta_bins.size() - 1;
@@ -32,11 +44,10 @@ void plot_showershapes()
 
     //------------------------------------------------------------------------------
     // 2) Open your three ROOT files: data, signal, background
-    //    (Update the filenames as needed.)
     //------------------------------------------------------------------------------
-    TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root", "READ");
-    TFile *f_sig  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
-    TFile *f_bkg  = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet10.root", "READ");
+    TFile *f_data = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_" + config_suffix + ".root").c_str(), "READ");
+    TFile *f_sig  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root").c_str(), "READ");
+    TFile *f_bkg  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_" + config_suffix + ".root").c_str(), "READ");
 
     if (!f_data || f_data->IsZombie())
     {
