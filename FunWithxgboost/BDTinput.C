@@ -1,4 +1,6 @@
 #include <yaml-cpp/yaml.h>
+#include "../efficiencytool/CrossSectionWeights.h"
+using namespace PPG12;
 
 // STL
 #include <fstream>
@@ -38,28 +40,6 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     bool isbackground = false;
     float max_photon_lower = 0;
     float max_photon_upper = 100;
-    // unit in pb
-    const float photon5cross = 2.017e+08 * 0.000442571;
-    const float photon10cross = 3.688e+07 * 0.000181474;
-    const float photon20cross = 1.571e+05 * 0.000673448;
-
-    /*
-      weightMap[{"jet",10}] = make_tuple(3.997e+06, 10000000, 10,15);
-  weightMap[{"jet",15}] = make_tuple(4.073e+05, 10000000, 15,20);
-  weightMap[{"jet",20}] = make_tuple(6.218e+04, 10000000, 20,30);
-  weightMap[{"jet",30}] = make_tuple(2.502e+03, 10000000, 30,50);
-  weightMap[{"jet",50}] = make_tuple(7.2695,    10000000, 50,70);
-  weightMap[{"jet",70}] = make_tuple(1.034e-02, 100000,70,75);
-    
-    */
-
-    // Hanpu uses unit in b
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
-
     float max_jet_lower = 0;
     float max_jet_upper = 100;
 

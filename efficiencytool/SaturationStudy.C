@@ -23,6 +23,8 @@
 #include <cmath>
 #include <map>
 #include <limits>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 void SaturationStudy(const std::string &configname = "config_showershape.yaml",
                      const std::string filetype = "data")
@@ -50,17 +52,6 @@ void SaturationStudy(const std::string &configname = "config_showershape.yaml",
     }
     std::cout << "Input: " << infilename << std::endl;
 
-    // -----------------------------------------------------------------------
-    // Cross-section weights (all normalised to photon20 / jet50 respectively)
-    // -----------------------------------------------------------------------
-    const float photon5cross  = 146359.3f;
-    const float photon10cross = 6944.675f;
-    const float photon20cross = 130.4461f;
-    const float jet10cross    = 3.997e+06f;
-    const float jet15cross    = 4.073e+05f;
-    const float jet20cross    = 6.218e+04f;
-    const float jet30cross    = 2.502e+03f;
-    const float jet50cross    = 7.2695f;
 
     float cross_weight = 1.0f;
     float max_photon_lower = 0, max_photon_upper = 200;

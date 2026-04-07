@@ -14,6 +14,8 @@
 #include <set>
 #include <map>
 #include <iostream>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 // NPB phase-space (matches config_npb_training.yaml)
 const float NPB_ET_MIN  = 6.0;
@@ -50,15 +52,6 @@ void showershape_vertex_check(const std::string &configname = "config_showershap
     float max_photon_lower = 0;
     float max_photon_upper = 100;
 
-    const float photon5cross  = 146359.3;
-    const float photon10cross = 6944.675;
-    const float photon20cross = 130.4461;
-
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
 
     float max_jet_lower = 0;
     float max_jet_upper = 100;

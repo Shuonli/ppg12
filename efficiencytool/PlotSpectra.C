@@ -10,8 +10,10 @@
 #include <TTreeReaderArray.h>
 #include <TNamed.h>
 #include <TMath.h>
+#include "CrossSectionWeights.h"
 
 using namespace std;
+using namespace PPG12;
 
 void PlotSpectra(string filetype,
                  double min_photon_pt = -1,
@@ -37,18 +39,6 @@ void PlotSpectra(string filetype,
     }
     cout << "======================================\n" << endl;
 
-    // ===== Cross-section constants =====
-    // Photon samples (pb)
-    const float photon5cross = 146359.3;
-    const float photon10cross = 6944.675;
-    const float photon20cross = 130.4461;
-
-    // Hanpu uses unit in b
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
 
     // ===== Calculate cross-section weight =====
     float weight = 1.0;

@@ -2,6 +2,8 @@
 #include <RooUnfoldBayes.h>
 #include <yaml-cpp/yaml.h>
 #include <cmath>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 double myfunc(double *x, double *params)
 {
@@ -55,12 +57,11 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     float nsimevents = 1E7;
     // float nsimevents = 2417664.0;
     //const float photon20cross = 1.571e+05 * 0.000673448;
-    const float photon20cross = 130.4461;
     float simluminosity = nsimevents / photon20cross;
 
     // float jetevents = 2194879.0;
     float jetevents = 0.3555 * 1E7;
-    const float jetcross = 7.3113;
+    const float jetcross = jet50cross;
 
     float jetluminosity = jetevents / jetcross;
     bool fit_purity = true;
