@@ -12,18 +12,10 @@
 #include <TSystem.h>
 #include <yaml-cpp/yaml.h>
 #include <cmath>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 const float TIME_SAMPLE_NS = 17.6;
-
-// Cross-section constants (in pb for photons, b for jets)
-const float photon5cross = 146359.3;
-const float photon10cross = 6944.675;
-const float photon20cross = 130.4461;
-const float jet10cross = 3.997e+06;
-const float jet15cross = 4.073e+05;
-const float jet20cross = 6.218e+04;
-const float jet30cross = 2.502e+03;
-const float jet50cross = 7.2695;
 
 namespace
 {

@@ -29,6 +29,8 @@
 #include <TSystem.h>
 #include <TObjString.h>
 #include <yaml-cpp/yaml.h>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 void IsoROC_calculator(const std::string &configname = "config_bdt_isoroc.yaml",
                        const std::string filetype = "jet5")
@@ -40,17 +42,6 @@ void IsoROC_calculator(const std::string &configname = "config_bdt_isoroc.yaml",
     if (filetype == "data") issim = false;
 
     static const bool isbackground = filetype.find("jet") != std::string::npos;
-
-    // Cross sections (pb)
-    const float photon5cross  = 146359.3;
-    const float photon10cross = 6944.675;
-    const float photon20cross = 130.4461;
-    const float jet5cross     = 1.3878e+08;
-    const float jet12cross    = 1.4903e+06;
-    const float jet20cross    = 6.2623e+04;
-    const float jet30cross    = 2.5298e+03;
-    const float jet40cross    = 1.3553e+02;
-    const float jet50cross    = 7.3113;
 
     float max_photon_lower = 0;
     float max_photon_upper = 200;

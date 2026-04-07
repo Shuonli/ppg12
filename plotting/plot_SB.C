@@ -1,4 +1,6 @@
 #include "plotcommon.h"
+#include "../efficiencytool/CrossSectionWeights.h"
+using namespace PPG12;
 
 void plot_SB()
 {
@@ -6,10 +8,6 @@ void plot_SB()
 
     TFile *fin_sig = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal.root", "READ");
     TFile *fin_bg = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
-
-    const float photon20cross = 1.571e+05 * 0.000673448;
-
-    const float jet30cross = 2.505e-9 * 1e12;
 
     float jet_scale = jet30cross / photon20cross;
 

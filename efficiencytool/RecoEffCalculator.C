@@ -12,6 +12,8 @@
 #include <TObjString.h>
 #include <TRandom3.h>
 #include <yaml-cpp/yaml.h>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 // unfolding
 #include <RooUnfoldResponse.h>
 #include <RooUnfoldBayes.h>
@@ -69,18 +71,6 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
     float max_photon_lower = 0;
     float max_photon_upper = 100;
-    // unit in pb
-    const float photon5cross = 2.017e+08 * 0.000442571;
-    const float photon10cross = 3.688e+07 * 0.000181474;
-    const float photon20cross = 1.571e+05 * 0.000673448;
-
-    // Hanpu uses unit in b
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
-
     float max_jet_lower = 0;
     float max_jet_upper = 100;
 

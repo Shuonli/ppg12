@@ -30,17 +30,8 @@
 #include <TTreeReaderArray.h>
 #include <TSystem.h>
 #include <yaml-cpp/yaml.h>
-
-// ── cross-section table (pb) ─────────────────────────────────────────────────
-static const float photon5cross  = 146359.3f;
-static const float photon10cross =   6944.675f;
-static const float photon20cross =    130.4461f;
-static const float jet5cross     = 1.3878e+08f;
-static const float jet12cross    = 1.4903e+06f;
-static const float jet20cross    = 6.2623e+04f;
-static const float jet30cross    = 2.5298e+03f;
-static const float jet40cross    = 1.3553e+02f;
-static const float jet50cross    =      7.3113f;
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 // ── per-sample parameters ─────────────────────────────────────────────────────
 struct SampleParams

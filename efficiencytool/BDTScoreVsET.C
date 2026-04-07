@@ -22,6 +22,8 @@
 #include <TSystem.h>
 #include <TObjString.h>
 #include <yaml-cpp/yaml.h>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 
 // Hardcoded BDT model names — edit this list to add more models.
 static const std::vector<std::string> BDT_MODEL_NAMES = {"base_v3E", "base", "base_E", "base_v1E", "base_v2E"};
@@ -61,18 +63,6 @@ void BDTScoreVsET(const std::string &configname = "config_bdt_nom.yaml")
     int common_npb_cut_on = configYaml["analysis"]["common"]["npb_cut_on"].as<int>(0);
     float common_npb_score_cut = configYaml["analysis"]["common"]["npb_score_cut"].as<float>(0.5);
 
-    // -----------------------------------------------------------------------
-    // Cross sections
-    // -----------------------------------------------------------------------
-    // photon samples normalised to photon20; jet samples normalised to jet50
-    const float photon5cross  = 146359.3;
-    const float photon10cross = 6944.675;
-    const float photon20cross = 130.4461;
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet20cross = 6.218e+04;
-    const float jet30cross = 2.502e+03;
-    const float jet50cross = 7.2695;
 
     // -----------------------------------------------------------------------
     // Vertex reweighting (applied to all sim samples)

@@ -1,4 +1,6 @@
 #include <yaml-cpp/yaml.h>
+#include "CrossSectionWeights.h"
+using namespace PPG12;
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
 #include <TTreeReaderArray.h>
@@ -121,21 +123,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     float max_photon_lower = 0;
     float max_photon_upper = 100;
 
-    // unit in pb
-    const float photon5cross = 146359.3;
-    const float photon10cross = 6944.675;
-    const float photon20cross = 130.4461;
-
-    // Hanpu uses unit in b
-    const float jet10cross = 3.997e+06;
-    const float jet15cross = 4.073e+05;
-    const float jet5cross = 1.3878e+08;
-    const float jet8cross = 1.3013e+07*0.7;
-    const float jet12cross = 1.4903e+06;
-    const float jet20cross = 6.2623e+04;
-    const float jet30cross = 2.5298e+03;
-    const float jet40cross = 1.3553e+02;
-    const float jet50cross = 7.3113;
+    // Cross-section weights from CrossSectionWeights.h (via using namespace PPG12)
 
     float max_jet_lower = 0;
     float max_jet_upper = 100;
