@@ -312,6 +312,9 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
                         }
                     }
 
+                    proj_data->Sumw2();
+                    proj_sig->Sumw2();
+                    proj_bkg->Sumw2();
                     scaleToUnit(proj_data);
                     scaleToUnit(proj_sig);
                     scaleToUnit(proj_bkg);
@@ -431,12 +434,23 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
                     TCanvas *c_proj = new TCanvas(
                         Form("c_proj_%s", histNameFull.Data()),
                         Form("ProjectionX - %s", histNameFull.Data()),
-                        600, 600);
-                    c_proj->cd();
+                        600, 750);
+
+                    TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+                    pad1->SetBottomMargin(0.02);
+                    pad1->Draw();
+                    TPad *pad2 = new TPad("pad2", "pad2", 0, 0.0, 1, 0.3);
+                    pad2->SetTopMargin(0.02);
+                    pad2->SetBottomMargin(0.3);
+                    pad2->Draw();
+
+                    // --- Upper pad: main plot ---
+                    pad1->cd();
 
                     proj_sig->SetYTitle("normalized counts");
                     proj_sig->GetYaxis()->SetTitleOffset(1.5);
-                    proj_sig->SetXTitle(xaxisname.Data());
+                    proj_sig->SetXTitle("");
+                    proj_sig->GetXaxis()->SetLabelSize(0);
                     proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.3);
                     proj_sig->GetXaxis()->SetNdivisions(505);
                     proj_sig->SetStats(0);
@@ -479,6 +493,67 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
                                          "Data NPB", 0.05, true);
                     }
 
+                    // Chi2/ndf between data and inclusive MC
+                    double chi2 = 0;
+                    int ndf = 0;
+                    for (int ib = 1; ib <= proj_data->GetNbinsX(); ++ib) {
+                        double x = proj_data->GetBinCenter(ib);
+                        if (x < xaxismin || x > xaxismax) continue;
+                        double d = proj_data->GetBinContent(ib);
+                        double m = proj_bkg->GetBinContent(ib);
+                        double ed = proj_data->GetBinError(ib);
+                        double em = proj_bkg->GetBinError(ib);
+                        double e2 = ed*ed + em*em;
+                        if (e2 <= 0 || m <= 0) continue;
+                        chi2 += (d - m) * (d - m) / e2;
+                        ndf++;
+                    }
+                    if (ndf > 1) {
+                        ndf -= 1;
+                        myText(0.55, 0.70, 1, Form("#chi^{2}/ndf = %.1f/%d = %.2f", chi2, ndf, chi2 / ndf), 0.035);
+                    }
+
+                    // --- Lower pad: ratio plot ---
+                    pad2->cd();
+
+                    TH1D *h_ratio = (TH1D *)proj_data->Clone(Form("ratio_%s", histNameFull.Data()));
+                    h_ratio->Divide(proj_bkg);
+                    // Mask bins where denominator is empty (avoid points at y=0)
+                    for (int ib = 1; ib <= h_ratio->GetNbinsX(); ++ib) {
+                        if (proj_bkg->GetBinContent(ib) <= 0) {
+                            h_ratio->SetBinContent(ib, -999);
+                            h_ratio->SetBinError(ib, 0);
+                        }
+                    }
+                    h_ratio->SetStats(0);
+                    h_ratio->SetMarkerStyle(20);
+                    h_ratio->SetMarkerSize(0.8);
+                    h_ratio->SetMarkerColor(kBlack);
+                    h_ratio->SetLineColor(kBlack);
+
+                    float scaleFactor = 0.7 / 0.3;
+                    h_ratio->SetYTitle("Data / Inclusive MC");
+                    h_ratio->GetYaxis()->SetRangeUser(0.5, 1.5);
+                    h_ratio->GetYaxis()->SetNdivisions(505);
+                    h_ratio->GetYaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_ratio->GetYaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_ratio->GetYaxis()->SetTitleOffset(0.6);
+                    h_ratio->GetYaxis()->CenterTitle();
+
+                    h_ratio->SetXTitle(xaxisname.Data());
+                    h_ratio->GetXaxis()->SetNdivisions(505);
+                    h_ratio->GetXaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_ratio->GetXaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_ratio->GetXaxis()->SetTitleOffset(1.0);
+                    h_ratio->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+
+                    h_ratio->Draw("ep");
+
+                    TLine *ratioLine = new TLine(xaxismin, 1.0, xaxismax, 1.0);
+                    ratioLine->SetLineStyle(2);
+                    ratioLine->SetLineColor(kBlack);
+                    ratioLine->Draw();
+
                     c_proj->SaveAs(Form("%s/%s_%s.pdf", savePath.c_str(), dis_pfx.c_str(), histNamesave.Data()));
 
                     // Profile plot for background only
@@ -512,6 +587,10 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
 
                     c_bkg->SaveAs(Form("%s/pfx_%s.pdf", savePath.c_str(), histNamesave.Data()));
 
+                    delete ratioLine;
+                    delete h_ratio;
+                    delete pad1;
+                    delete pad2;
                     delete c_proj;
                     delete c_bkg;
                     if (proj_data_npb) delete proj_data_npb;
