@@ -16,7 +16,7 @@
 // EMCAL time sample period used in RecoEffCalculator_TTreeReader.C
 const float TIME_SAMPLE_NS = 17.6;
 
-void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml", const std::string filetype = "jet8", bool doinclusive = true, bool do_vertex_scan = false)
+void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml", const std::string filetype = "jet12_double", bool doinclusive = true, bool do_vertex_scan = false, float mix_weight = 1.0, const std::string vtxscan_sim_override = "")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -37,13 +37,35 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
 
     std::string infilename_branch_dir = configYaml["input"]["photon_jet_file_branch_dir"].as<std::string>();
 
-    std::string infilename = infilename_root_dir + filetype + infilename_branch_dir;
+    // Keep output labeling by requested filetype, but allow selected aliases
+    // to read from existing nominal input samples.
+    std::string input_filetype = filetype;
+    if (filetype == "photon10_nom") input_filetype = "photon10";
+    if (filetype == "jet12_nom")    input_filetype = "jet12";
+
+    std::string infilename = infilename_root_dir + input_filetype + infilename_branch_dir;
 
     if (!issim)
     {
         infilename = configYaml["input"]["data_file"].as<std::string>();
     }
 
+    TFile *corrFile = TFile::Open("/sphenix/user/hanpuj/JES_MC_Calibration/offline/output_forshuhang.root", "READ");
+    if (!corrFile || corrFile->IsZombie())
+    {
+        std::cerr << "[JESCalib] ERROR: cannot open JES calibration file\n";
+        return;
+    }
+    TF1 *f_corr = dynamic_cast<TF1*>(corrFile->Get("f_corr_run21_r04_z0_eta0123"));
+    if (!f_corr)
+    {
+        std::cerr << "[JESCalib] ERROR: f_corr not found in JES calibration file\n";
+        return;
+    }
+    bool calibjes = true;
+
+    std::cout << "filetype: " << filetype
+              << " (input source: " << input_filetype << ")" << std::endl;
     std::cout << "infilename: " << infilename << std::endl;
 
     // Non-physical background (NPB) selection:
@@ -57,6 +79,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     // Cluster-MBD time window cut (data only, -999/999 = no cut)
     float cluster_mbd_time_min = configYaml["analysis"]["cluster_mbd_time_min"].as<float>(-999.0f);
     float cluster_mbd_time_max = configYaml["analysis"]["cluster_mbd_time_max"].as<float>(999.0f);
+    int common_b2bjet_cut = configYaml["analysis"]["common_b2bjet_cut"].as<int>(0);
+    float common_b2bjet_pt_min = configYaml["analysis"]["common_b2bjet_pt_min"].as<float>(7.0);
     std::cout << "npb_cut_on: " << npb_cut_on << "  npb_score_cut: " << npb_score_cut << std::endl;
 
     // MBD avg sigma pileup rejection cut
@@ -140,6 +164,18 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         // max_photon_upper = 200;
         weight = photon10cross / photon20cross;
     }
+    else if (filetype == "photon10_double")
+    {
+        max_photon_lower = 10;
+        max_photon_upper = 100;
+        weight = photon10cross / photon20cross;
+    }
+    else if (filetype == "photon10_nom")
+    {
+        max_photon_lower = 10;
+        max_photon_upper = 100;
+        weight = photon10cross / photon20cross;
+    }
     else if (filetype == "photon20")
     {
         max_photon_lower = 30;
@@ -168,6 +204,22 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         max_jet_lower = 14;
         max_jet_upper = 21;
         cluster_ET_upper = 23;
+        weight = jet12cross / jet50cross;
+        isbackground = true;
+    }
+    else if (filetype == "jet12_double")
+    {
+        max_jet_lower = 10;
+        max_jet_upper = 100;
+        cluster_ET_upper = 100;
+        weight = jet12cross / jet50cross;
+        isbackground = true;
+    }
+    else if (filetype == "jet12_nom")
+    {
+        max_jet_lower = 10;
+        max_jet_upper = 100;
+        cluster_ET_upper = 100;
         weight = jet12cross / jet50cross;
         isbackground = true;
     }
@@ -219,6 +271,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         isbackground = true;
     }
     cross_weight = weight;
+    cross_weight *= mix_weight;   // single/double interaction blending fraction (1.0 for data)
     // Vertex reweighting for simulation (required when enabled):
     //   results/vertex_reweight_bdt_none.root : h_vertexz_ratio_data_over_mccombined
     TH1* h_vertex_reweight = nullptr;
@@ -233,44 +286,6 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
         vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
-        if (!do_vertex_scan && vertex_reweight_on && vtx_scan_data_file.empty())
-        {
-            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
-
-            if (!fvtx || fvtx->IsZombie())
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
-            if (!htmp)
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
-            //fvtx->Close();
-            //delete fvtx;
-
-
-
-            if (!h_vertex_reweight)
-            {
-                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            h_vertex_reweight->SetDirectory(nullptr);
-            h_vertex_reweight->Sumw2();
-            std::cout << "[VertexReweight] Using histogram weights from "
-                      << vertex_reweight_file << " : " << htmp->GetName() << std::endl;
-        }
     }
 
 
@@ -310,44 +325,99 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         if (pos != std::string::npos) vtxscan_outfilename.replace(pos, 5, "_vtxscan.root");
     }
 
-    // On-the-fly vertex reweighting: derive ratio from data and sim scan outputs
-    if (!do_vertex_scan && issim && vertex_reweight_on && !vtx_scan_data_file.empty())
+    // In Pass 2, allow the caller to supply a pre-merged combined vtxscan file
+    // so vertex reweighting uses the blended MC distribution.
+    // Guard: only override in full-analysis mode (not in vtxscan mode where
+    // vtxscan_outfilename is the *output* path).
+    if (!vtxscan_sim_override.empty() && !do_vertex_scan && issim)
     {
-        TFile* fvtx_data = TFile::Open(vtx_scan_data_file.c_str(), "READ");
-        if (!fvtx_data || fvtx_data->IsZombie())
+        std::cout << "[VertexReweight] Using vtxscan_sim_override: "
+                  << vtxscan_sim_override << std::endl;
+        vtxscan_outfilename = vtxscan_sim_override;
+    }
+
+    // Vertex reweighting in second pass:
+    // 1) Prefer on-the-fly ratio from first-pass scan files (sim + data).
+    // 2) Fall back to pre-made vertex_reweight_file if scan files are unavailable.
+    if (!do_vertex_scan && issim && vertex_reweight_on)
+    {
+        std::string resolved_vtx_scan_data_file = vtx_scan_data_file;
+        if (resolved_vtx_scan_data_file.empty())
         {
-            std::cerr << "[VertexReweight] ERROR: cannot open data scan file: " << vtx_scan_data_file << std::endl;
-            return;
+            resolved_vtx_scan_data_file =
+                configYaml["output"]["data_outfile"].as<std::string>() + "shower_shape_" + config_suffix + "_vtxscan.root";
+            std::cout << "[VertexReweight] vertex_scan_data_file is empty. "
+                      << "Trying first-pass scan files:\n"
+                      << "  data: " << resolved_vtx_scan_data_file << "\n"
+                      << "  sim : " << vtxscan_outfilename << std::endl;
         }
-        TFile* fvtx_sim = TFile::Open(vtxscan_outfilename.c_str(), "READ");
-        if (!fvtx_sim || fvtx_sim->IsZombie())
+
+        bool built_from_scan = false;
+        TFile* fvtx_data = TFile::Open(resolved_vtx_scan_data_file.c_str(), "READ");
+        TFile* fvtx_sim  = TFile::Open(vtxscan_outfilename.c_str(), "READ");
+        if (fvtx_data && !fvtx_data->IsZombie() && fvtx_sim && !fvtx_sim->IsZombie())
         {
-            std::cerr << "[VertexReweight] ERROR: cannot open sim scan file: " << vtxscan_outfilename << std::endl;
-            return;
+            TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
+            TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
+            if (hdata_vtx && hsim_vtx)
+            {
+                TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
+                TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
+                hdata_clone->SetDirectory(nullptr);
+                hsim_clone->SetDirectory(nullptr);
+                if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
+                if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
+                hdata_clone->Divide(hsim_clone);
+                h_vertex_reweight = hdata_clone;
+                h_vertex_reweight->SetDirectory(nullptr);
+                built_from_scan = true;
+                std::cout << "[VertexReweight] On-the-fly weights derived from "
+                          << resolved_vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+                delete hsim_clone;
+            }
         }
-        TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
-        TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
-        if (!hdata_vtx)
+
+        if (fvtx_data) { fvtx_data->Close(); delete fvtx_data; }
+        if (fvtx_sim)  { fvtx_sim->Close();  delete fvtx_sim;  }
+
+        if (!built_from_scan)
         {
-            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtx_scan_data_file << std::endl;
-            return;
+            std::cerr << "[VertexReweight] WARNING: first-pass scan files unavailable or invalid. "
+                      << "Falling back to " << vertex_reweight_file << std::endl;
+
+            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
+            if (!fvtx || fvtx->IsZombie())
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
+                          << vertex_reweight_file << std::endl;
+                return;
+            }
+
+            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
+            if (!htmp)
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
+                          << vertex_reweight_file << std::endl;
+                fvtx->Close();
+                delete fvtx;
+                return;
+            }
+            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
+            if (!h_vertex_reweight)
+            {
+                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
+                          << vertex_reweight_file << std::endl;
+                fvtx->Close();
+                delete fvtx;
+                return;
+            }
+            h_vertex_reweight->SetDirectory(nullptr);
+            h_vertex_reweight->Sumw2();
+            std::cout << "[VertexReweight] Using histogram weights from "
+                      << vertex_reweight_file << " : " << htmp->GetName() << std::endl;
+            fvtx->Close();
+            delete fvtx;
         }
-        if (!hsim_vtx)
-        {
-            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtxscan_outfilename << std::endl;
-            return;
-        }
-        TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
-        TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
-        hdata_clone->SetDirectory(nullptr);
-        hsim_clone->SetDirectory(nullptr);
-        if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
-        if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
-        hdata_clone->Divide(hsim_clone);
-        h_vertex_reweight = hdata_clone;
-        h_vertex_reweight->SetDirectory(nullptr);
-        std::cout << "[VertexReweight] On-the-fly weights derived from "
-                  << vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
     }
 
     // Create TChain instead of TTree
@@ -762,18 +832,31 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     }
 
     // Truth jet arrays
-    TTreeReaderValue<int> njet_truth(reader, "njet_truth");
-    TTreeReaderArray<float> jet_truth_E(reader, "jet_truth_E");
-    TTreeReaderArray<float> jet_truth_Pt(reader, "jet_truth_Pt");
-    TTreeReaderArray<float> jet_truth_Eta(reader, "jet_truth_Eta");
-    TTreeReaderArray<float> jet_truth_Phi(reader, "jet_truth_Phi");
+    bool use_r04_branches = (filetype == "jet12_double" || filetype == "photon10_double");
+    std::string njet_truth_bname = use_r04_branches ? "njet_truth_AntiKt_Truth_r04" : "njet_truth";
+    std::string jet_truth_E_bname = use_r04_branches ? "jet_truth_E_AntiKt_Truth_r04" : "jet_truth_E";
+    std::string jet_truth_Pt_bname = use_r04_branches ? "jet_truth_Pt_AntiKt_Truth_r04" : "jet_truth_Pt";
+    std::string jet_truth_Eta_bname = use_r04_branches ? "jet_truth_Eta_AntiKt_Truth_r04" : "jet_truth_Eta";
+    std::string jet_truth_Phi_bname = use_r04_branches ? "jet_truth_Phi_AntiKt_Truth_r04" : "jet_truth_Phi";
+
+    TTreeReaderValue<int> njet_truth(reader, njet_truth_bname.c_str());
+    TTreeReaderArray<float> jet_truth_E(reader, jet_truth_E_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Pt(reader, jet_truth_Pt_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Eta(reader, jet_truth_Eta_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Phi(reader, jet_truth_Phi_bname.c_str());
 
     // Reco jet arrays
-    TTreeReaderValue<int> njet(reader, "njet");
-    TTreeReaderArray<float> jet_E(reader, "jet_E");
-    TTreeReaderArray<float> jet_Pt(reader, "jet_Pt");
-    TTreeReaderArray<float> jet_Eta(reader, "jet_Eta");
-    TTreeReaderArray<float> jet_Phi(reader, "jet_Phi");
+    std::string njet_bname    = use_r04_branches ? "njet_AntiKt_unsubtracted_r04_calib"    : "njet";
+    std::string jet_E_bname   = use_r04_branches ? "jet_E_AntiKt_unsubtracted_r04_calib"   : "jet_E";
+    std::string jet_Pt_bname  = use_r04_branches ? "jet_Pt_AntiKt_unsubtracted_r04_calib"  : "jet_Pt";
+    std::string jet_Eta_bname = use_r04_branches ? "jet_Eta_AntiKt_unsubtracted_r04_calib" : "jet_Eta";
+    std::string jet_Phi_bname = use_r04_branches ? "jet_Phi_AntiKt_unsubtracted_r04_calib" : "jet_Phi";
+
+    TTreeReaderValue<int>   njet  (reader, njet_bname.c_str());
+    TTreeReaderArray<float> jet_E  (reader, jet_E_bname.c_str());
+    TTreeReaderArray<float> jet_Pt (reader, jet_Pt_bname.c_str());
+    TTreeReaderArray<float> jet_Eta(reader, jet_Eta_bname.c_str());
+    TTreeReaderArray<float> jet_Phi(reader, jet_Phi_bname.c_str());
 
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
     fout->cd();
@@ -1206,7 +1289,9 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         // Scan mode: fill vertex histogram and skip all downstream processing
         if (do_vertex_scan)
         {
-            h_vertexz->Fill(*vertexz);
+            if (issim && !(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
+            continue;
+            h_vertexz->Fill(*vertexz, mix_weight);
             ientry++;
             continue;
         }
@@ -1482,8 +1567,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
             if (abs(*vertexz) > vertexcut)
                 continue;
 
-            //if (!(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
-            //    continue;
+            if (issim && !(*mbdnorthhit >= 1 && *mbdsouthhit >= 1))
+                continue;
 
             float cluster_eta = cluster_Eta[icluster];
             int etabin = -1;
@@ -1578,8 +1663,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 h2d_all["h2d_w32"][idx][etabin][pTbin]->Fill(cluster_w32[icl], recoisoET, weight);
                 h2d_all["h2d_w52"][idx][etabin][pTbin]->Fill(cluster_w52[icl], recoisoET, weight);
                 h2d_all["h2d_w72"][idx][etabin][pTbin]->Fill(cluster_w72[icl], recoisoET, weight);
-                h2d_all["h2d_wr"][idx][etabin][pTbin]->Fill(cluster_wphi[icl] / cluster_weta[icl], recoisoET, weight);
-                h2d_all["h2d_wrr"][idx][etabin][pTbin]->Fill(cluster_weta[icl] / cluster_wphi[icl], recoisoET, weight);
+                h2d_all["h2d_wr"][idx][etabin][pTbin]->Fill(cluster_wphi_cogx[icl] / cluster_weta_cogx[icl], recoisoET, weight);
+                h2d_all["h2d_wrr"][idx][etabin][pTbin]->Fill(cluster_weta_cogx[icl] / cluster_wphi_cogx[icl], recoisoET, weight);
                 h2d_all["h2d_weta_cog"][idx][etabin][pTbin]->Fill(cluster_weta_cog[icl], recoisoET, weight);
                 h2d_all["h2d_wphi_cog"][idx][etabin][pTbin]->Fill(cluster_wphi_cog[icl], recoisoET, weight);
                 h2d_all["h2d_weta_cogx"][idx][etabin][pTbin]->Fill(cluster_weta_cogx[icl], recoisoET, weight);
@@ -1646,7 +1731,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
             bool badtime = (delta_t_cluster_mbd < npb_delta_t_cut);
 
             // Cluster-MBD time window veto (data only, matches RecoEffCalculator_TTreeReader.C)
-            if (!issim && mbd_mean_time > -990)
+            if (mbd_mean_time > -990)
             {
                 if (delta_t_cluster_mbd < cluster_mbd_time_min || delta_t_cluster_mbd > cluster_mbd_time_max)
                 {
@@ -1674,8 +1759,11 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 h_mbd_avgsigma_vs_npb_score[etabin][pTbin]->Fill(npb_score_val, pileup_result.avgsigma, weight);
             }
 
-            // Check for back-to-back jets (veto if present)
+            // Check for back-to-back jets
             bool otherside_jet = false;
+            float max_b2bjet_pT = -1;
+            const float b2bjet_dphi = 3 * M_PI / 4;
+            const float jet_eta_cut = 0.6;
             for (int ijet = 0; ijet < *njet; ijet++)
             {
                 if (jet_Pt[ijet] < 5) continue;  // Require jet pT > 5 GeV
@@ -1685,11 +1773,19 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 while (dphi < -M_PI) dphi += 2 * M_PI;
 
                 if (std::abs(dphi) > (M_PI / 2))  // Back-to-back: Δφ > 90°
-                {
                     otherside_jet = true;
-                    break;
+
+                float jescalib = 1.0;
+                if (calibjes && !issim)
+                    jescalib = f_corr->Eval(jet_Pt[ijet]) / jet_Pt[ijet];
+                float calibrated_jet_pT = jet_Pt[ijet] * jescalib;
+                if (std::abs(jet_Eta[ijet]) < jet_eta_cut && std::abs(dphi) > b2bjet_dphi)
+                {
+                    if (calibrated_jet_pT > max_b2bjet_pT)
+                        max_b2bjet_pT = calibrated_jet_pT;
                 }
             }
+            bool passes_common_b2bjet = (!common_b2bjet_cut) || (max_b2bjet_pT >= common_b2bjet_pt_min);
 
             // Fill NPB score vs cluster-MBD time histogram with strict pileup selection (MBD pileup detected)
             if (is_mbd_pileup)
@@ -1729,7 +1825,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 // require NPB score for the common cut (gated by npb_cut_on)
                 (!npb_cut_on || npb_score_val > npb_score_cut) &&
                 //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
-                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound))
+                (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound) &&
+                passes_common_b2bjet)
             {
                 common_pass = true;
                 if(e32_over_e35 > common_e32_over_e35_min &&

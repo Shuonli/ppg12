@@ -53,7 +53,7 @@
 
 
 void Fun4All_test_photoncluster(
-    const int nEvents = 10,
+    const int nEvents = 100,
     const string &inputFile0 = "g4hits.list",
     const string &inputFile1 = "dst_calo_cluster.list",
     const string &inputFile3 = "dst_mbd_epd.list",
@@ -107,6 +107,7 @@ void Fun4All_test_photoncluster(
 
     Process_Calo_Calib();
 
+
     //photon cluster
     PhotonClusterBuilder *photonclusterbuilder = new PhotonClusterBuilder();
     photonclusterbuilder->Verbosity(1);
@@ -114,8 +115,8 @@ void Fun4All_test_photoncluster(
     photonclusterbuilder->set_bdt_model_file("/sphenix/user/shuhangli/ppg12/FunWithxgboost/binned_models/model_base_single_tmva.root");
     std::vector<std::string> bdt_feature_list = {"vertex_z", "cluster_eta", "e11_over_e33", "et1", "et2", "et3", "et4"};
     photonclusterbuilder->set_bdt_feature_list(bdt_feature_list);
-    photonclusterbuilder->set_ET_threshold(0.00);
-    photonclusterbuilder->set_shower_shape_min_tower_energy(0.00);
+    photonclusterbuilder->set_ET_threshold(7.0);
+    photonclusterbuilder->set_shower_shape_min_tower_energy(0.07);
     se->registerSubsystem(photonclusterbuilder);
 
     se->run(nEvents);

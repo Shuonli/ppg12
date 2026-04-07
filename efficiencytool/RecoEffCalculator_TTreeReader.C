@@ -105,7 +105,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     //const float jet30cross = 2.502e+03;
     //const float jet50cross = 7.2695;
     const float jet5cross = 1.3878e+08;
-    const float jet8cross = 1.3013e+07*0.7;
+    const float jet8cross = 1.15e+07;
     const float jet12cross = 1.4903e+06;
     const float jet20cross = 6.2623e+04;
     const float jet30cross = 2.5298e+03;
@@ -239,45 +239,6 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
         vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
-        //vertex_reweight_on = false;
-        if (!do_vertex_scan && vertex_reweight_on && vtx_scan_data_file.empty())
-        {
-            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
-            if (!fvtx || fvtx->IsZombie())
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
-            if (!htmp)
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-
-            std::string vtx_histname = htmp->GetName();  // save before Close() invalidates htmp
-	    std::cout<<vtx_histname<<std::endl;
-	    h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
-            //fvtx->Close();
-            //delete fvtx;
-
-            if (!h_vertex_reweight)
-            {
-                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            h_vertex_reweight->SetDirectory(nullptr);
-            h_vertex_reweight->Sumw2();
-            std::cout << "[VertexReweight] Using histogram weights from "
-                      << vertex_reweight_file << " : " << vtx_histname << std::endl;
-        }
     }
 
     // std::string infilename = "/sphenix/tg/tg01/commissioning/CaloCalibWG/sli/ppg12/ana450/condorout/combine.root";
@@ -308,44 +269,91 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         if (pos != std::string::npos) vtxscan_outfilename.replace(pos, 5, "_vtxscan.root");
     }
 
-    // On-the-fly vertex reweighting: derive ratio from data and sim scan outputs
-    if (!do_vertex_scan && issim && vertex_reweight_on && !vtx_scan_data_file.empty())
+    // Vertex reweighting in second pass:
+    // 1) Prefer on-the-fly ratio from first-pass scan files (sim + data).
+    // 2) Fall back to pre-made vertex_reweight_file if scan files are unavailable.
+    if (!do_vertex_scan && issim && vertex_reweight_on)
     {
-        TFile* fvtx_data = TFile::Open(vtx_scan_data_file.c_str(), "READ");
-        if (!fvtx_data || fvtx_data->IsZombie())
+        std::string resolved_vtx_scan_data_file = vtx_scan_data_file;
+        if (resolved_vtx_scan_data_file.empty())
         {
-            std::cerr << "[VertexReweight] ERROR: cannot open data scan file: " << vtx_scan_data_file << std::endl;
-            return;
+            resolved_vtx_scan_data_file =
+                configYaml["output"]["data_outfile"].as<std::string>() + "_" + var_type + "_vtxscan.root";
+            std::cout << "[VertexReweight] vertex_scan_data_file is empty. "
+                      << "Trying first-pass scan files:\n"
+                      << "  data: " << resolved_vtx_scan_data_file << "\n"
+                      << "  sim : " << vtxscan_outfilename << std::endl;
         }
+
+        bool built_from_scan = false;
+        TFile* fvtx_data = TFile::Open(resolved_vtx_scan_data_file.c_str(), "READ");
         TFile* fvtx_sim = TFile::Open(vtxscan_outfilename.c_str(), "READ");
-        if (!fvtx_sim || fvtx_sim->IsZombie())
+        if (fvtx_data && !fvtx_data->IsZombie() && fvtx_sim && !fvtx_sim->IsZombie())
         {
-            std::cerr << "[VertexReweight] ERROR: cannot open sim scan file: " << vtxscan_outfilename << std::endl;
-            return;
+            TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
+            TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
+            if (hdata_vtx && hsim_vtx)
+            {
+                TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
+                TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
+                hdata_clone->SetDirectory(nullptr);
+                hsim_clone->SetDirectory(nullptr);
+                if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
+                if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
+                hdata_clone->Divide(hsim_clone);
+                h_vertex_reweight = hdata_clone;
+                h_vertex_reweight->SetDirectory(nullptr);
+                built_from_scan = true;
+                std::cout << "[VertexReweight] On-the-fly weights derived from "
+                          << resolved_vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+                delete hsim_clone;
+            }
         }
-        TH1* hdata_vtx = dynamic_cast<TH1*>(fvtx_data->Get("h_vertexz"));
-        TH1* hsim_vtx  = dynamic_cast<TH1*>(fvtx_sim->Get("h_vertexz"));
-        if (!hdata_vtx)
+
+        if (fvtx_data) { fvtx_data->Close(); delete fvtx_data; }
+        if (fvtx_sim)  { fvtx_sim->Close();  delete fvtx_sim;  }
+
+        if (!built_from_scan)
         {
-            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtx_scan_data_file << std::endl;
-            return;
+            std::cerr << "[VertexReweight] WARNING: first-pass scan files unavailable or invalid. "
+                      << "Falling back to " << vertex_reweight_file << std::endl;
+
+            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
+            if (!fvtx || fvtx->IsZombie())
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
+                          << vertex_reweight_file << std::endl;
+                return;
+            }
+
+            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
+            if (!htmp)
+            {
+                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
+                          << vertex_reweight_file << std::endl;
+                fvtx->Close();
+                delete fvtx;
+                return;
+            }
+
+            std::string vtx_histname = htmp->GetName();
+            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
+            if (!h_vertex_reweight)
+            {
+                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
+                          << vertex_reweight_file << std::endl;
+                fvtx->Close();
+                delete fvtx;
+                return;
+            }
+
+            h_vertex_reweight->SetDirectory(nullptr);
+            h_vertex_reweight->Sumw2();
+            std::cout << "[VertexReweight] Using histogram weights from "
+                      << vertex_reweight_file << " : " << vtx_histname << std::endl;
+            fvtx->Close();
+            delete fvtx;
         }
-        if (!hsim_vtx)
-        {
-            std::cerr << "[VertexReweight] ERROR: h_vertexz not found in " << vtxscan_outfilename << std::endl;
-            return;
-        }
-        TH1* hdata_clone = dynamic_cast<TH1*>(hdata_vtx->Clone("h_vtx_data_clone"));
-        TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
-        hdata_clone->SetDirectory(nullptr);
-        hsim_clone->SetDirectory(nullptr);
-        if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
-        if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
-        hdata_clone->Divide(hsim_clone);
-        h_vertex_reweight = hdata_clone;
-        h_vertex_reweight->SetDirectory(nullptr);
-        std::cout << "[VertexReweight] On-the-fly weights derived from "
-                  << vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
     }
 
     // TChain is used instead of a single TTree
@@ -600,7 +608,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     // need to make this into the config file in the future!!!
     // f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
     // f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
-    f_reweight->SetParameters(0.714962, -0.0856443, -0.125383, 0.00345831, 0.00462972);
+    // f_reweight->SetParameters(0.714962, -0.0856443, -0.125383, 0.00345831, 0.00462972);
+    f_reweight->SetParameters(0.787183, -0.109761, -0.137895, 0.00449023, 0.00533778);
 
     //load MBD t0 correction
     std::cout << "loading MBD t0 correction" << std::endl;
@@ -841,6 +850,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     std::vector<TH1D *> h_tight_noniso_cluster_background;
     std::vector<TH1D *> h_nontight_iso_cluster_background;
     std::vector<TH1D *> h_nontight_noniso_cluster_background;
+    std::vector<TH2D *> h_tight_recoisoET_background;
+    std::vector<TH2D *> h_nontight_recoisoET_background;
 
     std::vector<TH2D *> h_singal_reco_isoET;
     std::vector<TH2D *> h_singal_truth_isoET;
@@ -1125,6 +1136,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         h_nontight_noniso_cluster_background.push_back(new TH1D(Form("h_nontight_noniso_cluster_background_%d", ieta),
                                                                 Form("Non-Tight Non-Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                                 n_pT_bins, pT_bin_edges));
+        h_tight_recoisoET_background.push_back(new TH2D(Form("h_tight_recoisoET_background_%d", ieta),
+                                                        Form("Background Tight Cluster ET vs Reco Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                        n_pT_bins, pT_bin_edges, 4400, -5, 50));
+        h_nontight_recoisoET_background.push_back(new TH2D(Form("h_nontight_recoisoET_background_%d", ieta),
+                                                           Form("Background Non-Tight Cluster ET vs Reco Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                           n_pT_bins, pT_bin_edges, 4400, -5, 50));
 
         h_singal_reco_isoET.push_back(new TH2D(Form("h_singal_reco_isoET_%d", ieta),
                                                Form("Signal Reco Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -2148,10 +2165,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                     otherside_jet = true;
                     // break;
                 }
-                float jescalib = f_corr->Eval(jet_Pt[ijet]) / jet_Pt[ijet];
-                if (!calibjes)
+                float jescalib = 1.0;
+                if (calibjes && !issim)
                 {
-                    jescalib = 1.0;
+                    jescalib = f_corr->Eval(jet_Pt[ijet]) / jet_Pt[ijet];
                 }
                 float calibrated_jet_pT = jet_Pt[ijet] * jescalib;
                 if (abs(jet_Eta[ijet]) < jet_eta)
@@ -2227,7 +2244,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 cluster_prob[icluster] < common_prob_max &&
                 e11_over_e33 > common_e11_over_e33_min &&
                 e11_over_e33 < common_e11_over_e33_max &&
-                //(!(wr_cogx < common_wr_cogx_bound && cluster_weta_cogx[icluster] > common_cluster_weta_cogx_bound))
+                wr_cogx > common_wr_cogx_bound &&
                 (cluster_weta_cogx[icluster] < common_cluster_weta_cogx_bound) &&
                 (!common_npb_cut_on || cluster_npb_score[icluster] > common_npb_score_cut);
 
@@ -2590,6 +2607,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                         h_background_iso_truth_reco[etabin][pTbin]->Fill(all_iso_ET[iparticle], recoisoET, weight);
                     }
                     h_background_truth_isoET[etabin]->Fill(particle_Pt[iparticle], recoisoET, weight);
+                    if (tight)    h_tight_recoisoET_background[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
+                    if (nontight) h_nontight_recoisoET_background[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
                     // not matched to a direct or fragmentation photon — fill ABCD background yield
                     if (tight && iso)      h_tight_iso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
                     if (tight && noniso)   h_tight_noniso_cluster_notmatch[etabin]->Fill(cluster_Et[icluster], weight);
@@ -2647,7 +2666,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 float response_reweight = 1.0;
                                 if (reweight)
                                 {
-                                    response_reweight = cluster_Et[icluster] > 30 ? f_reweight->Eval(30) : f_reweight->Eval(cluster_Et[icluster]);
+                                    response_reweight = particle_Pt[iparticle] > 30 ? f_reweight->Eval(30) : f_reweight->Eval(particle_Pt[iparticle]);
                                 }
                                 h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight*response_reweight);
                                 h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight*response_reweight);

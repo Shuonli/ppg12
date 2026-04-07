@@ -177,7 +177,7 @@ void plot_unfold_iter()
 
     frame_et_rec->SetYTitle("d#sigma/dE_{T} [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(1e3, 8e7);
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 32);
     frame_et_rec->SetYTitle("counts");
 
     frame_et_rec->GetXaxis()->SetTitleOffset(0.98);
@@ -223,7 +223,7 @@ void plot_unfold_iter()
     frame_et_truth->SetYTitle("unfolded / truth");
     frame_et_truth->GetYaxis()->SetNdivisions(506);
     frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.1);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 32);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
     frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
     frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);

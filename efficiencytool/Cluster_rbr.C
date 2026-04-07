@@ -43,6 +43,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     std::map<int, float> nontight_iso_clusters;
     std::map<int, float> nontight_noniso_clusters;
     std::map<int, float> sum_isoET;
+    std::map<int, float> sum_isoET_sq;
     std::map<int, float> count_isoET_clusters;
 
     std::ifstream lumifile(lumifilename);
@@ -72,7 +73,8 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
 
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
-
+    int use_topo_iso = configYaml["analysis"]["use_topo_iso"].as<int>(0);
+    use_topo_iso = 0;
     int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
 
     int weta_fail = configYaml["analysis"]["weta_fail"].as<int>(0);
@@ -89,7 +91,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     int et1_on = configYaml["analysis"]["et1_on"].as<int>(1);
     int et2_on = configYaml["analysis"]["et2_on"].as<int>(1);
     int et3_on = configYaml["analysis"]["et3_on"].as<int>(1);
-    int et4_on = configYaml["analysis"]["et3_on"].as<int>(1);
+    int et4_on = configYaml["analysis"]["et4_on"].as<int>(1);
     int bdt_on = configYaml["analysis"]["bdt_on"].as<int>(1);
     int nosat = configYaml["analysis"]["nosat"].as<int>(0);
 
@@ -188,6 +190,8 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     float tight_w32_min = configYaml["analysis"]["tight"]["w32_min"].as<float>();
     float tight_bdt_max = configYaml["analysis"]["tight"]["bdt_max"].as<float>(1);
     float tight_bdt_min = configYaml["analysis"]["tight"]["bdt_min"].as<float>(0);
+    float tight_bdt_min_slope = configYaml["analysis"]["tight"]["bdt_min_slope"].as<float>(0);
+    float tight_bdt_min_intercept = configYaml["analysis"]["tight"]["bdt_min_intercept"].as<float>(tight_bdt_min);
 
     // non tight cuts
     std::cout << "non tight cuts" << std::endl;
@@ -235,6 +239,8 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     float non_tight_w32_min = configYaml["analysis"]["non_tight"]["w32_min"].as<float>();
     float non_tight_bdt_max = configYaml["analysis"]["non_tight"]["bdt_max"].as<float>(1);
     float non_tight_bdt_min = configYaml["analysis"]["non_tight"]["bdt_min"].as<float>(0);
+    float non_tight_bdt_max_slope = configYaml["analysis"]["non_tight"]["bdt_max_slope"].as<float>(0);
+    float non_tight_bdt_max_intercept = configYaml["analysis"]["non_tight"]["bdt_max_intercept"].as<float>(non_tight_bdt_max);
 
     // common cuts for both tight and non tight
 
@@ -257,7 +263,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
     std::string bdt_model_name = configYaml["input"]["bdt_model_name"].as<std::string>();
 
-    std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
+    std::set<int> skiprunnumbers = {};
 
     TTreeReader reader(&chain);
 
@@ -266,6 +272,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     TTreeReaderValue<float> vertexz(reader, "vertexz");
     TTreeReaderValue<float> energy_scale(reader, "energy_scale");
     TTreeReaderValue<int> runnumber(reader, "runnumber");
+    TTreeReaderValue<int> eventnumber(reader, "eventnumber");
     TTreeReaderArray<Bool_t> scaledtrigger(reader, "scaledtrigger");
     TTreeReaderArray<Long64_t> currentscaler_scaled(reader, "currentscaler_scaled");
 
@@ -277,6 +284,8 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_et1(reader, Form("cluster_et1_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_et2(reader, Form("cluster_et2_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_et3(reader, Form("cluster_et3_%s", clusternodename.c_str()));
@@ -295,6 +304,13 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     TTreeReaderArray<float> cluster_iso_03_120_emcal(reader, Form("cluster_iso_03_120_emcal_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03_120_hcalin(reader, Form("cluster_iso_03_120_hcalin_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03_120_hcalout(reader, Form("cluster_iso_03_120_hcalout_%s", clusternodename.c_str()));
+    TTreeReaderArray<int> cluster_nsaturated(reader, Form("cluster_nsaturated_%s", clusternodename.c_str()));
+
+    // output file for high-ET saturated clusters
+    float sat_ET_threshold = 25.0;
+    std::ofstream sat_outfile("saturated_high_ET_events.txt");
+    sat_outfile << "runnumber eventnumber cluster_Et cluster_nsaturated" << std::endl;
+    std::set<std::pair<int,int>> sat_events_written;
 
     int ientry = 0;
     while (reader.Next())
@@ -346,10 +362,17 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
             // hard code the cut here for now :(
             if (cluster_Et[icluster] < 7)
                 continue;
-            if (cluster_Et[icluster] > 26)
+            if (cluster_Et[icluster] > 40)
                 continue;
             if (abs(cluster_Eta[icluster]) > 0.7)
                 continue;
+
+            // record high-ET saturated clusters
+            if (cluster_Et[icluster] > sat_ET_threshold && cluster_nsaturated[icluster] > 0)
+            {
+                sat_outfile << *runnumber << " " << *eventnumber << " "
+                            << cluster_Et[icluster] << " " << cluster_nsaturated[icluster] << std::endl;
+            }
 
             float e11_over_e33 = cluster_e11[icluster] / cluster_e33[icluster];
 
@@ -357,7 +380,15 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
             // reco cut
             float recoisoET = -999;
-            if (conesize == 4)
+            if (use_topo_iso == 2)
+            {
+                recoisoET = cluster_iso_topo_04[icluster];
+            }
+            else if (use_topo_iso == 1)
+            {
+                recoisoET = cluster_iso_topo_03[icluster];
+            }
+            else if (conesize == 4)
             {
                 recoisoET = cluster_iso_04[icluster];
             }
@@ -375,10 +406,10 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
                 continue;
             }
 
-            if (iso_threshold)
+            if (!use_topo_iso && iso_threshold)
             {
-                //recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
-                recoisoET = cluster_iso_03_120_emcal[icluster] + cluster_iso_03_120_hcalin[icluster] + cluster_iso_03_120_hcalout[icluster];
+                recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
+                //recoisoET = cluster_iso_03_120_emcal[icluster] + cluster_iso_03_120_hcalin[icluster] + cluster_iso_03_120_hcalout[icluster];
             }
 
             bool common_pass = false;
@@ -416,6 +447,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
             if (common_pass)
             {
                 sum_isoET[*runnumber] += recoisoET;
+                sum_isoET_sq[*runnumber] += recoisoET * recoisoET;
                 count_isoET_clusters[*runnumber] += 1;
                 {
                     tight_weta_cogx_max = tight_weta_cogx_max_b + tight_weta_cogx_max_s * clusterET;
@@ -458,8 +490,9 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
                 bool is_cluster_prob_tight =
                     (cluster_prob[icluster] > tight_prob_min) &&
                     (cluster_prob[icluster] < tight_prob_max);
+                float tight_bdt_min_et = tight_bdt_min_slope * clusterET + tight_bdt_min_intercept;
                 bool is_bdt_tight =
-                    (cluster_bdt[icluster] > tight_bdt_min) &&
+                    (cluster_bdt[icluster] > tight_bdt_min_et) &&
                     (cluster_bdt[icluster] < tight_bdt_max);
 
                 // Combined condition
@@ -492,7 +525,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
                     cluster_et4[icluster] > non_tight_et4_min &&
                     cluster_et4[icluster] < non_tight_et4_max &&
                     cluster_bdt[icluster] > non_tight_bdt_min &&
-                    cluster_bdt[icluster] < non_tight_bdt_max)
+                    cluster_bdt[icluster] < non_tight_bdt_max_slope * clusterET + non_tight_bdt_max_intercept)
                 {
                     // fail at least one of the tight cuts with small correlation
                     int nfail = 0;
@@ -611,6 +644,9 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
         }
         ientry++;
     }
+    sat_outfile.close();
+    std::cout << "Wrote saturated high-ET cluster events to saturated_high_ET_events.txt" << std::endl;
+
     // print out the results
     std::vector<double> x_event, x_event_error, y_event, y_event_error;
     std::vector<double> x_scaler, y_scaler;
@@ -644,6 +680,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
             nontight_iso_clusters[run_entry.first] = 0;
             nontight_noniso_clusters[run_entry.first] = 0;
             sum_isoET[run_entry.first] = 0;
+            sum_isoET_sq[run_entry.first] = 0;
             count_isoET_clusters[run_entry.first] = 0;
         }
         else
@@ -718,8 +755,18 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
             if (count_isoET_clusters[run_entry.first] > 0)
             {
-                float avg_isoET = sum_isoET[run_entry.first] / count_isoET_clusters[run_entry.first];
-                float avg_isoET_error = 0; // RMS could be added later if needed
+                float n_isoET = count_isoET_clusters[run_entry.first];
+                float avg_isoET = sum_isoET[run_entry.first] / n_isoET;
+                float avg_isoET_error = 0;
+                if (n_isoET > 1)
+                {
+                    float variance = (sum_isoET_sq[run_entry.first] - (sum_isoET[run_entry.first] * sum_isoET[run_entry.first] / n_isoET)) / (n_isoET - 1);
+                    if (variance < 0)
+                    {
+                        variance = 0;
+                    }
+                    avg_isoET_error = sqrt(variance / n_isoET);
+                }
                 x_avg_isoET.push_back(run_entry.first);
                 x_avg_isoET_error.push_back(0);
                 y_avg_isoET.push_back(avg_isoET);
@@ -732,6 +779,45 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
             y_corr.push_back(correction);
             y_corr_error.push_back(0);
         }
+    }
+
+    // Add zero-points for runs in lumi file but absent from TTree
+    for (auto const &lumi_entry : lumivals)
+    {
+        if (lumi_entry.second == 0) continue;
+        if (common_clusters.find(lumi_entry.first) != common_clusters.end()) continue;
+        x_event.push_back(lumi_entry.first);
+        x_event_error.push_back(0);
+        y_event.push_back(0);
+        y_event_error.push_back(0);
+        x_common.push_back(lumi_entry.first);
+        x_common_error.push_back(0);
+        y_common.push_back(0);
+        y_common_error.push_back(0);
+        x_tight.push_back(lumi_entry.first);
+        x_tight_error.push_back(0);
+        y_tight.push_back(0);
+        y_tight_error.push_back(0);
+        x_nontight.push_back(lumi_entry.first);
+        x_nontight_error.push_back(0);
+        y_nontight.push_back(0);
+        y_nontight_error.push_back(0);
+        x_tight_iso.push_back(lumi_entry.first);
+        x_tight_iso_error.push_back(0);
+        y_tight_iso.push_back(0);
+        y_tight_iso_error.push_back(0);
+        x_tight_noniso.push_back(lumi_entry.first);
+        x_tight_noniso_error.push_back(0);
+        y_tight_noniso.push_back(0);
+        y_tight_noniso_error.push_back(0);
+        x_nontight_iso.push_back(lumi_entry.first);
+        x_nontight_iso_error.push_back(0);
+        y_nontight_iso.push_back(0);
+        y_nontight_iso_error.push_back(0);
+        x_nontight_noniso.push_back(lumi_entry.first);
+        x_nontight_noniso_error.push_back(0);
+        y_nontight_noniso.push_back(0);
+        y_nontight_noniso_error.push_back(0);
     }
 
     std::cout << "Total lumi: " << total_lumi << std::endl;

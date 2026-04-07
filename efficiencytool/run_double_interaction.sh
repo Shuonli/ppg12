@@ -35,3 +35,7 @@ hadd -f MC_efficiency_double_interaction_check_jet.root \
   MC_efficiency_double_interaction_check_jet20_inclusive.root \
   MC_efficiency_double_interaction_check_jet30_inclusive.root \
   MC_efficiency_double_interaction_check_jet40_inclusive.root
+
+hadd -f MC_efficiency_double_interaction_check_inclusive.root \
+  MC_efficiency_double_interaction_check_signal.root \
+  MC_efficiency_double_interaction_check_jet.root

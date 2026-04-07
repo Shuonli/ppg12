@@ -2,11 +2,11 @@
 #include "sPhenixStyle.C"
 
 
-const int NptBins = 10;
-const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35};
+const int NptBins = 12;
+const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 35};
 
 const float pTmin = 10;
-const float pTmax = 26;
+const float pTmax = 30;
 
 TH1F *frame_et_rec;
 TH1F *frame_isoET;

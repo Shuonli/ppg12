@@ -53,7 +53,10 @@ VARIANTS = [
     # 0rad period with tight timing cut (±2 ns cluster-MBD window)
     dict(name="0radt2",
          run_min=47289, run_max=51274, lumi=32.6574,
-         cluster_mbd_time_min=-2.0, cluster_mbd_time_max=2.0),
+         cluster_mbd_time_min=-4.0, cluster_mbd_time_max=0.0),
+    
+    #back to back jet cut
+    dict(name="b2bjet", common_b2bjet_cut=1),
 
     # MBD avg-sigma pileup rejection (avgsigma < 0.1)
     dict(name="mbd01",
@@ -66,6 +69,7 @@ VARIANTS = [
     # Low-pileup run list (800 MeV threshold)
     dict(name="0radlowpu800",
          run_list_file="/sphenix/user/shuhangli/ppg12/efficiencytool/low_pileup_800.list"),
+    dict(name="etbin_v3E_v3E",  bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v3E", "base_v3E"]),
 ]
 
 # ---------------------------------------------------------------------------
@@ -81,16 +85,20 @@ OVERRIDE_MAP = {
     "cluster_mbd_time_max":  (["analysis"],          "cluster_mbd_time_max"),
     "mbd_avgsigma_cut_on":   (["analysis"],          "mbd_avgsigma_cut_on"),
     "mbd_avgsigma_max":      (["analysis"],          "mbd_avgsigma_max"),
+    "bdt_et_bin_edges":      (["analysis"],          "bdt_et_bin_edges"),
+    "bdt_et_bin_models":     (["analysis"],          "bdt_et_bin_models"),
     "mc_iso_scale":          (["analysis"],          "mc_iso_scale"),
     "mc_iso_shift":          (["analysis"],          "mc_iso_shift"),
     "vertex_reweight_on":    (["analysis"],          "vertex_reweight_on"),
     "reco_noniso_min_shift": (["analysis"],          "reco_noniso_min_shift"),
     "reco_iso_max_b":        (["analysis"],          "reco_iso_max_b"),
+    "common_b2bjet_cut":     (["analysis"],          "common_b2bjet_cut"),
     "reco_iso_max_s":        (["analysis"],          "reco_iso_max_s"),
     "npb_score_cut":         (["analysis", "common"], "npb_score_cut"),
     "cluster_node_name":     (["input"],             "cluster_node_name"),
     "data_file":             (["input"],             "data_file"),
     "photon_jet_file_branch_dir": (["input"],        "photon_jet_file_branch_dir"),
+
 }
 
 

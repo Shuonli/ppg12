@@ -1,11 +1,12 @@
 #config.yaml
 #var from nomtestv5, adding pT dependent weta, wphi cut and et1 cut, rm et2, et3
 input:
-  photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run21/"
-  photon_jet_file_branch_dir: "/condorout_waveform/caloana0220.root"
-  data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana468/condorout/combine0316.root"
+  photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/"
+    #photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run21/"
+  photon_jet_file_branch_dir: "/condorout/combined.root"
+  data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root"
   tree: "slimtree"
-  cluster_node_name: "CLUSTERINFO_CEMC_NO_SPLIT"
+  cluster_node_name: "CLUSTERINFO_CEMC"
   unfold_input: "results/MC_efficiency_photon5.root"
 
 output: 
@@ -18,7 +19,7 @@ output:
 analysis:
   isbackground: 0
   eta_bins: [-0.7, 0.7]
-  vertex_cut: 60.0
+  vertex_cut: 100.0
   truth_iso_max: 4.0
   reco_iso_min: -20.0
   reco_iso_max_b: 1.08128
@@ -30,10 +31,13 @@ analysis:
   reco_min_ET: 5.0
   cone_size: 3
   eff_dR: 0.1
-  trigger_used: 26
+  trigger_used: 30
   pT_bins: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35]
   pT_bins_truth:  [7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 35, 40]
   iso_threshold: 1
+  # If 1: for MC also write clusters that fail the `common` cut to the txt output.
+  # Useful for training/studies without the photon-ID preselection bias.
+  write_outside_common_pass_mc: 1
   n_nt_fail: 1
   weta_fail: 0
   wphi_fail: 0
@@ -45,6 +49,15 @@ analysis:
   et1_on: 1
   e11_to_e33_on: 1
   e32_to_e35_on: 1
+  use_split_bdt: 1  # If 1: load model_{name}_split_single_tmva.root instead of model_{name}_single_tmva.root
+  npb_cut_on: 1
+  npb_weta_min: 0.0
+  npb_delta_t_cut: -7.0
+  mbd_t0_correction_on: 1
+  mbd_t0_correction_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/MbdOut.corr"
+  common_b2bjet_cut: 0
+  cluster_mbd_time_min: -999.0
+  cluster_mbd_time_max: 999.0
 
   tight:
     reta77_min: 0.0

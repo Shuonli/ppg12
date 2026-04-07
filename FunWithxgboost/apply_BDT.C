@@ -6,7 +6,7 @@
 #include <string>
 #include <cmath>
 
-void apply_BDT(const std::string &configname = "config_nom.yaml", const std::string filetype = "data", const std::string inputfilename = "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_10.root")
+void apply_BDT(const std::string &configname = "config_nom.yaml", const std::string filetype = "jet12_double", const std::string inputfilename = "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/auau_test/caloana.root")
 {
     using namespace TMVA::Experimental;
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
@@ -35,7 +35,11 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
     // ------------------------------------------------------------
     // NPB score model (trained in `train_npb_score.py`)
     // ------------------------------------------------------------
-    std::string npb_tmva_file = "npb_models/npb_score_tmva.root";
+    // NPB model path: split variant when use_split_bdt=1, unless explicitly overridden
+    const bool use_split_bdt_npb = configYaml["analysis"]["use_split_bdt"].as<int>(0) != 0;
+    std::string npb_tmva_file = use_split_bdt_npb
+        ? "npb_models/npb_score_split_tmva.root"
+        : "npb_models/npb_score_tmva.root";
     if (configYaml["analysis"] && configYaml["analysis"]["npb_tmva_file"])
     {
         npb_tmva_file = configYaml["analysis"]["npb_tmva_file"].as<std::string>();
@@ -62,6 +66,10 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
     const float npb_eta_max = 0.7;
 
     // 1) Load the list of models
+    const bool use_split_bdt = configYaml["analysis"]["use_split_bdt"].as<int>(0) != 0;
+    const std::string model_suffix = use_split_bdt ? "_split" : "";
+    std::cout << "BDT model set: " << (use_split_bdt ? "split" : "standard") << std::endl;
+
     std::vector<std::string> model_names = {
         "base",
         "base_vr",
@@ -75,19 +83,11 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
         "base_v2E",
         "base_v3E",
     };
-    std::vector<std::string> model_files = {
-        "binned_models/model_base_single_tmva.root",
-        "binned_models/model_base_vr_single_tmva.root",
-        "binned_models/model_base_v0_single_tmva.root",
-        "binned_models/model_base_v1_single_tmva.root",
-        "binned_models/model_base_v2_single_tmva.root",
-        "binned_models/model_base_v3_single_tmva.root",
-        "binned_models/model_base_E_single_tmva.root",
-        "binned_models/model_base_v0E_single_tmva.root",
-        "binned_models/model_base_v1E_single_tmva.root",
-        "binned_models/model_base_v2E_single_tmva.root",
-        "binned_models/model_base_v3E_single_tmva.root",
-    };
+    std::vector<std::string> model_files;
+    for (const auto &name : model_names)
+    {
+        model_files.push_back("binned_models/model_" + name + model_suffix + "_single_tmva.root");
+    }
 
     std::vector<TMVA::Experimental::RBDT> bdt_list;
 
@@ -99,13 +99,12 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
     TFile *ftreein = new TFile(infilename.c_str(), "READ");
     TTree *slimtree = (TTree *)ftreein->Get(configYaml["input"]["tree"].as<std::string>().c_str());
 
-
-    std::string outfile_name = filetype + "/bdt_1214.root";
+    std::string outfile_name = filetype + "/bdt_split.root";
     if (!issim)
     {
         //remove the .root
         std::string namebase = inputfilename.substr(0, inputfilename.find_last_of("."));
-        outfile_name = namebase + "_with_bdt.root";
+        outfile_name = namebase + "_with_bdt_split.root";
     }
     TFile *fout = new TFile(outfile_name.c_str(), "RECREATE");
 
@@ -255,8 +254,6 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
     for (int ientry = 0; ientry <nentries; ientry++)
     {
 
-        if (ientry == 16152886)
-            continue;
         if (ientry % 10000 == 0)
             std::cout << "Processing entry " << ientry << " / " << nentries << std::endl;
         slimtree->GetEntry(ientry);

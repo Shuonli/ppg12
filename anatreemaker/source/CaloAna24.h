@@ -13,6 +13,8 @@
 #include <TH1.h>
 #include <TProfile2D.h>
 #include <TTree.h>
+#include <algorithm>
+#include <map>
 #include <string>
 #include <TLorentzVector.h>
 
@@ -22,6 +24,7 @@ class CaloRawClusterEval;
 class CaloTruthEval;
 class RawTowerGeom;
 class RawTowerGeomContainer;
+class RawClusterContainer;
 class TowerInfoContainer;
 class PHG4TruthInfoContainer;
 class CaloEvalStack;
@@ -73,12 +76,16 @@ public:
 
   void set_particlepTmin(float pTmin) { particlepTmin = pTmin; }
 
+  void set_jet_node_name(const std::string &jet_node_name);
+  void set_jet_node_names(const std::vector<std::string> &jet_node_names);
+  void set_truth_jet_node_name(const std::string &truth_jet_node_name);
+  void set_truth_jet_node_names(const std::vector<std::string> &truth_jet_node_names);
+
 private:
   int ievent = 0;
   Ort::Session *onnxmodule{nullptr};
   std::string m_modelPath{"/sphenix/u/shuhang98/core_patch/coresoftware/offline/packages/CaloReco/functional_model_single.onnx"};
   std::string m_outputFileName{"caloana.root"};
-
   TFile *fout;
 
   TTree *slimtree;
@@ -104,6 +111,7 @@ private:
   float m_totalIHCal_energy{0};
   float m_totalOHCal_energy{0};
 
+  float m_cent{-9999};
   float vertexz{-9999};
   int mbdnorthhit{0};
   int mbdsouthhit{0};
@@ -118,6 +126,7 @@ private:
   float mbdsouthqsum{0};
   float mbdnorthtmean{0};
   float mbdsouthtmean{0};
+  float _Psi2{0};
   float vertexz_truth{-9999};
   int m_pythiaid{-9999};
   float m_energyscale{-1.0};
@@ -157,6 +166,7 @@ private:
   static const int nclustermax = 10000;
   int ncluster[nclustercontainer] = {0};
   float cluster_E[nclustercontainer][nclustermax] = {0};
+  float cluster_ecore[nclustercontainer][nclustermax] = {0};
   float cluster_Et[nclustercontainer][nclustermax] = {0};
   float cluster_Eta[nclustercontainer][nclustermax] = {0};
   float cluster_Phi[nclustercontainer][nclustermax] = {0};
@@ -165,6 +175,7 @@ private:
   float cluster_CNN_prob[nclustercontainer][nclustermax] = {0};
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
   int cluster_pid[nclustercontainer][nclustermax] = {0};
+  int cluster_embed_id[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
@@ -186,6 +197,17 @@ private:
   float cluster_iso_04_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_hcalout[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_sub1_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_sub1_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_03_sub1_hcalout[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_sub1_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_sub1_hcalin[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_04_sub1_hcalout[nclustercontainer][nclustermax] = {0};
+
+  float cluster_iso_topo_03[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_04[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_03[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_04[nclustercontainer][nclustermax] = {0};
 
   static const int arrayntower = 49;
   // shower shapes
@@ -251,24 +273,31 @@ private:
   int cluster_ohcal_iphi[nclustercontainer][nclustermax] = {0};
   // Number of radii
 
+  static const int njetcontainermax = 8;
+  std::vector<std::string> jetnamelist = {"AntiKt_unsubtracted_r04"};
+  int njetcontainer{1};
   static const int njetmax = 1000;
-  int njet{0};
-  float jet_E[njetmax] = {0};
-  float jet_Et[njetmax] = {0};
-  float jet_Pt[njetmax] = {0};
-  float jet_Eta[njetmax] = {0};
-  float jet_Phi[njetmax] = {0};
-  float jet_emcal_calo_E[njetmax] = {0};
-  float jet_ihcal_calo_E[njetmax] = {0};
-  float jet_ohcal_calo_E[njetmax] = {0};
+  int njet[njetcontainermax] = {0};
+  float jet_E[njetcontainermax][njetmax] = {0};
+  float jet_Et[njetcontainermax][njetmax] = {0};
+  float jet_Pt[njetcontainermax][njetmax] = {0};
+  float jet_Eta[njetcontainermax][njetmax] = {0};
+  float jet_Phi[njetcontainermax][njetmax] = {0};
+  float jet_time[njetcontainermax][njetmax] = {0};
+  float jet_emcal_calo_E[njetcontainermax][njetmax] = {0};
+  float jet_ihcal_calo_E[njetcontainermax][njetmax] = {0};
+  float jet_ohcal_calo_E[njetcontainermax][njetmax] = {0};
 
+  static const int njet_truthcontainermax = 8;
+  std::vector<std::string> truthjetnamelist = {"AntiKt_Truth_r04"};
+  int njet_truthcontainer{1};
   static const int njet_truthmax = 1000;
-  int njet_truth{0};
-  float jet_truth_E[njet_truthmax] = {0};
-  float jet_truth_Et[njet_truthmax] = {0};
-  float jet_truth_Pt[njet_truthmax] = {0};
-  float jet_truth_Eta[njet_truthmax] = {0};
-  float jet_truth_Phi[njet_truthmax] = {0};
+  int njet_truth[njet_truthcontainermax] = {0};
+  float jet_truth_E[njet_truthcontainermax][njet_truthmax] = {0};
+  float jet_truth_Et[njet_truthcontainermax][njet_truthmax] = {0};
+  float jet_truth_Pt[njet_truthcontainermax][njet_truthmax] = {0};
+  float jet_truth_Eta[njet_truthcontainermax][njet_truthmax] = {0};
+  float jet_truth_Phi[njet_truthcontainermax][njet_truthmax] = {0};
 
   static const int nRadii = 3;
 
@@ -280,7 +309,7 @@ private:
 
   int process_cluster(std::vector<TLorentzVector> goodcluster);
 
-  std::pair<int, int> photon_type(int barcode);
+  std::pair<int, int> photon_type(int barcode, int embed_id);
 
   void shift_tower_index(int &ieta, int &iphi, int maxeta, int maxphi)
   {
@@ -296,7 +325,9 @@ private:
 
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
 
-  float calculateET(float eta, float phi, float dR, int layer, float min_E); // layer: 0 EMCal, 1 IHCal, 2 OHCal
+  float calculateET(float eta, float phi, float dR, int layer, float min_E, bool use_subtracted = false); // layer: 0 EMCal, 1 IHCal, 2 OHCal
+
+  float calculateET_topo(float eta, float phi, float dR, RawClusterContainer *clusterContainer);
 
   std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
@@ -321,13 +352,13 @@ private:
     float dr = sqrt(deta * deta + dphi * dphi);
     return dr;
   }
-  std::vector<int> using_trigger_bits{24, 25, 26, 27, 36, 37, 38};
+  std::vector<int> using_trigger_bits{12, 13, 22, 24, 25, 26, 27, 30, 31, 36, 37, 38};
   std::unique_ptr<CaloEvalStack> m_caloevalstack;
   float m_vertex_cut{200.0};
   float m_shower_shape_min_tower_E{0.07};
   CaloRawClusterEval *clustereval{nullptr};
   CaloTruthEval *trutheval{nullptr};
-  HepMC::GenEvent *singal_event{nullptr};
+  std::map<int, HepMC::GenEvent *> hepmc_event_map;
   PHG4TruthInfoContainer *truthinfo{nullptr};
   CaloEvalStack *caloevalstack{nullptr};
 
@@ -341,6 +372,12 @@ private:
   TowerInfoContainer *ihcalRawTowerContainer{nullptr};
   TowerInfoContainer *ohcalTowerContainer{nullptr};
   TowerInfoContainer *ohcalRawTowerContainer{nullptr};
+  TowerInfoContainer *m_emc_sub1_tower_container{nullptr};
+  TowerInfoContainer *m_ihcal_sub1_tower_container{nullptr};
+  TowerInfoContainer *m_ohcal_sub1_tower_container{nullptr};
+
+  RawClusterContainer *topoClusterContainer{nullptr};
+  RawClusterContainer *topoClusterContainer_soft{nullptr};
 
   PHCompositeNode *topNodeptr{nullptr};
 };

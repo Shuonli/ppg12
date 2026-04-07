@@ -1,6 +1,7 @@
 #include <RooUnfoldResponse.h>
 #include <RooUnfoldBayes.h>
 #include <yaml-cpp/yaml.h>
+#include <cmath>
 
 double myfunc(double *x, double *params)
 {
@@ -46,7 +47,7 @@ void scale_histogram(TH1 *h, float lumi)
     }
 }
 
-void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", bool isMC = false)
+void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pade.yaml", bool isMC = false)
 {
     float mbdcorr = 25.2/42 / 0.57;
     float solid_angle = 2 * M_PI * 0.7 * 2;
@@ -78,12 +79,15 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     }
 
     int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
+    bool mc_purity_correction = configYaml["analysis"]["mc_purity_correction"].as<int>(0) != 0;
+    std::string mc_purity_correction_file = configYaml["analysis"]["mc_purity_correction_file"].as<std::string>("");
 
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
     std::string mcstring = isMC ? "_mc" : "";
 
     std::string outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + mcstring + ".root";
+    std::string mc_outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + "_mc.root";
 
     // calculate and unfold the isolated photon spectrum given result from RecoEffCalculator.C
 
@@ -96,6 +100,34 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     std::string siminput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
     std::string unfoldinput = configYaml["output"]["response_outfile"].as<std::string>() + "_" + var_type + ".root";
+
+    TFile *f_mc_purity_corr = nullptr;
+    TGraphErrors *g_mc_purity_fit_ratio = nullptr;
+    if (!isMC && mc_purity_correction)
+    {
+        std::string mc_ratio_source = mc_purity_correction_file.empty() ? mc_outfilename : mc_purity_correction_file;
+        f_mc_purity_corr = new TFile(mc_ratio_source.c_str(), "READ");
+        if (!f_mc_purity_corr || f_mc_purity_corr->IsZombie())
+        {
+            std::cout << "WARNING: cannot open MC purity correction file " << mc_ratio_source
+                      << ". Skip MC purity correction." << std::endl;
+            mc_purity_correction = false;
+        }
+        else
+        {
+            g_mc_purity_fit_ratio = (TGraphErrors *)f_mc_purity_corr->Get("g_mc_purity_fit_ratio");
+            if (!g_mc_purity_fit_ratio)
+            {
+                std::cout << "WARNING: g_mc_purity_fit_ratio not found in " << mc_ratio_source
+                          << ". Skip MC purity correction." << std::endl;
+                mc_purity_correction = false;
+            }
+            else
+            {
+                std::cout << "Apply MC purity correction using " << mc_ratio_source << std::endl;
+            }
+        }
+    }
 
     int fitoption = configYaml["analysis"]["fit_option"].as<int>(0);
 
@@ -300,6 +332,8 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     TGraphAsymmErrors *g_purity_truth = new TGraphAsymmErrors(h_truth_iso_cluster_data, h_tight_iso_cluster_signal_data);
     g_purity_truth->SetName("g_purity_truth");
+    TGraphErrors *g_mc_purity_fit_ratio_out = nullptr;
+    TF1 *f_purity_truth_fit = nullptr;
 
     TGraphAsymmErrors *g_mbd_eff = new TGraphAsymmErrors(h_truth_pT_vertexcut_mbd_cut, h_truth_pT_vertexcut);
     g_mbd_eff->SetName("g_mbd_eff");
@@ -545,7 +579,7 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
     int nFinePoints = 1000; // Number of points for granular intervals
     double xMin = 8;        // Fit range start
-    double xMax = 28;       // Fit range end
+    double xMax = 32;       // Fit range end
 
     TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
     f_purity_fit->SetParameters(1.0, 15.0, 5.0);
@@ -556,7 +590,7 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     }
     
 
-    gpurity->Fit(f_purity_fit, "REMQN", "", xMin, xMax);
+    gpurity->Fit(f_purity_fit, "REMN", "", xMin, xMax);
 
     TGraphErrors *grFineConf = new TGraphErrors(nFinePoints);
     grFineConf->SetName("grFineConf");
@@ -606,9 +640,16 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
 
 
 
-    gpurity_leak->Fit(f_purity_leak_fit, "REMQN","", xMin, xMax);
+    gpurity_leak->Fit(f_purity_leak_fit, "REMN","", xMin, xMax);
+    gpurity_leak->Fit(f_purity_leak_fit, "REMN","", xMin, xMax);
+double chi2 = f_purity_leak_fit->GetChisquare();
+int ndf = f_purity_leak_fit->GetNDF();
+double pvalue = f_purity_leak_fit->GetProb();
 
-
+std::cout << "chi2 = " << chi2 << "\n";
+std::cout << "ndf = " << ndf << "\n";
+std::cout << "chi2/ndf = " << chi2/ndf << "\n";
+std::cout << "p-value = " << pvalue << "\n";
 
     TGraphErrors *grFineConf_leak = new TGraphErrors(nFinePoints);
     grFineConf_leak->SetName("grFineConf_leak");
@@ -637,6 +678,39 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
         double err_low = confInt_leak->GetErrorYlow(i);
         double err_high = confInt_leak->GetErrorYhigh(i);
         //std::cout << "x: " << x << " y: " << y << " ey: " << ey << " err_low: " << err_low << " err_high: " << err_high << std::endl;
+    }
+
+    if (isMC)
+    {
+        f_purity_truth_fit = new TF1("f_purity_truth_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
+        f_purity_truth_fit->SetParameters(1.0, 15.0, 5.0);
+        if (fitoption == 1)
+        {
+            f_purity_truth_fit = new TF1("f_purity_truth_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+            f_purity_truth_fit->SetParameters(0.5, 0.5, 0.5);
+        }
+        g_purity_truth->Fit(f_purity_truth_fit, "REMN", "", xMin, xMax);
+        g_purity_truth->Fit(f_purity_truth_fit, "REMN", "", xMin, xMax);
+
+        g_mc_purity_fit_ratio_out = new TGraphErrors(g_purity_truth->GetN());
+        g_mc_purity_fit_ratio_out->SetName("g_mc_purity_fit_ratio");
+        for (int i = 0; i < g_purity_truth->GetN(); ++i)
+        {
+            double x = 0;
+            double y_truth = 0;
+            g_purity_truth->GetPoint(i, x, y_truth);
+            double y_fit = f_purity_leak_fit->Eval(x);
+            double ratio = 1.0;
+            double err = 0.0;
+            if (y_fit != 0 && !std::isnan(y_fit) && !std::isinf(y_fit))
+            {
+                ratio = y_truth / y_fit;
+                double truth_err = 0.5 * (g_purity_truth->GetErrorYlow(i) + g_purity_truth->GetErrorYhigh(i));
+                err = truth_err / std::abs(y_fit);
+            }
+            g_mc_purity_fit_ratio_out->SetPoint(i, x, ratio);
+            g_mc_purity_fit_ratio_out->SetPointError(i, 0, err);
+        }
     }
 
     if(fit_purity_dis)
@@ -675,10 +749,20 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
             double NA_count = h_tight_iso_cluster_signal_data->GetBinContent(ibin);
             double NA_err = h_tight_iso_cluster_signal_data->GetBinError(ibin);
             //double NA_purity = gpurity_leak->GetY()[ibin - 1];
-            double NA_purity = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin));
+            double x_center = h_tight_iso_cluster_signal_data->GetBinCenter(ibin);
+            double mc_corr_ratio = 1.0;
+            if (!isMC && mc_purity_correction && g_mc_purity_fit_ratio)
+            {
+                mc_corr_ratio = g_mc_purity_fit_ratio->Eval(x_center);
+                if (mc_corr_ratio <= 0 || std::isnan(mc_corr_ratio) || std::isinf(mc_corr_ratio))
+                {
+                    mc_corr_ratio = 1.0;
+                }
+            }
+            double NA_purity = f_purity_leak_fit->Eval(x_center) * mc_corr_ratio;
             //get the upper and lower error for confint
-            double pusity_fit_low = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) - confInt_leak->GetErrorYlow(ibin - 1);
-            double pusity_fit_high = f_purity_leak_fit->Eval(h_tight_iso_cluster_signal_data->GetBinCenter(ibin)) + confInt_leak->GetErrorYhigh(ibin - 1);
+            double pusity_fit_low = (f_purity_leak_fit->Eval(x_center) - confInt_leak->GetErrorYlow(ibin - 1)) * mc_corr_ratio;
+            double pusity_fit_high = (f_purity_leak_fit->Eval(x_center) + confInt_leak->GetErrorYhigh(ibin - 1)) * mc_corr_ratio;
             if(fittingerror == -1)
             {
                 NA_purity = pusity_fit_low;
@@ -1021,6 +1105,14 @@ void CalculatePhotonYield(const std::string &configname = "config_nom.yaml", boo
     gpurity->Write();
     gpurity_leak->Write();
     g_purity_truth->Write();
+    if (f_purity_truth_fit)
+    {
+        f_purity_truth_fit->Write();
+    }
+    if (g_mc_purity_fit_ratio_out)
+    {
+        g_mc_purity_fit_ratio_out->Write();
+    }
     g_mbd_eff->Write();
     g_mbd_eff_north->Write();
     g_mbd_eff_south->Write();

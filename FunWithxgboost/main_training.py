@@ -545,7 +545,7 @@ class BinnedTrainingPipeline:
                 plt.savefig(plot_path, dpi=300, bbox_inches='tight')
                 print(f"Saved correlation plot: {plot_path}")
             
-            plt.show()
+            plt.close('all')
             
             # Create additional 2D plots for top correlated features
             self._create_2d_correlation_grid(df_background, top_features[:6], iso_col, correlations)
@@ -695,7 +695,7 @@ class BinnedTrainingPipeline:
                 plt.savefig(plot_path, dpi=300, bbox_inches='tight')
                 print(f"Saved 2D correlation grid: {plot_path}")
             
-            plt.show()
+            plt.close('all')
             
         except Exception as e:
             print(f"Error creating 2D correlation grid: {e}")

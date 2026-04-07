@@ -26,7 +26,7 @@ void plot_final_selection(string tune = "bdt_nom")
 
     float deta = 1.4;
 
-    float lowery = 0.5;
+    float lowery = 0.2;
     float lowerx = 10;
     float upperx = 32;
 
