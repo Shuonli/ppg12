@@ -7,7 +7,7 @@ void truthisoeff(){
     SetAtlasStyle();
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
-
+    /*
     TFile *finboth10 = new TFile("/sphenix/user/shuhangli/pi0pythiasim/condorboth10/photoniso_both.root", "READ");
     TFile *finboth20 = new TFile("/sphenix/user/shuhangli/pi0pythiasim/condorboth20/photoniso_both.root", "READ");
 
@@ -16,15 +16,29 @@ void truthisoeff(){
 
     TFile *finfrag10 = new TFile("/sphenix/user/shuhangli/pi0pythiasim/condorfrag10/photoniso_frag.root", "READ");
     TFile *finfrag20 = new TFile("/sphenix/user/shuhangli/pi0pythiasim/condorfrag20/photoniso_frag.root", "READ");
+    */
 
-    TH2D *hboth = (TH2D*)finboth10->Get("photonpT_isoet_triggered")->Clone("hphotonboth");
-    hboth->Add((TH2D*)finboth20->Get("photonpT_isoet_triggered"));
+    TFile *finboth10 = new TFile("/sphenix/user/shuhangli/ppg12/showershapecheck/MC_showershape_treeana.root", "READ");
 
-    TH2D *hprompt = (TH2D*)finprompt10->Get("photonpT_isoet_triggered")->Clone("hphotonprompt");
-    hprompt->Add((TH2D*)finprompt20->Get("photonpT_isoet_triggered"));
+    TFile *finprompt10 = new TFile("/sphenix/user/shuhangli/ppg12/showershapecheck/MC_showershape_treeana.root", "READ");
 
-    TH2D *hfrag = (TH2D*)finfrag10->Get("photonpT_isoet_triggered")->Clone("hphotonfrag");
-    hfrag->Add((TH2D*)finfrag20->Get("photonpT_isoet_triggered"));
+    TFile *finfrag10 = new TFile("/sphenix/user/shuhangli/ppg12/showershapecheck/MC_showershape_treeana.root", "READ");
+
+    //photonpT_isoet02_direct
+
+    std::string r = "4";
+
+    std::string bothname = "photonpT_isoet0" + r + "_direct";
+    std::string promptname = "photonpT_isoet0" + r + "_direct";
+    std::string fragname = "photonpT_isoet0" + r + "_frag";
+    TH2D *hboth = (TH2D*)finboth10->Get(bothname.c_str())->Clone("hphotonboth");
+
+
+    TH2D *hprompt = (TH2D*)finprompt10->Get(promptname.c_str())->Clone("hphotonprompt");
+
+
+    TH2D *hfrag = (TH2D*)finfrag10->Get(fragname.c_str())->Clone("hphotonfrag");
+
 
     std::vector<std::pair<float, float>> pTrange = {{10,15}, {15,20}, {20,25}, {25,30}};
 
@@ -36,9 +50,12 @@ void truthisoeff(){
     TH1D *hpromptisoeff[nptbins];
     TH1D *hfragisoeff[nptbins];
 
-    TCanvas *cbothisoeff = new TCanvas("cbothisoeff", "", 800, 600);
-    TCanvas *cpromptisoeff = new TCanvas("cpromptisoeff", "", 800, 600);
-    TCanvas *cfragisoeff = new TCanvas("cfragisoeff", "", 800, 600);
+    TCanvas *cbothisoeff = new TCanvas("cbothisoeff", "", 800, 750);
+    cbothisoeff->SetTopMargin(0.1);
+    TCanvas *cpromptisoeff = new TCanvas("cpromptisoeff", "", 800, 750);
+    cpromptisoeff->SetTopMargin(0.1);
+    TCanvas *cfragisoeff = new TCanvas("cfragisoeff", "", 800, 750);
+    cfragisoeff->SetTopMargin(0.1);
 
     TH2D *hbothframe = new TH2D("hbothframe", "", 10, 0, 20, 1, 0.87, 1.02);
     hbothframe->GetXaxis()->SetTitle("Truth iso_{E_{T}} cut [GeV]");
@@ -46,21 +63,29 @@ void truthisoeff(){
     cbothisoeff->cd();
     hbothframe->Draw();
     myText(0.2, 0.8, kBlack, "Inclusive Photons", 0.04);
+    myText(0.1, 0.95, kBlack, "#bf{#it{sPHENIX}} Internal");
+    myText(0.4, 0.95, kBlack, "Pythia photon+jet samples", 0.04);
 
     TH2D *hpromptframe = new TH2D("hpromptframe", "", 10, 0, 20, 1, 0.93, 1.02);
     hpromptframe->GetXaxis()->SetTitle("Truth iso_{E_{T}} cut [GeV]");
     hpromptframe->GetYaxis()->SetTitle("Efficiency");
     cpromptisoeff->cd();
     hpromptframe->Draw();
-    myText(0.2, 0.8, kBlack, "Prompt Photons", 0.04);
+    myText(0.2, 0.8, kBlack, "Direct Photons", 0.04);
+    myText(0.1, 0.95, kBlack, "#bf{#it{sPHENIX}} Internal");
+    myText(0.4, 0.95, kBlack, "Pythia photon+jet samples", 0.04);
+    myText(0.6, 0.8, kBlack, Form("Isolation R = 0.%s", r.c_str()), 0.04);
 
 
-    TH2D *hfragframe = new TH2D("hfragframe", "", 10, 0, 20, 1, 0.75, 1.02);
+    TH2D *hfragframe = new TH2D("hfragframe", "", 10, 0, 20, 1, 0.75, 1.1);
     hfragframe->GetXaxis()->SetTitle("Truth iso_{E_{T}} cut [GeV]");
     hfragframe->GetYaxis()->SetTitle("Efficiency");
     cfragisoeff->cd();
     hfragframe->Draw();
     myText(0.2, 0.8, kBlack, "Fragmentation Photons", 0.04);
+    myText(0.1, 0.95, kBlack, "#bf{#it{sPHENIX}} Internal");
+    myText(0.4, 0.95, kBlack, "Pythia photon+jet samples", 0.04);
+    myText(0.6, 0.8, kBlack, Form("Isolation R = 0.%s", r.c_str()), 0.04);
 
 
     for(int ipt = 0; ipt < nptbins; ipt++){

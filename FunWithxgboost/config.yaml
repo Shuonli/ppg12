@@ -60,7 +60,6 @@ data:
   - cluster_w32
   - cluster_w52
   - cluster_w72
-  #'e11_over_e22', 'e11_over_e13', 'e11_over_e15', 'e11_over_e17', 'e11_over_e31', 'e11_over_e51', 'e11_over_e71', 'e22_over_e33', 'e22_over_e35', 'e22_over_e37', 'e22_over_e53'
   - e11_over_e22
   - e11_over_e13
   - e11_over_e15

@@ -75,7 +75,7 @@ void jet_pt_unfolding() {
     //defining Meas and Truth Histograms
     TH1D* hMeasPT = new TH1D("hMeasPT","",nptbins,ptbins);
     TH1D* hTruthPT = new TH1D("hTruthPT","",nptbins,ptbins);
-
+    
     // closure test histograms 
     TH1D* hMeasPTHalf = new TH1D("hMeasPTHalf","",nptbins,ptbins);
     TH1D* hTruthPTHalf = new TH1D("hTruthPTHalf","",nptbins,ptbins);

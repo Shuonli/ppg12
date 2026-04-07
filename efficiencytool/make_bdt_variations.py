@@ -11,6 +11,7 @@ directory as the base config).
 Supported override keys and their YAML paths:
     bdt_model_name         -> input.bdt_model_name
     reco_noniso_min_shift  -> analysis.reco_noniso_min_shift
+    mc_purity_correction   -> analysis.mc_purity_correction
     tight_bdt_min          -> analysis.tight.bdt_min
     nt_bdt_max             -> analysis.non_tight.bdt_max
     nt_bdt_min             -> analysis.non_tight.bdt_min
@@ -48,14 +49,32 @@ VARIANTS = [
         syst_type=None, syst_role=None),
 
     # Tight BDT cut variations  →  syst: tight_bdt (efficiency)
-    dict(name="tightbdt50",   tight_bdt_min_intercept=0.76, tight_bdt_min_slope=-0.02, nt_bdt_max_intercept=0.76, nt_bdt_max_slope=-0.02,
+    dict(name="tightbdt50",   tight_bdt_min_intercept=0.70, tight_bdt_min_slope=-0.015, nt_bdt_max_intercept=0.70, nt_bdt_max_slope=-0.015,
          syst_type="tight_bdt", syst_role="down"),   # looser cut
-    dict(name="tightbdt70",   tight_bdt_min_intercept=0.96, tight_bdt_min_slope=-0.02, nt_bdt_max_intercept=0.96, nt_bdt_max_slope=-0.02,
+    dict(name="tightbdt70",   tight_bdt_min_intercept=0.90, tight_bdt_min_slope=-0.015, nt_bdt_max_intercept=0.90, nt_bdt_max_slope=-0.015,
          syst_type="tight_bdt", syst_role="up"),     # tighter cut
+    dict(name="tightbdtflat06",   tight_bdt_min_intercept=0.6, tight_bdt_min_slope=0, nt_bdt_max_intercept=0.6, nt_bdt_max_slope=0,
+         syst_type=None, syst_role=None),
 
+    #iso scale and shift
+    dict(name="mciso_noscaleshift", mc_iso_scale=1.0, mc_iso_shift=0.0,
+         syst_type=None, syst_role=None),
+    dict(name="mciso_no_shift",  mc_iso_shift=0.0,
+         syst_type=None, syst_role=None),
+    dict(name="mciso_no_scale",  mc_iso_scale=1.0,
+         syst_type=None, syst_role=None),
     # Non-tight BDT lower boundary  →  syst: nt_bdt (purity)
-    dict(name="ntbdtmin02",   nt_bdt_min=0.02,
+    dict(name="ntbdtmin05",   nt_bdt_min=0.05,
          syst_type="nt_bdt", syst_role="one_sided"),
+    dict(name="ntbdtmin10",   nt_bdt_min=0.10,
+         syst_type="nt_bdt", syst_role="one_sided"),
+
+    #common cuts
+    dict(name="common_wr03",   common_wr_cogx_bound=0.3,
+         syst_type=None, syst_role=None),
+    dict(name="common_wr05",   common_wr_cogx_bound=0.5,
+         syst_type=None, syst_role=None),
+
 
     # Non-iso sideband boundary shift  →  syst: noniso (purity)
     dict(name="noniso04",     reco_noniso_min_shift=0.1,
@@ -70,8 +89,11 @@ VARIANTS = [
          syst_type="npb_cut", syst_role="up"),    # tighter npb cut
 
     # Purity fit option  →  syst: purity_fit (purity)
-    dict(name="purity_pade", fit_option=1,
+    dict(name="purity_pade", fit_option=0,
          syst_type="purity_fit", syst_role="one_sided"),
+    # Use MC-driven purity correction ratio for data purity fit
+    dict(name="mc_purity_correction", mc_purity_correction=1,
+         syst_type="mc_purity_correction", syst_role="one_sided"),
 
     # Split cluster node — cross-check only
     dict(name="split",   cluster_node_name="CLUSTERINFO_CEMC", data_file="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root",
@@ -82,33 +104,38 @@ VARIANTS = [
     dict(name="vtxreweight0", vertex_reweight_on=0,
          syst_type="vtx_reweight", syst_role="one_sided"),
 
+    # no unfolding reweighting
+    dict(name="no_unfolding_reweighting", reweight=0,
+         syst_type="reweight", syst_role="one_sided"),
+
     # ET-binned BDT model variants  →  syst: bdt_model (efficiency)
     dict(name="etbin_v3E_v3E",  bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v3E", "base_v3E"],
          syst_type="bdt_model", syst_role="max"),
     dict(name="etbin_E_E",      bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_E",   "base_E"],
-         syst_type="bdt_model", syst_role="max"),
+         syst_type=None, syst_role=None),
     dict(name="etbin_v1E_v3E",  bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v1E", "base_v3E"],
-         syst_type="bdt_model", syst_role="max"),
+         syst_type=None, syst_role=None),
 
     # Back-to-back jet cut  →  syst: b2bjet (efficiency)
     dict(name="b2bjet", common_b2bjet_cut=1,
-         syst_type="b2bjet", syst_role="one_sided"),
+         syst_type=None, syst_role=None),
+     
 
     # Timing cut variations  →  syst: timing (efficiency)
     dict(name="timingcut_2", cluster_mbd_time_min=-2.0, cluster_mbd_time_max=2.0,
-         syst_type="timing", syst_role="down"),   # tighter timing window
+         syst_type=None, syst_role=None),   # tighter timing window
     dict(name="timingcut_5", cluster_mbd_time_min=-5.0, cluster_mbd_time_max=5.0,
-         syst_type="timing", syst_role="up"),     # looser timing window
+         syst_type=None, syst_role=None),     # looser timing window
 
     # Energy scale and resolution  →  syst: escale, eres
     dict(name="energyscale26up",   clusterescale=1.026,
-         syst_type="escale", syst_role="up"),
-    dict(name="energyscale26down", clusterescale=0.974,
          syst_type="escale", syst_role="down"),
+    dict(name="energyscale26down", clusterescale=0.974,
+         syst_type="escale", syst_role="up"),
     dict(name="energyresolution7", clustereres=0.07,
-         syst_type="eres", syst_role="max"),
+         syst_type=None, syst_role=None),
     dict(name="energyresolution8", clustereres=0.08,
-         syst_type="eres", syst_role="max"),
+         syst_type=None, syst_role=None),
     dict(name="energyresolution5", clustereres=0.05,
          syst_type="eres", syst_role="max"),
 ]
@@ -119,11 +146,13 @@ VARIANTS = [
 # group: which SYST_GROUPS key this type contributes to
 # ---------------------------------------------------------------------------
 SYST_TYPES = {
+    "reweight":     {"mode": "one_sided",   "group": "unfold"},
     "tight_bdt":    {"mode": "two_sided",   "group": "eff"},
     "nt_bdt":       {"mode": "one_sided",   "group": "purity"},
     "noniso":       {"mode": "two_sided",   "group": "purity"},
     "npb_cut":      {"mode": "two_sided",   "group": "eff"},
     "purity_fit":   {"mode": "one_sided",   "group": "purity"},
+    "mc_purity_correction": {"mode": "one_sided", "group": "purity"},
     "vtx_reweight": {"mode": "one_sided",   "group": "eff"},
     "bdt_model":    {"mode": "max",         "group": "eff"},
     "b2bjet":       {"mode": "one_sided",   "group": "eff"},
@@ -131,21 +160,21 @@ SYST_TYPES = {
     "escale":       {"mode": "two_sided",   "group": "escale"},
     "eres":         {"mode": "max",         "group": "eres"},
     "mbd":          {"mode": "placeholder", "group": "mbd"},   # TODO: add mbdeffup/down variants
-    "nor":          {"mode": "placeholder", "group": "nor"},   # TODO: add nr variant
+    "nor":          {"mode": "placeholder", "group": "unfolding"},   # TODO: add nr variant
 }
 
 # Quadrature grouping: group name -> list of syst_type names
 SYST_GROUPS = {
-    "purity": ["noniso", "nt_bdt", "purity_fit"],
+    "purity": ["noniso", "nt_bdt", "purity_fit", "mc_purity_correction"],
     "eff":    ["tight_bdt", "npb_cut"],
     "escale": ["escale"],
     "eres":   ["eres"],
     "mbd":    ["mbd"],
-    "nor":    ["nor"],
+    "unfolding": ["reweight"],
 }
 
 # Groups included in the final total systematic quadrature sum
-FINAL_SYSTS = ["purity", "eff", "escale", "eres", "mbd", "nor"]
+FINAL_SYSTS = ["purity", "eff", "escale", "eres", "mbd", "unfolding"]
 
 # Luminosity uncertainty (asymmetric, fractional): central=25.2, down=23.5, up=27.5 pb^-1
 LUMI_SYST = {"down": (25.2 - 23.5) / 25.2, "up": (27.5 - 25.2) / 25.2}
@@ -165,6 +194,7 @@ OVERRIDE_MAP = {
     "nt_bdt_max_intercept": (["analysis", "non_tight"], "bdt_max_intercept"),
     "nt_bdt_max_slope": (["analysis", "non_tight"], "bdt_max_slope"),
     "npb_score_cut":         (["analysis", "common"],                 "npb_score_cut"),
+    "common_wr_cogx_bound": (["analysis", "common"],                 "wr_cogx_bound"),
     "mc_iso_scale":          (["analysis"],                           "mc_iso_scale"),
     "reco_iso_max_b":        (["analysis"],                           "reco_iso_max_b"),
     "reco_iso_max_s":        (["analysis"],                           "reco_iso_max_s"),
@@ -179,6 +209,7 @@ OVERRIDE_MAP = {
     "use_topo_iso":        (["analysis"],                 "use_topo_iso"),
     "mc_iso_shift":        (["analysis"],                 "mc_iso_shift"),
     "fit_option":        (["analysis"],                 "fit_option"),
+    "mc_purity_correction": (["analysis"],              "mc_purity_correction"),
     "bdt_et_bin_edges":  (["input"],                              "bdt_et_bin_edges"),
     "bdt_et_bin_models": (["input"],                              "bdt_et_bin_models"),
     "run_min": (["analysis"],                              "run_min"),
@@ -188,10 +219,51 @@ OVERRIDE_MAP = {
     "clustereres": (["analysis"],                              "cluster_eres"),
     "mbd_avg_sigma_max": (["analysis"],                              "mbd_avg_sigma_max"),
     "mbd_avg_sigma_min": (["analysis"],                              "mbd_avg_sigma_min"),
+    "reweight": (["analysis", "unfold"],                              "reweight"),
 }
 
 
 _METADATA_KEYS = {"name", "syst_type", "syst_role"}
+_ROLE_BUCKETS = {"up", "down", "one_sided", "max"}
+_MODE_TO_ALLOWED_ROLES = {
+    "two_sided": {"up", "down"},
+    "one_sided": {"one_sided"},
+    "max": {"max"},
+    "placeholder": set(),
+}
+
+
+def validate_variants() -> None:
+    """Validate systematic metadata so downstream aggregation can rely on it."""
+    for variant in VARIANTS:
+        name = variant["name"]
+        syst_type = variant.get("syst_type")
+        syst_role = variant.get("syst_role")
+
+        if (syst_type is None) != (syst_role is None):
+            raise ValueError(
+                f"Variant '{name}' must set both syst_type and syst_role together"
+            )
+
+        if syst_type is None:
+            continue
+
+        if syst_type not in SYST_TYPES:
+            raise ValueError(f"Variant '{name}' has unknown syst_type '{syst_type}'")
+
+        if syst_role not in _ROLE_BUCKETS:
+            raise ValueError(f"Variant '{name}' has unsupported syst_role '{syst_role}'")
+
+        mode = SYST_TYPES[syst_type]["mode"]
+        allowed_roles = _MODE_TO_ALLOWED_ROLES[mode]
+        if syst_role not in allowed_roles:
+            raise ValueError(
+                f"Variant '{name}' uses role '{syst_role}' but syst_type "
+                f"'{syst_type}' expects one of {sorted(allowed_roles)}"
+            )
+
+
+validate_variants()
 
 
 def apply_overrides(doc, overrides: dict) -> None:

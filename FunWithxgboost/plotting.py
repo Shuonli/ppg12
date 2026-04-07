@@ -1,6 +1,8 @@
 """
 Plotting utilities for binned training.
 """
+import matplotlib
+matplotlib.use('Agg')  # non-interactive backend — no display required
 import pandas as pd
 from typing import Dict, List, Tuple, Optional
 import matplotlib.pyplot as plt
@@ -156,7 +158,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_reweighting_qa_{bin_label}.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
 
     def plot_global_reweighting_qa(self, df_before: pd.DataFrame, df_after: pd.DataFrame) -> None:
         """Global reweighting QA (eta, ET, vertex, class balance) across full dataset."""
@@ -281,7 +283,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_reweighting_qa_global.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
 
     def plot_isoet_bdt_correlation_global(self, save_plots: bool = True) -> None:
         """Global isoET vs BDT score correlation (all bins combined) on test set."""
@@ -341,7 +343,7 @@ class BinnedTrainingPlotter:
         if self.save_plots and save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_isoet_bdt_correlation_global.pdf", dpi=300, bbox_inches='tight')
             print(f"Saved: {self.output_dir}/{self.root_file_prefix}_isoet_bdt_correlation_global.pdf")
-        plt.show()
+        plt.close('all')
     
     def plot_feature_profile(self, df_bin: pd.DataFrame, val_index: pd.Index, 
                            y_proba: np.ndarray, feature_name: str, bin_label: str, 
@@ -374,7 +376,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_profile_{feature_name}_{bin_label}.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
     
     def _plot_single_profile(self, ax: plt.Axes, df: pd.DataFrame, feature_name: str, 
                            score_bins: np.ndarray, title: str, invert_axes: bool) -> None:
@@ -491,7 +493,7 @@ class BinnedTrainingPlotter:
             
             if self.save_plots:
                 fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_bdt_score_{bin_label}.pdf", dpi=300, bbox_inches='tight')
-            plt.show()
+            plt.close('all')
 
     def plot_auc_bar(self, val_results: Dict) -> None:
         """Plot test AUC by bin as a bar chart."""
@@ -514,7 +516,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_auc_bar.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
 
     def plot_combined_roc(self, val_results: Dict) -> None:
         """Plot combined ROC curves across bins."""
@@ -540,7 +542,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_combined_roc.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
 
     def plot_tpr_at_fixed_fpr(self, val_results: Dict, target_fpr: float = 0.2) -> None:
         """Bar plot of TPR at a fixed FPR (default 0.2) per bin."""
@@ -591,7 +593,7 @@ class BinnedTrainingPlotter:
         if self.save_plots:
             fpr_tag = str(target_fpr).replace('.', 'p')
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_tpr_at_fpr_{fpr_tag}.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
 
     def overlay_feature_profiles(self, feature_name: str) -> None:
         """Overlay profile curves across bins for a feature, matching original notebook behavior."""
@@ -702,7 +704,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_overlay_profile_{feature_name}.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
     
     def plot_feature_profile_global(self, feature_name: str) -> None:
         """Global 2D histogram/profile: showershape vs BDT score across all bins.
@@ -792,7 +794,7 @@ class BinnedTrainingPlotter:
         
         if self.save_plots:
             fig.savefig(f"{self.output_dir}/{self.root_file_prefix}_profile_global_{feature_name}.pdf", dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')
     
     def plot_isoet_bdt_correlation(self, save_plots: bool = True) -> None:
         """Plot correlation between isoET and BDT score with correlation values."""
@@ -917,7 +919,7 @@ class BinnedTrainingPlotter:
                        dpi=300, bbox_inches='tight')
             print(f"Saved: {self.config['output']['output_dir']}/{self.root_file_prefix}_isoet_bdt_correlation.pdf")
         
-        plt.show()
+        plt.close('all')
         
         # Create summary correlation plot
         self._plot_correlation_summary(correlation_data, save_plots)
@@ -988,7 +990,7 @@ class BinnedTrainingPlotter:
                        dpi=300, bbox_inches='tight')
             print(f"Saved: {self.config['output']['output_dir']}/{self.root_file_prefix}_isoet_bdt_correlation_summary.pdf")
         
-        plt.show()
+        plt.close('all')
     
     def plot_feature_importance(self, save_plots: bool = True) -> None:
         """Plot feature importance for XGBoost models using gain, weight, and cover metrics."""
@@ -1117,7 +1119,7 @@ class BinnedTrainingPlotter:
                        dpi=300, bbox_inches='tight')
             print(f"Saved: {self.config['output']['output_dir']}/{self.root_file_prefix}_feature_importance_comparison.pdf")
         
-        plt.show()
+        plt.close('all')
     
     def _plot_feature_importance_heatmap(self, importance_data: Dict, feature_names: List[str], save_plots: bool) -> None:
         """Plot feature importance heatmap showing gain importance across bins."""
@@ -1164,7 +1166,7 @@ class BinnedTrainingPlotter:
                        dpi=300, bbox_inches='tight')
             print(f"Saved: {self.config['output']['output_dir']}/{self.root_file_prefix}_feature_importance_heatmap.pdf")
         
-        plt.show()
+        plt.close('all')
     
     def _plot_top_features_per_bin(self, importance_data: Dict, feature_names: List[str], save_plots: bool, top_n: int = 15) -> None:
         """Plot top N most important features for each bin."""
@@ -1217,4 +1219,4 @@ class BinnedTrainingPlotter:
                        dpi=300, bbox_inches='tight')
             print(f"Saved: {self.config['output']['output_dir']}/{self.root_file_prefix}_top_features_per_bin.pdf")
         
-        plt.show()
+        plt.close('all')

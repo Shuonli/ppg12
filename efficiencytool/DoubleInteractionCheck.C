@@ -665,11 +665,12 @@ void DoubleInteractionCheck(
 
     // Shower shape distribution histograms (sim only)
     std::vector<std::string> ss_vars = {
-        "weta_cogx", "wphi_cogx", "et1", "et2", "et3", "et4",
+        "weta_cogx", "wphi_cogx", "wr_cogx", "et1", "et2", "et3", "et4",
         "e11_to_e33", "e32_to_e35", "bdt_score", "npb_score"};
     std::map<std::string, std::array<double, 3>> ss_binning = {
         {"weta_cogx",  {100, 0.0, 2.0}},
         {"wphi_cogx",  {100, 0.0, 2.0}},
+        {"wr_cogx",    {100, 0.0, 5.0}},
         {"et1",        {100, 0.0, 1.0}},
         {"et2",        {100, 0.0, 1.0}},
         {"et3",        {100, 0.0, 1.0}},
@@ -681,11 +682,18 @@ void DoubleInteractionCheck(
     std::vector<std::string> interaction_types = {
         "single", "double",
         "double_smear5", "double_smear10", "double_smear15", "double_smear20"};
+    std::vector<std::string> data_interaction_types = {"data_0mrad", "data_1p5mrad"};
     // [interaction_type][varname][ieta][ipt]
     std::map<std::string, std::map<std::string, std::vector<std::vector<TH1D *>>>> h_ss;
     if (issim)
     {
         for (const auto &itype : interaction_types)
+            for (const auto &var : ss_vars)
+                h_ss[itype][var].resize(n_eta_bins);
+    }
+    if (!issim)
+    {
+        for (const auto &itype : data_interaction_types)
             for (const auto &var : ss_vars)
                 h_ss[itype][var].resize(n_eta_bins);
     }
@@ -870,12 +878,35 @@ void DoubleInteractionCheck(
                             Form(";%s;counts", var.c_str()),
                             (int)ss_binning[var][0], ss_binning[var][1], ss_binning[var][2]));
         }
+        if (!issim)
+        {
+            for (const auto &itype : data_interaction_types)
+                for (const auto &var : ss_vars)
+                    for (int ipt = 0; ipt < n_pT_bins; ipt++)
+                        h_ss[itype][var][ieta].push_back(new TH1D(
+                            Form("h_ss_%s_%s_eta%d_pt%d", itype.c_str(), var.c_str(), ieta, ipt),
+                            Form(";%s;counts", var.c_str()),
+                            (int)ss_binning[var][0], ss_binning[var][1], ss_binning[var][2]));
+        }
     }
 
     // ---------------------------------------------------------------
     // BDT feature vector builders (sim only, from showershape_vertex_check.C)
     // ---------------------------------------------------------------
-    auto buildNpbFeatureVector = [&](int icl, float vtxz) -> std::vector<float> {
+    constexpr float cemc_radius_cm = 93.5f;
+
+    auto recalculateClusterKinematics = [&](float old_et, float old_eta, float old_vtxz, float new_vtxz) -> std::pair<float, float> {
+        // Approximate the cluster position as fixed on the CEMC cylinder and
+        // propagate the vertex shift into the cluster pseudorapidity and ET.
+        const float old_z_over_r = std::sinh(old_eta);
+        const float new_z_over_r = old_z_over_r + (old_vtxz - new_vtxz) / cemc_radius_cm;
+        const float new_eta = std::asinh(new_z_over_r);
+        const float cluster_energy = old_et * std::cosh(old_eta);
+        const float new_et = cluster_energy / std::cosh(new_eta);
+        return {new_et, new_eta};
+    };
+
+    auto buildNpbFeatureVector = [&](int icl, float clusterET_val, float clusterEta_val, float vtxz) -> std::vector<float> {
         const float e11_over_e33 = (cluster_e33[icl] > 0) ? cluster_e11[icl] / cluster_e33[icl] : 0.0f;
         const float e32_over_e35 = (cluster_e35[icl] > 0) ? cluster_e32[icl] / cluster_e35[icl] : 0.0f;
         const float e11_over_e22 = (cluster_e22[icl] > 0) ? cluster_e11[icl] / cluster_e22[icl] : 0.0f;
@@ -890,7 +921,7 @@ void DoubleInteractionCheck(
         const float e22_over_e37 = (cluster_e37[icl] > 0) ? cluster_e22[icl] / cluster_e37[icl] : 0.0f;
         const float e22_over_e53 = (cluster_e53[icl] > 0) ? cluster_e22[icl] / cluster_e53[icl] : 0.0f;
         return {
-            cluster_Et[icl], cluster_Eta[icl], vtxz,
+            clusterET_val, clusterEta_val, vtxz,
             e11_over_e33, e32_over_e35, e11_over_e22,
             e11_over_e13, e11_over_e15, e11_over_e17,
             e11_over_e31, e11_over_e51, e11_over_e71,
@@ -901,59 +932,60 @@ void DoubleInteractionCheck(
         };
     };
 
-    auto buildSsBdtFeatureVector = [&](int icl, float vtxz, const std::string &model_name) -> std::vector<float> {
+    auto buildSsBdtFeatureVector = [&](int icl, float clusterET_val, float clusterEta_val,
+                                       float vtxz, const std::string &model_name) -> std::vector<float> {
         const float e11_over_e33 = (cluster_e33[icl] > 0) ? cluster_e11[icl] / cluster_e33[icl] : 0.0f;
         const float e32_over_e35 = (cluster_e35[icl] > 0) ? cluster_e32[icl] / cluster_e35[icl] : 0.0f;
         if (model_name == "base_v3E")
         {
-            return { cluster_Et[icl], cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+            return { clusterET_val, cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
         else if (model_name == "base_v3")
         {
             return { cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
         else if (model_name == "base_v2E")
         {
-            return { cluster_Et[icl], cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+            return { clusterET_val, cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else if (model_name == "base_v2")
         {
             return { cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else if (model_name == "base_v1E")
         {
-            return { cluster_Et[icl], cluster_weta_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+            return { clusterET_val, cluster_weta_cogx[icl], vtxz,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else if (model_name == "base_v1")
         {
-            return { cluster_weta_cogx[icl], vtxz, cluster_Eta[icl], e11_over_e33,
+            return { cluster_weta_cogx[icl], vtxz, clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else if (model_name == "base_E")
         {
-            return { cluster_Et[icl], vtxz, cluster_Eta[icl], e11_over_e33,
+            return { clusterET_val, vtxz, clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else if (model_name == "base" || model_name == "base_vr")
         {
-            return { vtxz, cluster_Eta[icl], e11_over_e33,
+            return { vtxz, clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl] };
         }
         else
         {
             // Default fallback to base_v3E
-            return { cluster_Et[icl], cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
-                     cluster_Eta[icl], e11_over_e33,
+            return { clusterET_val, cluster_weta_cogx[icl], cluster_wphi_cogx[icl], vtxz,
+                     clusterEta_val, e11_over_e33,
                      cluster_et1[icl], cluster_et2[icl], cluster_et3[icl], cluster_et4[icl], e32_over_e35 };
         }
     };
@@ -1038,13 +1070,21 @@ void DoubleInteractionCheck(
         return -1;
     };
 
+    auto findEtaBin = [&](float eta) -> int {
+        for (int ieta = 0; ieta < n_eta_bins; ieta++)
+            if (eta > eta_bins[ieta] && eta < eta_bins[ieta + 1]) return ieta;
+        return -1;
+    };
+
     auto fillSS = [&](const std::string &itype, int icl_param, int ieta, int ptbin,
                        float bdt_fill, float npb_fill) {
         if (ptbin < 0 || ptbin >= n_pT_bins) return;
         float e11_e33 = (cluster_e33[icl_param] > 0) ? cluster_e11[icl_param] / cluster_e33[icl_param] : 0.0f;
         float e32_e35 = (cluster_e35[icl_param] > 0) ? cluster_e32[icl_param] / cluster_e35[icl_param] : 0.0f;
+        float wr_cogx = (cluster_weta_cogx[icl_param] > 0) ? cluster_wphi_cogx[icl_param] / cluster_weta_cogx[icl_param] : 0.0f;
         h_ss[itype]["weta_cogx"][ieta][ptbin]->Fill(cluster_weta_cogx[icl_param], weight);
         h_ss[itype]["wphi_cogx"][ieta][ptbin]->Fill(cluster_wphi_cogx[icl_param], weight);
+        h_ss[itype]["wr_cogx"][ieta][ptbin]->Fill(wr_cogx, weight);
         h_ss[itype]["et1"][ieta][ptbin]->Fill(cluster_et1[icl_param], weight);
         h_ss[itype]["et2"][ieta][ptbin]->Fill(cluster_et2[icl_param], weight);
         h_ss[itype]["et3"][ieta][ptbin]->Fill(cluster_et3[icl_param], weight);
@@ -1167,9 +1207,6 @@ void DoubleInteractionCheck(
         // Double interaction requires double_vtx in range
         bool vtx_pass = (std::abs(*vertexz) <= vertexcut);
 
-        // MBD hit requirement
-        if (!(*mbdnorthhit >= 1 && *mbdsouthhit >= 1)) { ientry++; continue; }
-
         // For sim: draw random second vertex for double interaction
         float double_vtx = 0;
         if (issim && (h_vertexz_data_nocut || h_vertexz_data))
@@ -1192,6 +1229,7 @@ void DoubleInteractionCheck(
         for (int icl = 0; icl < *ncluster; icl++)
         {
             float clusterET = cluster_Et[icl];
+            float clusterEta = cluster_Eta[icl];
             if (clusterET < reco_min_ET) continue;
             if (isbackground && clusterET > cluster_ET_upper) continue;
 
@@ -1255,12 +1293,7 @@ void DoubleInteractionCheck(
             bool noniso = (recoisoET > recononiso_min && recoisoET < recononiso_max);
 
             // Eta bin
-            int etabin = -1;
-            for (int ieta = 0; ieta < n_eta_bins; ieta++)
-            {
-                if (cluster_Eta[icl] > eta_bins[ieta] && cluster_Eta[icl] < eta_bins[ieta + 1])
-                { etabin = ieta; break; }
-            }
+            int etabin = findEtaBin(clusterEta);
             if (etabin == -1) continue;
 
             // NPB score
@@ -1294,6 +1327,20 @@ void DoubleInteractionCheck(
             // For tasks 3 & 4, apply full common cut (including NPB)
             bool common_pass = common_pass_no_npb && npb_pass;
             if (!common_pass) continue;
+
+            // ---------------------------------------------------------------
+            // Task 4 (data): shower shapes split by crossing angle
+            // All clusters passing common cuts + vtx_pass, no double-interaction sim
+            // ---------------------------------------------------------------
+            if (!issim && vtx_pass)
+            {
+                std::string crossing_type;
+                if (is_0mrad(*runnumber))        crossing_type = "data_0mrad";
+                else if (is_1p5mrad(*runnumber)) crossing_type = "data_1p5mrad";
+                if (!crossing_type.empty())
+                    fillSS(crossing_type, icl, etabin, findPtBin(clusterET),
+                           bdt_score_original, npb_score_val);
+            }
 
             // ---------------------------------------------------------------
             // Task 3: Data ABCD as 2D (ET vs MBD avg sigma)
@@ -1333,30 +1380,46 @@ void DoubleInteractionCheck(
                 // Double interaction: requires double_vtx in range (not original vertex)
                 if (std::abs(double_vtx) <= vertexcut)
                 {
-                    std::vector<float> x_npb_shifted = buildNpbFeatureVector(icl, double_vtx);
+                    auto [clusterET_shifted, clusterEta_shifted] =
+                        recalculateClusterKinematics(clusterET, clusterEta, *vertexz, double_vtx);
+                    if (!std::isfinite(clusterET_shifted) || !std::isfinite(clusterEta_shifted)) continue;
+                    if (clusterET_shifted < reco_min_ET) continue;
+                    if (isbackground && clusterET_shifted > cluster_ET_upper) continue;
+
+                    int etabin_shifted = findEtaBin(clusterEta_shifted);
+                    if (etabin_shifted == -1) continue;
+
+                    float recoiso_max_shifted = recoiso_max_b + recoiso_max_s * clusterET_shifted;
+                    float recononiso_min_shifted = recoiso_max_shifted + recononiso_min_shift;
+                    bool iso_shifted = (recoisoET > recoiso_min && recoisoET < recoiso_max_shifted);
+                    bool noniso_shifted = (recoisoET > recononiso_min_shifted && recoisoET < recononiso_max);
+
+                    std::vector<float> x_npb_shifted = buildNpbFeatureVector(icl, clusterET_shifted, clusterEta_shifted, double_vtx);
                     float npb_score_shifted = npb_bdt_ptr->Compute(x_npb_shifted)[0];
 
                     if (npb_score_shifted >= npb_score_cut)
                     {
-                        auto [bdt_ptr_shifted, bdt_name_shifted] = getSsBdtForET(clusterET);
-                        std::vector<float> x_bdt_shifted = buildSsBdtFeatureVector(icl, double_vtx, bdt_name_shifted);
+                        auto [bdt_ptr_shifted, bdt_name_shifted] = getSsBdtForET(clusterET_shifted);
+                        std::vector<float> x_bdt_shifted = buildSsBdtFeatureVector(
+                            icl, clusterET_shifted, clusterEta_shifted, double_vtx, bdt_name_shifted);
                         float bdt_score_shifted = bdt_ptr_shifted->Compute(x_bdt_shifted)[0];
 
-                        auto [tight_d, nontight_d] = classifyTightNonTight(icl, clusterET, e11_over_e33, e32_over_e35, bdt_score_shifted);
+                        auto [tight_d, nontight_d] = classifyTightNonTight(
+                            icl, clusterET_shifted, e11_over_e33, e32_over_e35, bdt_score_shifted);
 
-                        if (tight_d && iso)    { h_tight_iso_double[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal) h_tight_iso_double_signal[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal_inclusive) h_tight_iso_double_incsig[etabin]->Fill(clusterET, weight); }
-                        if (tight_d && noniso) { h_tight_noniso_double[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal) h_tight_noniso_double_signal[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal_inclusive) h_tight_noniso_double_incsig[etabin]->Fill(clusterET, weight); }
-                        if (nontight_d && iso) { h_nontight_iso_double[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal) h_nontight_iso_double_signal[etabin]->Fill(clusterET, weight);
-                                                 if (is_signal_inclusive) h_nontight_iso_double_incsig[etabin]->Fill(clusterET, weight); }
-                        if (nontight_d && noniso) { h_nontight_noniso_double[etabin]->Fill(clusterET, weight);
-                                                    if (is_signal) h_nontight_noniso_double_signal[etabin]->Fill(clusterET, weight);
-                                                    if (is_signal_inclusive) h_nontight_noniso_double_incsig[etabin]->Fill(clusterET, weight); }
-                        fillSS("double", icl, etabin, findPtBin(clusterET), bdt_score_shifted, npb_score_shifted);
+                        if (tight_d && iso_shifted)    { h_tight_iso_double[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal) h_tight_iso_double_signal[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal_inclusive) h_tight_iso_double_incsig[etabin_shifted]->Fill(clusterET_shifted, weight); }
+                        if (tight_d && noniso_shifted) { h_tight_noniso_double[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal) h_tight_noniso_double_signal[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal_inclusive) h_tight_noniso_double_incsig[etabin_shifted]->Fill(clusterET_shifted, weight); }
+                        if (nontight_d && iso_shifted) { h_nontight_iso_double[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal) h_nontight_iso_double_signal[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                         if (is_signal_inclusive) h_nontight_iso_double_incsig[etabin_shifted]->Fill(clusterET_shifted, weight); }
+                        if (nontight_d && noniso_shifted) { h_nontight_noniso_double[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                            if (is_signal) h_nontight_noniso_double_signal[etabin_shifted]->Fill(clusterET_shifted, weight);
+                                                            if (is_signal_inclusive) h_nontight_noniso_double_incsig[etabin_shifted]->Fill(clusterET_shifted, weight); }
+                        fillSS("double", icl, etabin_shifted, findPtBin(clusterET_shifted), bdt_score_shifted, npb_score_shifted);
                     }
                 }
 
@@ -1366,29 +1429,45 @@ void DoubleInteractionCheck(
                     float smeared_vtx = double_vtx + rng.Gaus(0, smear_sigmas[ism]);
                     if (std::abs(smeared_vtx) > vertexcut) continue;
 
-                    std::vector<float> x_npb_sm = buildNpbFeatureVector(icl, smeared_vtx);
+                    auto [clusterET_sm, clusterEta_sm] =
+                        recalculateClusterKinematics(clusterET, clusterEta, *vertexz, smeared_vtx);
+                    if (!std::isfinite(clusterET_sm) || !std::isfinite(clusterEta_sm)) continue;
+                    if (clusterET_sm < reco_min_ET) continue;
+                    if (isbackground && clusterET_sm > cluster_ET_upper) continue;
+
+                    int etabin_sm = findEtaBin(clusterEta_sm);
+                    if (etabin_sm == -1) continue;
+
+                    float recoiso_max_sm = recoiso_max_b + recoiso_max_s * clusterET_sm;
+                    float recononiso_min_sm = recoiso_max_sm + recononiso_min_shift;
+                    bool iso_sm = (recoisoET > recoiso_min && recoisoET < recoiso_max_sm);
+                    bool noniso_sm = (recoisoET > recononiso_min_sm && recoisoET < recononiso_max);
+
+                    std::vector<float> x_npb_sm = buildNpbFeatureVector(icl, clusterET_sm, clusterEta_sm, smeared_vtx);
                     float npb_score_sm = npb_bdt_ptr->Compute(x_npb_sm)[0];
                     if (npb_score_sm < npb_score_cut) continue;
 
-                    auto [bdt_ptr_sm, bdt_name_sm] = getSsBdtForET(clusterET);
-                    std::vector<float> x_bdt_sm = buildSsBdtFeatureVector(icl, smeared_vtx, bdt_name_sm);
+                    auto [bdt_ptr_sm, bdt_name_sm] = getSsBdtForET(clusterET_sm);
+                    std::vector<float> x_bdt_sm = buildSsBdtFeatureVector(
+                        icl, clusterET_sm, clusterEta_sm, smeared_vtx, bdt_name_sm);
                     float bdt_score_sm = bdt_ptr_sm->Compute(x_bdt_sm)[0];
 
-                    auto [tight_sm, nontight_sm] = classifyTightNonTight(icl, clusterET, e11_over_e33, e32_over_e35, bdt_score_sm);
+                    auto [tight_sm, nontight_sm] = classifyTightNonTight(
+                        icl, clusterET_sm, e11_over_e33, e32_over_e35, bdt_score_sm);
 
-                    if (tight_sm && iso)    { h_tight_iso_double_smear[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal) h_tight_iso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal_inclusive) h_tight_iso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
-                    if (tight_sm && noniso) { h_tight_noniso_double_smear[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal) h_tight_noniso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal_inclusive) h_tight_noniso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
-                    if (nontight_sm && iso) { h_nontight_iso_double_smear[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal) h_nontight_iso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
-                                              if (is_signal_inclusive) h_nontight_iso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
-                    if (nontight_sm && noniso) { h_nontight_noniso_double_smear[ism][etabin]->Fill(clusterET, weight);
-                                                 if (is_signal) h_nontight_noniso_double_smear_signal[ism][etabin]->Fill(clusterET, weight);
-                                                 if (is_signal_inclusive) h_nontight_noniso_double_smear_incsig[ism][etabin]->Fill(clusterET, weight); }
-                    fillSS(Form("double_smear%d", (int)smear_sigmas[ism]), icl, etabin, findPtBin(clusterET), bdt_score_sm, npb_score_sm);
+                    if (tight_sm && iso_sm)    { h_tight_iso_double_smear[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal) h_tight_iso_double_smear_signal[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal_inclusive) h_tight_iso_double_smear_incsig[ism][etabin_sm]->Fill(clusterET_sm, weight); }
+                    if (tight_sm && noniso_sm) { h_tight_noniso_double_smear[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal) h_tight_noniso_double_smear_signal[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal_inclusive) h_tight_noniso_double_smear_incsig[ism][etabin_sm]->Fill(clusterET_sm, weight); }
+                    if (nontight_sm && iso_sm) { h_nontight_iso_double_smear[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal) h_nontight_iso_double_smear_signal[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                 if (is_signal_inclusive) h_nontight_iso_double_smear_incsig[ism][etabin_sm]->Fill(clusterET_sm, weight); }
+                    if (nontight_sm && noniso_sm) { h_nontight_noniso_double_smear[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                    if (is_signal) h_nontight_noniso_double_smear_signal[ism][etabin_sm]->Fill(clusterET_sm, weight);
+                                                    if (is_signal_inclusive) h_nontight_noniso_double_smear_incsig[ism][etabin_sm]->Fill(clusterET_sm, weight); }
+                    fillSS(Form("double_smear%d", (int)smear_sigmas[ism]), icl, etabin_sm, findPtBin(clusterET_sm), bdt_score_sm, npb_score_sm);
                 }
             }
         } // end cluster loop

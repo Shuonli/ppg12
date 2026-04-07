@@ -1,12 +1,20 @@
 #include "plotcommon.h"
 
-void plot_reweight()
+void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_no_unfolding_reweighting.root")
 {
     init_plot();
-    TFile *fin_data = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
+    TFile *fin = new TFile(infile);
 
-    TH1F *h_data_sub_leak = (TH1F *)fin_data->Get("h_data_sub_leak_copy");
-    TH1F *h_tight_iso_cluster_signal = (TH1F *)fin_data->Get("h_tight_iso_cluster_signal_copy");
+    // Use unfolded data (truth pT, efficiency-corrected) vs MC response-matrix prior (truth pT).
+    // These are the correct inputs for reweighting the Bayesian unfolding prior.
+    TH1D *h_unfolded = (TH1D *)fin->Get("h_unfold_sub_result");
+    TH1D *h_mc_prior = (TH1D *)fin->Get("h_pT_truth_response_0");
+
+    if (!h_unfolded || !h_mc_prior)
+    {
+        std::cerr << "ERROR: could not retrieve histograms from " << infile << std::endl;
+        return;
+    }
 
     TCanvas *c1 = new TCanvas("can", "", 800, 889);
     c1->Divide(1, 2);
@@ -19,50 +27,39 @@ void plot_reweight()
     pad_1->SetRightMargin(0.08);
     pad_1->SetLogy();
 
-    frame_et_rec->SetYTitle("dN/N/dE_{T}");
-    frame_et_rec->GetYaxis()->SetRangeUser(1e-6, 1);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_truth->SetYTitle("dN/N/dp_{T}");
+    frame_et_truth->GetYaxis()->SetRangeUser(1e-6, 1);
+    frame_et_truth->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_truth->GetXaxis()->SetTitleOffset(0.98);
+    frame_et_truth->GetYaxis()->SetTitleOffset(1.15);
+    frame_et_truth->GetXaxis()->SetLabelSize(0.045);
+    frame_et_truth->GetYaxis()->SetLabelSize(0.045);
+    frame_et_truth->GetXaxis()->SetLabelOffset(2);
+    frame_et_truth->GetXaxis()->SetNdivisions(505);
+    frame_et_truth->SetXTitle("#it{p}_{T}^{#gamma, truth} [GeV]");
+    frame_et_truth->Draw("axis");
 
-    frame_et_rec->GetXaxis()->SetTitleOffset(0.98);
-    frame_et_rec->GetYaxis()->SetTitleOffset(1.15);
-    frame_et_rec->GetXaxis()->SetLabelSize(0.045);
-    frame_et_rec->GetYaxis()->SetLabelSize(0.045);
-    frame_et_rec->GetXaxis()->SetLabelOffset(2);
-    // frame_et_rec->GetXaxis()->CenterTitle();
-    // frame_et_rec->GetYaxis()->CenterTitle();
-    frame_et_rec->GetXaxis()->SetNdivisions(505);
+    // normalize to unit area for shape comparison
+    h_unfolded->Scale(1.0 / h_unfolded->Integral());
+    h_unfolded->SetMarkerStyle(20);
+    h_unfolded->SetMarkerColor(kBlack);
+    h_unfolded->SetLineColor(kBlack);
+    h_unfolded->Draw("same");
 
-    frame_et_rec->Draw("axis");
-
-    // loop over h_data_sub_leak and scale it by the sum of the bins
-    float sum = 0;
-    for (int i = 1; i <= h_data_sub_leak->GetNbinsX(); i++)
-    {
-        sum += h_data_sub_leak->GetBinContent(i);
-    }
-    h_data_sub_leak->Scale(1.0 / sum);
-    h_data_sub_leak->SetMarkerStyle(20);
-    h_data_sub_leak->SetMarkerColor(kBlack);
-    h_data_sub_leak->SetLineColor(kBlack);
-    h_data_sub_leak->Draw("same");
-    float sum_signal = 0;
-    for (int i = 1; i <= h_tight_iso_cluster_signal->GetNbinsX(); i++)
-    {
-        sum_signal += h_tight_iso_cluster_signal->GetBinContent(i);
-    }
-    h_tight_iso_cluster_signal->Scale(1.0 / sum_signal);
-    h_tight_iso_cluster_signal->SetMarkerStyle(25);
-    h_tight_iso_cluster_signal->SetMarkerColor(kPink + 8);
-    h_tight_iso_cluster_signal->SetLineColor(kPink + 8);
-    h_tight_iso_cluster_signal->Draw("same");
+    h_mc_prior->Scale(1.0 / h_mc_prior->Integral());
+    h_mc_prior->SetMarkerStyle(25);
+    h_mc_prior->SetMarkerColor(kPink + 8);
+    h_mc_prior->SetLineColor(kPink + 8);
+    h_mc_prior->Draw("same");
 
     myText(0.5, 0.9, 1, strleg1.c_str(), 0.05);
     myText(0.5, 0.85, 1, strleg2.c_str(), 0.05);
     myText(0.5, 0.80, 1, "|#eta^{#gamma}|<0.7", 0.05);
 
-    myMarkerLineText(0.25, 0.25, 1, kBlack, 20, kBlack, 1, "Data (purity corrected)", 0.05, true);
-    myMarkerLineText(0.25, 0.20, 1, kPink + 8, 25, kPink + 8, 1, "Pythia signal", 0.05, true);
+    myMarkerLineText(0.25, 0.25, 1, kBlack, 20, kBlack, 1, "Data (unfolded)", 0.05, true);
+    myMarkerLineText(0.25, 0.20, 1, kPink + 8, 25, kPink + 8, 1, "Pythia prior", 0.05, true);
 
+    // --- ratio panel ---
     TPad *pad_2 = (TPad *)c1->cd(2);
     pad_2->SetPad(0, 0, 1, 0.4);
     pad_2->SetTopMargin(0.02);
@@ -70,56 +67,46 @@ void plot_reweight()
     pad_2->SetBottomMargin(0.25);
     pad_2->SetRightMargin(0.08);
 
-    TH1F *h_data_sub_leak_ratio = (TH1F *)h_data_sub_leak->Clone("h_data_sub_leak_ratio");
-    h_data_sub_leak_ratio->Divide(h_tight_iso_cluster_signal);
+    TH1D *h_ratio = (TH1D *)h_unfolded->Clone("h_ratio");
+    h_ratio->Divide(h_mc_prior);
 
-    // polynomial 3 fit for ratio
-    //pade
-    //TF1 *fit_ratio = new TF1("fit_ratio", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 8, 35);
+    // [2/2] Pade approximant fit
     TF1 *fit_ratio = new TF1("fit_ratio", "([0] + [1]*x + [3]*x*x) / (1 + [2]*x + [4]*x*x)", 8, 35);
-    fit_ratio->SetParameters(1.0, 0.1, 0.1, 0.1);
-    h_data_sub_leak_ratio->Fit(fit_ratio, "REM", "", 8, 35);
-    h_data_sub_leak_ratio->Fit(fit_ratio, "REM", "", 8, 35);
+    fit_ratio->SetParameters(1.0, 0.1, 0.1, 0.1, 0.1);
+    h_ratio->Fit(fit_ratio, "REM", "", 8, 35);
+    h_ratio->Fit(fit_ratio, "REM", "", 8, 35);
 
-    /*
-     TF1 *fit_ratio = new TF1("fit_ratio", "[0]*TMath::Erf((x - [1])/[2]) + [3]", 8, 35);
+    std::cout << "Pade fit parameters (copy into RecoEffCalculator_TTreeReader.C f_reweight):" << std::endl;
+    std::cout << "  p0=" << fit_ratio->GetParameter(0)
+              << " p1=" << fit_ratio->GetParameter(1)
+              << " p2=" << fit_ratio->GetParameter(2)
+              << " p3=" << fit_ratio->GetParameter(3)
+              << " p4=" << fit_ratio->GetParameter(4) << std::endl;
 
-     // Set initial parameters based on your data's characteristics:
-     // [0] = amplitude of the step
-     // [1] = center position of the transition
-     // [2] = width of the transition
-     // [3] = vertical offset
-     fit_ratio->SetParameter(0, 0.5); // Amplitude guess (half of typical step height)
-     fit_ratio->SetParameter(1, 15);  // Center guess (midpoint of transition)
-     fit_ratio->SetParLimits(1, 10, 30);
-     fit_ratio->SetParameter(2, 5);   // Width guess (broader transition)
-     fit_ratio->SetParameter(3, 0.5); // Offset guess (baseline level)
- */
-    // Perform the fit
-    h_data_sub_leak_ratio->Fit(fit_ratio, "REM", "", 8, 30);
+    TH1F *frame_ratio = new TH1F("frame_ratio", "", 430, 0, 100);
+    frame_ratio->SetYTitle("Data / Pythia prior");
+    frame_ratio->GetYaxis()->SetNdivisions(506);
+    frame_ratio->GetYaxis()->SetRangeUser(0.0, 2.0);
+    frame_ratio->GetXaxis()->SetRangeUser(8, 35);
+    frame_ratio->GetYaxis()->SetTitleOffset(frame_et_truth->GetYaxis()->GetTitleOffset() * 4 / 6.);
+    frame_ratio->GetYaxis()->SetLabelOffset(frame_et_truth->GetYaxis()->GetLabelOffset() * 4 / 6.);
+    frame_ratio->GetXaxis()->SetLabelSize(frame_et_truth->GetXaxis()->GetLabelSize() * 6 / 4.);
+    frame_ratio->GetYaxis()->SetLabelSize(frame_et_truth->GetYaxis()->GetLabelSize() * 6 / 4.);
+    frame_ratio->GetXaxis()->SetTitleSize(frame_et_truth->GetXaxis()->GetTitleSize() * 6 / 4.);
+    frame_ratio->GetYaxis()->SetTitleSize(frame_et_truth->GetYaxis()->GetTitleSize() * 6 / 4.);
+    frame_ratio->GetXaxis()->SetNdivisions(505);
+    frame_ratio->SetXTitle("#it{p}_{T}^{#gamma, truth} [GeV]");
+    frame_ratio->Draw("axis");
 
-    frame_et_truth->SetYTitle("Reweighting factor");
-    frame_et_truth->GetYaxis()->SetNdivisions(506);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.0, 1.4);
-    frame_et_truth->GetXaxis()->SetRangeUser(8, 35);
-    frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
-    frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
-    frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);
-    frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
-    frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4.);
-    frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4.);
-    frame_et_truth->GetXaxis()->SetNdivisions(505);
-    frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_et_truth->Draw("axis");
+    TLine *line_one = new TLine(8, 1, 35, 1);
+    line_one->SetLineStyle(2);
+    line_one->SetLineColor(kGray + 1);
+    line_one->Draw();
 
-    // print the fit parameters
-    //std::cout << "fit parameters: " << fit_ratio->GetParameter(0) << " " << fit_ratio->GetParameter(1) << " " << fit_ratio->GetParameter(2) << " " << fit_ratio->GetParameter(3) << std::endl;
-    std::cout << "fit parameters: " << fit_ratio->GetParameter(0) << " " << fit_ratio->GetParameter(1) << " " << fit_ratio->GetParameter(2) << " " << fit_ratio->GetParameter(3) << " " << fit_ratio->GetParameter(4) << std::endl;
-
-    h_data_sub_leak_ratio->SetMarkerStyle(20);
-    h_data_sub_leak_ratio->SetMarkerColor(kBlack);
-    h_data_sub_leak_ratio->SetLineColor(kBlack);
-    h_data_sub_leak_ratio->Draw("same");
+    h_ratio->SetMarkerStyle(20);
+    h_ratio->SetMarkerColor(kBlack);
+    h_ratio->SetLineColor(kBlack);
+    h_ratio->Draw("same");
 
     fit_ratio->Draw("same");
 

@@ -118,7 +118,7 @@ TCanvas *drawMultiRunGraph(const std::vector<GrEntry> &entries,
     return c;
 }
 
-void plot_cluster_rbr_QA(const std::string &infile = "../efficiencytool/rbrQA.root")
+void plot_cluster_rbr_QA(const std::string &infile = "../efficiencytool/rbrQA_topo.root")
 {
     init_plot();
 

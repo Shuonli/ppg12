@@ -28,7 +28,7 @@
 // configname is the bare filename (e.g. "config_showershape_nom.yaml").
 // Returns false if any required input file is missing/zombie.
 // ---------------------------------------------------------------------------
-static bool plotOneConfig(const std::string &configname)
+static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
 {
     // Derive suffix from configname: strip path, "config_" prefix, ".yaml" extension
     std::string config_suffix = configname;
@@ -45,6 +45,9 @@ static bool plotOneConfig(const std::string &configname)
     // Per-variant output directory
     string savePath = "figures/" + config_suffix;
     gSystem->Exec(Form("mkdir -p %s", savePath.c_str()));
+
+    // Figure filename prefix: "dis" normally, "dis_mixed" for combined single+double files
+    const std::string dis_pfx = use_mixed ? "dis_mixed" : "dis";
 
     // Load config for pT/BDT bins
     YAML::Node config = YAML::LoadFile(("../efficiencytool/" + configname).c_str());
@@ -67,9 +70,16 @@ static bool plotOneConfig(const std::string &configname)
 
     // Open files
     const std::string dataFile        = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_" + config_suffix + ".root";
-    const std::string sigFile         = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root";
-    const std::string bkgInclusiveFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_" + config_suffix + ".root";
-    const std::string bkgOnlyFile     = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_" + config_suffix + ".root";
+    const std::string sigFile = use_mixed
+        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_photon10_combined_" + config_suffix + ".root"
+        : "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root";
+    const std::string bkgInclusiveFile = use_mixed
+        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet12_combined_inclusive_" + config_suffix + ".root"
+        : "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_" + config_suffix + ".root";
+    // In mixed mode there is no separate non-inclusive jet file; skip it to avoid ROOT open warnings.
+    const std::string bkgOnlyFile = use_mixed
+        ? ""
+        : "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_" + config_suffix + ".root";
 
     TFile *f_data    = TFile::Open(dataFile.c_str(), "READ");
     TFile *f_sig     = TFile::Open(sigFile.c_str(), "READ");
@@ -409,7 +419,7 @@ static bool plotOneConfig(const std::string &configname)
                         myMarkerLineText(0.55, 0.80, 0, kBlue, 0, kBlue, 1,
                                          "Inclusive MC", 0.045, true);
 
-                        c_sub->SaveAs(Form("%s/dis_subNPB_%s.pdf", savePath.c_str(), histNamesave.Data()));
+                        c_sub->SaveAs(Form("%s/%s_subNPB_%s.pdf", savePath.c_str(), dis_pfx.c_str(), histNamesave.Data()));
                         delete c_sub;
                         delete proj_sub;
                     }
@@ -469,7 +479,7 @@ static bool plotOneConfig(const std::string &configname)
                                          "Data NPB", 0.05, true);
                     }
 
-                    c_proj->SaveAs(Form("%s/dis_%s.pdf", savePath.c_str(), histNamesave.Data()));
+                    c_proj->SaveAs(Form("%s/%s_%s.pdf", savePath.c_str(), dis_pfx.c_str(), histNamesave.Data()));
 
                     // Profile plot for background only
                     TProfile *pfx_bkg = h2_bkg->ProfileX(
@@ -531,7 +541,7 @@ static bool plotOneConfig(const std::string &configname)
 // Main entry point: discover all config_showershape*.yaml and process each.
 // Pass only_suffix (e.g. "showershape_nom") to process a single variant.
 // ---------------------------------------------------------------------------
-void plot_showershapes_variations(const std::string &only_suffix = "")
+void plot_showershapes_variations(const std::string &only_suffix = "", bool use_mixed = false)
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     init_plot();
@@ -571,7 +581,7 @@ void plot_showershapes_variations(const std::string &only_suffix = "")
         if (!only_suffix.empty() && suffix != only_suffix) continue;
 
         std::cout << "\n=== Processing: " << configname << " ===" << std::endl;
-        bool ok = plotOneConfig(configname);
+        bool ok = plotOneConfig(configname, use_mixed);
         if (ok) ++nProcessed;
         else    ++nSkipped;
     }

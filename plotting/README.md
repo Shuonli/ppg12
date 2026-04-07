@@ -18,6 +18,7 @@ ROOT/C++ plotting macros for the sPHENIX direct photon cross section analysis (P
 | `plot_final.C` | Differential cross section (d sigma / dET) vs ET. Data compared to JETPHOX NLO (with scale-variation band) and PYTHIA8 truth. Ratio panels: data/NLO and NLO/data. | `Photon_final_bdt_base.root`, `syst_sum.root`, `jetPHOX_{05,10,20}.root`, `Photon_final_nom_mc.root` |
 | `plot_final_backup.C` | Backup/earlier version of the final cross section plot. | Same as `plot_final.C` |
 | `plot_final_backup250327_v1.C` | Another archived version of `plot_final.C`. | Same as `plot_final.C` |
+| `plot_final_selection.C` | Cross section plot parameterized by selection suffix, for comparing different cut configurations. | `Photon_final_{suffix}.root` |
 
 ## Efficiency
 
@@ -60,8 +61,11 @@ ROOT/C++ plotting macros for the sPHENIX direct photon cross section analysis (P
 | File | What It Plots | Input Files |
 |------|---------------|-------------|
 | `plot_showershapes.C` | Shower shape variable distributions (probability, CNN prob, energy ratios e17/e77, e37/e77, HCAL contributions) comparing data vs signal MC vs jet MC, per pT bin. | `data_histoshower_shape_.root`, MC shower shape files, `config_nom.yaml` |
-| `plot_showershapes_selections.C` | Extended shower shape comparison across different selection variations. | Multiple shower shape ROOT files |
+| `plot_showershapes_selections.C` | Extended shower shape comparison across different selection variations. Signature: `plot_showershapes_selections(configname, combine_double, sig_double_weight, bkg_double_weight)`. | Multiple shower shape ROOT files |
+| `plot_showershapes_variations.C` | Loops over all `config_showershape*.yaml` files and produces per-variant shower shape plots under `figures/{suffix}/`. See [Shower Shape Variation Workflow](#shower-shape-variation-workflow) below. | Per-variant shower shape ROOT files |
+| `plot_bdt_variations.C` | BDT score distributions across different model/cut variations. | BDT variation ROOT files |
 | `plot_vertex_check.C` | Signal (NPB) and background (BDT) efficiency stability vs vertex z shifts. 2D correlation plots and efficiency curves for different vertex positions. | `MC_vertex_check_photon.root`, `MC_vertex_check_jet.root` |
+| `chi2_weight_scan.C` | Chi2 scan over data/MC reweighting parameters for shower shape optimization. | Shower shape ROOT files |
 
 ## Cluster & Event Timing
 
@@ -85,12 +89,27 @@ ROOT/C++ plotting macros for the sPHENIX direct photon cross section analysis (P
 | `plot_combine.C` | Ratio of leading photon pT spectra from different pT-hat samples (photon20/photon10, photon10/photon5) to validate cross-section weighting. | `MC_efficiency_photon{5,10,20}_mbdeffup.root` |
 | `plot_double_interaction.C` | Double interaction / pileup analysis: ABCD yields with NPB < 0.5, fraction of events with NPB < 0.5 vs ET. | Double interaction check ROOT files (data, signal, jet) |
 | `plot_rbrQA.C` | Run-by-run QA: cluster counts (common, tight-iso, tight-noniso, nontight-iso, nontight-noniso) per run with 2.5th/95th/97.5th percentile thresholds. | `rbrQA.root`, `rbrQA_nc.root` |
+| `plot_cluster_rbr_QA.C` | Cluster-level run-by-run QA distributions. | Run-by-run QA ROOT files |
 | `plot_vertex.C` | Vertex z distributions for data and MC (shape-normalized), and data/MC ratio fitted with a Gaussian. | `MC_efficiency_nom.root`, `data_histo_nom.root` |
 | `plot_xjg.C` | Photon-jet momentum imbalance (x_Jgamma) 2D and 1D distributions for signal MC, inclusive jet MC, and data. | `MC_efficiency_nom.root`, `MC_efficiency_jet_nom.root`, `data_histo_nom.root` |
 | `plot_truth_iso.C` | Truth- and reco-level isolation energy distributions per pT bin for signal and background MC. | `MC_efficiencyshower_shape_signal.root`, `MC_efficiencyshower_shape_jet.root` |
 | `plot_satdiff.C` | Impact of saturation correction: ratios of ABCD region counts and common cluster ET between old and new calibrations. | `data_histo_nom468.root`, `data_histo_468newcalib.root` |
+| `plot_saturation.C` | Saturation study plots. | Saturation ROOT files |
+| `plot_isoET.C` | Isolation ET distributions. | Efficiency/isolation ROOT files |
 | `plot_mbd_sigma_efficiency.C` | MBD average sigma distribution and selection efficiency as a function of the MBD sigma cut. | `data_histoshower_shape_.root` |
+| `plot_mc_purity_correction.C` | MC-based purity correction factors. | MC efficiency ROOT files |
+| `plot_background_recoisoET_overlay.C` | Overlay of reco-level isolation ET for background MC across selections. | MC efficiency ROOT files |
 | `CONF_plots.C` | Conference-style combined plots: isolation ET spectra for tight/non-tight clusters with Crystal Ball fits, per pT bin range. | `data_histo_{tune}.root`, `MC_efficiency_{tune}.root` |
+
+## Python Analysis Scripts
+
+| File | Description |
+|------|-------------|
+| `make_showershape_report.py` | Generates a LaTeX/PDF report of shower shape distributions across all `config_showershape*.yaml` variants. See [Shower Shape Variation Workflow](#shower-shape-variation-workflow). |
+| `make_selection_report.py` | Generates a LaTeX/PDF report comparing shower shapes across selection variations. |
+| `make_comparison_report.py` | Generates comparison reports between different analysis configurations. |
+| `plot_var_comparison.py` | Python script for variable-by-variable comparison plots. |
+| `calc_syst_bdt.py` | Computes BDT-related systematic uncertainties. |
 
 ## Systematic Uncertainties
 
@@ -121,6 +140,87 @@ All `syst_*.C` macros compute systematic deviations by comparing a nominal analy
 |------|-------------|
 | `sphenix_nlo/nlo_plot.C` | Plots NLO theory predictions (JETPHOX) for comparison. |
 | `sphenix_nlo/nlo_plot_count.C` | NLO prediction bin counts / validation. |
+
+## Shower Shape Variation Workflow
+
+### Step 1 — Produce figures with `plot_showershapes_variations.C`
+
+Loops over all `config_showershape*.yaml` files found in `../efficiencytool/` and writes PDFs to `figures/{suffix}/`.
+
+```bash
+# All variants, nominal MC
+root -l -b -q 'plot_showershapes_variations.C'
+
+# Single variant
+root -l -b -q 'plot_showershapes_variations.C("config_showershape_nom.yaml")'
+```
+
+**`use_mixed` parameter** (added recently): when `true`, reads combined single+double interaction MC files instead of the per-suffix files, and saves figures with the prefix `dis_mixed_` instead of `dis_`.
+
+```bash
+# All variants, combined single+double interaction MC
+root -l -b -q 'plot_showershapes_variations.C("config_showershape.yaml", true)'
+```
+
+When `use_mixed=true`:
+
+- Signal MC: `MC_efficiencyshower_shape_photon10_combined_showershape.root`
+- Background MC: `MC_efficiencyshower_shape_jet12_combined_inclusive_showershape.root` (inclusive only; no non-inclusive combined file exists — the code falls back to the inclusive file gracefully)
+- Figure filename prefix: `dis_mixed_` (vs `dis_` normally)
+
+The `use_mixed` flag is available on both `plotOneConfig()` (internal) and the top-level function.
+
+### Step 2 — Build the LaTeX/PDF report with `make_showershape_report.py`
+
+Discovers all `config_showershape*.yaml` variants, collects the PDFs from `figures/`, and generates a multi-section LaTeX document with config diffs and figure grids.
+
+**Key CLI flags:**
+
+| Flag | Effect |
+|------|--------|
+| `--compile` | Run `pdflatex` (twice, for TOC) after generating `.tex` files |
+| `--suffix SUFFIX` | Process only one variant (e.g. `showershape_nom`) |
+| `--mixed` | Append `dis_mixed` to the prefix list, including double-interaction mixed plots |
+| `--pfx PFX [PFX ...]` | Explicit prefix list (default: `dis`) |
+| `--cuts CUT [CUT ...]` | Subset of cut levels: `cut0` `cut1` `cut2` `cut3` (default: all) |
+| `--pt-indices N [N ...]` | pT bin indices to include (default: `1 2 3`) |
+| `--output-dir DIR` | Override output directory (default: `showershape_report/`) |
+
+**Prefix labels printed in the report:**
+
+| Prefix | Label in report |
+|--------|----------------|
+| `dis` | Nominal |
+| `dis_mixed` | Double-interaction mixed (0.813 × single + 0.187 × double) |
+
+When multiple prefixes are active (e.g. `dis` + `dis_mixed`), the report adds a `\subsection` per prefix and demotes cut sections to `\subsubsection`. Figure captions include the prefix label.
+
+**Typical usage:**
+
+```bash
+# Nominal plots only
+python3 make_showershape_report.py --compile
+
+# Nominal + double-interaction mixed side by side
+python3 make_showershape_report.py --mixed --compile
+
+# Mixed only
+python3 make_showershape_report.py --pfx dis_mixed --compile
+
+# Single variant with a specific suffix, both prefixes
+python3 make_showershape_report.py --suffix showershape --mixed --compile
+```
+
+**Outputs:**
+
+```
+showershape_report/
+  showershape_report.tex          # master document
+  showershape_report.pdf          # compiled PDF (if --compile)
+  {suffix}/
+    showershape_{suffix}.tex      # per-variant fragment
+    figures/                      # PDFs copied from figures/{suffix}/
+```
 
 ## Output
 

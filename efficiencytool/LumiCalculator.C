@@ -22,7 +22,7 @@ struct LumiEntry {
 
 float LumiCalculator(
     //int run_min = 47289, int run_max = 51274,
-    int run_min = 51275, int run_max = 54000,
+    int run_min = 51274, int run_max = 54000,
     //int run_min = -1, int run_max = -1,
     const std::string &lumifilename = "/sphenix/user/shuhangli/ppg12/lumi/60cmLumi_fromJoey.list",
     const std::string &pileupfilename = "/sphenix/user/shuhangli/ppg12/efficiencytool/pileup.list")
