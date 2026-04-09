@@ -1,0 +1,488 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+%\usepackage{siunitx}  % not available on this system
+\providecommand{\num}[1]{#1}  % fallback for \num when siunitx is absent
+%\usepackage{multirow}  % not available on this system
+%\usepackage{enumitem}  % not available on this system
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Local macros (subset of PPG12 defs.sty) ---
+\newcommand{\pp}{\mbox{$p$+$p$}}
+\newcommand{\sqs}{\mbox{$\sqrt{s}$}}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}}
+\newcommand{\ET}{\ensuremath{E_{\text{T}}}}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
+\newcommand{\abseta}{\ensuremath{|\eta|}}
+\newcommand{\isoETtruth}{\ensuremath{E_\text{T}^\text{iso,truth}}}
+\newcommand{\Rcone}{\ensuremath{R_{\text{cone}}}}
+\newcommand{\DR}{\ensuremath{\Delta R}}
+
+\graphicspath{{../../plotting/figures/}}
+
+\title{%
+  \vspace{-1cm}
+  {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
+  {\LARGE \textbf{Eta Edge Migration Study:\\
+  Fake Rate from Fiducial Boundary Effects}}\\[0.3cm]
+  {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
+}
+\author{sPHENIX Collaboration}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This note documents a study of pseudorapidity edge migration effects in the
+sPHENIX isolated photon cross-section measurement (PPG12). Both the truth and
+reconstructed $\eta$ fiducial cuts are set at $\abseta < 0.7$, which allows
+truth photons produced outside the fiducial volume to have reconstructed
+clusters migrate inside, and vice versa. In the unfolding framework, inward-migrated
+clusters matched to truth photons outside $\abseta < 0.7$ should be treated as
+fakes but currently enter the response matrix as signal in
+\texttt{RecoEffCalculator\_TTreeReader.C}. We quantify this contamination for
+both single-interaction and double-interaction MC, finding a signal region (ABCD
+region~A) contamination of ${\sim}1.2\%$ for single interaction and
+${\sim}0.3\%$ for double interaction, with significantly larger effects in the
+non-tight ABCD regions used for background estimation.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+The PPG12 analysis measures the isolated prompt photon production cross-section
+in \pp{} collisions at $\sqs = 200$~GeV using the sPHENIX EMCal. The fiducial
+pseudorapidity acceptance is $\abseta < 0.7$, corresponding to the barrel EMCal
+coverage. This cut is applied identically to both truth-level photons and
+reconstructed clusters.
+
+Because the $\eta$ boundary is a sharp geometric cut rather than a smooth
+efficiency edge, photons near $|\eta| \approx 0.7$ can migrate across the
+boundary between truth and reconstruction:
+\begin{itemize}
+  \item \textbf{Inward migration (fakes):} Truth photons with
+    $|\eta^\text{truth}| > 0.7$ produce reconstructed clusters with
+    $|\eta^\text{reco}| < 0.7$. These enter the signal sample but have no
+    corresponding truth entry within the fiducial volume.
+  \item \textbf{Outward migration (losses):} Truth photons with
+    $|\eta^\text{truth}| < 0.7$ produce reconstructed clusters with
+    $|\eta^\text{reco}| > 0.7$, escaping the reconstructed sample.
+\end{itemize}
+
+In the current implementation of \texttt{RecoEffCalculator\_TTreeReader.C},
+inward-migrated clusters enter the response matrix as signal --- i.e., they are
+treated as correctly matched truth-reco pairs. This is incorrect: their truth
+$\pT$ falls outside the fiducial region, biasing the unfolding. This study
+quantifies the magnitude of this effect.
+
+%% ============================================================
+\section{Method}
+\label{sec:method}
+
+A dedicated macro \texttt{EtaMigrationStudy.C} processes the full photon MC
+samples: \texttt{photon5} (truth $\pT$ range $0$--$14$~GeV), \texttt{photon10}
+($14$--$30$~GeV), and \texttt{photon20} ($30$+~GeV). Each sample is weighted by
+its production cross-section.
+
+Truth photons are registered with \emph{no} $\eta$ filter --- all
+direct/fragmentation photons satisfying $\isoETtruth < 4$~GeV (cone
+$\Rcone = 0.3$) are included regardless of $\eta$. Each truth--reco matched
+pair is then classified into four categories based on the fiducial boundary
+$\abseta < 0.7$:
+\begin{enumerate}
+  \item \textbf{Good:} both truth and reco inside $\abseta < 0.7$.
+  \item \textbf{Fake (inward):} truth outside, reco inside.
+  \item \textbf{Lost (outward):} truth inside, reco outside.
+  \item \textbf{Both outside:} neither truth nor reco in fiducial volume.
+\end{enumerate}
+
+The standard PPG12 ABCD classification is applied to each pair:
+\begin{itemize}
+  \item Region A (tight + isolated): signal region.
+  \item Region B (tight + non-isolated): background template.
+  \item Region C (non-tight + isolated): background control.
+  \item Region D (non-tight + non-isolated): background normalization.
+\end{itemize}
+
+For the double-interaction study, a toy vertex shift is applied: a random second
+vertex is drawn from the data vertex distribution, and the new vertex is
+computed as $z_\text{vtx}^\text{new} = (z_\text{vtx}^\text{orig} +
+z_\text{vtx}^\text{rand}) / 2$. Cluster kinematics are recalculated using the
+CEMC cylinder geometry ($R = 93.5$~cm):
+\begin{equation}
+  z/r_\text{new} = z/r_\text{old} + \frac{z_\text{vtx}^\text{old} - z_\text{vtx}^\text{new}}{93.5~\text{cm}},
+  \quad
+  \eta_\text{new} = \sinh^{-1}(z/r_\text{new}),
+  \quad
+  \ET^\text{new} = E / \cosh(\eta_\text{new}).
+\end{equation}
+
+%% ============================================================
+\section{Results}
+\label{sec:results}
+
+%% --------------------------------------------------
+\subsection{Overall Migration Rates}
+\label{sec:overall}
+
+Table~\ref{tab:overall} summarizes the unweighted migration rates per MC sample.
+The fake (inward) rate is defined as the number of inward-migrated pairs divided
+by the total number of matched pairs, and similarly for the loss (outward) rate.
+
+\begin{table}[htbp]
+\centering
+\caption{Overall migration rates (unweighted) for single-interaction MC. Fake
+  rate = inward / total; loss rate = outward / total.}
+\label{tab:overall}
+\begin{tabular}{lrrrrrcc}
+\toprule
+Sample & Total & Good & Fakes & Losses & Both out & Fake rate & Loss rate \\
+\midrule
+photon5  & \num{2361432} & \num{1523346} & \num{18490} & \num{13687} & \num{805909} & 1.20\% & 0.89\% \\
+photon10 & \num{532878}  & \num{374380}  & \num{3942}  & \num{5822}  & \num{148734} & 1.04\% & 1.53\% \\
+photon20 & \num{128595}  & \num{107741}  & \num{721}   & \num{2193}  & \num{17940}  & 0.66\% & 1.99\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The fake rate decreases with increasing truth $\pT$ range (from 1.20\% to
+0.66\%), while the loss rate increases (from 0.89\% to 1.99\%). The asymmetry
+arises because higher-$\pT$ photons have narrower shower profiles and more
+precise $\eta$ reconstruction, but the steeply falling spectrum preferentially
+populates the inward direction at lower $\pT$.
+
+%% --------------------------------------------------
+\subsection{Signal Region (A) Contamination}
+\label{sec:signal_contamination}
+
+The physically relevant metric is the contamination of the ABCD signal region
+(region~A: tight BDT + isolated). This is defined as:
+\begin{equation}
+  \text{Contamination} = \frac{N_\text{fakes}^\text{tight+iso}}{N_\text{good}^\text{tight+iso} + N_\text{fakes}^\text{tight+iso}}.
+  \label{eq:contamination}
+\end{equation}
+This quantity directly measures the fraction of response matrix entries that are
+edge-migration fakes.
+
+\subsubsection{Single Interaction}
+
+Table~\ref{tab:signal_single} shows the signal region contamination per $\pT$
+bin for single-interaction MC.
+
+\begin{table}[htbp]
+\centering
+\caption{Signal region (tight + isolated) contamination from $\eta$ edge
+  migration, single-interaction MC. Counts are cross-section weighted.}
+\label{tab:signal_single}
+\begin{tabular}{cccc}
+\toprule
+$\pT$ bin (GeV) & Good (tight+iso) & Fakes (tight+iso) & Contamination \\
+\midrule
+$8$--$10$   & \num{1.04e8} & \num{1.30e6} & 1.24\% \\
+$10$--$12$  & \num{3.71e7} & \num{4.43e5} & 1.18\% \\
+$12$--$14$  & \num{1.45e7} & \num{2.06e5} & 1.40\% \\
+$14$--$16$  & \num{6.28e6} & \num{7.87e4} & 1.24\% \\
+$16$--$18$  & \num{2.86e6} & \num{3.76e4} & 1.30\% \\
+$18$--$20$  & \num{1.35e6} & \num{1.79e4} & 1.31\% \\
+$20$--$22$  & \num{6.62e5} & \num{8.68e3} & 1.29\% \\
+$22$--$24$  & \num{3.41e5} & \num{4.42e3} & 1.28\% \\
+$24$--$26$  & \num{1.79e5} & \num{2.34e3} & 1.30\% \\
+$26$--$28$  & \num{9.19e4} & \num{1.61e3} & 1.72\% \\
+$28$--$32$  & \num{7.70e4} & \num{1.49e3} & 1.90\% \\
+$32$--$36$  & \num{2.11e4} & \num{5.57e2} & 2.57\% \\
+\midrule
+\textbf{Overall} & \num{1.67e8} & \num{2.10e6} & \textbf{1.24\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The contamination is approximately flat at ${\sim}1.2$--$1.3\%$ across most of
+the $\pT$ range but rises to 2.57\% in the highest bin ($32$--$36$~GeV).
+
+\subsubsection{Double Interaction}
+
+Table~\ref{tab:signal_double} shows the equivalent for double-interaction
+(toy vertex shift).
+
+\begin{table}[htbp]
+\centering
+\caption{Signal region (tight + isolated) contamination from $\eta$ edge
+  migration, double-interaction MC (toy vertex shift).}
+\label{tab:signal_double}
+\begin{tabular}{cccc}
+\toprule
+$\pT$ bin (GeV) & Good (tight+iso) & Fakes (tight+iso) & Contamination \\
+\midrule
+$8$--$10$   & \num{7.81e6} & \num{2.58e4} & 0.33\% \\
+$10$--$12$  & \num{2.78e6} & \num{1.12e4} & 0.40\% \\
+$12$--$14$  & \num{1.00e6} & \num{3.37e3} & 0.33\% \\
+$14$--$16$  & \num{4.09e5} & \num{1.33e3} & 0.33\% \\
+$16$--$18$  & \num{1.79e5} & \num{3.19e2} & 0.18\% \\
+$18$--$20$  & \num{8.37e4} & \num{2.66e2} & 0.32\% \\
+$20$--$22$  & \num{4.00e4} & \num{2.13e2} & 0.53\% \\
+$22$--$24$  & \num{2.07e4} & \num{1.07e2} & 0.51\% \\
+$24$--$26$  & \num{1.10e4} & 0             & 0.00\% \\
+$26$--$28$  & \num{5.82e3} & 53            & 0.91\% \\
+$28$--$32$  & \num{4.87e3} & 1             & 0.02\% \\
+$32$--$36$  & \num{1.39e3} & 1             & 0.07\% \\
+\midrule
+\textbf{Overall} & \num{1.24e7} & \num{4.27e4} & \textbf{0.34\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The double-interaction contamination in region~A is significantly \emph{lower}
+than single interaction ($0.34\%$ vs.\ $1.24\%$). This counterintuitive result
+is explained in Section~\ref{sec:double_enhancement}.
+
+%% --------------------------------------------------
+\subsection{ABCD Region Breakdown}
+\label{sec:abcd}
+
+The edge migration does not affect all ABCD regions equally.
+Table~\ref{tab:abcd_regions} summarizes the contamination by region for the
+highest $\pT$ bins where the effect is most pronounced.
+
+Region~C (non-tight + isolated) exhibits dramatically higher contamination,
+reaching up to 52\% at $32$--$36$~GeV for single interaction. This occurs
+because edge-migrated clusters have distorted shower shapes: the $\eta$
+mismatch between truth and reco positions distorts the transverse shower profile,
+causing these clusters to preferentially fail the tight BDT selection and land in
+the non-tight category.
+
+The signal region~A contamination remains modest ($1.2$--$2.6\%$) precisely
+because the BDT effectively rejects edge fakes --- they carry anomalous shower
+shapes that the BDT was trained to discriminate against.
+
+%% --------------------------------------------------
+\subsection{Double Interaction Enhancement}
+\label{sec:double_enhancement}
+
+The overall \emph{raw} inward fake rate (before ABCD classification) is strongly
+amplified by double interaction: $1.2\%$ (single) vs.\ $13.7\%$ (double),
+approximately an $11\times$ amplification. The vertex displacement in
+double-interaction events shifts the reconstructed $\eta$ of all clusters,
+dramatically increasing the probability of boundary crossing.
+
+However, the signal region contamination moves in the \emph{opposite} direction:
+$1.24\%$ (single) $\to$ $0.34\%$ (double). The explanation is that
+vertex-shifted clusters acquire additional shower shape distortion on top of the
+edge migration effect. The compounded distortion causes the tight BDT to reject
+these clusters even more aggressively, suppressing their entry into region~A.
+
+Figure~\ref{fig:signal_leakage} quantifies this by showing the fraction of
+ABCD-classified fakes (i.e., those passing common quality cuts) that leak into
+regions~A and~C, as a function of $\ET$.
+For single interaction, $\sim\!50\%$ of ABCD-classified fakes pass tight+iso
+(region~A) and $\sim\!40\%$ land in region~C. For double interaction, a
+\emph{higher} fraction ($\sim\!70$--$85\%$) passes tight+iso --- a seemingly
+counterintuitive result. The explanation is a \emph{selection effect}: the
+common quality cuts reject $98.4\%$ of double-interaction inward fakes (vs.\
+$81\%$ for single), acting as a much stronger pre-filter. The $1.6\%$ of double
+fakes that survive are the ``best'' fakes --- truth photons barely outside the
+boundary with small vertex shifts --- and these naturally also tend to pass the
+tight BDT. The common cuts are doing the heavy lifting; their survivors are
+biased toward photon-like signatures. The absolute signal region contamination
+(Fig.~\ref{fig:abcd} vs.\ Fig.~\ref{fig:abcd_double}) remains much lower for
+double interaction ($0.34\%$ vs.\ $1.24\%$) because the total number of
+ABCD-classified fakes is ${\sim}60\times$ smaller.
+
+It should be noted that the double-interaction statistics are marginal: only 77
+unweighted tight+iso fake entries contribute to the entire double-interaction
+signal region, limiting the precision of the contamination estimate.
+
+%% --------------------------------------------------
+\subsection{Response Matrix Contamination}
+\label{sec:response}
+
+The response matrix in \texttt{RecoEffCalculator\_TTreeReader.C} is filled for
+all tight+iso matched pairs. The $1.2\%$ signal region contamination from
+Table~\ref{tab:signal_single} directly translates to $1.2\%$ of response matrix
+entries having incorrect truth $\pT$ (from outside the fiducial $\eta$ region).
+These entries map reco $\pT$ values to truth $\pT$ values that should not
+participate in the unfolding, introducing a bias in the unfolded cross-section.
+
+The effect is $\pT$-dependent: rising from ${\sim}1.2\%$ at low $\pT$ to
+${\sim}2.6\%$ at $32$--$36$~GeV. This $\pT$ dependence means the bias is not a
+simple overall normalization shift but distorts the shape of the unfolded
+spectrum.
+
+%% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+The ${\sim}1.2\%$ signal region contamination is a systematic effect, not a
+statistical fluctuation. At the highest $\pT$ bin ($32$--$36$~GeV), the
+contamination reaches 2.6\%, which is comparable in magnitude to other
+systematic uncertainties in the analysis (e.g., energy scale, BDT threshold
+variations).
+
+Three approaches could address this:
+
+\begin{enumerate}[label=(\alph*)]
+  \item \textbf{Asymmetric $\eta$ cuts:} Apply a tighter reco $\eta$ cut than
+    truth (e.g., $|\eta^\text{reco}| < 0.6$ with $|\eta^\text{truth}| < 0.7$).
+    This eliminates inward migration but sacrifices acceptance.
+
+  \item \textbf{Truth $\eta$ check in response matrix:} Explicitly verify that
+    the truth $\eta$ of matched pairs satisfies $|\eta^\text{truth}| < 0.7$
+    before filling the response matrix. Outside-fiducial matches are counted as
+    fakes rather than signal. This is the minimal fix.
+
+  \item \textbf{Systematic uncertainty:} Include the contamination as a
+    systematic uncertainty on the unfolded cross-section, propagated through the
+    full pipeline.
+\end{enumerate}
+
+The region~C contamination (up to 52\% at high $\pT$) is a separate concern.
+Region~C enters the ABCD background estimation through the $R$-factor:
+$R = N_C / N_D$. If a large fraction of region~C entries are edge-migration
+fakes rather than genuine non-tight background, the $R$-factor and consequently
+the background subtraction could be biased.
+
+For double interaction, the tight+iso selection provides effective rejection of
+edge-migrated clusters (contamination drops from $13.7\%$ raw to $0.34\%$ in
+region~A). However, the ${\sim}14\%$ raw migration rate is large enough to
+significantly affect the non-tight regions used in background estimation.
+
+%% ============================================================
+\section{Recommendations}
+\label{sec:recommendations}
+
+\begin{enumerate}
+  \item \textbf{Short term:} Add the truth $\eta$ check to the response matrix
+    filling in \texttt{RecoEffCalculator\_TTreeReader.C}. Matched pairs with
+    $|\eta^\text{truth}| > 0.7$ should be counted as fakes, not signal.
+
+  \item \textbf{Medium term:} Evaluate the impact on the unfolded cross-section
+    by running the full pipeline with and without the fix. The difference
+    quantifies the bias introduced by the current implementation.
+
+  \item \textbf{Background estimation:} Evaluate and include the region~C
+    contamination as a systematic uncertainty on the ABCD $R$-factor.
+\end{enumerate}
+
+%% ============================================================
+\section{Appendix: Plots}
+\label{sec:plots}
+
+Figures~\ref{fig:matrix}--\ref{fig:deta} show the distributions produced by
+\texttt{plot\_eta\_migration.C}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_matrix.pdf}
+    \caption{Migration matrix: truth vs.\ reco $\eta$ classification for
+      single-interaction MC.}
+    \label{fig:matrix}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_matrix_double.pdf}
+    \caption{Migration matrix: truth vs.\ reco $\eta$ classification for
+      double-interaction MC (toy vertex shift).}
+    \label{fig:matrix_double}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_fake_rate.pdf}
+    \caption{Inward fake rate vs.\ $\ET$ for single and double interaction.}
+    \label{fig:fake_rate}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_loss_rate.pdf}
+    \caption{Outward loss rate vs.\ $\ET$ for single and double interaction.}
+    \label{fig:loss_rate}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_response_contamination.pdf}
+    \caption{Response matrix contamination (tight+iso fake fraction) vs.\ $\ET$
+      for single and double interaction.}
+    \label{fig:response}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_abcd_fakes.pdf}
+    \caption{ABCD distribution of inward-migration fakes for single interaction.
+      Region~A (tight+iso) and C (nontight+iso) dominate.}
+    \label{fig:abcd}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_abcd_fakes_double.pdf}
+    \caption{ABCD distribution of inward-migration fakes for double interaction.
+      The total yield is ${\sim}60\times$ smaller than single interaction
+      (Fig.~\ref{fig:abcd}), because 98\% of double-interaction fakes fail
+      common quality cuts.}
+    \label{fig:abcd_double}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_signal_leakage.pdf}
+    \caption{Fraction of inward-migrating fakes that leak into regions~A
+      (tight+iso, filled circles) and C (non-tight+iso, open squares) as a
+      function of $\ET$, comparing single (black) and double (red) interaction.
+      Single-interaction fakes have a higher probability of passing tight+iso,
+      while double-interaction fakes are more efficiently rejected into region~C.}
+    \label{fig:signal_leakage}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_truth_eta_fakes.pdf}
+    \caption{Truth $\eta$ distribution of inward-migrated fakes.}
+    \label{fig:truth_eta}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.48\textwidth]{eta_migration_deta_vs_ET.pdf}
+  \caption{$\Delta\eta$ (truth $-$ reco) vs.\ $\ET$ for edge-migrated
+    clusters.}
+  \label{fig:deta}
+\end{figure}
+
+\end{document}
