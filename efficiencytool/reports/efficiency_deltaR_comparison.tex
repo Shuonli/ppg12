@@ -1,0 +1,495 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Local macros (subset of PPG12 defs.sty) ---
+\newcommand{\pp}{\mbox{$p$+$p$}}
+\newcommand{\sqs}{\mbox{$\sqrt{s}$}}
+\newcommand{\DR}{\ensuremath{\Delta R}}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}}
+\newcommand{\ET}{\ensuremath{E_{\text{T}}}}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
+\newcommand{\Rcone}{\ensuremath{R_{\text{cone}}}}
+\newcommand{\abseta}{\ensuremath{|\eta|}}
+\newcommand{\isoETtruth}{\ensuremath{E_\text{T}^\text{iso,truth}}}
+\newcommand{\ereco}{\ensuremath{\varepsilon_{\text{reco}}}}
+\newcommand{\eiso}{\ensuremath{\varepsilon_{\text{iso}|\text{reco}}}}
+\newcommand{\eid}{\ensuremath{\varepsilon_{\text{id}|\text{reco+iso}}}}
+\newcommand{\eall}{\ensuremath{\varepsilon_{\text{all}}}}
+
+\graphicspath{
+  {../../plotting/figures/efficiency_overlay/}
+  {../../plotting/figures/efficiency_comparison/}
+}
+
+\title{%
+  \vspace{-1cm}
+  {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
+  {\LARGE \textbf{Photon Efficiency with $\DR$ Truth-Matching Removed:\\
+  Single, Double, and Mixed Interaction MC}}\\[0.3cm]
+  {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
+}
+\author{sPHENIX Collaboration}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Building on the companion study~\cite{dr_study} that demonstrated the
+$\DR < 0.1$ truth-matching cut rejects $\sim$3.5\% of correctly
+track-ID-matched truth photons in single-interaction MC, this note quantifies
+the efficiency impact of removing the cut across three MC sample categories:
+single-interaction, double-interaction, and physics-mixed (0~mrad, 81.3\%/18.7\%).
+The factorized efficiency chain
+$\ereco \to \eiso \to \eid \to \eall$ is computed with and without the $\DR$
+requirement in a single pass over \texttt{photon10} samples. Removing the $\DR$
+cut improves the total efficiency $\eall$ by +2.1\% (single), +11.5\% (mixed),
+and approximately doubles it for double-interaction MC. The reconstruction stage
+dominates the change; isolation efficiency is unaffected; photon ID (BDT)
+efficiency shows a measurable degradation in double-interaction MC from
+vertex-shifted cluster kinematics. The single/double/mixed overlay provides a
+clean decomposition of pileup effects on each efficiency stage.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+The reconstruction efficiency for the sPHENIX isolated photon cross-section
+measurement is computed from PYTHIA + GEANT4 MC using a factorized chain of
+selection stages: reconstruction, isolation, and photon identification (BDT).
+The truth association between generated photons and reconstructed EMCal clusters
+is established by the GEANT track ID (\texttt{trkID}), optionally supplemented
+by a geometric proximity requirement $\DR < 0.1$.
+
+A companion study~\cite{dr_study} demonstrated that this $\DR$ cut is a
+vertex-resolution artifact: in single-interaction MC it rejects $\sim$3.5\%
+of \texttt{trkID}-matched photons, and in double-interaction MC the failure
+rate reaches 65\%, driven entirely by the vertex displacement
+$|\Delta z| > 9.35$~cm (the geometric critical threshold set by the EMCal
+barrel radius). The rejected clusters are well-reconstructed photons with
+$\ET / \pT^{\text{truth}} \in [0.8, 1.2]$ for 73\% of cases.
+
+Based on those findings, the $\DR < 0.1$ requirement was removed from the
+production efficiency calculation. This note quantifies the resulting
+efficiency changes across all interaction types and examines the interplay
+between the $\DR$ removal and the photon ID (BDT) selection, which uses an
+\ET-dependent threshold susceptible to vertex-induced kinematic shifts.
+
+
+%% ============================================================
+\section{Samples and Method}
+\label{sec:method}
+
+\subsection{Monte Carlo Samples}
+
+Three sample configurations are studied, all using the \texttt{photon10}
+generator (truth $\pT$ range 14--30~GeV):
+
+\begin{itemize}
+  \item \textbf{Single-interaction:} \texttt{photon10} nominal MC
+    ($\sim$10M events). One $pp$ collision per bunch crossing.
+  \item \textbf{Double-interaction:} \texttt{photon10\_double} MC
+    ($\sim$10M events). Full GEANT simulation of two overlapping $pp$
+    collisions per bunch crossing, with the reconstructed vertex at the
+    average of the two collision vertices.
+  \item \textbf{Mixed (0~mrad):} Physics-weighted combination of 81.3\%
+    single + 18.7\% double, corresponding to the double-interaction fraction
+    measured for the 0~mrad crossing-angle running period at RHIC.
+\end{itemize}
+
+\subsection{Efficiency Definitions}
+
+The efficiency is factorized into four stages, each conditional on the
+previous:
+
+\begin{align}
+  \ereco &= \frac{N(\text{reco + common cuts})}{N(\text{truth photons})}
+    \label{eq:eff_reco} \\[3pt]
+  \eiso &= \frac{N(\text{reco + common + isolated})}{N(\text{reco + common})}
+    \label{eq:eff_iso} \\[3pt]
+  \eid &= \frac{N(\text{reco + common + iso + tight})}{N(\text{reco + common + iso})}
+    \label{eq:eff_id} \\[3pt]
+  \eall &= \ereco \times \eiso \times \eid
+    = \frac{N(\text{all cuts})}{N(\text{truth photons})}
+    \label{eq:eff_all}
+\end{align}
+
+The ``common cuts'' include cluster probability, shower-shape quality gates
+(e11/e33, $\omega_r$, $\omega_\eta$), and optionally the NPB score cut.
+``Isolated'' applies the parametric topo-cluster isolation cut
+$E_\text{T}^\text{iso} < b + s \cdot \ET$ (topo $\Rcone = 0.4$).
+``Tight'' applies the full shower-shape selection plus the \ET-dependent BDT
+threshold $\text{BDT}_\text{min} = \text{intercept} + \text{slope} \times \ET$.
+
+\subsection{Matching Modes}
+
+Each truth photon is evaluated under two matching modes simultaneously in a
+single pass:
+\begin{description}
+  \item[\texttt{withDR}:] Requires both \texttt{trkID} match \emph{and}
+    $\DR < 0.1$ (the legacy requirement).
+  \item[\texttt{noDR}:] Requires only the \texttt{trkID} match (the new
+    baseline).
+\end{description}
+
+Clusters that enter the \texttt{noDR} numerator but not the \texttt{withDR}
+numerator are labeled ``new clusters''---these are the photons recovered by
+removing the geometric cut. Their BDT pass rate is tracked separately.
+
+The analysis macro is \texttt{compare\_efficiency\_deltaR.C}, which writes all
+\texttt{TEfficiency} objects to a single output ROOT file.
+
+
+%% ============================================================
+\section{Results: Per-Stage Efficiency Comparison}
+\label{sec:perstage}
+
+Table~\ref{tab:absolute} presents the \pT-integrated efficiency at each
+factorized stage for all three sample sets, computed with and without the
+$\DR < 0.1$ requirement.
+
+\begin{table}[htbp]
+\centering
+\caption{Integrated efficiency at each factorized stage for single-interaction,
+  double-interaction, and mixed (0~mrad) MC. ``withDR'' denotes the legacy
+  matching; ``noDR'' denotes \texttt{trkID}-only matching.}
+\label{tab:absolute}
+\begin{tabular}{l cc cc cc}
+\toprule
+& \multicolumn{2}{c}{\textbf{Single}} & \multicolumn{2}{c}{\textbf{Double}}
+& \multicolumn{2}{c}{\textbf{Mixed 0~mrad}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+\textbf{Stage} & withDR & noDR & withDR & noDR & withDR & noDR \\
+\midrule
+$\ereco$       & 91.4\% & 93.5\% & 30.7\% & 73.1\% & 76.2\% & 88.4\% \\
+$\eiso$        & 74.2\% & 74.2\% & 71.1\% & 71.0\% & 73.9\% & 73.5\% \\
+$\eid$         & 82.9\% & 82.7\% & 82.6\% & 69.4\% & 82.9\% & 80.0\% \\
+$\eall$        & 56.2\% & 57.4\% & 18.0\% & 36.0\% & 46.6\% & 52.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ratio} shows the ratio of \texttt{noDR} to \texttt{withDR}
+efficiency at each stage, quantifying the impact of removing the cut.
+
+\begin{table}[htbp]
+\centering
+\caption{Ratio of efficiency without the $\DR$ cut to efficiency with the cut
+  ($\varepsilon_\text{noDR} / \varepsilon_\text{withDR}$) at each stage.
+  Values above 1.0 indicate improvement from cut removal; values below 1.0
+  indicate degradation in the recovered cluster population.}
+\label{tab:ratio}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Stage} & \textbf{Single} & \textbf{Double} & \textbf{Mixed 0~mrad} \\
+\midrule
+$\ereco$       & 1.023 & 2.386 & 1.161 \\
+$\eiso$        & 1.000 & 0.998 & 0.995 \\
+$\eid$         & 0.998 & 0.840 & 0.966 \\
+$\eall$        & 1.021 & 1.999 & 1.115 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key observations are:
+\begin{itemize}
+  \item \textbf{Reconstruction} ($\ereco$): This stage captures the full impact
+    of the $\DR$ removal. Single MC improves by 2.3\%, reflecting the small
+    population of vertex-displaced clusters. Double MC improves by a factor
+    of $\sim$2.4, recovering the 65\% of clusters that failed the $\DR$ cut
+    due to vertex displacement. The residual 27\% gap between double and
+    single noDR efficiency reflects genuine missing clusters
+    (no \texttt{trkID} match at all: 2.4\% for single, 7.9\% for double).
+
+  \item \textbf{Isolation} ($\eiso$): Essentially unchanged across all samples
+    (ratios within 0.5\% of unity). The isolation requirement tests calorimeter
+    energy in an annular cone around the cluster; vertex displacement does not
+    significantly alter the energy sum, and the extra energy from the second
+    interaction causes only a $\sim$3\% absolute degradation comparing single
+    to double.
+
+  \item \textbf{Photon ID} ($\eid$): Single MC shows negligible change
+    (0.2\% decrease). Double MC shows a significant 16\% decrease (ratio 0.840),
+    indicating that the recovered clusters have measurably worse BDT pass rates.
+    Mixed MC interpolates at 3.4\% decrease.
+
+  \item \textbf{Total} ($\eall$): Net improvement in all cases. The
+    reconstruction gain dominates the BDT degradation. Single: +2.1\%;
+    mixed: +11.5\%; double: nearly doubling from 18.0\% to 36.0\%.
+\end{itemize}
+
+Figure~\ref{fig:ratio} shows the \pT-dependent efficiency ratio for all
+four stages and all three sample sets.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{efficiency_ratio.pdf}
+\caption{Ratio of efficiency without $\DR$ cut to efficiency with $\DR$ cut as
+  a function of truth \pT{} for single (blue) and mixed (red) MC.
+  The reconstruction stage shows the largest change, particularly for the
+  mixed sample containing 18.7\% double-interaction events.
+  Isolation is flat. Photon ID shows a deficit in the mixed sample at all \pT.}
+\label{fig:ratio}
+\end{figure}
+
+
+%% ============================================================
+\section{Overlay: Efficiency without $\DR$ across Interaction Types}
+\label{sec:overlay}
+
+With the $\DR$ cut removed, the remaining efficiency differences between
+single, double, and mixed MC arise from genuine pileup physics effects rather
+than truth-matching artifacts. Figure~\ref{fig:overlay_4panel} presents the
+four-panel overlay of the \texttt{noDR} efficiency for all three sample types,
+providing a clean decomposition of pileup degradation at each selection stage.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{eff_overlay_noDR_4panel.pdf}
+\caption{Per-stage efficiency as a function of truth \pT{} without the $\DR$
+  cut, overlaying single-interaction (blue), double-interaction (red), and
+  mixed 0~mrad (black) MC. From upper left to lower right: reconstruction,
+  isolation, photon ID (BDT), and total efficiency.}
+\label{fig:overlay_4panel}
+\end{figure}
+
+\subsection{Reconstruction Efficiency}
+
+Single-interaction MC achieves $\ereco = 93.5\%$; double-interaction drops to
+73.1\%, a 20 percentage point (pp) reduction. The \pT{} dependence is weak:
+single MC is flat near 93--95\% across the full range, while double MC spans
+70--77\%, maintaining a roughly constant $\sim$20~pp gap. This gap reflects
+two effects:
+
+\begin{enumerate}
+  \item \textbf{Genuine cluster loss:} In double-interaction events, the
+    additional hadronic activity can merge the signal photon cluster with
+    nearby energy deposits, causing the \texttt{trkID} to be lost from the
+    leading cluster. The no-\texttt{trkID}-match rate is 7.9\% for double MC
+    vs.\ 2.4\% for single MC, accounting for $\sim$5.5~pp of the gap.
+
+  \item \textbf{Common cut failures from shifted kinematics:} The remaining
+    $\sim$15~pp gap arises because the reconstructed vertex in double-interaction
+    events shifts the cluster $\eta$ and $\ET$, causing some clusters to fail
+    the common quality cuts (e.g., the shower-shape bounds applied at the
+    reconstructed kinematics).
+\end{enumerate}
+
+The mixed 0~mrad sample tracks close to single MC at 85--90\%, consistent
+with the weighted average $0.813 \times 93.5\% + 0.187 \times 73.1\% = 89.7\%$
+(the small offset from 88.4\% reflects bin-by-bin weighting effects).
+
+\subsection{Isolation Efficiency}
+
+Isolation efficiency is essentially flat across interaction types:
+single 74.2\%, double 71.0\%, mixed 73.5\%. All three samples fall together
+from $\sim$77\% at low \pT{} ($\sim$9~GeV) to $\sim$60\% at high \pT{}
+($\sim$34~GeV), with the \pT-falling trend dominating over the pileup effect.
+Double MC sits only 3--5~pp below single across the range. The small
+degradation reflects the additional hadronic energy deposited in
+the isolation cone by the second interaction. This is a genuine, small pileup
+effect that does not interact with the $\DR$ matching.
+
+\subsection{Photon ID (BDT) Efficiency}
+
+This is the most physically interesting stage. Single MC achieves
+$\eid = 82.7\%$; double MC drops to $69.4\%$, a significant 13~pp reduction.
+The mechanism is the \ET-dependent BDT threshold:
+\begin{equation}
+  \text{BDT}_{\text{min}}(\ET) = \text{intercept} + \text{slope} \times \ET
+  \label{eq:bdt_threshold}
+\end{equation}
+
+In double-interaction events, the vertex shift modifies the reconstructed
+$\ET = E / \cosh(\eta_\text{reco})$. Because $\eta_\text{reco}$ is computed
+from the displaced vertex, the cluster evaluates the BDT threshold at a
+shifted \ET, changing the working point. The shifted shower-shape variables
+(particularly $\omega_\eta$, which is sensitive to $\eta$) further degrade
+the BDT score itself.
+
+The \pT{} dependence reveals an interesting pattern: at low \pT{} ($\sim$9~GeV)
+the gap is largest, with double MC at $\sim$64\% vs.\ single at $\sim$76\%
+(12~pp). At high \pT{} ($\sim$34~GeV), the gap narrows to $\sim$10~pp (double
+$\sim$83\% vs.\ single $\sim$93\%). This \pT{} dependence is consistent with
+the parametric BDT threshold of Eq.~(\ref{eq:bdt_threshold}): at low \ET,
+the threshold is flatter and a given \ET{} shift has a larger relative impact
+on the pass/fail decision.
+
+The mixed 0~mrad sample shows $\eid = 80.0\%$, a 2.7~pp reduction relative
+to single MC, sitting closer to the single curve due to the 81.3\% single
+fraction dominating.
+
+\subsection{Total Efficiency}
+
+The total efficiency without $\DR$ is: single 57.4\%, double 36.0\%, mixed
+52.0\%. The single-to-double drop is dominated by the reconstruction (20~pp)
+and BDT (13~pp) stages, with isolation contributing only 3~pp. The
+\pT{} dependence is moderate: single spans 53--58\%, double 33--37\%, and
+mixed 48--52\%. Notably, the ratio $\eall^\text{double} / \eall^\text{single}
+\approx 0.63$ is remarkably flat vs.\ \pT, indicating that the pileup
+degradation is approximately factorizable as a constant scale factor.
+
+The mixed 0~mrad efficiency of 52.0\% is the physics-relevant number for the
+pileup systematic evaluation.
+
+
+%% ============================================================
+\section{Photon ID Deep Dive: New Clusters}
+\label{sec:newclusters}
+
+The ``new clusters'' recovered by removing the $\DR$ cut provide a direct
+window into how vertex displacement affects BDT classification.
+Table~\ref{tab:newclusters} compares the BDT pass rate for new clusters only
+versus all clusters in the \texttt{noDR} matching.
+
+\begin{table}[htbp]
+\centering
+\caption{Photon ID (BDT) pass rate for ``new'' clusters (recovered by
+  removing $\DR < 0.1$) compared to all \texttt{noDR}-matched clusters.
+  The new clusters have 10--13~pp lower BDT pass rate, driven by
+  vertex-shifted kinematics.}
+\label{tab:newclusters}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Sample} & $\eid$ (new clusters only) & $\eid$ (all, noDR) \\
+\midrule
+Single & 73.9\% & 82.7\% \\
+Double & 59.8\% & 69.4\% \\
+Mixed  & 61.7\% & 80.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Several observations emerge:
+
+\begin{itemize}
+  \item The new clusters consistently show a lower BDT pass rate
+    than the full population: 9~pp lower for single MC, 10~pp for double,
+    and 18~pp for the mixed sample. This confirms that
+    vertex displacement degrades the BDT score via the mechanism described
+    in Section~\ref{sec:overlay}.
+
+  \item In single MC, only $\sim$2.3\% of matched clusters are ``new'' (those
+    with $\DR > 0.1$), so their lower BDT pass rate has negligible impact on
+    the integrated $\eid$ (change of $-0.2$~pp).
+
+  \item In double MC, $\sim$58\% of matched clusters are ``new'' (reflecting
+    the 65\% $\DR$ failure rate from the companion study, reduced by those
+    with no \texttt{trkID} match at all). The large new-cluster fraction
+    drives the 13~pp $\eid$ degradation.
+
+  \item The mixed sample's new-cluster BDT pass rate (61.7\%) is dominated
+    by the double-interaction contribution, since the single-interaction MC
+    contributes very few new clusters. Visually, the double and mixed curves
+    overlap almost completely in Figure~\ref{fig:newclusters}.
+
+  \item The \pT{} dependence is strongly rising: single new clusters span
+    $\sim$68\% at low \pT{} to $\sim$93\% at high \pT; double new clusters
+    span $\sim$55\% to $\sim$78\%. Higher-\pT{} photons are more robust to
+    vertex-induced kinematic shifts because their BDT scores sit further above
+    the threshold.
+\end{itemize}
+
+Figure~\ref{fig:newclusters} overlays the BDT pass rate for new clusters
+across the three sample types as a function of truth \pT.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{eff_id_newclusters_overlay.pdf}
+\caption{BDT pass rate for ``new'' clusters (those with $\DR > 0.1$ but valid
+  \texttt{trkID} match) as a function of truth \pT{} for single (blue),
+  double (red), and mixed (black) MC. These clusters have systematically
+  lower BDT pass rates due to vertex-shifted kinematics. The deficit
+  narrows at higher \pT{} where the absolute BDT pass rate is higher.}
+\label{fig:newclusters}
+\end{figure}
+
+
+%% ============================================================
+\section{Summary Visualization}
+\label{sec:summary}
+
+Figure~\ref{fig:summary_table} presents the efficiency summary in graphical
+table format, showing all stages, matching modes, and sample types at a glance.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{efficiency_summary_table.pdf}
+\caption{Summary table of integrated efficiencies for all stages, matching
+  modes, and sample types. The color coding highlights the magnitude of the
+  $\DR$-removal effect: green cells indicate improvement (higher noDR
+  efficiency), red cells indicate degradation. The net effect ($\eall$) is
+  positive for all sample types.}
+\label{fig:summary_table}
+\end{figure}
+
+
+%% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Removing the $\DR < 0.1$ truth-matching requirement and relying solely on
+\texttt{trkID} matching has the following quantitative effects on the
+factorized photon efficiency:
+
+\begin{enumerate}
+  \item \textbf{Total efficiency improves} across all interaction types:
+    +2.1\% relative for single MC ($56.2\% \to 57.4\%$), +11.5\% relative
+    for mixed 0~mrad ($46.6\% \to 52.0\%$), and approximately doubling for
+    pure double-interaction MC ($18.0\% \to 36.0\%$).
+
+  \item \textbf{Isolation efficiency is unaffected} by the $\DR$ removal
+    (change $< 0.5\%$ for all samples). The additional energy from pileup
+    causes a small $\sim$3\% absolute degradation comparing single to double,
+    but this is independent of the matching requirement.
+
+  \item \textbf{Photon ID (BDT) efficiency shows measurable degradation}
+    from vertex-shifted kinematics, but only in double-interaction MC
+    ($-13$~pp). In single MC the effect is negligible ($-0.2$~pp). The
+    mechanism is the \ET-dependent BDT threshold evaluating at a shifted
+    working point.
+
+  \item \textbf{For single-interaction MC} (used for production efficiency
+    corrections): $\eall$ changes by $+2.1\%$, $\eid$ by $-0.25\%$---both
+    small and well within the systematic uncertainty budget.
+
+  \item \textbf{For mixed 0~mrad MC:} $\eall$ improves by $+11.5\%$. This
+    improvement is essential for pileup efficiency studies, as it removes the
+    dominant truth-matching artifact that previously inflated the
+    apparent pileup degradation from $\sim$17\% (with $\DR$) to $\sim$9\%
+    (without $\DR$, genuine physics effect only).
+
+  \item \textbf{The single/double/mixed overlay} (Figure~\ref{fig:overlay_4panel})
+    provides a clean decomposition of genuine pileup effects at each efficiency
+    stage, enabling direct comparison of reconstruction loss, isolation
+    degradation, and BDT performance across interaction types without
+    truth-matching contamination.
+\end{enumerate}
+
+\begin{thebibliography}{1}
+\bibitem{dr_study} sPHENIX Internal Note: Study of the $\DR$ Truth-Matching
+  Requirement in Single-Interaction MC, 2025.
+\end{thebibliography}
+
+\end{document}

@@ -1,5 +1,9 @@
 # PPG12 — Isolated Photon Cross-Section in pp at sqrt(s) = 200 GeV, sPHENIX
 
+## Wiki
+
+For detailed pipeline documentation, see `wiki/index.md`. Consult it before exploring unfamiliar parts of the codebase. The wiki covers pipeline stages, physics concepts, config schema, constants sync issues, and step-by-step guides.
+
 ## Pipeline
 
 1. **anatreemaker/source/CaloAna24.cc** — DST files → slimtree ROOT files (tree: `slimtree`, node: `CLUSTERINFO_CEMC`)
@@ -40,10 +44,10 @@ cd PPG12-analysis-note && pdflatex main.tex && bibtex main && pdflatex main.tex 
 ## Physics Parameters
 
 - **Eta**: `[-0.7, 0.7]` (barrel EMCal)
-- **pT bins (reco)**: `[8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 35]` GeV (12 bins, from `plotcommon.h`)
+- **pT bins (reco)**: `[8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36]` GeV (12 bins, from `plotcommon.h`)
 - **pT bins (truth)**: extended on both sides for unfolding overflow
-- **Isolation**: cone R=0.3, parametric cut `reco_iso_max = reco_iso_max_b + reco_iso_max_s * ET`
-- **Truth isolation**: `iso_ET_truth < 4 GeV`
+- **Reco isolation**: topo-cluster R=0.4 (nominal, `use_topo_iso: 2`), parametric cut `reco_iso_max = reco_iso_max_b + reco_iso_max_s * ET`
+- **Truth isolation**: cone R=0.3, `iso_ET_truth < 4 GeV` (fiducial definition for cross-section)
 - **BDT threshold**: parametric `tight_bdt_min = intercept + slope * ET` (ET-dependent, not flat)
 - **Luminosity**: 16.6 pb^-1 (Run 24)
 - **Cluster node**: `CLUSTERINFO_CEMC` (current), `CLUSTERINFO_CEMC_NO_SPLIT` (legacy)
@@ -105,6 +109,24 @@ Several plotting macros save figures directly to `PPG12-analysis-note/Figures/`.
 - Data input: `/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root`
 - Results: `/sphenix/user/shuhangli/ppg12/efficiencytool/results/`
 - BDT models: `/sphenix/user/shuhangli/ppg12/FunWithxgboost/binned_models/`
+
+## GitHub Pages
+
+Analysis results published at `https://shuonli.github.io/ppg12/` (enable in repo Settings → Pages → gh-pages branch).
+
+```bash
+# Deploy reports + selected figures to the site
+python3 scripts/deploy_pages.py
+
+# Preview without pushing
+python3 scripts/deploy_pages.py --dry-run
+```
+
+- Config: `scripts/site_config.yaml` — controls which reports and figures are published
+- Reports in `reports/` (`.pdf`, `.md`) are auto-discovered
+- Figures require explicit allowlist in `site_config.yaml` under `figures.include`
+- Site content lives on the orphan `gh-pages` branch (managed via `_gh-pages-worktree/`)
+- Skill: `/deploy-pages` wraps the deploy script
 
 ## References
 

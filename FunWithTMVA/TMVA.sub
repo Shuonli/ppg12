@@ -1,0 +1,22 @@
+universe              = vanilla
+
+PeriodicHold        = (NumJobStarts >= 1 && JobStatus == 1)
+concurrency_limits  = CONCURRENCY_LIMIT_DEFAULT:100
+Notification        = Never
+
+# Use /bin/bash to run our script
+executable          = /bin/bash
+
+# Pass the three integer arguments to run_TMVA.sh
+arguments           = "run_TMVA.sh $(a) $(b) $(c)"
+
+# Log, output, and error files are named using the three variables
+log                 = logs/run_TMVA_$(a)_$(b)_$(c).log
+output              = logs/run_TMVA_$(a)_$(b)_$(c).out
+error               = logs/run_TMVA_$(a)_$(b)_$(c).err
+
+# Make sure the 'logs' directory exists (e.g., mkdir logs)
+
+# Queue a job for each combination (provided in the file triples.txt)
+queue a, b, c from triples.txt
+

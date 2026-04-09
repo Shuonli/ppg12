@@ -1,0 +1,182 @@
+best_params: null
+best_val_auc: null
+config:
+  data:
+    background_files:
+    - shapes_data_npb.txt
+    background_selection: pid == -1
+    et_max: 40.0
+    et_min: 6.0
+    eta_max: 0.7
+    signal_files:
+    - shapes_split_jet5.txt
+    - shapes_split_jet12.txt
+    - shapes_split_jet20.txt
+    - shapes_split_jet30.txt
+    - shapes_split_jet40.txt
+    signal_selection: pid != -1
+  evaluation:
+    generate_plots: true
+    plot_types:
+    - roc_curve
+    - score_distributions
+    - feature_importance
+    - confusion_matrix
+  features:
+    feature_list: &id002
+    - cluster_Et
+    - cluster_Eta
+    - vertexz
+    - e11_over_e33
+    - e32_over_e35
+    - e11_over_e22
+    - e11_over_e13
+    - e11_over_e15
+    - e11_over_e17
+    - e11_over_e31
+    - e11_over_e51
+    - e11_over_e71
+    - e22_over_e33
+    - e22_over_e35
+    - e22_over_e37
+    - e22_over_e53
+    - cluster_weta_cogx
+    - cluster_wphi_cogx
+    - cluster_et1
+    - cluster_et2
+    - cluster_et3
+    - cluster_et4
+    - cluster_w32
+    - cluster_w52
+    - cluster_w72
+  model:
+    params:
+      colsample_bytree: 0.8
+      eval_metric: logloss
+      learning_rate: 0.1
+      max_bin: 256
+      max_depth: 6
+      n_estimators: 750
+      objective: binary:logistic
+      reg_alpha: 1.0
+      reg_lambda: 1.0
+      scale_pos_weight: 1.0
+      subsample: 0.8
+      tree_method: hist
+    save_joblib: true
+    save_root: true
+    type: xgboost
+  per_bin_analysis:
+    calculate_per_bin_auc: true
+    et_bin_edges: &id001
+    - 5
+    - 10
+    - 15
+    - 20
+    - 25
+    - 30
+    - 35
+    - 40
+    et_bin_labels:
+    - 5-10
+    - 10-15
+    - 15-20
+    - 20-25
+    - 25-30
+    - 30-35
+    - 35-40
+    et_bins_for_plot: 40
+    plot_et_distributions: true
+    train_per_bin_models: false
+  training:
+    balance_classes: true
+    downsample_et_max: 15.0
+    downsample_et_min: 6.0
+    downsample_signal_peak: false
+    downsample_target_fraction: null
+    et_reweight_bins: 20
+    et_reweight_cap: 100.0
+    et_reweight_min_pdf: 1e-3
+    hyperparameter_tuning:
+      enabled: false
+      max_evals: 12
+      metric: auc
+      param_grid:
+        colsample_bytree:
+        - 0.7
+        - 0.9
+        learning_rate:
+        - 0.05
+        - 0.1
+        max_depth:
+        - 4
+        - 6
+        - 8
+        n_estimators:
+        - 300
+        - 600
+        - 900
+        reg_alpha:
+        - 0.0
+        - 1.0
+        reg_lambda:
+        - 1.0
+        subsample:
+        - 0.7
+        - 0.9
+    model_name: npb_score_split
+    output_dir: npb_models
+    random_seed: 42
+    reweight_et: true
+    reweight_eta: false
+    reweight_vertex: false
+    test_size: 0.2
+    train_size: 0.7
+    val_size: 0.1
+et_bin_edges: *id001
+features: *id002
+model_name: npb_score_split
+n_features: 25
+per_bin_auc_binned_models: {}
+per_bin_auc_single_model:
+  10-15: !!python/object/apply:numpy._core.multiarray.scalar
+  - &id003 !!python/object/apply:numpy.dtype
+    args:
+    - f8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - !!binary |
+    YGSuI+Li7z8=
+  15-20: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    36pdLLnh7z8=
+  20-25: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    yF73OWbY7z8=
+  25-30: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    Lb74tqJ/7z8=
+  30-35: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    do5SM49m7z8=
+  35-40: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    dEu36iux7T8=
+  5-10: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id003
+  - !!binary |
+    yR/5CLG/7z8=

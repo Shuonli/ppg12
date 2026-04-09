@@ -1,0 +1,22 @@
+universe              = vanilla
+executable            = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT.sh
+
+# Paths and logs
+output                = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/$(Cluster).$(Process).out
+error                 = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/$(Cluster).$(Process).err
+log                   = /tmp/$(Cluster).log
+
+# Inherit environment so ROOT, sPHENIX env, yaml-cpp, etc. are available
+getenv                = true
+
+# Request modest resources (older-condor compatible units)
+request_memory        = 2048MB
+request_disk          = 2GB
+request_cpus          = 1
+
+# One job per line in datalist.list: each line becomes $(inputfile)
+arguments             = $(inputfile)
+queue inputfile from /sphenix/user/shuhangli/ppg12/FunWithxgboost/datalist.list
+# +JobFlavour           = "longlunch"
+
+

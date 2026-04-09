@@ -2028,7 +2028,8 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
                     if (photon_reco.find(iparticle) == photon_reco.end())
                     {
                         // then it is non truth signal, if it pass the reco, iso, and tight cuts, then it is a fake
-                        if (iso && tight && (dR < eff_dR))
+                        // Note: deltaR cut removed — trkID match is sufficient for truth association
+                        if (iso && tight)
                         {
                             h_pT_reco_fake[etabin]->Fill(cluster_Et[icluster], weight);
                         }
@@ -2043,8 +2044,9 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
 
                 photon_ncluster[iparticle]++;
 
-                if (dR < eff_dR)
-                // if ( (dR < eff_dR) && ( (cluster_Et[icluster] / particle_Pt[iparticle]) > 0.8) )
+                // deltaR cut removed — trkID match alone is sufficient for truth association.
+                // See efficiencytool/reports/deltaR_matching_study.tex for the full study.
+                // if (dR < eff_dR)  // OLD: geometric cut on top of trkID match
                 {
 
                     // if(photon_converts[iparticle]) continue;

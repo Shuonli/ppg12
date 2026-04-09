@@ -1,0 +1,993 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{BDT Selection Plots}
+\lhead{\nouppercase{\leftmark}}
+\rfoot{\thepage}
+
+\begin{document}
+
+\title{Selection Plots: BDT Variations}
+\date{\today}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{\texttt{bdt\_nom}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_nom.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_nom.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_nom.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_nom.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_nom.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_emcalinnerr0}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Additional}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_ratio\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_ratio\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_ratio\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_ratio\_sim\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_ratio\_sim\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_ratio\_sim\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_sim\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_sim\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_sim\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[leakage\_fraction\_et\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[leakage\_fraction\_et\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[leakage\_fraction\_et\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[leakage\_fraction\_et\_sim\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[leakage\_fraction\_et\_sim\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[leakage\_fraction\_et\_sim\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[purity\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[purity\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[purity\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[purity\_sim\_bdt\_emcalinnerr0\_isoscale08]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[purity\_sim\_bdt\_emcalinnerr0\_isoscale09]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[purity\_sim\_bdt\_emcalinnerr0\_isoscale10]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_emcalinnerr0\_isoscale07}}
+
+\textit{No plots found for this configuration.}
+
+\section{\texttt{bdt\_emcalinnerr0\_isoscale08}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale08.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale08.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_emcalinnerr0\_isoscale09}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale09.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale09.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_emcalinnerr0\_isoscale10}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_emcalinnerr0_isoscale10.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_emcalinnerr0_isoscale10.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_mcisosc07}}
+
+\textit{No plots found for this configuration.}
+
+\section{\texttt{bdt\_mcisosc08}}
+
+\textit{No plots found for this configuration.}
+
+\section{\texttt{bdt\_mcisosc10}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_mcisosc10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_mcisosc10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_mcisosc10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_mcisosc10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_mcisosc10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_mcisosc10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_mcisosc10.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_mcisosc10.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_modelbase}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_modelbase.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_modelbase.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_modelbase.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_modelbase.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_modelbase.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_modelbase.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_modelbase.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_modelbase.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Additional}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_ratio\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_ratio\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_ratio\_sim\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_ratio\_sim\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[et\_sbs\_sim\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[et\_sbs\_sim\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[leakage\_fraction\_et\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[leakage\_fraction\_et\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[leakage\_fraction\_et\_sim\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[leakage\_fraction\_et\_sim\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[purity\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[purity\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[purity\_sim\_bdt\_modelbase\_v2]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_modelbase_v2.pdf}}
+  \hfill
+  \subfloat[purity\_sim\_bdt\_modelbase\_v3E]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_modelbase\_v3E}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_modelbase_v3E.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_modelbase_v3E.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_modelbase_v3E.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_modelbase_v3E.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_noniso01}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_noniso01.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_noniso01.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_noniso01.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_noniso01.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_noniso01.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_noniso01.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_noniso01.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_noniso01.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_noniso03}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_noniso03.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_noniso03.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_noniso03.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_noniso03.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_noniso03.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_noniso03.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_noniso03.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_noniso03.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_noniso07}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_noniso07.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_noniso07.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_noniso07.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_noniso07.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_noniso07.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_noniso07.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_noniso07.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_noniso07.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_npb03}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_npb03.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_npb03.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_npb03.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_npb03.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_npb03.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_npb03.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_npb03.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_npb03.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_npb07}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_npb07.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_npb07.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_npb07.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_npb07.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_npb07.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_npb07.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_npb07.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_npb07.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_ntbdtmin01}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_ntbdtmin01.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_ntbdtmin01.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_ntbdtmin01.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_ntbdtmin01.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_ntbdtmin01.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_ntbdtmin01.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_ntbdtmin01.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_ntbdtmin01.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_ntbdtmin05}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_ntbdtmin05.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_ntbdtmin05.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_ntbdtmin05.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_ntbdtmin05.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_ntbdtmin05.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_ntbdtmin05.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_ntbdtmin05.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_ntbdtmin05.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_ntbdtmin10}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_ntbdtmin10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_ntbdtmin10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_ntbdtmin10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_ntbdtmin10.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_ntbdtmin10.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_ntbdtmin10.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_ntbdtmin10.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_ntbdtmin10.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_tightbdt50}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_tightbdt50.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_tightbdt50.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_tightbdt50.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_tightbdt50.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_tightbdt50.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_tightbdt50.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_tightbdt50.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_tightbdt50.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_tightbdt70}}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_tightbdt70.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_tightbdt70.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_tightbdt70.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_tightbdt70.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC)]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_tightbdt70.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC)]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_tightbdt70.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data)]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_tightbdt70.pdf}}
+  \hfill
+  \subfloat[Purity (MC)]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_tightbdt70.pdf}}
+\end{figure}
+
+\clearpage
+
+\end{document}

@@ -1,0 +1,53 @@
+{
+  "bin_label": "5_15",
+  "trained_as_single_model": true,
+  "single_model_path": "binned_models/model_single.joblib",
+  "bin_edges": [
+    5,
+    15,
+    25,
+    40
+  ],
+  "pt_col": "cluster_Et",
+  "iso_col": "recoisoET",
+  "label_col": "label",
+  "features": [
+    "vertexz",
+    "cluster_Eta",
+    "e11_over_e33",
+    "cluster_et1",
+    "cluster_et2",
+    "cluster_et3",
+    "cluster_et4"
+  ],
+  "train_size": 0.8,
+  "random_seed": 42,
+  "model_config": {
+    "classifier": "xgb",
+    "params": {
+      "n_estimators": 500,
+      "max_depth": 5,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "reg_alpha": 0.0,
+      "reg_lambda": 1.0,
+      "random_state": 42,
+      "n_jobs": 4,
+      "tree_method": "hist"
+    },
+    "use_scaler": false
+  },
+  "train_metrics": {
+    "train_time_sec": 59.32,
+    "n_train": 3069044,
+    "n_val": 122326,
+    "auc_train": 0.8477926941508684,
+    "et_min": 5.0,
+    "et_max": 15.0
+  },
+  "input_files": {
+    "signal": "shapes_photon20.txt",
+    "background": "shapes_jet30.txt"
+  }
+}

@@ -3,10 +3,10 @@
 
 
 const int NptBins = 12;
-const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 35};
+const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
 
 const float pTmin = 10;
-const float pTmax = 30;
+const float pTmax = 36;
 
 TH1F *frame_et_rec;
 TH1F *frame_isoET;

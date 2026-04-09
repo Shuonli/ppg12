@@ -1,0 +1,430 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Local macros (subset of PPG12 defs.sty) ---
+\newcommand{\pp}{\mbox{$p$+$p$}}
+\newcommand{\sqs}{\mbox{$\sqrt{s}$}}
+\newcommand{\DR}{\ensuremath{\Delta R}}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}}
+\newcommand{\ET}{\ensuremath{E_{\text{T}}}}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
+\newcommand{\Rcone}{\ensuremath{R_{\text{cone}}}}
+\newcommand{\abseta}{\ensuremath{|\eta|}}
+\newcommand{\isoETtruth}{\ensuremath{E_\text{T}^\text{iso,truth}}}
+
+\graphicspath{{../../plotting/figures/deltaR_study/}}
+
+\title{%
+  \vspace{-1cm}
+  {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
+  {\LARGE \textbf{Study of the $\DR$ Truth-Matching Requirement\\
+  in Single-Interaction MC}}\\[0.3cm]
+  {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
+}
+\author{sPHENIX Collaboration}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This note documents a study of the $\DR < 0.1$ geometric truth-matching
+requirement used in the reconstruction efficiency calculation for the sPHENIX
+isolated photon cross-section measurement (PPG12). While a previous study of
+double-interaction MC found a 65\% matching failure rate driven by vertex
+displacement, the single-interaction samples were assumed to be unaffected.
+We show that even in single-interaction MC, the $\DR$ cut rejects
+$\sim$3\% of correctly track-ID-matched truth photons, with the rejection
+driven entirely by vertex mismatch rather than cluster quality. 73\% of
+rejected clusters have $\ET / \pT^{\text{truth}}$ in the range $[0.8, 1.2]$
+and are well-reconstructed photons. The $\DR < 0.1$ cut is removed from the
+production efficiency calculation; track ID matching alone provides the
+definitive truth association.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+The reconstruction efficiency for the sPHENIX isolated photon cross-section
+measurement is computed from single-interaction PYTHIA + GEANT4 MC samples.
+A truth photon is considered ``matched'' to a reconstructed cluster if two
+criteria are satisfied:
+\begin{enumerate}
+  \item \textbf{Track ID match:} the GEANT track ID (\texttt{trkID}) of the
+    truth particle matches that of a reconstructed cluster. This is the
+    definitive truth association provided by the simulation framework.
+  \item \textbf{Geometric match:} the angular separation between the truth
+    photon and the matched cluster satisfies
+    $\DR = \sqrt{(\Delta\eta)^2 + (\Delta\phi)^2} < 0.1$.
+\end{enumerate}
+
+The $\DR$ cut was introduced as a geometric sanity check on top of the
+\texttt{trkID} association. A previous study of double-interaction MC
+(documented in Ref.~\cite{di_note}) demonstrated that vertex displacement
+causes a 65\% $\DR$-matching failure rate. In double-interaction events, the
+reconstructed vertex is the average of two collision vertices, inducing large
+$\Delta z$ shifts that propagate to $\Delta\eta$ via the EMCal geometry.
+
+That study focused on double-interaction samples, and single-interaction MC was
+assumed to be largely unaffected. This note quantifies the $\DR$ cut's impact
+in single-interaction MC and evaluates whether it is needed at all.
+
+\begin{thebibliography}{1}
+\bibitem{di_note} sPHENIX Internal Note: Double-Interaction MC Efficiency
+  Study, 2025.
+\end{thebibliography}
+
+%% ============================================================
+\section{Method}
+\label{sec:method}
+
+The study uses the macro \texttt{study\_deltaR\_single.C}, processing the full
+single-interaction MC samples used in the production efficiency calculation:
+\texttt{photon5} (truth $\pT$ range 0--14~GeV), \texttt{photon10} (14--30~GeV),
+and \texttt{photon20} (30+~GeV). Each sample is weighted by its production
+cross-section to form a combined spectrum spanning the analysis range
+$8 \leq \pT < 36$~GeV.
+
+Truth photon selection follows the standard PPG12 criteria:
+\begin{itemize}
+  \item Particle ID: $\texttt{pid} = 22$
+  \item Photon class: $\texttt{photonclass} < 3$ (direct photons)
+  \item Truth isolation: $\isoETtruth < 4$~GeV (cone $\Rcone = 0.3$)
+  \item Pseudorapidity: $\abseta < 0.7$
+  \item Transverse momentum: $8 \leq \pT < 36$~GeV
+\end{itemize}
+
+For each truth photon, the closest \texttt{trkID}-matched reconstructed cluster
+is identified, and $\DR$ is computed. The analysis scans over $\DR$ thresholds
+of 0.05, 0.08, 0.10, 0.15, 0.20, 0.30, and no geometric cut (track ID only).
+The \texttt{photon10\_double} sample is also processed for direct comparison
+with the double-interaction results.
+
+%% ============================================================
+\section{Results}
+\label{sec:results}
+
+%% --------------------------------------------------
+\subsection{\texorpdfstring{$\DR$}{Delta R} Failure Rates}
+\label{sec:rates}
+
+Table~\ref{tab:persample} summarizes the matching failure rates per sample and
+for the combined (unweighted) dataset.
+
+\begin{table}[htbp]
+\centering
+\caption{Truth-matching failure rates in single-interaction MC, per sample and
+  combined. ``No trkID match'' indicates no reconstructed cluster carries the
+  truth photon's track ID. ``Fail $\DR < 0.1$'' is the fraction of
+  \texttt{trkID}-matched photons that fail the geometric cut.}
+\label{tab:persample}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Sample} & \textbf{Truth photons} & \textbf{No trkID match} &
+  \textbf{Fail $\DR < 0.1$ (of matched)} \\
+\midrule
+photon5  & 273{,}017   & 3.42\% & 2.70\% \\
+photon10 & 2{,}380{,}500 & 2.37\% & 2.98\% \\
+photon20 & 2{,}840{,}703 & 1.72\% & 4.01\% \\
+\midrule
+Combined & 5{,}494{,}220 & 2.09\% & 3.50\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $\DR < 0.1$ cut rejects 2.7--4.0\% of truth photons that already have a
+valid \texttt{trkID} match, with the rate increasing at higher $\pT$ where
+forward-$\eta$ clusters are more sensitive to vertex shifts.
+
+Table~\ref{tab:singledouble} compares the single-interaction and
+double-interaction results for the \texttt{photon10} sample, illustrating the
+continuity between the two regimes.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of \texttt{photon10} single-interaction and
+  double-interaction MC. The $\Delta z$ RMS is the event-level distribution
+  of $|z_{\text{vtx}}^{\text{reco}} - z_{\text{vtx}}^{\text{truth}}|$.}
+\label{tab:singledouble}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Sample} & \textbf{$\Delta z$ RMS} & \textbf{No trkID} &
+  \textbf{Fail $\DR < 0.1$ (of matched)} \\
+\midrule
+photon10 single & 9.8~cm & 2.37\% & 3.06\% \\
+photon10 double & 46.2~cm & 7.92\% & 65.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $\DR$ failure rate scales with vertex displacement: the double-interaction
+sample's much larger $\Delta z$ RMS drives a proportionally larger failure
+rate, consistent with the geometric mechanism established in the
+double-interaction study.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{deltaR_distribution.pdf}
+\caption{Distribution of $\DR$ between truth photons and their
+  \texttt{trkID}-matched reconstructed clusters in single-interaction MC.
+  The vertical line indicates the $\DR = 0.1$ threshold. A tail of events
+  extends beyond the cut, corresponding to vertex-displaced clusters.}
+\label{fig:dr_dist}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Threshold Scan}
+\label{sec:scan}
+
+Table~\ref{tab:scan} shows the $\DR$ failure rate as a function of the
+matching threshold for both single and double-interaction \texttt{photon10}
+samples.
+
+\begin{table}[htbp]
+\centering
+\caption{Fraction of \texttt{trkID}-matched truth photons failing the $\DR$
+  cut as a function of threshold, for \texttt{photon10} single and double
+  interaction MC.}
+\label{tab:scan}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Threshold} & \textbf{Single fail rate} & \textbf{Double fail rate} \\
+\midrule
+$\DR \geq 0.05$ & 5.03\% & 72.6\% \\
+$\DR \geq 0.08$ & 3.60\% & 68.0\% \\
+$\DR \geq 0.10$ & 3.06\% & 65.0\% \\
+$\DR \geq 0.15$ & 2.27\% & 57.8\% \\
+$\DR \geq 0.20$ & 1.83\% & 50.9\% \\
+$\DR \geq 0.30$ & 1.27\% & 37.9\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Even relaxing the cut to $\DR < 0.30$ still rejects 1.3\% of single-interaction
+photons, indicating that the issue is not a matter of tuning the threshold
+but reflects the fundamental limitation of a geometric cut applied on top of a
+vertex-dependent coordinate system.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{efficiency_threshold_scan.pdf}
+\caption{Matching efficiency as a function of $\DR$ threshold for
+  \texttt{photon10} single-interaction (blue) and double-interaction (red) MC.
+  The nominal threshold of 0.1 is marked. In single-interaction MC, removing
+  the cut entirely recovers $\sim$3\% efficiency.}
+\label{fig:scan}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Vertex Mismatch as the Driving Mechanism}
+\label{sec:vertex}
+
+The connection between vertex mismatch and $\DR$ failure is examined by
+computing the failure fraction as a function of
+$|\Delta z| = |z_{\text{vtx}}^{\text{reco}} - z_{\text{vtx}}^{\text{truth}}|$.
+Table~\ref{tab:dz} shows a sharp step function.
+
+\begin{table}[htbp]
+\centering
+\caption{$\DR < 0.1$ failure fraction as a function of $|\Delta z|$ in
+  single-interaction MC. The transition occurs at the predicted critical
+  threshold $|\Delta z|_{\text{crit}} = 9.35$~cm.}
+\label{tab:dz}
+\begin{tabular}{lc}
+\toprule
+\textbf{$|\Delta z|$ range (cm)} & \textbf{Failure fraction} \\
+\midrule
+$< 9$   & $\sim$0\%  \\
+9--10  & 0.9\%   \\
+10--11 & 20\%    \\
+11--12 & 62\%    \\
+12--13 & 88\%    \\
+$\geq 15$ & 100\%   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The critical threshold is predicted by the EMCal barrel geometry:
+\begin{equation}
+  |\Delta z|_{\text{crit}} = \DR_{\text{cut}} \times R_{\text{EMCal}}
+    \times \cosh\eta
+    = 0.1 \times 93.5~\text{cm}
+    = 9.35~\text{cm} \quad (\text{at } \eta = 0)
+  \label{eq:dzcrit}
+\end{equation}
+The observed step at $|\Delta z| \approx 9$--10~cm matches this prediction
+precisely, confirming that vertex mismatch is the sole driver of the failure.
+
+In the single-interaction MC, the cross-section-weighted $\Delta z$ RMS is
+2.88~cm, but the vertex distribution has a long tail: 2.12\% of truth photons
+have $|\Delta z| > 9.35$~cm. Virtually all of these fail the $\DR < 0.1$ cut.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{fail_fraction_vs_dz.pdf}
+\caption{$\DR < 0.1$ failure fraction as a function of $|\Delta z|$ in
+  single-interaction MC. The sharp step at $\sim$9.35~cm matches the
+  geometric prediction of Eq.~(\ref{eq:dzcrit}).}
+\label{fig:fail_dz}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{deta_vs_dz.pdf}
+\caption{Correlation between $\Delta\eta$ (truth$-$reco) and vertex shift
+  $\Delta z$. The linear band follows $\Delta\eta \approx
+  -\Delta z / (R_{\text{EMCal}} \cdot \cosh\eta)$, confirming the geometric
+  origin of the $\DR$ failure.}
+\label{fig:deta_dz}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{deltaR_vs_dz.pdf}
+\caption{Two-dimensional distribution of $\DR$ vs.\ $|\Delta z|$ in
+  single-interaction MC. Events above the horizontal line ($\DR = 0.1$) are
+  rejected by the matching cut; they cluster at $|\Delta z| > 9$~cm.}
+\label{fig:dr_dz}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Energy Quality of Rejected Clusters}
+\label{sec:quality}
+
+If the $\DR$ cut were removing genuinely mis-reconstructed clusters, we would
+expect degraded energy response. Figure~\ref{fig:etratio} shows the cluster
+$\ET / \pT^{\text{truth}}$ distribution separately for clusters that pass and
+fail the $\DR < 0.1$ cut.
+
+\begin{table}[htbp]
+\centering
+\caption{Cluster $\ET / \pT^{\text{truth}}$ distribution for
+  \texttt{trkID}-matched clusters passing and failing the $\DR < 0.1$ cut.}
+\label{tab:quality}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Category} & \textbf{Mean $\ET / \pT^{\text{truth}}$} &
+  \textbf{Fraction in $[0.8, 1.2]$} \\
+\midrule
+Pass ($\DR < 0.1$) & 0.945 & 88\% \\
+Fail ($\DR \geq 0.1$) & 0.899 & 73\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The majority of rejected clusters are well-reconstructed photons. Their
+calorimeter energy deposit is correct; only the angular position is shifted
+by the vertex mismatch. The modest reduction in mean $\ET / \pT^{\text{truth}}$
+for failing clusters (0.899 vs.\ 0.945) is itself a consequence of the
+$\eta$-shift: the $\ET = E / \cosh\eta$ calculation uses the displaced vertex,
+producing a slightly different $\ET$ than the truth-level $\pT$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{ET_ratio_pass_fail.pdf}
+\caption{Distribution of cluster $\ET / \pT^{\text{truth}}$ for
+  \texttt{trkID}-matched clusters that pass (blue) and fail (red) the
+  $\DR < 0.1$ cut. 73\% of failing clusters have $\ET / \pT^{\text{truth}}
+  \in [0.8, 1.2]$, indicating they are correctly reconstructed photons.}
+\label{fig:etratio}
+\end{figure}
+
+%% ============================================================
+\section{\texorpdfstring{Physics Argument for Removing the $\DR$ Cut}{Physics Argument for Removing the Delta R Cut}}
+\label{sec:argument}
+
+Six arguments support removing the $\DR < 0.1$ requirement:
+
+\begin{enumerate}
+  \item \textbf{Track ID is ground truth.} The GEANT \texttt{trkID} provides
+    a definitive link between the truth particle and its energy deposit in the
+    calorimeter. The $\DR$ cut adds no additional truth information; it tests
+    a derived geometric quantity that depends on the vertex reconstruction.
+
+  \item \textbf{The cut tests vertex resolution, not calorimeter performance.}
+    The failure rate correlates with $|\Delta z|$ (Table~\ref{tab:dz}),
+    not with any measure of cluster quality. The sharp step at
+    $|\Delta z| = 9.35$~cm is a geometric artifact of the EMCal radius and the
+    $\DR$ threshold.
+
+  \item \textbf{Rejected clusters are good photons.} 73\% of failing clusters
+    have $\ET / \pT^{\text{truth}} \in [0.8, 1.2]$
+    (Table~\ref{tab:quality}). The calorimeter correctly measured the photon
+    energy; only the vertex-dependent angular coordinate is shifted.
+
+  \item \textbf{The response matrix should capture vertex-induced shifts.}
+    Kinematic migration from vertex mismatch (the slight $\ET$ shift visible
+    in the failing clusters) is precisely the kind of detector effect that the
+    unfolding response matrix is designed to correct. Excluding these events
+    from the efficiency numerator biases the response matrix.
+
+  \item \textbf{The $\sim$3\% bias is vertex-dependent.} Because the failure
+    rate depends on $|\Delta z|$, it is correlated with beam conditions
+    (vertex spread, crossing angle). An efficiency correction that includes
+    this bias would need to be parameterized in $\Delta z$, adding unnecessary
+    complexity.
+
+  \item \textbf{Consistency between single and double MC.} Removing the $\DR$
+    cut makes the single-interaction and double-interaction efficiency
+    calculations more directly comparable, simplifying the pileup systematic
+    uncertainty evaluation.
+\end{enumerate}
+
+We note that the production code contains a commented-out alternative cut,
+\texttt{(cluster\_ET / particle\_Pt) > 0.8}, which directly tests
+calorimeter energy response rather than angular geometry. If any quality gate
+beyond \texttt{trkID} is desired, an energy-response cut is more physically
+motivated than a geometric $\DR$ cut, as it removes genuinely
+mis-reconstructed clusters (merges, splits, lost energy) without penalizing
+vertex displacement.
+
+%% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+The $\DR < 0.1$ geometric truth-matching cut is removed from the production
+reconstruction efficiency calculation. The key findings are:
+
+\begin{enumerate}
+  \item In single-interaction MC, the $\DR < 0.1$ cut rejects $\sim$3.5\% of
+    \texttt{trkID}-matched truth photons. This is not negligible at the
+    precision targets of the measurement.
+
+  \item The rejection is driven entirely by vertex mismatch
+    ($|\Delta z| > 9.35$~cm), not by cluster quality. A sharp step function
+    in failure rate vs.\ $|\Delta z|$ matches the geometric prediction from
+    the EMCal barrel radius.
+
+  \item 73\% of rejected clusters are well-reconstructed photons with
+    $\ET / \pT^{\text{truth}} \in [0.8, 1.2]$.
+
+  \item Track ID matching alone is sufficient and definitive for truth
+    association. The $\DR$ cut adds no truth information and introduces a
+    vertex-dependent efficiency bias.
+
+  \item The $\sim$3\% difference in efficiency can be assigned as a systematic
+    uncertainty if desired, though the physics argument supports treating the
+    track-ID-only matching as the correct baseline.
+\end{enumerate}
+
+\end{document}

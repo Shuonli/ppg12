@@ -1,0 +1,674 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+
+\title{Investigation: MC Purity Correction Factor in PPG12}
+\author{PPG12 Analysis Team (automated investigation)}
+\date{April 7, 2026 (updated April 8, 2026)}
+
+\begin{document}
+
+\maketitle
+
+%% ---------------------------------------------------------------
+\section{Introduction}
+\label{sec:introduction}
+
+The PPG12 isolated photon cross-section measurement employs the ABCD method
+to estimate photon purity from data. The four ABCD regions are defined by
+two axes: a BDT-based tight/non-tight classification and an
+isolation/non-isolation criterion. Signal (isolated photons) populates
+region~A (tight, isolated), and the background contribution to~A is
+estimated from the other three regions as
+$N_{\mathrm{bkg}}^{A} = R \cdot (B \times C) / D$,
+after correcting for signal leakage into regions B, C, and D
+(fractions $c_B$, $c_C$, $c_D$).
+
+In Monte Carlo, the truth purity can be computed directly by matching
+reconstructed clusters to generator-level photons. The ratio of truth
+purity to the ABCD-estimated purity (with leakage corrections applied)
+provides a multiplicative correction factor. This factor is stored as
+\texttt{g\_mc\_purity\_fit\_ratio} and applied to the data purity when the
+configuration flag \texttt{mc\_purity\_correction:~1} is set.
+
+A notable feature of this correction factor is that it crosses~1.0 in the
+neighborhood of $p_T \approx 13$--14~GeV. Below this crossing point, the
+ABCD method underestimates purity (correction~$>1$); above it, the ABCD
+method overestimates purity (correction~$<1$). This report documents the
+investigation into the origin of this behavior.
+
+\textbf{Important technical detail:} the stored ratio uses \emph{truth purity
+data points} divided by a \emph{smooth Pad\'e fit} to the ABCD purity
+(\texttt{f\_purity\_leak\_fit}), not a ratio of two fitted curves.
+Consequently, the correction factor inherits the statistical fluctuations
+of the truth purity measurement. When applied to data via
+\texttt{TGraphErrors::Eval()}, the correction uses linear interpolation
+between these noisy stored points.
+
+%% ---------------------------------------------------------------
+\section{The Correction Factor}
+\label{sec:correction}
+
+Table~\ref{tab:ratio} lists the MC truth purity, the ABCD purity (with
+leakage corrections), and the stored correction ratio at each $p_T$ bin center.
+
+\begin{table}[H]
+\centering
+\caption{MC purity correction ratio at each $p_T$ bin. The ratio is
+         truth purity (data points) divided by the Pad\'e fit to the
+         leakage-corrected ABCD purity.}
+\label{tab:ratio}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$p_T$ (GeV) & Truth Purity & ABCD Purity (leak) & Ratio \\
+\midrule
+ 9  & 0.566 & 0.370 & 1.505 \\
+11  & 0.576 & 0.460 & 1.206 \\
+13  & 0.620 & 0.654 & 1.112 \\
+15  & 0.594 & 0.640 & 0.952 \\
+17  & 0.584 & 0.630 & 0.862 \\
+19  & 0.622 & 0.620 & 0.860 \\
+21  & 0.667 & 0.700 & 0.875 \\
+23  & 0.679 & 0.804 & 0.852 \\
+25  & 0.651 & 0.560 & 0.787 \\
+27  & 0.707 & 0.915 & 0.829 \\
+30  & 0.679 & 0.712 & 0.766 \\
+34  & 0.849 & 0.889 & 0.919 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ABCD purity points are highly non-monotonic (e.g., 0.560 at $p_T=25$~GeV
+then 0.915 at $p_T=27$~GeV), reflecting both the ABCD method's limitations
+and poor MC statistics at high~$p_T$. The truth purity is comparatively stable
+($\sim$0.57--0.68) across 9--30~GeV, rising to 0.85 only at 34~GeV.
+
+Figure~\ref{fig:fitdiag} shows the fit curves, residuals, and ratio.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth,page=1]{../plotting/figures/purity_fit_diagnostics.pdf}
+\caption{Pad\'e fits to truth and ABCD purity (page~1 of the diagnostic PDF).}
+\label{fig:fitdiag}
+\end{figure}
+
+%% ---------------------------------------------------------------
+\section{Root Causes}
+\label{sec:causes}
+
+\subsection{ABCD Independence Violation (Primary Cause)}
+\label{sec:independence}
+
+The ABCD method assumes that BDT tight/non-tight classification and isolation
+are uncorrelated for background. This assumption is violated.
+
+The true background $R$-factor, defined as
+\begin{equation}
+R_{\mathrm{true}} = \frac{A_{\mathrm{bkg}} \cdot D_{\mathrm{bkg}}}{B_{\mathrm{bkg}} \cdot C_{\mathrm{bkg}}},
+\end{equation}
+should equal 1.0 if the two axes are independent for background. In practice,
+$R_{\mathrm{true}}$ varies strongly with $p_T$ (Table~\ref{tab:rtrue}).
+
+\begin{table}[H]
+\centering
+\caption{True background $R$-factor from MC (from \texttt{h\_R} in the output file).
+         Values computed from jet MC background after truth-matching subtraction.
+         Fluctuations at high $p_T$ (e.g., $R=0.76$ at $[24,26]$~GeV followed by
+         $R=2.09$ at $[26,28]$~GeV) reflect limited MC statistics in those bins.}
+\label{tab:rtrue}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+$p_T$ bin (GeV) & $R_{\mathrm{true}}$ & Deviation from 1.0 \\
+\midrule
+$[8,10]$   & 0.70 & $-30\%$ \\
+$[10,12]$  & 0.80 & $-20\%$ \\
+$[12,14]$  & 1.07 & $+7\%$  \\
+$[14,16]$  & 1.14 & $+14\%$ \\
+$[16,18]$  & 1.16 & $+16\%$ \\
+$[18,20]$  & 0.98 & $-2\%$  \\
+$[20,22]$  & 1.04 & $+4\%$  \\
+$[22,24]$  & 1.59 & $+59\%$ \\
+$[24,26]$  & 0.76 & $-24\%$ \\
+$[26,28]$  & 2.09 & $+109\%$ \\
+$[28,32]$  & 0.93 & $-7\%$  \\
+$[32,36]$  & 1.07 & $+7\%$  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$R_{\mathrm{true}}$ crosses~1.0 in the $[12,14]$~GeV bin---precisely where
+the purity correction ratio crosses~1.0. The mechanism is:
+\begin{itemize}
+\item Below $p_T = 13$~GeV: $R_{\mathrm{true}} < 1 \Rightarrow$ ABCD overestimates
+      background $\Rightarrow$ purity too low $\Rightarrow$ correction $> 1$.
+\item Above $p_T = 13$~GeV: $R_{\mathrm{true}} > 1 \Rightarrow$ ABCD underestimates
+      background $\Rightarrow$ purity too high $\Rightarrow$ correction $< 1$.
+\end{itemize}
+
+An independent test confirms the violation: the isolation fraction for
+tight-BDT background divided by that for non-tight-BDT background ranges
+from 0.77 (at low~$p_T$) to 1.77 (at $p_T \sim 23$~GeV), where it should
+be~1.0 if BDT and isolation were independent.
+
+\subsection{ET-Dependent Tight BDT Threshold}
+\label{sec:threshold}
+
+The tight BDT threshold is $E_T$-dependent:
+$\mathrm{BDT}_{\min}^{\mathrm{tight}} = 0.80 - 0.015 \times E_T$,
+while the non-tight BDT window is fixed at $[0.02,\, 0.50]$.
+This creates a ``dead zone'' of BDT scores between the two regions
+that shrinks with $E_T$:
+
+\begin{table}[H]
+\centering
+\caption{BDT phase-space partition vs.\ $E_T$.}
+\label{tab:deadzone}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$E_T$ (GeV) & Tight threshold & Dead zone & Width \\
+\midrule
+ 8  & 0.68 & $[0.50,\,0.68]$ & 0.18 \\
+12  & 0.62 & $[0.50,\,0.62]$ & 0.12 \\
+15  & 0.575 & $[0.50,\,0.575]$ & 0.075 \\
+20  & 0.50 & vanishes & 0 \\
+25  & 0.425 & overlap & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $E_T = 20$~GeV the dead zone vanishes; above that, the tight threshold
+drops below the non-tight upper boundary, effectively shrinking the non-tight
+window. This means the background composition in each ABCD region changes
+with~$p_T$, creating the observed $p_T$-dependent BDT--isolation correlation.
+
+This is \textbf{not} caused by the BDT model boundary at $E_T = 15$~GeV:
+both $E_T$ bins use the same model (\texttt{base\_v1E}).
+
+\subsection{Fit Quality Issues (Amplifying Factor)}
+\label{sec:fitquality}
+
+The ABCD purity is fitted with a Pad\'e function
+$f(x) = (p_0 + p_1 x) / (1 + p_2 x)$ using 11 of the 12 available $p_T$
+bins (the last bin at $p_T = 34$~GeV lies outside the fit range $[8,\,32]$~GeV):
+\begin{itemize}
+\item Leak fit: $\chi^2/\mathrm{NDF} = 18.9/8 = 2.36$, with a pull of 4.67
+      at $p_T = 13$~GeV (poor fit quality).
+\item Truth fit: $\chi^2/\mathrm{NDF} = 6.1/8 = 0.76$ (good fit quality).
+\item The Pad\'e form forces a monotonic rise, but the ABCD points are
+      non-monotonic (e.g., 0.56 at $p_T = 25$, 0.92 at $p_T = 27$~GeV).
+\end{itemize}
+
+Because the stored correction uses truth \emph{points} divided by the
+smooth leak \emph{fit}, the fit quality primarily affects the denominator.
+The poor leak fit means the denominator may be systematically too high
+or too low at individual $p_T$ bins.
+
+\subsection{Statistical Limitations at High $p_T$}
+\label{sec:stats}
+
+The effective number of events in region~D (the denominator of $B \times C / D$)
+drops rapidly at high~$p_T$:
+
+\begin{table}[H]
+\centering
+\caption{Effective statistics in ABCD region~D from jet MC.}
+\label{tab:deff}
+\begin{tabular}{@{}cc@{}}
+\toprule
+$p_T$ (GeV) & $D_{\mathrm{eff}}$ \\
+\midrule
+$< 14$ & $> 1000$ \\
+23 & 107 \\
+25 & 71 \\
+27 & 19 \\
+34 & 7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Above $p_T = 25$~GeV, the ABCD estimate is statistically unreliable.
+This explains the wild fluctuations in the ABCD purity at high~$p_T$
+and correspondingly large uncertainties on the correction factor.
+
+%% ---------------------------------------------------------------
+\section{Leakage Fractions}
+\label{sec:leakage}
+
+The signal leakage fractions (computed from signal MC) are small
+and well-behaved:
+\begin{itemize}
+\item $c_B = 5$--$13\%$ (signal leaking to tight + non-isolated)
+\item $c_C = 2.6$--$4.6\%$ (signal leaking to non-tight + isolated)
+\item $c_D < 0.6\%$ (signal leaking to non-tight + non-isolated)
+\end{itemize}
+
+The leakage correction moves the ABCD purity in the right direction
+but cannot compensate for the fundamental independence violation
+described in Section~\ref{sec:independence}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{../plotting/figures/leakage_fractions_vs_pT.pdf}
+\caption{Signal leakage fractions $c_B$, $c_C$, $c_D$ vs.\ $p_T$.}
+\label{fig:leakage}
+\end{figure}
+
+%% ---------------------------------------------------------------
+\section{Methodology Note}
+\label{sec:methodology}
+
+This investigation was conducted using an automated multi-wave agent pipeline:
+\begin{enumerate}
+\item \textbf{Wave~1} (3 parallel agents): fit diagnostics, leakage fractions,
+      ABCD components analysis.
+\item \textbf{Wave~2} (3 parallel agents): independent review of each Wave~1 agent.
+\item \textbf{Wave~3}: corrections applied based on review findings.
+\item \textbf{Wave~4--5}: report writing and review.
+\end{enumerate}
+
+The Wave~2 review identified and corrected one significant error:
+the leakage investigation agent initially computed signal fractions
+from the photon MC file (\texttt{MC\_efficiency\_bdt\_nom.root}, which is
+pure signal by construction), rather than from the jet MC file
+(\texttt{MC\_efficiency\_jet\_bdt\_nom.root}, which serves as ``data'' in
+MC closure). The signal fractions reported in that agent's analysis
+(65--77\% in region~B) were therefore artifactual. The corrected
+analysis uses \texttt{h\_R} from the final output file, which is
+computed from the jet MC with proper background subtraction.
+
+%% ---------------------------------------------------------------
+\section{Implications and Recommendations}
+\label{sec:recommendations}
+
+\begin{enumerate}
+\item The MC purity correction addresses a \textbf{real bias} (ABCD independence
+      violation), but the correction factor has large statistical uncertainties
+      from truth purity, especially at high~$p_T$.
+\item The sign change at $p_T \sim 14$~GeV is a \textbf{genuine physics effect}
+      ($R_{\mathrm{true}}$ crossing 1.0), not purely a fit artifact.
+\item \textbf{Consider}: using \texttt{h\_R} from MC to correct the ABCD $R$-factor
+      directly, rather than correcting the final purity post-hoc.
+\item The high-$p_T$ bins ($> 25$~GeV) have very poor MC statistics---the
+      correction factor there is unreliable ($D_{\mathrm{eff}} < 71$).
+\item The $E_T$-dependent tight BDT threshold is a design choice that introduces
+      $p_T$-dependent correlations; a fixed threshold would reduce this effect
+      but may sacrifice signal efficiency.
+\end{enumerate}
+
+%% ---------------------------------------------------------------
+\section{Re-evaluation: ET-Dependent Non-Tight BDT Bound}
+\label{sec:etdep}
+
+\textit{Added April 8, 2026.} The non-tight BDT upper bound was changed from
+a fixed value of 0.50 to an $E_T$-dependent parametric form matching the
+tight lower bound: $0.80 - 0.015 \times E_T$. This eliminates the dead zone
+(Section~\ref{sec:threshold}) at all $E_T$. The BDT axis is now a clean
+two-region partition: non-tight $= [0.02,\;\mathrm{threshold})$,
+tight $= [\mathrm{threshold},\;1.0]$.
+
+\subsection{Updated Correction Factor}
+
+\begin{table}[H]
+\centering
+\caption{MC purity correction ratio: old (fixed non-tight = 0.50) vs.\ new
+         ($E_T$-dependent non-tight). Truth purity is from generator matching;
+         ABCD purity from leakage-corrected data points (\texttt{gpurity\_leak}).
+         The ratio uses the Pad\'e fit to ABCD purity as the denominator.}
+\label{tab:ratio_comparison}
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+$p_T$ & \multicolumn{2}{c}{Truth Purity} & \multicolumn{2}{c}{ABCD Purity} & \multicolumn{2}{c}{Ratio} \\
+(GeV) & Old & New & Old & New & Old & New \\
+\midrule
+ 9  & 0.566 & 0.576 & 0.370 & 0.351 & 1.505 & \textbf{1.702} \\
+11  & 0.576 & 0.609 & 0.460 & 0.453 & 1.206 & \textbf{1.258} \\
+13  & 0.620 & 0.632 & 0.654 & 0.603 & 1.112 & \textbf{1.080} \\
+15  & 0.594 & 0.637 & 0.640 & 0.659 & 0.952 & \textbf{0.966} \\
+17  & 0.584 & 0.647 & 0.630 & 0.714 & 0.862 & \textbf{0.904} \\
+19  & 0.622 & 0.714 & 0.620 & 0.741 & 0.860 & \textbf{0.938} \\
+21  & 0.667 & 0.739 & 0.700 & 0.820 & 0.875 & \textbf{0.927} \\
+23  & 0.679 & 0.713 & 0.804 & 0.857 & 0.852 & \textbf{0.862} \\
+25  & 0.651 & 0.732 & 0.560 & 0.753 & 0.787 & \textbf{0.859} \\
+27  & 0.707 & 0.756 & 0.915 & 0.869 & 0.829 & \textbf{0.865} \\
+30  & 0.679 & 0.761 & 0.712 & 0.894 & 0.766 & \textbf{0.845} \\
+34  & 0.849 & 0.777 & 0.889 & 0.741 & 0.919 & \textbf{0.837} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The sign flip persists: the correction crosses~1.0 at $p_T \approx 14$~GeV
+in both configurations. At low $p_T$, the correction is \emph{larger}
+(1.70 vs.\ 1.51 at 9~GeV). At high $p_T$, the correction is more stable
+(0.84--0.97 vs.\ 0.77--0.92), with reduced bin-to-bin fluctuation.
+
+\subsection{Updated $R_{\mathrm{true}}$}
+
+\begin{table}[H]
+\centering
+\caption{$R_{\mathrm{true}}$ comparison: old vs.\ new non-tight BDT bound.}
+\label{tab:rtrue_comparison}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+$p_T$ bin (GeV) & $R_{\mathrm{true}}$ (Old) & $R_{\mathrm{true}}$ (New) & $\Delta R$ \\
+\midrule
+$[8,10]$   & 0.70 & $0.675 \pm 0.15$  & $-0.03$ \\
+$[10,12]$  & 0.80 & $0.729 \pm 0.08$  & $-0.07$ \\
+$[12,14]$  & 1.07 & $0.904 \pm 0.15$  & $-0.17$ \\
+$[14,16]$  & 1.14 & $1.058 \pm 0.21$  & $-0.08$ \\
+$[16,18]$  & 1.16 & $1.261 \pm 0.35$  & $+0.10$ \\
+$[18,20]$  & 0.98 & $0.991 \pm 0.48$  & $+0.01$ \\
+$[20,22]$  & 1.04 & $1.273 \pm 0.70$  & $+0.23$ \\
+$[22,24]$  & 1.59 & $1.779 \pm 0.41$  & $+0.19$ \\
+$[24,26]$  & 0.76 & $1.152 \pm 0.39$  & $+0.39$ \\
+$[26,28]$  & 2.09 & $1.617 \pm 0.86$  & $-0.47$ \\
+$[28,32]$  & 0.93 & $1.854 \pm 0.99$  & $+0.92$ \\
+$[32,36]$  & 1.07 & $0.827 \pm 0.43$  & $-0.24$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The crossing point shifted from $[12,14]$ to $[14,16]$~GeV. Low-$p_T$ bins
+are further below~1.0; high-$p_T$ bins exhibit larger positive deviations
+with significant statistical uncertainty.
+
+\subsection{Isolation Fraction Ratio: ABCD Independence Test}
+\label{sec:isofrac}
+
+The key diagnostic for ABCD independence is the isolation fraction ratio
+for background jets in tight vs.\ non-tight BDT regions:
+\begin{equation}
+\rho = \frac{f_{\mathrm{iso}}^{\mathrm{tight}}}{f_{\mathrm{iso}}^{\mathrm{non\text{-}tight}}},
+\qquad f_{\mathrm{iso}} = \frac{N_{\mathrm{iso}}}{N_{\mathrm{iso}} + N_{\mathrm{non\text{-}iso}}}.
+\end{equation}
+ABCD independence requires $\rho = 1$. Table~\ref{tab:isofrac} shows
+the results from jet-only MC (pure background, no signal photons).
+
+\begin{table}[H]
+\centering
+\caption{Isolation fraction ratio $\rho$ for background jets: old
+         (fixed non-tight = 0.50) vs.\ new ($E_T$-dependent non-tight).
+         Values from jet-only MC (\texttt{MC\_efficiency\_jet\_bdt\_nom.root}).}
+\label{tab:isofrac}
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+$p_T$ bin & BDT bound & $f_{\mathrm{iso}}^{\mathrm{tight}}$ &
+$f_{\mathrm{iso}}^{\mathrm{NT}}$ & $\rho$ (New) & $\rho$ (Old) \\
+\midrule
+$[8,10]$   & 0.665 & 0.526 & 0.431 & \textbf{1.22} & $\sim$0.77 \\
+$[10,12]$  & 0.635 & 0.539 & 0.403 & \textbf{1.34} & $\sim$0.85 \\
+$[12,14]$  & 0.605 & 0.560 & 0.357 & \textbf{1.57} & $\sim$1.00 \\
+$[14,16]$  & 0.575 & 0.542 & 0.311 & \textbf{1.74} & $\sim$1.10 \\
+$[16,18]$  & 0.545 & 0.539 & 0.281 & \textbf{1.92} & $\sim$1.20 \\
+$[18,20]$  & 0.515 & 0.533 & 0.264 & \textbf{2.02} & $\sim$1.30 \\
+$[20,22]$  & 0.485 & 0.545 & 0.222 & \textbf{2.46} & $\sim$1.40 \\
+$[22,24]$  & 0.455 & 0.580 & 0.215 & \textbf{2.69} & $\sim$1.59 \\
+$[24,26]$  & 0.425 & 0.560 & 0.283 & \textbf{1.98} & $\sim$0.76 \\
+$[26,28]$  & 0.395 & 0.603 & 0.240 & \textbf{2.52} & $\sim$1.77 \\
+$[28,32]$  & 0.350 & 0.625 & 0.213 & \textbf{2.94} & $\sim$0.93 \\
+$[32,36]$  & 0.290 & 0.630 & 0.355 & \textbf{1.77} & $\sim$1.07 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Summary:} The old configuration had $\rho \in [0.76,\,1.77]$
+(straddling~1.0); the new configuration gives $\rho \in [1.22,\,2.94]$
+(entirely above~1.0, wider spread). The ABCD independence violation is
+\emph{worse}, not better.
+
+\textbf{Note:} The ``Old'' $\rho$ values in Table~\ref{tab:isofrac} are
+approximate reconstructions from the original investigation; the old ROOT
+result files have been overwritten by the current configuration. Both old
+and new results use the same underlying MC event samples---only the
+non-tight BDT cut definition changed.
+
+\subsection{Background Isolation $E_T$ Distributions}
+\label{sec:isoet}
+
+Figure~\ref{fig:isoet_overlay} shows the normalized isolation $E_T$
+distributions for \emph{true background} clusters (truth-matched non-signal)
+in the tight and non-tight BDT regions. The background-only distributions
+are obtained by projecting \texttt{h\_tight\_recoisoET\_background\_0} and
+\texttt{h\_nontight\_recoisoET\_background\_0} (TH2D, filled only for
+clusters whose truth-matched particle is not an isolated prompt photon).
+In all 12~$p_T$ bins, the shapes differ, confirming that photon-like
+background jets are intrinsically more isolated than non-photon-like jets
+--- a genuine BDT--isolation correlation in the background.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../plotting/figures/bkg_isoET_tight_vs_nontight_jet_bdt_nom.pdf}
+\caption{Normalized isolation $E_T$ distribution for \textbf{true background}
+         (truth-matched non-signal) clusters in tight (blue) and non-tight
+         (red) BDT regions, per $p_T$ bin. Source: inclusive MC
+         (\texttt{MC\_efficiency\_bdt\_nom.root}), background-only TH2D
+         projections.}
+\label{fig:isoet_overlay}
+\end{figure}
+
+\subsection{Physical Interpretation}
+\label{sec:physics}
+
+The dead zone hypothesis (Section~\ref{sec:threshold}) predicted that
+eliminating the gap between tight and non-tight BDT regions would improve
+ABCD independence. Instead, the violation worsened. This demonstrates that
+the \textbf{primary mechanism} is intrinsic jet physics: jets that fake
+isolated photons (narrow, single-fragment) deposit most energy in one
+cluster, leaving less ambient energy in the isolation cone. The BDT
+selects for exactly this topology, creating a built-in BDT--isolation
+correlation independent of the cut geometry.
+
+The old dead zone partially masked this correlation at low~$p_T$ by
+excluding intermediate-BDT jets from the non-tight region. These jets had
+isolation fractions between the tight and non-tight extremes. Their
+exclusion pushed $f_{\mathrm{iso}}^{\mathrm{NT}}$ higher at low $p_T$,
+making $\rho$ closer to~1.0. Closing the gap pulls them back in,
+revealing the full correlation.
+
+\subsection{Updated Signal Leakage Fractions}
+
+\begin{table}[H]
+\centering
+\caption{Signal leakage fractions: old vs.\ new non-tight BDT bound.}
+\label{tab:leakage_comparison}
+\begin{tabular}{@{}ccccccc@{}}
+\toprule
+$p_T$ bin & $c_B$ (Old) & $c_B$ (New) & $c_C$ (Old) & $c_C$ (New) & $c_D$ (Old) & $c_D$ (New) \\
+\midrule
+$[8,10]$   & 5--6\%  & 5.7\% & 2.6--3\% & 6.7\% & $<$0.6\% & 0.7\% \\
+$[12,14]$  & $\sim$7\%  & 6.6\% & $\sim$3.5\% & 5.7\% & $<$0.6\% & 0.8\% \\
+$[16,18]$  & $\sim$8\%  & 7.2\% & $\sim$4\%   & 4.9\% & $<$0.6\% & 0.6\% \\
+$[20,22]$  & $\sim$9\%  & 7.5\% & $\sim$4\%   & 4.4\% & $<$0.6\% & 0.5\% \\
+$[26,28]$  & $\sim$11\% & 8.8\% & $\sim$4.5\% & 4.3\% & $<$0.6\% & 0.2\% \\
+$[32,36]$  & $\sim$13\% & 8.4\% & $\sim$4.6\% & 2.2\% & $<$0.6\% & 0.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$c_C$ increased at low $p_T$ (from $\sim$3\% to 6.7\% at 8--10~GeV) because the
+non-tight region now extends to higher BDT scores (up to 0.68 vs.\ 0.50 at
+$E_T = 8$~GeV), capturing more signal photons just below the tight threshold.
+$c_B$ decreased at high $p_T$ (from $\sim$13\% to 8.4\% at 32--36~GeV),
+because signal photons formerly lost in the dead zone now correctly enter the
+tight region. $c_D$ is essentially unchanged (below 1\% in both configurations).
+
+\subsection{Signal Contamination Correction}
+\label{sec:signal_contamination}
+
+\textit{Added April 8, 2026.} A subsequent investigation revealed that the
+jet MC samples (jet10, jet15, jet20, jet30, jet50) contain a large fraction
+of truth-matched prompt photons that pass all analysis cuts. These signal
+photons dominate region~A (tight, isolated), comprising 58--78\% of the
+jet MC total there. Table~\ref{tab:sigfrac} summarizes the signal fraction
+in region~A per $p_T$ bin.
+
+\begin{table}[H]
+\centering
+\caption{Signal fraction (truth-matched prompt photons) in the jet MC
+         region~A (tight, isolated) per $p_T$ bin. Signal fractions in
+         other regions are lower: B (4--11\%), C (2--21\%), D ($<1\%$).}
+\label{tab:sigfrac}
+\begin{tabular}{@{}cc@{}}
+\toprule
+$p_T$ bin (GeV) & Signal fraction in A \\
+\midrule
+$[8,10]$   & 57.6\% \\
+$[10,12]$  & 60.9\% \\
+$[12,14]$  & 63.2\% \\
+$[14,16]$  & 63.7\% \\
+$[16,18]$  & 64.7\% \\
+$[18,20]$  & 71.4\% \\
+$[20,22]$  & 73.9\% \\
+$[22,24]$  & 71.3\% \\
+$[24,26]$  & 73.2\% \\
+$[26,28]$  & 75.6\% \\
+$[28,32]$  & 76.1\% \\
+$[32,36]$  & 77.7\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This contamination has important consequences for the $R$-factor interpretation.
+Two distinct $R$ factors can be computed from jet MC:
+\begin{itemize}
+\item $R_{\mathrm{raw}}$ (signal-contaminated): uses all jet MC counts without
+      truth subtraction. Always $> 1$ (range 1.47--6.16), monotonically increasing.
+\item $R_{\mathrm{bkg}}$ ($= \texttt{h\_R}$, pure background): after subtracting
+      truth-matched signal from each region. Crosses~1.0 at $p_T \approx 14$~GeV
+      (range 0.675--1.854).
+\end{itemize}
+
+Table~\ref{tab:rdecomp} compares the two.
+
+\begin{table}[H]
+\centering
+\caption{$R$-factor decomposition: signal-contaminated ($R_{\mathrm{raw}}$,
+         from jet MC totals) vs.\ pure background ($R_{\mathrm{bkg}} = \texttt{h\_R}$,
+         after truth subtraction). The earlier analysis incorrectly used
+         $R_{\mathrm{raw}}$ as ``pure background~$R$.''}
+\label{tab:rdecomp}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+$p_T$ bin (GeV) & $R_{\mathrm{raw}}$ (contaminated) & $R_{\mathrm{bkg}}$ (\texttt{h\_R}, pure bkg) \\
+\midrule
+$[8,10]$   & 1.47 & 0.675 \\
+$[10,12]$  & 1.73 & 0.729 \\
+$[12,14]$  & 2.29 & 0.904 \\
+$[14,16]$  & 2.62 & 1.058 \\
+$[16,18]$  & 3.00 & 1.261 \\
+$[18,20]$  & 3.19 & 0.991 \\
+$[20,22]$  & 4.21 & 1.273 \\
+$[22,24]$  & 5.03 & 1.779 \\
+$[24,26]$  & 3.22 & 1.151 \\
+$[26,28]$  & 4.82 & 1.617 \\
+$[28,32]$  & 6.16 & 1.854 \\
+$[32,36]$  & 3.08 & 0.827 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The factor-of-2-to-6 difference between $R_{\mathrm{raw}}$ and $R_{\mathrm{bkg}}$
+is entirely due to signal contamination inflating region~A. The earlier isoET overlay
+plots (Figure~\ref{fig:isoet_overlay}) used the total jet MC in the tight region,
+where the sharp isolation peak near 1~GeV was dominated by signal photons, not
+background. After truth subtraction, the background-only isoET distributions
+(Figure~\ref{fig:bkg_isoet}) show that tight and non-tight background have nearly
+identical isolation at low $p_T$ (8--14~GeV), with only a subtle divergence at
+high $p_T$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../plotting/figures/R_decomposition_bdt_nom.pdf}
+\caption{$R$-factor decomposition vs.\ $p_T$: signal-contaminated $R_{\mathrm{raw}}$
+         (from jet MC totals), pure background $R_{\mathrm{bkg}}$ ($= \texttt{h\_R}$),
+         and jet MC signal fraction in region~A. Produced with
+         \texttt{plot\_R\_decomposition.C}.}
+\label{fig:rdecomp}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../plotting/figures/bkg_isoET_tight_vs_nontight_jet_bdt_nom.pdf}
+\caption{Normalized isolation $E_T$ distribution for \textbf{pure background}
+         (after truth signal subtraction) in tight and non-tight BDT regions,
+         per $p_T$ bin. Compare with Figure~\ref{fig:isoet_overlay}, which used
+         signal-contaminated jet MC totals. Produced with
+         \texttt{plot\_bkg\_isoET\_tight\_vs\_nontight.C}.}
+\label{fig:bkg_isoet}
+\end{figure}
+
+\textbf{Corrected interpretation:} The $R_{\mathrm{bkg}}$ crossover at
+$p_T \approx 14$~GeV is a genuine but subtle background physics effect.
+At low~$p_T$, tight and non-tight background jets have nearly identical
+isolation properties ($R \approx 1$, slightly below). At high~$p_T$,
+photon-like background jets become marginally more isolated, pushing $R$
+above~1. The earlier conclusion that the ``pure background''~$R$ is always
+$> 1$ (1.4--5.0 range) and that the sign flip in \texttt{h\_R} was caused by
+signal leakage corrections was incorrect---those values were
+$R_{\mathrm{raw}}$ computed from signal-contaminated jet MC totals.
+
+\subsection{Updated Recommendations}
+
+In addition to the original recommendations (Section~\ref{sec:recommendations}):
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item The purity correction sign flip is a \textbf{genuine background physics
+      effect} ($R_{\mathrm{bkg}}$ crossing 1.0) that cannot be eliminated
+      by adjusting the non-tight BDT boundary. The magnitude is modest after
+      removing signal contamination from the diagnostics.
+\item \textbf{Jet MC diagnostics must account for signal contamination}: any
+      isolation-based ABCD diagnostic computed from raw jet MC totals is
+      dominated by the 58--78\% signal fraction in region~A. Always use
+      truth-subtracted quantities (\texttt{h\_R}, background-only isoET) for
+      physics interpretation of background behavior.
+\item Approximately 30 systematic variation configs still use the old fixed
+      non-tight bound ($\texttt{bdt\_max} = 0.50$, missing
+      \texttt{bdt\_max\_slope}/\texttt{bdt\_max\_intercept} keys).
+      Regenerate if the $E_T$-dependent bound is intended for all variations.
+\item \texttt{RecoEffCalculator.C} (old code path) does not read the
+      parametric non-tight fields---only
+      \texttt{RecoEffCalculator\_TTreeReader.C} does. Confirm which code
+      path is active in production.
+\end{enumerate}
+
+%% ---------------------------------------------------------------
+\appendix
+\section{Plots}
+\label{sec:plots}
+
+The following diagnostic plots were produced by the investigation agents.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{../plotting/figures/signal_counts_ABCD.pdf}
+\caption{Signal counts in each ABCD region vs.\ $p_T$.}
+\label{fig:signal_abcd}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{../plotting/figures/purity_comparison.pdf}
+\caption{Truth purity vs.\ leakage-corrected ABCD purity as a function of $p_T$.}
+\label{fig:purity_comp}
+\end{figure}
+
+Additional multi-page diagnostics are in
+\texttt{plotting/figures/purity\_fit\_diagnostics.pdf} (Pad\'e fit curves,
+residuals, ratio crossing analysis).
+
+\textbf{Note (April 8, 2026):} The diagnostic plots in this appendix
+(Figures~\ref{fig:signal_abcd}--\ref{fig:purity_comp}) were generated with
+the \emph{old} fixed non-tight BDT configuration. The underlying ROOT result
+files have since been overwritten with the current $E_T$-dependent
+configuration. To regenerate the old plots, one would need to rerun the
+pipeline with \texttt{bdt\_max\_slope: 0} and
+\texttt{bdt\_max\_intercept: 0.5} in the non-tight block.
+
+\end{document}

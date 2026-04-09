@@ -1,0 +1,119 @@
+# Large binary directories -- do not track on main
+plotting/figures/
+PPG12-analysis-note/Figures/
+figures/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
+
+# Condor / LaTeX log and output files
+*.log
+*.out
+*.err
+
+# But keep report sources and PDFs
+!reports/*.pdf
+!reports/*.md
+!reports/*.tex
+!efficiencytool/reports/*.pdf
+!efficiencytool/reports/*.tex
+
+# OS / editor junk
+.DS_Store
+._*
+*.swp
+*~
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# ROOT build artifacts
+*.d
+*.so
+*.pcm
+*_ACLiC_dict*
+
+# gh-pages worktree
+_gh-pages-worktree/
+
+# === Data and binary files ===
+*.root
+*.joblib
+*.csv
+*.xlsx
+*.ipynb
+*.pkl
+
+# Figures everywhere (regenerated from macros)
+*.png
+*.pdf
+
+# Re-include specific PDF exceptions
+!reports/*.pdf
+!efficiencytool/reports/*.pdf
+!wiki/raw/papers/**/*.pdf
+
+# BDT model exports
+FunWithxgboost/bdt_model*.json
+FunWithxgboost/bdt.json
+
+# Training data (text format)
+FunWithxgboost/NOSPLIT/
+FunWithxgboost/shapes_*.txt
+FunWithxgboost/binned_models/*.csv
+FunWithxgboost/ridge_plots/
+
+# Condor logs
+FunWithxgboost/logs/
+efficiencytool/logs/
+FunWithTMVA/logs/
+
+# TMVA outputs
+FunWithTMVA/results/
+FunWithTMVA/dataset_*/
+
+# Efficiency tool results and generated plots
+efficiencytool/results/
+efficiencytool/purity_plots/
+efficiencytool/roc_plots/
+efficiencytool/efficiency_plots/
+efficiencytool/truthjet_plots/
+efficiencytool/figure/
+efficiencytool/plots/
+
+# Data directories (not source code)
+eventskimmer/
+saturationcheck/
+anatreemaker/macro_maketree/data/
+anatreemaker/macro_maketree/sim/
+
+# Build artifacts
+anatreemaker/source/build/
+anatreemaker/source/autom4te.cache/
+
+# Backup/temp files
+*.backup
+
+# Data lists
+*.list
+
+# Correction files
+*.corr
+
+# Generated report directories
+plotting/comparison_report/
+plotting/selection_report/
+plotting/showershape_report/
+
+# Tarballs
+*.tar
+*.tar.gz

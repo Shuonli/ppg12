@@ -1,4 +1,5 @@
 #include "plotcommon.h"
+#include <yaml-cpp/yaml.h>
 
 // 0: our data, 1: PHENIX, 2: JETPHOX, 3: PYTHIA, 4: Werner
 const int col[] = {kAzure + 2, kPink + 5, kPink + 5, kCyan + 4, kYellow + 2, kSpring - 7, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
@@ -12,17 +13,29 @@ void plot_final_selection(string tune = "bdt_nom")
 {
     init_plot();
 
+    // Read luminosity from the matching analysis config
+    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
+    std::string configpath = Form("/sphenix/user/shuhangli/ppg12/efficiencytool/config_%s.yaml", tune.data());
+    float datalumi = 49.562; // fallback
+    try {
+        YAML::Node cfg = YAML::LoadFile(configpath);
+        datalumi = cfg["analysis"]["lumi"].as<float>();
+        std::cout << "[plot] Loaded lumi = " << datalumi << " pb^-1 from " << configpath << std::endl;
+    } catch (...) {
+        std::cerr << "[plot] WARNING: could not read lumi from " << configpath
+                  << ", using fallback " << datalumi << " pb^-1" << std::endl;
+    }
+
+    // Build luminosity legend strings from the loaded value
+    std::string strleg_lumi = Form("#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, %.1f pb^{-1}}", datalumi);
+    std::string strleg_lumi_line2 = Form("         = %.1f pb^{-1}", datalumi);
+
     std::string MCstring = "JETPHOX";
 
     std::string reweightedstring = "";
 
     std::string datastring = "data";
     std::string bg_MCstring = "Inclusive Sim";
-
-    // float datalumi = 16.8468 * 23. / 26.1; // pb^-1
-    //float datalumi = 15.2036; // pb^-1
-    float datalumi = 49.562; // pb^-1
-    // float datalumi = 16.8468;
 
     float deta = 1.4;
 
@@ -430,7 +443,7 @@ void plot_final_selection(string tune = "bdt_nom")
     float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
     myText(xpos2, ypos - 1 * dy, 1, strleg2.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 2 * dy, 1, strleg5.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 2 * dy, 1, strleg_lumi_line2.c_str(), fontsize, 1);
     myText(xpos2, ypos - 3 * dy, 1, strleg3.c_str(), fontsize, 1);
     myText(xpos2, ypos - 4 * dy, 1, strleg4.c_str(), fontsize, 1);
     // myText(xpos2,ypos-1*dy,1,strleg2_1.c_str(),fontsize,1);
@@ -781,7 +794,7 @@ void plot_final_selection(string tune = "bdt_nom")
     xpos = 0.19;
     ypos2 = 0.25;
     myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
-    myText(xpos2, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 1 * dy, 1, strleg_lumi.c_str(), fontsize, 1);
     myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
     myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
     // myText(xpos2,ypos-1*dy,1,strleg2.c_str(),fontsize,1);
