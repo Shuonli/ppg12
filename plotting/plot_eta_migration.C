@@ -239,7 +239,14 @@ void plot_eta_migration(
             TCanvas *c = new TCanvas("c_loss_rate", "", 800, 600);
             TH1F *frame = new TH1F("frame_loss_rate",
                 ";Truth #it{p}_{T} [GeV];Outward Migration Loss Rate", 100, 8, 40);
-            frame->GetYaxis()->SetRangeUser(0, 0.15);
+            float ymax_loss = 0.05;
+            if (g_loss_d) {
+                for (int ip = 0; ip < g_loss_d->GetN(); ip++) {
+                    double xx, yy; g_loss_d->GetPoint(ip, xx, yy);
+                    if (xx >= 8 && xx <= 36 && yy > ymax_loss) ymax_loss = yy;
+                }
+            }
+            frame->GetYaxis()->SetRangeUser(0, ymax_loss * 1.3);
             frame->GetXaxis()->SetRangeUser(8, 36);
             frame->Draw("axis");
 
@@ -334,6 +341,145 @@ void plot_eta_migration(
         else
         {
             std::cout << "Missing response contamination histograms in single file" << std::endl;
+        }
+    }
+
+    // =================================================================
+    // Plot 5b: Tight+Iso Response Matrix Contamination (inward + outward)
+    //   Inward: fake_tight_iso / (good_tight_iso + fake_tight_iso) vs reco ET
+    //   Outward: loss / (good + loss) vs truth pT — all clusters, not tight+iso specific
+    // =================================================================
+    {
+        // --- Inward: tight+iso contamination fraction ---
+        TH1D *h_good_ti_s = (TH1D *)f_single->Get("h_good_tight_iso");
+        TH1D *h_fake_ti_s = (TH1D *)f_single->Get("h_reco_ET_truth_outside_tight_iso");
+
+        TH1D *h_good_ti_d = have_double ? (TH1D *)f_double->Get("h_good_tight_iso_double") : nullptr;
+        TH1D *h_fake_ti_d = have_double ? (TH1D *)f_double->Get("h_reco_ET_truth_outside_tight_iso_double") : nullptr;
+
+        // --- Outward: loss rate ---
+        TH1D *h_loss_num_s = (TH1D *)f_single->Get("h_truth_pT_reco_outside");
+        TH1D *h_loss_den_s = (TH1D *)f_single->Get("h_truth_pT_inside_all");
+        TH1D *h_loss_num_d = have_double ? (TH1D *)f_double->Get("h_truth_pT_reco_outside_double") : nullptr;
+        TH1D *h_loss_den_d = have_double ? (TH1D *)f_double->Get("h_truth_pT_inside_all_double") : nullptr;
+
+        if (h_good_ti_s && h_fake_ti_s)
+        {
+            // Rebin to analysis pT bins
+            const int nPt = NptBins;
+            double edges[NptBins + 1];
+            for (int i = 0; i <= NptBins; i++) edges[i] = ptRanges[i];
+
+            auto rebinTo = [&](TH1D *h, const char *name) -> TH1D * {
+                return (TH1D *)h->Rebin(nPt, name, edges);
+            };
+
+            // Inward: denominator = good_ti + fake_ti
+            TH1D *rGood_s = rebinTo(h_good_ti_s, "rGood_ti_s");
+            TH1D *rFake_s = rebinTo(h_fake_ti_s, "rFake_ti_s");
+            TH1D *rDen_s = (TH1D *)rGood_s->Clone("rDen_ti_s");
+            rDen_s->Add(rFake_s);
+
+            TH1D *frac_in_s = (TH1D *)rFake_s->Clone("frac_in_s");
+            frac_in_s->Divide(rFake_s, rDen_s, 1, 1, "B");
+
+            TH1D *frac_in_d = nullptr;
+            if (h_good_ti_d && h_fake_ti_d)
+            {
+                TH1D *rGood_d = rebinTo(h_good_ti_d, "rGood_ti_d");
+                TH1D *rFake_d = rebinTo(h_fake_ti_d, "rFake_ti_d");
+                TH1D *rDen_d = (TH1D *)rGood_d->Clone("rDen_ti_d");
+                rDen_d->Add(rFake_d);
+                frac_in_d = (TH1D *)rFake_d->Clone("frac_in_d");
+                frac_in_d->Divide(rFake_d, rDen_d, 1, 1, "B");
+            }
+
+            // Outward: rebin loss rate
+            TH1D *frac_out_s = nullptr;
+            TH1D *frac_out_d = nullptr;
+            if (h_loss_num_s && h_loss_den_s)
+            {
+                TH1D *rLossN_s = rebinTo(h_loss_num_s, "rLossN_s");
+                TH1D *rLossD_s = rebinTo(h_loss_den_s, "rLossD_s");
+                frac_out_s = (TH1D *)rLossN_s->Clone("frac_out_s");
+                frac_out_s->Divide(rLossN_s, rLossD_s, 1, 1, "B");
+            }
+            if (h_loss_num_d && h_loss_den_d)
+            {
+                TH1D *rLossN_d = rebinTo(h_loss_num_d, "rLossN_d");
+                TH1D *rLossD_d = rebinTo(h_loss_den_d, "rLossD_d");
+                frac_out_d = (TH1D *)rLossN_d->Clone("frac_out_d");
+                frac_out_d->Divide(rLossN_d, rLossD_d, 1, 1, "B");
+            }
+
+            TCanvas *c = new TCanvas("c_tightiso_response", "", 800, 600);
+            TH1F *frame = new TH1F("frame_tightiso_response",
+                ";#it{E}_{T} (#it{p}_{T}) [GeV];Fraction", 100, 8, 36);
+            // Auto y-range
+            float ymax_ti = 0.05;
+            if (frac_out_d) {
+                for (int ib = 1; ib <= frac_out_d->GetNbinsX(); ib++)
+                    if (frac_out_d->GetBinContent(ib) > ymax_ti) ymax_ti = frac_out_d->GetBinContent(ib);
+            }
+            if (frac_out_s) {
+                for (int ib = 1; ib <= frac_out_s->GetNbinsX(); ib++)
+                    if (frac_out_s->GetBinContent(ib) > ymax_ti) ymax_ti = frac_out_s->GetBinContent(ib);
+            }
+            frame->GetYaxis()->SetRangeUser(0, ymax_ti * 1.4);
+            frame->Draw("axis");
+
+            // Inward: filled circles
+            frac_in_s->SetMarkerStyle(20);
+            frac_in_s->SetMarkerSize(1.2);
+            frac_in_s->SetMarkerColor(kBlack);
+            frac_in_s->SetLineColor(kBlack);
+            frac_in_s->Draw("E1 same");
+
+            if (frac_in_d) {
+                frac_in_d->SetMarkerStyle(20);
+                frac_in_d->SetMarkerSize(1.2);
+                frac_in_d->SetMarkerColor(kRed);
+                frac_in_d->SetLineColor(kRed);
+                frac_in_d->Draw("E1 same");
+            }
+
+            // Outward: open squares
+            if (frac_out_s) {
+                frac_out_s->SetMarkerStyle(24);
+                frac_out_s->SetMarkerSize(1.2);
+                frac_out_s->SetMarkerColor(kBlack);
+                frac_out_s->SetLineColor(kBlack);
+                frac_out_s->Draw("E1 same");
+            }
+            if (frac_out_d) {
+                frac_out_d->SetMarkerStyle(24);
+                frac_out_d->SetMarkerSize(1.2);
+                frac_out_d->SetMarkerColor(kRed);
+                frac_out_d->SetLineColor(kRed);
+                frac_out_d->Draw("E1 same");
+            }
+
+            myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
+            myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
+            myText(0.20, 0.80, 1, strSigMC.c_str(), 0.035);
+
+            TLegend *leg = new TLegend(0.40, 0.62, 0.93, 0.92);
+            leg->SetBorderSize(0);
+            leg->SetFillStyle(0);
+            leg->SetTextSize(0.033);
+            leg->AddEntry(frac_in_s, "Inward (tight+iso contam.) - single", "lp");
+            if (frac_out_s) leg->AddEntry(frac_out_s, "Outward (loss rate) - single", "lp");
+            if (frac_in_d) leg->AddEntry(frac_in_d, "Inward (tight+iso contam.) - double", "lp");
+            if (frac_out_d) leg->AddEntry(frac_out_d, "Outward (loss rate) - double", "lp");
+            leg->Draw();
+
+            c->SaveAs("figures/eta_migration_tightiso_response.pdf");
+            std::cout << "[Plot 5b] Saved figures/eta_migration_tightiso_response.pdf" << std::endl;
+            delete c;
+        }
+        else
+        {
+            std::cout << "Missing tight+iso histograms for response contamination plot" << std::endl;
         }
     }
 
