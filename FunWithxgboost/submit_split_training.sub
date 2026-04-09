@@ -1,0 +1,9 @@
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_split_training.sh
+arguments    = split_configs/$(cfg)
+output       = logs/split_train_$(Cluster).$(Process).out
+error        = logs/split_train_$(Cluster).$(Process).err
+log          = /tmp/split_train_$(Cluster).log
+getenv       = true
+request_memory = 14GB
+queue cfg from split_configs/filelist.txt

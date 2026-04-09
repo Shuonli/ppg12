@@ -41,7 +41,7 @@ void SaveYamlToRoot(TFile *f, const char *yaml_filename)
     yaml_obj.Write("config");
 }
 
-void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_nom.yaml", const std::string filetype = "jet40", bool do_vertex_scan = false)
+void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_nom.yaml", const std::string filetype = "jet40", bool do_vertex_scan = false, float mix_weight = 1.0, const std::string vtxscan_sim_override = "")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so"); 
     YAML::Node configYaml = YAML::LoadFile(configname);
@@ -63,7 +63,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     std::string infilename_branch_dir = configYaml["input"]["photon_jet_file_branch_dir"].as<std::string>();
 
-    std::string infilename = infilename_root_dir + filetype + infilename_branch_dir;
+    // _nom aliases read from the base sample input path (same physics, output label only)
+    std::string input_filetype = filetype;
+    if (filetype == "photon10_nom") input_filetype = "photon10";
+    if (filetype == "jet12_nom")    input_filetype = "jet12";
+
+    std::string infilename = infilename_root_dir + input_filetype + infilename_branch_dir;
     //infilename = "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/auau_test/caloana_with_bdt.root";
     if (!issim)
     {
@@ -87,118 +92,21 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     std::cout << "infilename: " << infilename << std::endl;
 
-    float max_photon_lower = 0;
-    float max_photon_upper = 100;
-    // Cross-section weights from CrossSectionWeights.h (via using namespace PPG12)
-
-    float max_jet_lower = 0;
-    float max_jet_upper = 100;
+    // Sample kinematic windows and cross-section weight from shared lookup
+    PPG12::SampleConfig sc = PPG12::GetSampleConfig(filetype);
+    float max_photon_lower = sc.photon_pt_lower;
+    float max_photon_upper = sc.photon_pt_upper;
+    float max_jet_lower    = sc.jet_pt_lower;
+    float max_jet_upper    = sc.jet_pt_upper;
+    float cluster_ET_upper = sc.cluster_ET_upper;
+    float weight           = sc.weight;
 
     float energy_scale_lower = 0;
     float energy_scale_upper = 100;
 
-    float cluster_ET_upper = 100;
-
-    float weight = 1.0;
     float vertex_weight = 1.0;
-    float cross_weight = 1.0;
-
-    if (filetype == "photon5")
-    {
-        max_photon_lower = 0;
-        max_photon_upper = 14;
-        // max_photon_upper = 200;
-        weight = photon5cross / photon20cross;
-    }
-    else if (filetype == "photon10")
-    {
-        max_photon_lower = 14;
-        max_photon_upper = 30;
-
-        // max_photon_lower = 0;
-        // max_photon_upper = 200;
-        weight = photon10cross / photon20cross;
-    }
-    else if (filetype == "photon20")
-    {
-        max_photon_lower = 30;
-        // max_photon_lower = 0;
-        max_photon_upper = 200;
-        weight = 1.0;
-    }
-    else if (filetype == "jet5")
-    {
-        max_jet_lower = 7;
-        max_jet_upper = 9;
-        cluster_ET_upper = 10;
-        weight = jet5cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet8")
-    {
-        max_jet_lower = 9;
-        max_jet_upper = 14;
-        cluster_ET_upper = 15;
-        weight = jet8cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet12")
-    {
-        max_jet_lower = 14;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet12cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet10")
-    {
-        max_jet_lower = 10;
-        max_jet_upper = 15;
-        cluster_ET_upper = 18;
-        weight = jet10cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet15")
-    {
-        max_jet_lower = 15;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet15cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet20")
-    {
-        max_jet_lower = 21;
-        max_jet_upper = 32;
-        cluster_ET_upper = 35;
-        weight = jet20cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet30")
-    {
-        max_jet_lower = 32;
-        max_jet_upper = 42;
-        cluster_ET_upper = 45;
-        weight = jet30cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet40")
-    {
-        max_jet_lower = 42;
-        max_jet_upper = 100;
-        cluster_ET_upper = 100;
-        weight = jet40cross / jet50cross;
-        //isbackground = true;
-    }
-    else if (filetype == "jet50")
-    {
-        max_jet_lower = 52;
-        max_jet_upper = 100;
-        weight = jet50cross / jet50cross;
-        //isbackground = true;
-    }
-
-    cross_weight = weight;
+    float cross_weight = weight;
+    cross_weight *= mix_weight;   // single/double interaction blending fraction (1.0 for data)
 
     /*
  1  Constant     1.07368e+00   1.10770e-03  -6.32308e-06  -1.15696e-02
@@ -246,6 +154,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     {
         size_t pos = vtxscan_outfilename.rfind(".root");
         if (pos != std::string::npos) vtxscan_outfilename.replace(pos, 5, "_vtxscan.root");
+    }
+
+    // In Pass 2, allow the caller to supply a pre-merged combined vtxscan file
+    // so vertex reweighting uses the blended MC distribution.
+    if (!vtxscan_sim_override.empty() && !do_vertex_scan && issim)
+    {
+        std::cout << "[VertexReweight] Using vtxscan_sim_override: "
+                  << vtxscan_sim_override << std::endl;
+        vtxscan_outfilename = vtxscan_sim_override;
     }
 
     // Vertex reweighting in second pass:
@@ -751,19 +668,33 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     // NPB score
     TTreeReaderArray<float> cluster_npb_score(reader, Form("cluster_npb_score_%s", clusternodename.c_str()));
 
+    // Double-interaction MC uses r04 jet branch names
+    bool use_r04_branches = (filetype == "jet12_double" || filetype == "photon10_double");
+    std::string njet_truth_bname    = use_r04_branches ? "njet_truth_AntiKt_Truth_r04"          : "njet_truth";
+    std::string jet_truth_E_bname   = use_r04_branches ? "jet_truth_E_AntiKt_Truth_r04"         : "jet_truth_E";
+    std::string jet_truth_Pt_bname  = use_r04_branches ? "jet_truth_Pt_AntiKt_Truth_r04"        : "jet_truth_Pt";
+    std::string jet_truth_Eta_bname = use_r04_branches ? "jet_truth_Eta_AntiKt_Truth_r04"       : "jet_truth_Eta";
+    std::string jet_truth_Phi_bname = use_r04_branches ? "jet_truth_Phi_AntiKt_Truth_r04"       : "jet_truth_Phi";
+
     // Truth jet arrays
-    TTreeReaderValue<int> njet_truth(reader, "njet_truth");
-    TTreeReaderArray<float> jet_truth_E(reader, "jet_truth_E");
-    TTreeReaderArray<float> jet_truth_Pt(reader, "jet_truth_Pt");
-    TTreeReaderArray<float> jet_truth_Eta(reader, "jet_truth_Eta");
-    TTreeReaderArray<float> jet_truth_Phi(reader, "jet_truth_Phi");
+    TTreeReaderValue<int> njet_truth(reader, njet_truth_bname.c_str());
+    TTreeReaderArray<float> jet_truth_E(reader, jet_truth_E_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Pt(reader, jet_truth_Pt_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Eta(reader, jet_truth_Eta_bname.c_str());
+    TTreeReaderArray<float> jet_truth_Phi(reader, jet_truth_Phi_bname.c_str());
+
+    std::string njet_bname    = use_r04_branches ? "njet_AntiKt_unsubtracted_r04_calib"    : "njet";
+    std::string jet_E_bname   = use_r04_branches ? "jet_E_AntiKt_unsubtracted_r04_calib"   : "jet_E";
+    std::string jet_Pt_bname  = use_r04_branches ? "jet_Pt_AntiKt_unsubtracted_r04_calib"  : "jet_Pt";
+    std::string jet_Eta_bname = use_r04_branches ? "jet_Eta_AntiKt_unsubtracted_r04_calib" : "jet_Eta";
+    std::string jet_Phi_bname = use_r04_branches ? "jet_Phi_AntiKt_unsubtracted_r04_calib" : "jet_Phi";
 
     // Reco jet arrays
-    TTreeReaderValue<int> njet(reader, "njet");
-    TTreeReaderArray<float> jet_E(reader, "jet_E");
-    TTreeReaderArray<float> jet_Pt(reader, "jet_Pt");
-    TTreeReaderArray<float> jet_Eta(reader, "jet_Eta");
-    TTreeReaderArray<float> jet_Phi(reader, "jet_Phi");
+    TTreeReaderValue<int> njet(reader, njet_bname.c_str());
+    TTreeReaderArray<float> jet_E(reader, jet_E_bname.c_str());
+    TTreeReaderArray<float> jet_Pt(reader, jet_Pt_bname.c_str());
+    TTreeReaderArray<float> jet_Eta(reader, jet_Eta_bname.c_str());
+    TTreeReaderArray<float> jet_Phi(reader, jet_Phi_bname.c_str());
 
 
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
@@ -1015,31 +946,31 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                                Form("Reco Efficiency %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                n_pT_bins_truth, pT_bin_edges_truth));
         eff_reco_eta[ieta]->SetStatisticOption(effopt);
-        eff_reco_eta[ieta]->SetWeight(weight);
+        eff_reco_eta[ieta]->SetUseWeightedEvents();
 
         eff_id_eta.push_back(new TEfficiency(Form("eff_id_eta_%d", ieta),
                                              Form("ID Efficiency %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                              n_pT_bins_truth, pT_bin_edges_truth));
         eff_id_eta[ieta]->SetStatisticOption(effopt);
-        eff_id_eta[ieta]->SetWeight(weight);
+        eff_id_eta[ieta]->SetUseWeightedEvents();
 
         eff_converts_eta.push_back(new TEfficiency(Form("eff_converts_eta_%d", ieta),
                                                    Form("Conversion Prob %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                    n_pT_bins_truth, pT_bin_edges_truth));
         eff_converts_eta[ieta]->SetStatisticOption(effopt);
-        eff_converts_eta[ieta]->SetWeight(weight);
+        eff_converts_eta[ieta]->SetUseWeightedEvents();
 
         eff_iso_eta.push_back(new TEfficiency(Form("eff_iso_eta_%d", ieta),
                                               Form("Iso Efficiency %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                               n_pT_bins_truth, pT_bin_edges_truth));
         eff_iso_eta[ieta]->SetStatisticOption(effopt);
-        eff_iso_eta[ieta]->SetWeight(weight);
+        eff_iso_eta[ieta]->SetUseWeightedEvents();
 
         eff_all_eta.push_back(new TEfficiency(Form("eff_all_eta_%d", ieta),
                                               Form("All Efficiency %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                               n_pT_bins_truth, pT_bin_edges_truth));
         eff_all_eta[ieta]->SetStatisticOption(effopt);
-        eff_all_eta[ieta]->SetWeight(weight);
+        eff_all_eta[ieta]->SetUseWeightedEvents();
 
         h_truth_pT.push_back(new TH1D(Form("h_truth_pT_%d", ieta),
                                       Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -1531,7 +1462,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         // Scan mode: fill vertex histogram and skip all downstream processing
         if (do_vertex_scan)
         {
-            h_vertexz->Fill(*vertexz);
+            h_vertexz->Fill(*vertexz, mix_weight);
             ientry++;
             continue;
         }
@@ -2570,7 +2501,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                     if (photon_reco.find(iparticle) == photon_reco.end())
                     {
                         // then it is non truth signal, if it pass the reco, iso, and tight cuts, then it is a fake
-                        if (iso && tight && (dR < eff_dR))
+                        // Note: deltaR cut removed — trkID match is sufficient for truth association
+                        // (see efficiencytool/reports/deltaR_matching_study.tex)
+                        if (iso && tight)
                         {
                             h_pT_reco_fake[etabin]->Fill(cluster_Et[icluster], weight);
                         }
@@ -2598,8 +2531,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
                 photon_ncluster[iparticle]++;
 
-                if (dR < eff_dR)
-                // if ( (dR < eff_dR) && ( (cluster_Et[icluster] / particle_Pt[iparticle]) > 0.8) )
+                // deltaR cut removed — trkID match alone is sufficient for truth association.
+                // The dR < 0.1 cut was rejecting ~3.5% of well-reconstructed photons due to
+                // vertex resolution (dz = vtx_reco - vtx_truth), not genuine reconstruction failure.
+                // See efficiencytool/reports/deltaR_matching_study.tex for the full study.
+                // if (dR < eff_dR)  // OLD: geometric cut on top of trkID match
                 {
 
                     // if(photon_converts[iparticle]) continue;
@@ -2716,19 +2652,19 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             {
                 continue;
             }
-            eff_converts_eta[etabin]->Fill(photon_converts[it->first], photon_pT);
+            eff_converts_eta[etabin]->FillWeighted(photon_converts[it->first], weight, photon_pT);
 
             h_ncluster_truth[etabin]->Fill(photon_pT, photon_ncluster[it->first], weight);
 
             // std::cout<<"photon_pT: "<<photon_pT<<" photon_eta: "<<photon_eta<<" photon_converts: "<<photon_converts[it->first]<<std::endl;
             // std::cout<<"effieicncy: "<<eff_converts->GetEfficiency(0)<<std::endl;
-            eff_reco_eta[etabin]->Fill(photon_reco[it->first], photon_pT);
+            eff_reco_eta[etabin]->FillWeighted(photon_reco[it->first], weight, photon_pT);
             h_vertex_efficiency_denominator[vertex_bin]->Fill(photon_pT, photon_eta, weight);
             if(photon_reco[it->first]) h_vertex_efficiency_reco[vertex_bin]->Fill(photon_pT, photon_eta, weight);
 
 
             bool totalpass = photon_reco[it->first] && photon_iso[it->first] && photon_id[it->first];
-            eff_all_eta[etabin]->Fill(totalpass, photon_pT);
+            eff_all_eta[etabin]->FillWeighted(totalpass, weight, photon_pT);
 
             if (photon_reco[it->first])
             {
@@ -2736,12 +2672,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                if(photon_iso[it->first]) h_vertex_efficiency_iso[vertex_bin]->Fill(photon_pT, photon_eta, weight);
                 // if(!photon_converts[it->first])
                 {
-                    eff_iso_eta[etabin]->Fill(photon_iso[it->first], photon_pT);
+                    eff_iso_eta[etabin]->FillWeighted(photon_iso[it->first], weight, photon_pT);
                 }
 
                 if (photon_iso[it->first])
                 {
-                    eff_id_eta[etabin]->Fill(photon_id[it->first], photon_pT);
+                    eff_id_eta[etabin]->FillWeighted(photon_id[it->first], weight, photon_pT);
                 }
             }
         }

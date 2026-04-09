@@ -191,7 +191,7 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     int et1_on = configYaml["analysis"]["et1_on"].as<int>(1);
     int et2_on = configYaml["analysis"]["et2_on"].as<int>(1);
     int et3_on = configYaml["analysis"]["et3_on"].as<int>(1);
-    int et4_on = configYaml["analysis"]["et3_on"].as<int>(1);
+    int et4_on = configYaml["analysis"]["et4_on"].as<int>(1);
     int nosat = configYaml["analysis"]["nosat"].as<int>(0);
 
     // NPB selection parameters (data only)

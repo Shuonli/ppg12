@@ -1,0 +1,31 @@
+site:
+  title: "PPG12 Analysis Results"
+  subtitle: "Isolated Photon Cross-Section, pp \u221As = 200 GeV \u2014 sPHENIX"
+  repo_url: "https://github.com/Shuonli/ppg12"
+
+reports:
+  source_dirs:
+    - "reports"
+    - "efficiencytool/reports"
+    - "plotting/showershape_report"
+    - "plotting/selection_report"
+    - "plotting/comparison_report"
+  include:
+    - "*.pdf"
+  exclude:
+    - "*.aux"
+    - "*.log"
+    - "*.out"
+    - "*.py"
+    - "*.toc"
+    - "*.C"
+    - "main.tex"
+
+figures:
+  source_dir: "plotting/figures"
+  include: []  # empty = no figures deployed by default; add specific filenames to publish
+  max_total_mb: 50
+
+deploy:
+  worktree_dir: "_gh-pages-worktree"
+  branch: "gh-pages"

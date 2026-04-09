@@ -1,0 +1,26 @@
+# config_isoroc.yaml
+# Config for IsoROC_calculator.C
+# Sim input: /sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/<filetype>/condorout/combined.root
+# Data input: /sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*.root
+
+input:
+  photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/"
+  photon_jet_file_branch_dir: "/condorout/combined.root"
+  data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*.root"
+  tree: "slimtree"
+  cluster_node_name: "CLUSTERINFO_CEMC"
+  bdt_model_name: "base_v3E"
+
+output:
+  eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
+  var_type: "isoroc"
+
+analysis:
+  eta_bins: [-0.7, 0.7]
+  vertex_cut: 60.0
+  truth_iso_max: 4.0
+  reco_min_ET: 5.0
+  eff_dR: 0.1
+  pT_bins: [10, 15, 20, 25, 30]
+  vertex_reweight_on: 1
+  vertex_reweight_file: "results/vertex_reweight.root"

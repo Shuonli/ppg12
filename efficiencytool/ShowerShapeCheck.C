@@ -120,145 +120,21 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         }
     }
 
-    float max_photon_lower = 0;
-    float max_photon_upper = 100;
-
-    // Cross-section weights from CrossSectionWeights.h (via using namespace PPG12)
-
-    float max_jet_lower = 0;
-    float max_jet_upper = 100;
-    float weight = 1.0;
-    float vertex_weight = 1.0;
-    float cross_weight = 1.0;
+    // Sample kinematic windows and cross-section weight from shared lookup
+    PPG12::SampleConfig sc = PPG12::GetSampleConfig(filetype);
+    float max_photon_lower = sc.photon_pt_lower;
+    float max_photon_upper = sc.photon_pt_upper;
+    float max_jet_lower    = sc.jet_pt_lower;
+    float max_jet_upper    = sc.jet_pt_upper;
+    float cluster_ET_upper = sc.cluster_ET_upper;
+    float weight           = sc.weight;
+    isbackground           = sc.isbackground;
 
     float energy_scale_lower = 0;
     float energy_scale_upper = 100;
 
-    float cluster_ET_upper = 100;
-
-    if (filetype == "photon5")
-    {
-        max_photon_lower = 0;
-        max_photon_upper = 14;
-        // max_photon_upper = 200;
-        weight = photon5cross / photon20cross;
-    }
-    else if (filetype == "photon10")
-    {
-        max_photon_lower = 14;
-        max_photon_upper = 30;
-
-        // max_photon_lower = 0;
-        // max_photon_upper = 200;
-        weight = photon10cross / photon20cross;
-    }
-    else if (filetype == "photon10_double")
-    {
-        max_photon_lower = 10;
-        max_photon_upper = 100;
-        weight = photon10cross / photon20cross;
-    }
-    else if (filetype == "photon10_nom")
-    {
-        max_photon_lower = 10;
-        max_photon_upper = 100;
-        weight = photon10cross / photon20cross;
-    }
-    else if (filetype == "photon20")
-    {
-        max_photon_lower = 30;
-        // max_photon_lower = 0;
-        max_photon_upper = 200;
-        weight = 1.0;
-    }
-    else if (filetype == "jet5")
-    {
-        max_jet_lower = 7;
-        max_jet_upper = 9;
-        cluster_ET_upper = 10;
-        weight = jet5cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet8")
-    {
-        max_jet_lower = 9;
-        max_jet_upper = 14;
-        cluster_ET_upper = 15;
-        weight = jet8cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet12")
-    {
-        max_jet_lower = 14;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet12cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet12_double")
-    {
-        max_jet_lower = 10;
-        max_jet_upper = 100;
-        cluster_ET_upper = 100;
-        weight = jet12cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet12_nom")
-    {
-        max_jet_lower = 10;
-        max_jet_upper = 100;
-        cluster_ET_upper = 100;
-        weight = jet12cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet10")
-    {
-        max_jet_lower = 10;
-        max_jet_upper = 15;
-        cluster_ET_upper = 18;
-        weight = jet10cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet15")
-    {
-        max_jet_lower = 15;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet15cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet20")
-    {
-        max_jet_lower = 21;
-        max_jet_upper = 32;
-        cluster_ET_upper = 35;
-        weight = jet20cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet30")
-    {
-        max_jet_lower = 32;
-        max_jet_upper = 42;
-        cluster_ET_upper = 45;
-        weight = jet30cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet40")
-    {
-        max_jet_lower = 42;
-        max_jet_upper = 100;
-        cluster_ET_upper = 100;
-        weight = jet40cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet50")
-    {
-        max_jet_lower = 52;
-        max_jet_upper = 100;
-        weight = jet50cross / jet50cross;
-        isbackground = true;
-    }
-    cross_weight = weight;
+    float vertex_weight = 1.0;
+    float cross_weight = weight;
     cross_weight *= mix_weight;   // single/double interaction blending fraction (1.0 for data)
     // Vertex reweighting for simulation (required when enabled):
     //   results/vertex_reweight_bdt_none.root : h_vertexz_ratio_data_over_mccombined
@@ -611,6 +487,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
 
     float non_tight_bdt_max = configYaml["analysis"]["non_tight"]["bdt_max"].as<float>(1.0);
     float non_tight_bdt_min = configYaml["analysis"]["non_tight"]["bdt_min"].as<float>(0.0);
+    float non_tight_bdt_max_slope = configYaml["analysis"]["non_tight"]["bdt_max_slope"].as<float>(0);
+    float non_tight_bdt_max_intercept = configYaml["analysis"]["non_tight"]["bdt_max_intercept"].as<float>(non_tight_bdt_max);
 
     // common cuts for both tight and non tight
 
@@ -1908,7 +1786,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 cluster_et4[icluster] > non_tight_et4_min &&
                 cluster_et4[icluster] < non_tight_et4_max &&
                 bdt_score > non_tight_bdt_min &&
-                bdt_score < non_tight_bdt_max)
+                bdt_score < non_tight_bdt_max_slope * cluster_Et[icluster] + non_tight_bdt_max_intercept)
             {
                 // fail at least one of the tight cuts with small correlation
                 int nfail = 0;

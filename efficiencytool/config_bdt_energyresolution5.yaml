@@ -1,0 +1,248 @@
+#config.yaml
+#bdt nominal
+input:
+  photon_jet_file_root_dir: "/sphenix/user/shuhangli/ppg12/FunWithxgboost/"
+  photon_jet_file_branch_dir: "/bdt_split.root"
+  #photon_jet_file_branch_dir: "/bdt_tree.root"
+  data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root"
+  tree: "slimtree"
+  cluster_node_name: "CLUSTERINFO_CEMC"
+  bdt_model_name: "base_E"
+  # Optional: use different BDT models in different ET bins.
+  # bdt_et_bin_edges has N+1 values; bdt_et_bin_models has N values.
+  # Clusters outside all bins use bdt_model_name as fallback.
+  bdt_et_bin_edges: [8, 15, 35]
+  bdt_et_bin_models: ["base_v1E", "base_v1E"]
+  unfold_input: "results/MC_efficiency_photon5.root"
+
+output:
+  eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
+  response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
+  data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
+  var_type: "bdt_energyresolution5"
+  final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
+
+analysis:
+  isbackground: 0
+  eta_bins: [-0.7, 0.7]
+  #eta_bins: [-0.7, 0.7]
+  vertex_cut: 60.0
+  #vertex_cut: 60.0
+  truth_iso_max: 4.0
+  reco_iso_min: -20.0
+  reco_iso_max_b: 0.502095
+  reco_iso_max_s: 0.0433036
+  #reco_iso_max_b: 0
+  #reco_iso_max_s: 0.0293956
+  #reco_iso_max_b: 0.330117
+  #reco_iso_max_s: 0.025
+  #reco_iso_max_b: 1.08128
+  #reco_iso_max_s: 0.0299107
+  #reco_iso_max_b: -0.109478
+  #reco_iso_max_s: 0.0369506
+  #reco_iso_max_b: 3.0
+  #reco_iso_max_s: 0.0
+  reco_noniso_min_shift: 0.8
+  reco_noniso_max: 20.0
+  reco_min_ET: 5.0
+  cone_size: 3
+  eff_dR: 0.1
+  trigger_used: 30
+  pT_bins: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36]
+  pT_bins_truth: [7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45]
+  use_topo_iso: 2  # 0: standard cone (size set by cone_size), 1: cluster_iso_topo_03, 2: cluster_iso_topo_04
+  iso_threshold: 1
+  iso_hcalonly: 0
+  iso_emcalinnerr: 0.0
+  n_nt_fail: 0
+  weta_fail: 0
+  wphi_fail: 0
+  et1_fail: 0
+  e11_to_e33_fail: 0
+  e32_to_e35_fail: 0
+  bdt_fail: 0
+  weta_on: 1
+  wphi_on: 0
+  et1_on: 0
+  e11_to_e33_on: 0
+  e32_to_e35_on: 0
+  et2_on: 0
+  et3_on: 0
+  et4_on: 0
+  bdt_on: 1
+  mc_iso_shift: 0.1
+  mc_iso_scale: 1.2
+  vertex_reweight_on: 1
+  # Path to data vertex scan output file (h_vertexz). Used for on-the-fly vertex reweighting.
+  # Leave empty ("") to use the pre-made vertex_reweight_file instead.
+  vertex_scan_data_file: ""
+  fit_option: 1
+  cluster_escale: 1.0
+  cluster_eres: 0.05
+  mc_purity_correction: 0
+  mc_purity_correction_file: ""
+
+  tight:
+    reta77_min: 0.0
+    reta77_max: 1.0
+
+    rhad33_max: 1.0
+    rhad33_min: 0.00
+
+    w72_max: 1.0
+    w72_min: 0.0
+
+    re11_E_max: 1.0
+    re11_E_min: 0.0
+
+    CNN_max: 1.0
+    CNN_min: 0.0
+    #CNN_min: 0.8
+
+    #correlation
+    et1_max: 1.0
+    et1_min: 0.5
+    et1_min_b: 0.5
+    et1_min_s: 0.0
+    #correlation
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.8
+
+    #correlation
+    weta_cogx_max: 1.0
+    weta_cogx_min: 0.0
+    weta_cogx_max_b: 1.0
+    weta_cogx_max_s: 0.0
+
+
+    wphi_cogx_max: 1.0
+    wphi_cogx_min: 0.0
+    wphi_cogx_max_b: 1.0
+    wphi_cogx_max_s: 0.0
+
+    #correlation
+    prob_max: 1.0
+    prob_min: 0.0
+
+    #small correlation
+    e11_over_e33_max: 1.0
+    e11_over_e33_min: 0.0
+
+    #small correlation
+    et4_max: 1.0
+    et4_min: 0.0
+
+    et2_max: 1.0
+    et2_min: 0.0
+
+    et3_max: 1.0
+    et3_min: 0.0
+
+    #w32 small correlation
+    w32_max: 1.0
+    w32_min: 0.0
+
+    #bdt
+    bdt_max: 1.0
+    bdt_min: 0.7
+    bdt_min_slope: -0.015
+    bdt_min_intercept: 0.80
+
+
+  non_tight:
+    reta77_min: 0.0
+    reta77_max: 1.0
+
+    rhad33_max: 1.0
+    rhad33_min: 0.00
+
+    w72_max: 1.0
+    w72_min: 0.0
+
+    re11_E_max: 1.0
+    re11_E_min: 0.0
+
+    CNN_max: 1.0
+    CNN_min: 0.0
+    #correlation
+    et1_max: 1.0
+    et1_min: 0.6
+    #correlation
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.8
+
+    #correlation
+    weta_cogx_max: 1.0
+    weta_cogx_min: 0.0
+    weta_cogx_max_b: 1.0
+    weta_cogx_max_s: 0.0
+
+
+    wphi_cogx_max: 1.0
+    wphi_cogx_min: 0.0
+    wphi_cogx_max_b: 1.0
+    wphi_cogx_max_s: 0.0
+
+    #correlation
+    prob_max: 1.0
+    prob_min: 0.0
+
+    #small correlation
+    e11_over_e33_max: 1.0
+    e11_over_e33_min: 0.0
+
+    #small correlation
+    et4_max: 1.0
+    et4_min: 0.0
+
+    #w32 small correlation
+    w32_max: 1.0
+    w32_min: 0.0
+
+    #bdt
+    bdt_max: 0.5
+    bdt_min: 0.02
+    bdt_min_slope: -0.015
+    bdt_min_intercept: 0.80
+
+  common:
+    wr_cogx_bound: 0.0
+    cluster_weta_cogx_bound: 2.0
+
+    npb_cut_on: 1
+    npb_score_cut: 0.5
+
+    prob_max: 1.0
+    prob_min: 0.0
+
+    e11_over_e33_max: 0.98
+
+    e11_over_e33_min: 0.0
+
+    e32_over_e35_max: 1.0
+    e32_over_e35_min: 0.8
+
+    et1_max: 1.0
+    et1_min: 0.6
+
+
+
+
+
+
+  # Run range for data processing (-1 = no bound)
+  run_min: 51274
+  run_max: 54000
+  # Optional run list file (one run number per line). If set, only listed runs are processed.
+  run_list_file: ""
+  # Total luminosity (pb^-1) for the selected run range
+  lumi: 16.2735
+
+  unfold:
+    resultit: 2
+    resultleak: 1
+    reweight: 1
+
+
+
+

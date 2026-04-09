@@ -62,7 +62,7 @@ void DoubleInteractionCheck(
     // ---------------------------------------------------------------
     // NPB score configuration
     // ---------------------------------------------------------------
-    float npb_score_cut = configYaml["analysis"]["npb_score_cut"].as<float>(0.5);
+    float npb_score_cut = configYaml["analysis"]["common"]["npb_score_cut"].as<float>(0.5);
 
     std::string vertex_scan_data_file =
         configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
@@ -94,107 +94,18 @@ void DoubleInteractionCheck(
         }
     }
 
-    // Cross-section weights from CrossSectionWeights.h (via using namespace PPG12)
-    float max_photon_lower = 0;
-    float max_photon_upper = 100;
+    // Sample kinematic windows and cross-section weight from shared lookup
+    PPG12::SampleConfig sc = PPG12::GetSampleConfig(filetype);
+    float max_photon_lower = sc.photon_pt_lower;
+    float max_photon_upper = sc.photon_pt_upper;
+    float max_jet_lower    = sc.jet_pt_lower;
+    float max_jet_upper    = sc.jet_pt_upper;
+    float cluster_ET_upper = sc.cluster_ET_upper;
+    float weight           = sc.weight;
+    isbackground           = sc.isbackground;
 
-    float max_jet_lower = 0;
-    float max_jet_upper = 100;
-    float weight = 1.0;
     float vertex_weight = 1.0;
-    float cross_weight = 1.0;
-    float cluster_ET_upper = 100;
-
-    if (filetype == "photon5")
-    {
-        max_photon_lower = 0;
-        max_photon_upper = 14;
-        weight = photon5cross / photon20cross;
-    }
-    else if (filetype == "photon10")
-    {
-        max_photon_lower = 14;
-        max_photon_upper = 30;
-        weight = photon10cross / photon20cross;
-    }
-    else if (filetype == "photon20")
-    {
-        max_photon_lower = 30;
-        max_photon_upper = 200;
-        weight = 1.0;
-    }
-    else if (filetype == "jet5")
-    {
-        max_jet_lower = 7;
-        max_jet_upper = 9;
-        cluster_ET_upper = 10;
-        weight = jet5cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet8")
-    {
-        max_jet_lower = 9;
-        max_jet_upper = 14;
-        cluster_ET_upper = 15;
-        weight = jet8cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet12")
-    {
-        max_jet_lower = 14;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet12cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet10")
-    {
-        max_jet_lower = 10;
-        max_jet_upper = 15;
-        cluster_ET_upper = 18;
-        weight = jet10cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet15")
-    {
-        max_jet_lower = 15;
-        max_jet_upper = 21;
-        cluster_ET_upper = 23;
-        weight = jet15cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet20")
-    {
-        max_jet_lower = 21;
-        max_jet_upper = 32;
-        cluster_ET_upper = 35;
-        weight = jet20cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet30")
-    {
-        max_jet_lower = 32;
-        max_jet_upper = 42;
-        cluster_ET_upper = 45;
-        weight = jet30cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet40")
-    {
-        max_jet_lower = 42;
-        max_jet_upper = 100;
-        cluster_ET_upper = 100;
-        weight = jet40cross / jet50cross;
-        isbackground = true;
-    }
-    else if (filetype == "jet50")
-    {
-        max_jet_lower = 52;
-        max_jet_upper = 100;
-        weight = jet50cross / jet50cross;
-        isbackground = true;
-    }
-    cross_weight = weight;
+    float cross_weight = weight;
 
     // ---------------------------------------------------------------
     // Vertex reweighting (sim)
@@ -442,6 +353,8 @@ void DoubleInteractionCheck(
 
     float tight_bdt_max = configYaml["analysis"]["tight"]["bdt_max"].as<float>(1.0);
     float tight_bdt_min = configYaml["analysis"]["tight"]["bdt_min"].as<float>(0.0);
+    float tight_bdt_min_slope = configYaml["analysis"]["tight"]["bdt_min_slope"].as<float>(0);
+    float tight_bdt_min_intercept = configYaml["analysis"]["tight"]["bdt_min_intercept"].as<float>(tight_bdt_min);
 
     // ---------------------------------------------------------------
     // Non-tight cuts
@@ -462,6 +375,8 @@ void DoubleInteractionCheck(
     float non_tight_et4_min = configYaml["analysis"]["non_tight"]["et4_min"].as<float>();
     float non_tight_bdt_max = configYaml["analysis"]["non_tight"]["bdt_max"].as<float>(1.0);
     float non_tight_bdt_min = configYaml["analysis"]["non_tight"]["bdt_min"].as<float>(0.0);
+    float non_tight_bdt_max_slope = configYaml["analysis"]["non_tight"]["bdt_max_slope"].as<float>(0);
+    float non_tight_bdt_max_intercept = configYaml["analysis"]["non_tight"]["bdt_max_intercept"].as<float>(non_tight_bdt_max);
 
     // ---------------------------------------------------------------
     // Common cuts
@@ -1003,7 +918,8 @@ void DoubleInteractionCheck(
         bool is_e32e35_tight = (e32_over_e35 > tight_e32_over_e35_min) && (e32_over_e35 < tight_e32_over_e35_max);
         bool is_et4_tight = (cluster_et4[icl] > tight_et4_min) && (cluster_et4[icl] < tight_et4_max);
         bool is_prob_tight = (cluster_prob[icl] > tight_prob_min) && (cluster_prob[icl] < tight_prob_max);
-        bool is_bdt_tight = (bdt_score > tight_bdt_min) && (bdt_score < tight_bdt_max);
+        float tight_bdt_min_et = tight_bdt_min_slope * clusterET + tight_bdt_min_intercept;
+        bool is_bdt_tight = (bdt_score > tight_bdt_min_et) && (bdt_score < tight_bdt_max);
 
         bool tight = is_weta_tight && is_wphi_tight && is_et1_tight && is_et2_tight && is_et3_tight &&
                      is_e11e33_tight && is_e32e35_tight && is_et4_tight && is_prob_tight && is_bdt_tight;
@@ -1016,7 +932,7 @@ void DoubleInteractionCheck(
             e32_over_e35 > non_tight_e32_over_e35_min && e32_over_e35 < non_tight_e32_over_e35_max &&
             cluster_et1[icl] > non_tight_et1_min && cluster_et1[icl] < non_tight_et1_max &&
             cluster_et4[icl] > non_tight_et4_min && cluster_et4[icl] < non_tight_et4_max &&
-            bdt_score > non_tight_bdt_min && bdt_score < non_tight_bdt_max)
+            bdt_score > non_tight_bdt_min && bdt_score < non_tight_bdt_max_slope * clusterET + non_tight_bdt_max_intercept)
         {
             int nfail = 0;
             if (!is_weta_tight)  nfail += weta_on;

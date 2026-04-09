@@ -1,0 +1,139 @@
+# NPB Score Training Configuration
+#
+# This config trains a BDT to distinguish NPB (detector artifacts) from real clusters
+# - Positive (label=1): All clusters from Jet MC samples (real physics)
+# - Negative (label=0): NPB-tagged clusters from data (detector timing artifacts)
+
+training:
+  output_dir: "npb_models"  # Output directory for models/plots
+  model_name: "npb_score"   # Base name for saved files
+  random_seed: 42
+
+  # Data split ratios (must sum to 1.0)
+  train_size: 0.7
+  val_size: 0.1
+  test_size: 0.2
+
+  # Sample reweighting
+  balance_classes: true      # Equal weight for real/NPB classes
+  reweight_eta: false        # Flatten cluster_Eta distribution (optional)
+  reweight_et: true         # Flatten cluster_Et distribution (optional)
+  reweight_vertex: false     # Flatten vertexz distribution (optional)
+
+  # ET reweighting parameters (used when reweight_et: true)
+  et_reweight_bins: 20       # Number of bins for density estimation
+  et_reweight_cap: 100.0      # Maximum weight to prevent extremes
+  et_reweight_min_pdf: 1e-3  # Minimum PDF value to prevent instability
+
+  # Signal peak downsampling (applied before reweighting)
+  # Randomly drops signal events in [downsample_et_min, downsample_et_max]
+  # so the count per bin matches the reference bin just above the peak.
+  # This prevents extreme reweighting weights from a steeply-falling spectrum.
+  downsample_signal_peak: false
+  downsample_et_min: 6.0     # Lower edge of peak region [GeV]
+  downsample_et_max: 15.0    # Upper edge of peak region [GeV]
+  downsample_target_fraction: null  # If set, keep this fraction in peak region; otherwise auto from reference bin
+
+  # Minimal hyperparameter tuning (optional)
+  # - If enabled, the script will try up to `max_evals` random combinations from `param_grid`,
+  #   pick the best by validation AUC, then retrain using (train+val) before testing/saving.
+  hyperparameter_tuning:
+    enabled: false
+    metric: "auc"
+    max_evals: 12
+    param_grid:
+      max_depth: [4, 6, 8]
+      learning_rate: [0.05, 0.1]
+      subsample: [0.7, 0.9]
+      colsample_bytree: [0.7, 0.9]
+      reg_alpha: [0.0, 1.0]
+      reg_lambda: [1.0]
+      n_estimators: [300, 600, 900]
+
+data:
+  # Real clusters from Jet MC (positive samples)
+  signal_files:
+    - "shapes_jet10.txt"
+    - "shapes_jet15.txt"
+    - "shapes_jet20.txt"
+    - "shapes_jet30.txt"
+    - "shapes_jet50.txt"
+
+  # NPB clusters from data (negative samples)
+  background_files:
+    - "shapes_data_npb.txt"
+
+  # Selection criteria (pandas query syntax)
+  signal_selection: "pid != -1"      # All real clusters
+  background_selection: "pid == -1"  # NPB tagged
+
+  # Kinematic cuts
+  et_min: 6.0
+  et_max: 40.0
+  eta_max: 0.7
+
+features:
+  # Use all 29 features (excludes is_tight and pid which are labels/metadata)
+  feature_list:
+    - cluster_Et
+    - cluster_Eta
+    - vertexz
+    - e11_over_e33
+    - e32_over_e35
+    - e11_over_e22
+    - e11_over_e13
+    - e11_over_e15
+    - e11_over_e17
+    - e11_over_e31
+    - e11_over_e51
+    - e11_over_e71
+    - e22_over_e33
+    - e22_over_e35
+    - e22_over_e37
+    - e22_over_e53
+    - cluster_weta_cogx
+    - cluster_wphi_cogx
+    - cluster_et1
+    - cluster_et2
+    - cluster_et3
+    - cluster_et4
+    - cluster_w32
+    - cluster_w52
+    - cluster_w72
+
+model:
+  type: "xgboost"
+  params:
+    # XGBoost hyperparameters (tuned for binary classification)
+    n_estimators: 750
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 1.0
+    reg_lambda: 1.0
+    scale_pos_weight: 1.0  # Overridden by class balancing
+    tree_method: "hist"
+    max_bin: 256
+    objective: "binary:logistic"
+    eval_metric: "logloss"
+
+  # Output formats
+  save_joblib: true  # Python joblib format (for Python inference)
+  save_root: true    # ROOT/TMVA format (for C++ inference)
+
+evaluation:
+  generate_plots: true
+  plot_types:
+    - roc_curve
+    - score_distributions
+    - feature_importance
+    - confusion_matrix
+
+per_bin_analysis:
+  plot_et_distributions: true
+  et_bins_for_plot: 40
+  calculate_per_bin_auc: true
+  train_per_bin_models: false  # Enable via --per-bin-training flag
+  et_bin_edges: [5, 10, 15, 20, 25, 30, 35, 40]
+  et_bin_labels: ["5-10", "10-15", "15-20", "20-25", "25-30", "30-35", "35-40"]

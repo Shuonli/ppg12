@@ -224,7 +224,7 @@ void NPB_PurityStudy(const std::string& configname = "config_showershape.yaml",
     float common_wr_cogx_bound = configYaml["analysis"]["common"]["wr_cogx_bound"].as<float>();
     float common_cluster_weta_cogx_bound = configYaml["analysis"]["common"]["cluster_weta_cogx_bound"].as<float>();
 
-    const float npb_score_cut = configYaml["analysis"]["npb_score_cut"].as<float>(0.5);
+    const float npb_score_cut = configYaml["analysis"]["common"]["npb_score_cut"].as<float>(0.5);
     const float npb_score_abcd_cut = 0.5f;
     const int mrad_split_run = configYaml["analysis"]["mrad_split_run"].as<int>(0);
 
