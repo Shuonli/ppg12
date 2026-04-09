@@ -17,6 +17,9 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+_EASTERN = ZoneInfo("America/New_York")
 from pathlib import Path
 
 
@@ -201,6 +204,8 @@ def _extract_tex_title(tex_path: Path) -> str | None:
     def _clean_latex(raw: str) -> str:
         """Strip LaTeX markup from a title string."""
         t = raw.replace("\\\\", " ").replace("\n", " ")
+        t = re.sub(r"\[[\d.]+pt\]", "", t)        # dimension specs like [4pt]
+        t = t.replace("\\,", " ").replace("\\%", "%").replace("\\&", "&")
         t = re.sub(r"\\[a-zA-Z]+\*?\{?", "", t)
         t = t.replace("$", "").replace("{", "").replace("}", "")
         t = re.sub(r"\s+", " ", t)
@@ -217,6 +222,22 @@ def _extract_tex_title(tex_path: Path) -> str | None:
     if m:
         title = _clean_latex(m.group(1))
         return title if title else None
+
+    # 2b: multi-line \title{...} with possible nested braces.
+    m_start = re.search(r"\\title\{", text)
+    if m_start:
+        depth, i = 1, m_start.end()
+        while i < len(text) and depth > 0:
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+            i += 1
+        if depth == 0:
+            raw = text[m_start.end() : i - 1]
+            title = _clean_latex(raw)
+            if title:
+                return title
 
     # Third try: first \section{...}.
     m = re.search(r"\\section\{([^}]+)\}", text)
@@ -329,7 +350,7 @@ def collect_reports(repo_root: Path, cfg: dict) -> list[dict]:
                 continue
             seen_names.add(f.name)
 
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=_EASTERN)
             size_mb = f.stat().st_size / (1024 * 1024)
 
             # Extract metadata.
@@ -507,7 +528,7 @@ def generate_index_html(reports: list[dict], figures: list[dict], cfg: dict) -> 
     title = site.get("title", "PPG12 Analysis Results")
     subtitle = site.get("subtitle", "Isolated Photon Cross-Section, pp \u221As = 200 GeV \u2014 sPHENIX")
     repo_url = site.get("repo_url", "https://github.com/Shuonli/ppg12")
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(_EASTERN).strftime("%Y-%m-%d %H:%M %Z")
 
     return INDEX_HTML_TEMPLATE.format(
         title=html.escape(title),
@@ -658,7 +679,7 @@ def main() -> None:
         print(f"  {d}")
 
     # ----- Commit and push ------------------------------------------------
-    message = args.message or f"Update site: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    message = args.message or f"Update site: {datetime.now(_EASTERN).strftime('%Y-%m-%d')}"
     pushed = deploy(wt_path, message)
 
     if pushed:
