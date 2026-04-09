@@ -174,7 +174,14 @@ void plot_eta_migration(
             TCanvas *c = new TCanvas("c_fake_rate", "", 800, 600);
             TH1F *frame = new TH1F("frame_fake_rate",
                 ";Reco #it{E}_{T} [GeV];Inward Migration Fake Rate", 100, 8, 40);
-            frame->GetYaxis()->SetRangeUser(0, 0.15);
+            float ymax_fake = 0.10;
+            if (g_fake_d) { // accommodate double interaction values (~25%)
+                for (int ip = 0; ip < g_fake_d->GetN(); ip++) {
+                    double xx, yy; g_fake_d->GetPoint(ip, xx, yy);
+                    if (xx >= 8 && xx <= 36 && yy > ymax_fake) ymax_fake = yy;
+                }
+            }
+            frame->GetYaxis()->SetRangeUser(0, ymax_fake * 1.3);
             frame->GetXaxis()->SetRangeUser(8, 36);
             frame->Draw("axis");
 
@@ -300,7 +307,14 @@ void plot_eta_migration(
             TCanvas *c = new TCanvas("c_response_contam", "", 800, 600);
             TH1F *frame = new TH1F("frame_resp_contam",
                 ";Reco #it{E}_{T} [GeV];Response Contamination Fraction", 100, 8, 40);
-            frame->GetYaxis()->SetRangeUser(0, 0.20);
+            float ymax_resp = 0.10;
+            if (g_frac_d) {
+                for (int ip = 0; ip < g_frac_d->GetN(); ip++) {
+                    double xx, yy; g_frac_d->GetPoint(ip, xx, yy);
+                    if (xx >= 8 && xx <= 36 && yy > ymax_resp) ymax_resp = yy;
+                }
+            }
+            frame->GetYaxis()->SetRangeUser(0, ymax_resp * 1.3);
             frame->GetXaxis()->SetRangeUser(8, 36);
             frame->Draw("axis");
 
