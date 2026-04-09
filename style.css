@@ -1,5 +1,5 @@
 /* PPG12 GitHub Pages — sPHENIX Isolated Photon Analysis Results
-   Colors: dark header #1a1a2e, gold accent #f0a500, light background #f8f8fa */
+   Colors: Columbia Navy #002B7F, Columbia Blue #B9D9EB, white */
 
 /* ── Reset & Base ── */
 *, *::before, *::after {
@@ -16,12 +16,12 @@ body {
 }
 
 a {
-  color: #1a5276;
+  color: #002B7F;
   text-decoration: none;
 }
 a:hover {
   text-decoration: underline;
-  color: #0e3a5c;
+  color: #001a4d;
 }
 
 /* ── Layout Container ── */
@@ -33,10 +33,10 @@ a:hover {
 
 /* ── Header ── */
 .site-header {
-  background: #1a1a2e;
-  color: #f0f0f0;
+  background: #002B7F;
+  color: #ffffff;
   padding: 1.5rem 0;
-  border-bottom: 4px solid #f0a500;
+  border-bottom: 4px solid #B9D9EB;
 }
 
 .site-header h1 {
@@ -46,31 +46,31 @@ a:hover {
 }
 
 .site-header h1 .accent {
-  color: #f0a500;
+  color: #B9D9EB;
 }
 
 .site-header .subtitle {
   font-size: 0.95rem;
-  color: #b0b0c8;
+  color: #d0e4f0;
   margin-top: 0.25rem;
   font-style: italic;
 }
 
 .site-header a {
-  color: #f0a500;
+  color: #B9D9EB;
 }
 .site-header a:hover {
-  color: #ffc340;
+  color: #ffffff;
 }
 
 /* ── Section Headings ── */
 .section-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a2e;
+  color: #002B7F;
   margin: 2rem 0 0.75rem;
   padding-bottom: 0.35rem;
-  border-bottom: 2px solid #f0a500;
+  border-bottom: 2px solid #B9D9EB;
 }
 
 /* ── Reports Table ── */
@@ -85,8 +85,8 @@ a:hover {
 }
 
 .reports-table thead {
-  background: #1a1a2e;
-  color: #f0f0f0;
+  background: #002B7F;
+  color: #ffffff;
 }
 
 .reports-table th {
@@ -105,7 +105,7 @@ a:hover {
   display: block;
   width: 0;
   height: 2px;
-  background: #f0a500;
+  background: #B9D9EB;
   transition: width 0.2s;
 }
 .reports-table th:hover::after {
@@ -130,7 +130,7 @@ a:hover {
 /* PDF link styling */
 .pdf-link {
   display: inline-block;
-  background: #1a5276;
+  background: #002B7F;
   color: #fff;
   padding: 0.25rem 0.7rem;
   border-radius: 3px;
@@ -140,8 +140,8 @@ a:hover {
   transition: background 0.15s;
 }
 .pdf-link:hover {
-  background: #f0a500;
-  color: #1a1a2e;
+  background: #B9D9EB;
+  color: #002B7F;
   text-decoration: none;
 }
 
@@ -192,7 +192,7 @@ a:hover {
   color: #777;
 }
 .site-footer a:hover {
-  color: #1a5276;
+  color: #002B7F;
 }
 
 /* ── 404 Page ── */
@@ -203,7 +203,7 @@ a:hover {
 
 .not-found h2 {
   font-size: 2rem;
-  color: #1a1a2e;
+  color: #002B7F;
   margin-bottom: 0.5rem;
 }
 
@@ -215,8 +215,8 @@ a:hover {
 
 .not-found .back-link {
   display: inline-block;
-  background: #f0a500;
-  color: #1a1a2e;
+  background: #B9D9EB;
+  color: #002B7F;
   padding: 0.5rem 1.5rem;
   border-radius: 4px;
   font-weight: 600;
@@ -224,7 +224,8 @@ a:hover {
   transition: background 0.15s;
 }
 .not-found .back-link:hover {
-  background: #d49300;
+  background: #002B7F;
+  color: #ffffff;
   text-decoration: none;
 }
 
@@ -271,7 +272,7 @@ a:hover {
   .reports-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: #1a1a2e;
+    color: #002B7F;
     display: inline-block;
     width: 5.5rem;
   }
