@@ -144,6 +144,12 @@ Empty -- all LHC photon-jet papers assigned to Batch 1H.
 | 2505.05789 | `E_detector/2505.05789.pdf` | YES (confirmed published) | 1 | STAR photon+jet acoplanarity (PRC 113, 2026) |
 | 2303.12899 | `E_detector/2303.12899.pdf` | YES | 1 | PHENIX centrality bias dAu (PRL 134, 2025) |
 
+### Internal Notes
+
+| ID | PDF Path | Verified | Priority | Short Title |
+|----|----------|----------|----------|-------------|
+| lumi_calculation-5 | `lumi_calculation-5.pdf` | YES (internal note) | 3 | sPHENIX luminosity calculation: MBD scalers, pileup correction, z-vtx selection |
+
 ### Batch 2H: Tier 3 Stubs (no PDF -- stub only)
 
 | Ref | Short Title | Notes |
