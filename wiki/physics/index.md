@@ -25,6 +25,7 @@ Domain knowledge compiled from ~70 research papers for the sPHENIX PPG12 isolate
 - [ABCD Sideband Method](techniques/abcd-sideband-method.md) -- Two-dimensional sideband background subtraction with signal leakage corrections, from ATLAS origin to PPG12 implementation
 - [BDT Photon Identification](techniques/bdt-photon-id.md) -- XGBoost algorithm, TMVA inference, PPG12 model configuration, and comparison with photon ID strategies at other experiments
 - [Bayesian Unfolding](techniques/bayesian-unfolding.md) -- D'Agostini iterative Bayesian unfolding algorithm, RooUnfold implementation, SVD alternative, and PPG12 application
+- [Luminosity Calculation](techniques/luminosity-calculation.md) -- MBD scaler-based luminosity with Poisson pileup correction, Vernier scan cross-section, z-vertex selection effects
 
 ## Detector
 
