@@ -1,0 +1,474 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Local macros ---
+\newcommand{\pp}{\mbox{$p$+$p$}}
+\newcommand{\sqs}{\mbox{$\sqrt{s}$}}
+\newcommand{\DR}{\ensuremath{\Delta R}}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}}
+\newcommand{\ET}{\ensuremath{E_{\text{T}}}}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
+\newcommand{\abseta}{\ensuremath{|\eta|}}
+\newcommand{\isoETtruth}{\ensuremath{E_\text{T}^\text{iso,truth}}}
+\newcommand{\Rcemc}{\ensuremath{R_{\text{CEMC}}}}
+\newcommand{\dzcrit}{\ensuremath{|\Delta z|_{\text{crit}}}}
+
+\graphicspath{{../../plotting/figures/vertex_study/}}
+
+\title{%
+  \vspace{-1cm}
+  {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
+  {\LARGE \textbf{Vertex Distribution and $\Delta z$ in Single\\
+  vs.\ Double-Interaction MC}}\\[0.3cm]
+  {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
+}
+\author{sPHENIX Collaboration}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This note characterizes the vertex distributions and vertex displacement
+($\Delta z = z_{\text{vtx}}^{\text{reco}} - z_{\text{vtx}}^{\text{truth}}$)
+in single-interaction and full GEANT double-interaction Monte Carlo
+samples used for the sPHENIX isolated photon cross-section measurement.
+In double-interaction events, the MBD-reconstructed vertex is the average
+of two collision vertices, producing a $\Delta z$ RMS of 48.1~cm (vs.\
+16.9~cm for single interaction, before vertex cut). The vertex displacement
+maps to a pseudorapidity shift via the EMCal barrel geometry:
+$\Delta\eta \approx -\Delta z / \Rcemc$, broadening the cluster
+$\Delta\eta$ distribution by a factor of 5 (RMS 0.365 vs.\ 0.073).
+We document the vertex distribution shapes, the $\Delta z$ distribution
+properties, and the geometric origin of the $\Delta\eta$ correlation
+for both interaction types. These results inform the truth-matching
+strategy and pileup systematic uncertainty for the cross-section measurement.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+In \pp{} collisions at RHIC, the probability of two independent
+hard-scattering events occurring in the same bunch crossing (double
+interaction, or pileup) depends on the instantaneous luminosity and
+crossing angle. For Run~24 at $\sqs = 200$~GeV, the double-interaction
+fractions are 18.7\% at 0~mrad crossing angle and 7.2\% at 1.5~mrad.
+
+When two collisions occur in the same bunch crossing, the MBD (Minimum
+Bias Detector) reconstructs a single vertex that represents an average
+of the two true collision vertices. This displacement between the
+reconstructed and true (primary photon) vertex propagates to the
+cluster pseudorapidity via the EMCal barrel geometry:
+\begin{equation}
+  \Delta\eta = \eta_{\text{cluster}} - \eta_{\text{truth}}
+    \approx -\frac{\Delta z}{\Rcemc \cdot \cosh\eta}
+  \label{eq:deta_dz}
+\end{equation}
+where $\Rcemc = 93.5$~cm is the EMCal barrel radius.
+
+Understanding the vertex distribution and its consequences is essential
+for three aspects of the measurement:
+\begin{enumerate}
+  \item \textbf{Truth matching:} Vertex displacement drives $\DR$
+    matching failures (documented separately in Ref.~\cite{dr_note}).
+  \item \textbf{Kinematic migration:} The $\eta$-shift changes both the
+    reconstructed $\ET = E / \cosh\eta$ and the cluster's position relative
+    to fiducial boundaries, affecting efficiency and the response matrix.
+  \item \textbf{Shower shape distortion:} Shifted kinematics alter the
+    BDT score evaluation at the wrong working point of the
+    $\ET$-dependent threshold.
+\end{enumerate}
+
+\begin{thebibliography}{1}
+\bibitem{dr_note} sPHENIX Internal Note: Study of the $\DR$
+  Truth-Matching Requirement in Single-Interaction MC, 2025.
+\end{thebibliography}
+
+%% ============================================================
+\section{Samples and Method}
+\label{sec:method}
+
+The study uses the macro \texttt{study\_vertex\_double\_interaction.C},
+processing two \texttt{photon10} MC samples (truth photon
+$14 \leq \pT < 30$~GeV):
+\begin{itemize}
+  \item \textbf{Single-interaction:}
+    \texttt{photon10/bdt\_split.root} --- standard production MC with
+    one collision per event.
+  \item \textbf{Double-interaction:}
+    \texttt{photon10\_double/bdt\_split.root} --- full GEANT4 MC with
+    two independent collisions simulated per event.
+\end{itemize}
+
+Two million events are processed per sample. Two classes of histograms
+are produced:
+\begin{enumerate}
+  \item \textbf{Event-level} (filled before vertex cut): vertex
+    distributions ($z_{\text{vtx}}^{\text{reco}}$,
+    $z_{\text{vtx}}^{\text{truth}}$), $\Delta z$ distributions,
+    and reco-vs-truth 2D correlation.
+  \item \textbf{Per-cluster} (filled after vertex cut and truth
+    selection): $\Delta\eta$, $\DR$, $\ET$ ratio, and 2D
+    $\Delta\eta$ vs.\ $\Delta z$ correlation for trkID-matched
+    truth photons satisfying the standard PPG12 selection
+    ($\texttt{pid} = 22$, $\texttt{photonclass} < 3$,
+    $\isoETtruth < 4$~GeV, $\abseta < 0.7$,
+    $8 \leq \pT < 36$~GeV, $|z_{\text{vtx}}^{\text{reco}}| < 60$~cm).
+\end{enumerate}
+
+The distinction matters: event-level distributions include all events
+(even those without selected truth photons or outside the vertex cut),
+while per-cluster distributions reflect the analysis-relevant population.
+
+%% ============================================================
+\section{Results}
+\label{sec:results}
+
+%% --------------------------------------------------
+\subsection{Reconstructed Vertex Distributions}
+\label{sec:vtx_reco}
+
+Figure~\ref{fig:vtx_reco} compares the reconstructed vertex
+distributions. The double-interaction reco vertex is \emph{narrower}
+than single-interaction, which is a consequence of vertex averaging:
+\begin{equation}
+  z_{\text{vtx}}^{\text{reco}} \approx \frac{z_1 + z_2}{2}
+  \label{eq:vtx_avg}
+\end{equation}
+Averaging two independent draws from the beam vertex distribution
+reduces the variance by $\sqrt{2}$, producing a more peaked reco
+distribution.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{vertex_reco_comparison.pdf}
+\caption{Normalized reconstructed vertex distributions for
+  single-interaction (blue) and double-interaction (red) \texttt{photon10}
+  MC. The double-interaction distribution is narrower due to the
+  averaging of two collision vertices. Both are shown before the
+  $|z_{\text{vtx}}| < 60$~cm analysis cut.}
+\label{fig:vtx_reco}
+\end{figure}
+
+\subsection{Truth Vertex Distributions}
+\label{sec:vtx_truth}
+
+The truth vertex (primary collision vertex) distributions are identical
+in shape for both samples, as expected --- the beam profile is a
+property of the accelerator, not the number of interactions. Both
+follow the RHIC luminous region profile at $\sqs = 200$~GeV.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{vertex_truth_comparison.pdf}
+\caption{Normalized truth vertex distributions (primary collision
+  vertex) for single and double-interaction MC. The distributions
+  are consistent, reflecting the same RHIC beam profile.}
+\label{fig:vtx_truth}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Reco vs.\ Truth Vertex Correlation}
+\label{sec:vtx_2d}
+
+Figure~\ref{fig:vtx_2d} shows the 2D correlation between reconstructed
+and truth vertex positions. In single-interaction MC, the correlation is
+tight along the diagonal with occasional off-diagonal artifacts from MBD
+vertex reconstruction failures. In double-interaction MC, the correlation
+band is significantly broadened: the reco vertex is pulled toward the
+second collision vertex, away from the truth.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{vertex_reco_vs_truth.pdf}
+\caption{Two-dimensional correlation between reconstructed and truth
+  vertex positions for single-interaction (left) and double-interaction
+  (right) MC. The red dashed line shows the diagonal
+  ($z_{\text{vtx}}^{\text{reco}} = z_{\text{vtx}}^{\text{truth}}$).
+  The double-interaction sample shows significant broadening around
+  the diagonal due to the second collision vertex.}
+\label{fig:vtx_2d}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Vertex Displacement ($\Delta z$) Distributions}
+\label{sec:dz}
+
+Figure~\ref{fig:dz} shows the $\Delta z$ distribution for both
+samples. The single-interaction distribution has a sharp central
+spike (well-reconstructed events) with non-Gaussian tails extending
+to $|\Delta z| > 100$~cm from MBD reconstruction failures. The
+double-interaction distribution is broad and approximately Gaussian
+with heavy tails, reflecting the convolution of two independent
+beam vertex distributions.
+
+\begin{table}[htbp]
+\centering
+\caption{Vertex displacement statistics (event-level, before vertex cut).}
+\label{tab:dz_stats}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Single} & \textbf{Double} \\
+\midrule
+$\Delta z$ mean & $-0.16$~cm & $+0.13$~cm \\
+$\Delta z$ RMS  & 16.9~cm    & 48.1~cm \\
+Fraction $|\Delta z| > 9.35$~cm & 36.0\% & 74.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The critical threshold $\dzcrit = \DR_{\text{cut}} \times \Rcemc = 0.1
+\times 93.5 = 9.35$~cm marks where the vertex-induced $\Delta\eta$
+exceeds the $\DR = 0.1$ matching cut (at $\eta = 0$). In
+double-interaction MC, 74.2\% of events exceed this threshold, compared
+to 36.0\% in single-interaction (before vertex cut). The large
+single-interaction fraction is dominated by events outside the
+$|z_{\text{vtx}}| < 60$~cm cut; within the analysis acceptance, the
+effective $\DR$ failure rate drops to 3.04\%.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{dz_distribution_comparison.pdf}
+\caption{Normalized $\Delta z$ distributions for single (blue) and
+  double (red) interaction MC. Dashed lines mark the critical threshold
+  $|\Delta z| = 9.35$~cm. The double-interaction distribution is
+  dramatically broader, with most events exceeding the threshold.}
+\label{fig:dz}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{dz_abs_comparison.pdf}
+\caption{Normalized $|\Delta z|$ distributions. The single-interaction
+  distribution drops steeply beyond 5~cm, while the double-interaction
+  distribution remains approximately flat out to $\sim$60~cm. The
+  critical threshold $\dzcrit = 9.35$~cm is marked.}
+\label{fig:dz_abs}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Physics of the $\Delta z$ Distribution}
+\label{sec:dz_physics}
+
+For double-interaction events, if both collision vertices are drawn
+independently from the beam luminous region with distribution $f(z)$
+(approximately Gaussian, $\sigma_z \approx 30$~cm for RHIC at
+$\sqs = 200$~GeV), then:
+\begin{equation}
+  \Delta z = z_{\text{vtx}}^{\text{reco}} - z_1
+    \approx \frac{z_1 + z_2}{2} - z_1 = \frac{z_2 - z_1}{2}
+  \label{eq:dz_double}
+\end{equation}
+
+The distribution of $(z_2 - z_1)$ for two independent draws from $f(z)$
+has variance $2\sigma_z^2$, so:
+\begin{equation}
+  \sigma_{\Delta z}^{\text{double}} = \frac{\sqrt{2}\,\sigma_z}{2}
+    = \frac{\sigma_z}{\sqrt{2}}
+  \label{eq:dz_sigma}
+\end{equation}
+
+With $\sigma_z \approx 30$~cm, the predicted $\sigma_{\Delta z}
+\approx 21$~cm. The measured value of 48.1~cm is larger, reflecting
+the non-Gaussian tails of the RHIC luminous region and the contribution
+of events where the MBD vertex reconstruction is biased beyond simple
+averaging.
+
+For single-interaction events, $\Delta z$ arises solely from MBD
+vertex reconstruction resolution. The sharp central peak
+($\sigma \sim 3$~cm) represents well-reconstructed events, while the
+tails reflect events with insufficient MBD timing information for
+precise vertex determination.
+
+%% --------------------------------------------------
+\subsection{$\Delta\eta$ vs.\ $\Delta z$ Correlation}
+\label{sec:deta_dz}
+
+Figure~\ref{fig:deta_dz} shows the 2D correlation between cluster
+$\Delta\eta$ and vertex displacement $\Delta z$ for double-interaction
+MC. The tight linear correlation confirms the geometric origin
+(Eq.~\ref{eq:deta_dz}), with the finite band width arising from the
+$\cosh\eta$ factor varying across the barrel ($|\eta| < 0.7$).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{deta_vs_dz_double.pdf}
+\caption{Two-dimensional $\Delta\eta$ vs.\ $\Delta z$ for
+  double-interaction MC (\texttt{photon10\_double}, trkID-matched
+  truth photons). The red dashed line shows
+  $\Delta\eta = -\Delta z / \Rcemc$ at $\eta = 0$. Dotted lines mark
+  $\Delta\eta = \pm 0.1$, corresponding to the $\DR$ matching threshold
+  at $\Delta\phi \approx 0$. The band width reflects the $\cosh\eta$
+  variation across the barrel acceptance.}
+\label{fig:deta_dz}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{$\Delta\eta$ Distribution}
+\label{sec:deta}
+
+Figure~\ref{fig:deta} compares the $\Delta\eta$ distributions. The
+single-interaction distribution is narrowly peaked (RMS 0.073), while
+the double-interaction distribution extends to $|\Delta\eta| > 1.0$
+(RMS 0.365, a factor of 5 broader). This broadening directly propagates
+to $\ET$ migration and BDT threshold evaluation.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{deta_comparison.pdf}
+\caption{Normalized $\Delta\eta$ distributions for single (blue) and
+  double (red) interaction MC. The double-interaction distribution
+  extends well beyond $|\Delta\eta| = 0.1$ (the approximate $\DR$
+  threshold), with RMS 5$\times$ larger.}
+\label{fig:deta}
+\end{figure}
+
+%% --------------------------------------------------
+\subsection{Impact on $\DR$ and $\ET$ Matching}
+\label{sec:impact}
+
+Table~\ref{tab:matching} summarizes the matching statistics for
+truth photons within the analysis acceptance
+($|z_{\text{vtx}}^{\text{reco}}| < 60$~cm).
+
+\begin{table}[htbp]
+\centering
+\caption{Truth-matching statistics (within vertex cut, standard
+  PPG12 truth photon selection).}
+\label{tab:matching}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Single} & \textbf{Double} \\
+\midrule
+Truth photons selected  & 476{,}381 & 690{,}450 \\
+trkID matched           & 465{,}270 (97.7\%) & 635{,}532 (92.0\%) \\
+Fail $\DR < 0.1$        & 14{,}164 (3.04\%) & 413{,}620 (65.08\%) \\
+Cluster $\Delta\eta$ RMS & 0.073 & 0.365 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{deltaR_comparison.pdf}
+\caption{Normalized $\DR$ distributions for trkID-matched clusters
+  in single (blue) and double (red) interaction MC. The dashed line
+  marks the $\DR = 0.1$ cut. In double-interaction MC, the majority
+  of correctly trkID-matched clusters exceed the geometric threshold.}
+\label{fig:deltaR}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{ET_ratio_comparison.pdf}
+\caption{Distribution of $\ET^{\text{cluster}} / \pT^{\text{truth}}$
+  for trkID-matched clusters. The double-interaction distribution
+  is broadened by the $\ET$ shift from the displaced vertex,
+  but remains centered near unity --- indicating the calorimeter
+  correctly measured the photon energy.}
+\label{fig:ET_ratio}
+\end{figure}
+
+The $\ET$ ratio distribution (Figure~\ref{fig:ET_ratio}) shows that
+despite the large vertex displacement, the cluster energy measurement
+remains correct. The broadening of the $\ET / \pT^{\text{truth}}$
+distribution in double-interaction MC reflects the $\ET$ recalculation
+at the wrong $\eta$ (due to the displaced vertex), not a degradation
+of calorimeter response.
+
+%% --------------------------------------------------
+\subsection{$\Delta\eta$ Dependence on $\eta$}
+\label{sec:deta_eta}
+
+The $\Delta\eta$ shift depends on the cluster position in the barrel
+through the $\cosh\eta$ factor in Eq.~(\ref{eq:deta_dz}). At
+$\eta = 0$, $\cosh\eta = 1$ and the shift is maximal for a given
+$\Delta z$. At $|\eta| = 0.7$, $\cosh\eta \approx 1.26$, reducing
+the shift by 20\%.
+
+Figure~\ref{fig:deta_eta} shows the $\Delta\eta$ vs.\ $\eta_{\text{truth}}$
+correlation for both samples. In single-interaction MC, the correlation
+is barely visible. In double-interaction MC, the characteristic ``X''
+pattern reflects the $\cosh\eta$ modulation.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{deta_vs_eta_comparison.pdf}
+\caption{$\Delta\eta$ vs.\ truth $\eta$ for single (left) and double
+  (right) interaction MC. Note the different $\Delta\eta$ scales. In
+  double interaction, the spread is modulated by $\cosh\eta$, with
+  maximum displacement at $\eta = 0$.}
+\label{fig:deta_eta}
+\end{figure}
+
+%% ============================================================
+\section{Summary}
+\label{sec:summary}
+
+\begin{enumerate}
+  \item The double-interaction MBD vertex is the average of two
+    collision vertices, producing a $\Delta z$ RMS of 48.1~cm (vs.\
+    16.9~cm for single interaction, event-level before vertex cut).
+
+  \item The reconstructed vertex distribution is actually \emph{narrower}
+    for double-interaction events (due to averaging), but the
+    displacement from the truth vertex is much larger.
+
+  \item The $\Delta\eta$ shift follows the geometric prediction
+    $\Delta\eta \approx -\Delta z / (\Rcemc \cdot \cosh\eta)$,
+    with cluster $\Delta\eta$ RMS broadened by a factor of 5
+    (0.365 vs.\ 0.073).
+
+  \item 74.2\% of double-interaction events exceed the critical
+    vertex displacement $|\Delta z| = 9.35$~cm, leading to a
+    65.1\% $\DR$-matching failure rate for trkID-matched clusters.
+
+  \item Cluster energy response ($\ET / \pT^{\text{truth}}$) remains
+    centered near unity for both interaction types; the vertex shift
+    distorts the angular position, not the energy measurement.
+
+  \item These results provide the quantitative basis for:
+    (a) removing the geometric $\DR$ matching cut in favor of
+    trkID-only truth association;
+    (b) evaluating the pileup systematic through the double-interaction
+    efficiency ratio; and
+    (c) understanding the vertex-driven component of shower-shape
+    BDT score migration.
+\end{enumerate}
+
+%% ============================================================
+\section*{Files}
+\label{sec:files}
+
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{Purpose} \\
+\midrule
+\texttt{efficiencytool/study\_vertex\_double\_interaction.C} & Study macro \\
+\texttt{plotting/plot\_vertex\_double\_interaction.C} & Plotting macro \\
+\texttt{results/vertex\_double\_interaction\_study.root} & Output histograms \\
+\texttt{plotting/figures/vertex\_study/*.pdf} & Output figures \\
+\bottomrule
+\end{tabular}
+
+\end{document}

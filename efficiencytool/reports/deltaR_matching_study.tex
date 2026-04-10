@@ -349,6 +349,77 @@ producing a slightly different $\ET$ than the truth-level $\pT$.
 \label{fig:etratio}
 \end{figure}
 
+%% --------------------------------------------------
+\subsection{Extension to Double-Interaction MC: \texorpdfstring{$\Delta\eta$ vs.\ $\Delta z$}{Delta-eta vs.\ dz}}
+\label{sec:double_deta_dz}
+
+The vertex mismatch mechanism identified in single-interaction MC
+(Section~\ref{sec:vertex}) is dramatically amplified in
+double-interaction events. Figure~\ref{fig:deta_dz_comp} compares the
+$\Delta\eta$ vs.\ $\Delta z$ correlation for \texttt{photon10}
+single-interaction (left) and \texttt{photon10\_double} full GEANT
+double-interaction MC (right), using 2M events per sample with the
+standard truth photon selection ($\texttt{pid}=22$, $\texttt{photonclass}<3$,
+$\isoETtruth < 4$~GeV, $\abseta < 0.7$, $8 \leq \pT < 36$~GeV).
+
+In double-interaction events, the MBD-reconstructed vertex is
+approximately the average of two collision vertices:
+\begin{equation}
+  z_{\text{vtx}}^{\text{reco}} \approx \frac{z_1 + z_2}{2}, \qquad
+  \Delta z \approx \frac{z_2 - z_1}{2}
+  \label{eq:double_dz}
+\end{equation}
+where $z_1$ is the primary (hard photon) collision vertex and $z_2$ is the
+pileup collision vertex. This broadens the event-level $\Delta z$
+distribution from an RMS of 16.9~cm (single, before vertex cut) to
+48.1~cm (double), and correspondingly the cluster $\Delta\eta$
+distribution from RMS 0.073 to 0.365.
+
+Both distributions follow the geometric prediction
+$\Delta\eta \approx -\Delta z / R_{\text{CEMC}}$ (red dashed line),
+confirming that the $\eta$-shift mechanism is identical in both
+regimes --- only the magnitude of the vertex displacement differs.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of vertex displacement and matching statistics for
+  \texttt{photon10} single and double-interaction MC (2M events each,
+  trkID-matched truth photons within $|z_{\text{vtx}}^{\text{reco}}| < 60$~cm).}
+\label{tab:double_summary}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Single} & \textbf{Double} \\
+\midrule
+Event-level $\Delta z$ RMS (all events) & 16.9~cm & 48.1~cm \\
+Cluster $\Delta\eta$ RMS (matched) & 0.073 & 0.365 \\
+No trkID match & 2.33\% & 7.95\% \\
+Fail $\DR < 0.1$ (of matched) & 3.04\% & 65.08\% \\
+Events with $|\Delta z| > 9.35$~cm & 36.0\% & 74.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The practical consequence: 65.1\% of trkID-matched clusters in
+double-interaction MC fail the $\DR < 0.1$ cut (vs.\ 3.0\% in single),
+and 74.2\% of events exceed the critical $|\Delta z| = 9.35$~cm
+threshold. This provides further quantitative support for removing the
+geometric matching requirement.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{deta_vs_dz_comparison.pdf}
+\caption{Correlation between $\Delta\eta$ (cluster $-$ truth) and
+  vertex displacement $\Delta z = z_{\text{vtx}}^{\text{reco}} -
+  z_{\text{vtx}}^{\text{truth}}$ for \texttt{photon10}
+  single-interaction MC (left) and full GEANT double-interaction MC
+  (right). The red dashed line shows the geometric prediction
+  $\Delta\eta = -\Delta z / R_{\text{CEMC}}$ at $\eta = 0$. Note the
+  different axis scales: the double-interaction $\Delta z$ extends to
+  $\pm 120$~cm (vs.\ $\pm 30$~cm for single) and $\Delta\eta$ to
+  $\pm 1.2$ (vs.\ $\pm 0.15$).}
+\label{fig:deta_dz_comp}
+\end{figure}
+
 %% ============================================================
 \section{\texorpdfstring{Physics Argument for Removing the $\DR$ Cut}{Physics Argument for Removing the Delta R Cut}}
 \label{sec:argument}
@@ -425,6 +496,12 @@ reconstruction efficiency calculation. The key findings are:
   \item The $\sim$3\% difference in efficiency can be assigned as a systematic
     uncertainty if desired, though the physics argument supports treating the
     track-ID-only matching as the correct baseline.
+
+  \item The $\Delta\eta$ vs.\ $\Delta z$ correlation in full GEANT
+    double-interaction MC (Section~\ref{sec:double_deta_dz}) confirms
+    that the same geometric mechanism operates at larger vertex
+    displacements ($\Delta z$ RMS 48.1~cm vs.\ 16.9~cm), with 65\% of
+    matched clusters exceeding the $\DR = 0.1$ threshold.
 \end{enumerate}
 
 \end{document}
