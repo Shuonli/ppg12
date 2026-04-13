@@ -201,8 +201,9 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     }
 
     // Vertex reweighting in second pass:
-    // 1) Prefer on-the-fly ratio from first-pass scan files (sim + data).
-    // 2) Fall back to pre-made vertex_reweight_file if scan files are unavailable.
+    // Build the data/sim ratio on-the-fly from the first-pass scan files.
+    // The static fallback file is deprecated as of commit 8ac4d1b (it was
+    // outdated and produced biased h_truth_pT — see RecoEffCalculator).
     if (!do_vertex_scan && issim && vertex_reweight_on)
     {
         std::string resolved_vtx_scan_data_file = vtx_scan_data_file;
@@ -229,14 +230,35 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
                 hdata_clone->SetDirectory(nullptr);
                 hsim_clone->SetDirectory(nullptr);
+
+                // Rebin to wider bins to improve statistics in the tails.
+                const int rebin_factor = configYaml["analysis"]["vertex_reweight_rebin"].as<int>(5);
+                if (rebin_factor > 1)
+                {
+                    hdata_clone->Rebin(rebin_factor);
+                    hsim_clone->Rebin(rebin_factor);
+                }
+
                 if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
                 if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
                 hdata_clone->Divide(hsim_clone);
+
+                // Smooth the ratio to interpolate over residual low-stat fluctuations.
+                const int smooth_passes = configYaml["analysis"]["vertex_reweight_smooth"].as<int>(1);
+                if (smooth_passes > 0)
+                {
+                    hdata_clone->Smooth(smooth_passes);
+                }
+
                 h_vertex_reweight = hdata_clone;
                 h_vertex_reweight->SetDirectory(nullptr);
                 built_from_scan = true;
                 std::cout << "[VertexReweight] On-the-fly weights derived from "
                           << resolved_vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+                std::cout << "[VertexReweight] Rebinned by factor " << rebin_factor
+                          << " (now " << h_vertex_reweight->GetNbinsX() << " bins, "
+                          << h_vertex_reweight->GetBinWidth(1) << " cm wide); smoothed "
+                          << smooth_passes << " pass(es)." << std::endl;
                 delete hsim_clone;
             }
         }
@@ -246,41 +268,14 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
 
         if (!built_from_scan)
         {
-            std::cerr << "[VertexReweight] WARNING: first-pass scan files unavailable or invalid. "
-                      << "Falling back to " << vertex_reweight_file << std::endl;
-
-            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
-            if (!fvtx || fvtx->IsZombie())
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
-            if (!htmp)
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
-            if (!h_vertex_reweight)
-            {
-                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-            h_vertex_reweight->SetDirectory(nullptr);
-            h_vertex_reweight->Sumw2();
-            std::cout << "[VertexReweight] Using histogram weights from "
-                      << vertex_reweight_file << " : " << htmp->GetName() << std::endl;
-            fvtx->Close();
-            delete fvtx;
+            // Static fallback file is deprecated. On-the-fly only.
+            std::cerr << "[VertexReweight] FATAL: first-pass vtxscan files are missing or invalid:\n"
+                      << "  data: " << resolved_vtx_scan_data_file << "\n"
+                      << "  sim : " << vtxscan_outfilename << "\n"
+                      << "Run the two-pass pipeline first to produce the vtxscan files. "
+                      << "The static fallback file is deprecated and no longer supported."
+                      << std::endl;
+            return;
         }
     }
 
@@ -1140,14 +1135,25 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 return;
             }
 
-            int bin = h_vertex_reweight->FindBin(*vertexz);
-            if (bin < 1) bin = 1;
-            if (bin > h_vertex_reweight->GetNbinsX()) bin = h_vertex_reweight->GetNbinsX();
-            vertex_weight = h_vertex_reweight->GetBinContent(bin);
-
-            if (!std::isfinite(vertex_weight) || vertex_weight <= 0.0)
+            // Drop events outside the histogram range (data has essentially zero
+            // events at these vertex positions). Within the range, use linear
+            // interpolation between bin centers for smooth lookup.
+            const float vtx_lo = h_vertex_reweight->GetXaxis()->GetXmin();
+            const float vtx_hi = h_vertex_reweight->GetXaxis()->GetXmax();
+            if (*vertexz < vtx_lo || *vertexz > vtx_hi)
             {
-                vertex_weight = 1.0;
+                vertex_weight = 0.0;
+            }
+            else
+            {
+                vertex_weight = h_vertex_reweight->Interpolate(*vertexz);
+            }
+
+            // Drop events with non-finite or negative weight (was 1.0 in old code,
+            // which biased h_truth_pT by keeping raw MC events at large |z|).
+            if (!std::isfinite(vertex_weight) || vertex_weight < 0.0)
+            {
+                vertex_weight = 0.0;
             }
             weight *= vertex_weight;
         }
