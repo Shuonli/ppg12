@@ -1,27 +1,18 @@
 """
-Generate split_configs/config_{model}_split.yaml for all 11 photon-ID model variants.
-Run once locally before submitting Condor jobs.
+Generate variant_configs/config_{model}_{variant}.yaml for all 11 photon-ID
+model variants. Supports both "split" and "nosplit" cluster-node inputs.
+
+Run once locally before submitting Condor jobs, e.g.:
+    python make_variant_configs.py --variant split
+    python make_variant_configs.py --variant nosplit
 """
+import argparse
 import copy
 import os
 import yaml
 
 BASE_CONFIG = "config.yaml"
-OUT_DIR = "split_configs"
-
-SIGNAL_FILES = [
-    "shapes_split_photon20.txt",
-    "shapes_split_photon10.txt",
-    "shapes_split_photon5.txt",
-]
-
-BACKGROUND_FILES = [
-    "shapes_split_jet40.txt",
-    "shapes_split_jet30.txt",
-    "shapes_split_jet20.txt",
-    "shapes_split_jet12.txt",
-    "shapes_split_jet5.txt",
-]
+OUT_DIR = "variant_configs"
 
 # Feature sets ordered to match apply_BDT.C x_list exactly
 MODEL_FEATURES = {
@@ -72,35 +63,64 @@ MODEL_FEATURES = {
 }
 
 
+def build_file_lists(variant: str):
+    """Return (signal_files, background_files) for the given variant."""
+    signal_files = [
+        f"shapes_{variant}_photon20.txt",
+        f"shapes_{variant}_photon10.txt",
+        f"shapes_{variant}_photon5.txt",
+    ]
+    background_files = [
+        f"shapes_{variant}_jet40.txt",
+        f"shapes_{variant}_jet30.txt",
+        f"shapes_{variant}_jet20.txt",
+        f"shapes_{variant}_jet12.txt",
+        f"shapes_{variant}_jet5.txt",
+    ]
+    return signal_files, background_files
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--variant",
+        choices=["split", "nosplit"],
+        required=True,
+        help="Cluster-node variant: 'split' (CLUSTERINFO_CEMC) or 'nosplit' (CLUSTERINFO_CEMC_NO_SPLIT)",
+    )
+    args = parser.parse_args()
+    variant = args.variant
+
     with open(BASE_CONFIG) as f:
         base = yaml.safe_load(f)
 
     os.makedirs(OUT_DIR, exist_ok=True)
+
+    signal_files, background_files = build_file_lists(variant)
 
     filenames = []
     for name, features in MODEL_FEATURES.items():
         cfg = copy.deepcopy(base)
 
         cfg["data"]["features"] = features
-        cfg["data"]["single_file_set"]["signal"] = SIGNAL_FILES
-        cfg["data"]["single_file_set"]["background"] = BACKGROUND_FILES
+        cfg["data"]["single_file_set"]["signal"] = signal_files
+        cfg["data"]["single_file_set"]["background"] = background_files
         cfg["data"]["use_single_file_set"] = True
-        cfg["output"]["root_file_prefix"] = f"model_{name}_split"
+        cfg["output"]["root_file_prefix"] = f"model_{name}_{variant}"
 
-        fname = f"config_{name}_split.yaml"
+        fname = f"config_{name}_{variant}.yaml"
         out_path = os.path.join(OUT_DIR, fname)
         with open(out_path, "w") as f:
             yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
         filenames.append(fname)
         print(f"Wrote {out_path}")
 
-    filelist_path = os.path.join(OUT_DIR, "filelist.txt")
+    filelist_path = os.path.join(OUT_DIR, f"filelist_{variant}.txt")
     with open(filelist_path, "w") as f:
         f.write("\n".join(filenames) + "\n")
     print(f"Wrote {filelist_path}")
 
-    print(f"\nDone — {len(MODEL_FEATURES)} configs in {OUT_DIR}/")
+    print(f"\nDone — {len(MODEL_FEATURES)} {variant} configs in {OUT_DIR}/")
 
 
 if __name__ == "__main__":

@@ -29,12 +29,15 @@ Every significant file in the repository with a one-line purpose.
 | `model_builder.py` | sklearn Pipeline construction (77 lines) |
 | `reweighting.py` | Kinematic reweighting: class, ET, eta, vertex (165 lines) |
 | `plotting.py` | Training diagnostic plots (1222 lines) |
-| `apply_BDT.C` | Apply TMVA BDT scores to slimtrees (492 lines) |
+| `apply_BDT.C` | Apply TMVA BDT scores to slimtrees — dual cluster-variant (split + nosplit) |
 | `train_npb_score.py` | NPB score BDT training (1073 lines) |
 | `config.yaml` | BDT training configuration |
 | `config_nom.yaml` | Analysis config for BDTinput/apply_BDT |
-| `config_npb_training.yaml` | NPB score training config |
-| `make_split_configs.py` | Generate per-variant training configs |
+| `config_npb_training_{split,nosplit}.yaml` | Per-variant NPB score training configs |
+| `make_variant_configs.py` | Generate per-model per-variant training configs (`--variant {split,nosplit}`) |
+| `train_variant_model.py` | CLI wrapper for training one model from a variant config |
+| `submit_variant_training.sub` | Condor submit (default `VARIANT=split`, override via `-append`) |
+| `run_variant_training_local.sh` | Non-Condor local driver, `./run_variant_training_local.sh {split\|nosplit}` |
 | `export_cluster_arrays_csv.C` | Export tower arrays to CSV (194 lines) |
 
 ## efficiencytool/

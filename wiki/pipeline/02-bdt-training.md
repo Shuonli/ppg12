@@ -12,8 +12,10 @@
 | `FunWithxgboost/plotting.py` | Diagnostic plots (1222 lines) |
 | `FunWithxgboost/config.yaml` | Training configuration |
 | `FunWithxgboost/train_npb_score.py` | NPB score training (1073 lines) |
-| `FunWithxgboost/config_npb_training.yaml` | NPB training config |
-| `FunWithxgboost/make_split_configs.py` | Generate per-model-variant configs |
+| `FunWithxgboost/config_npb_training_{split,nosplit}.yaml` | Per-variant NPB training configs |
+| `FunWithxgboost/make_variant_configs.py` | Generate per-model per-variant configs (`--variant {split,nosplit}`) |
+| `FunWithxgboost/train_variant_model.py` | CLI wrapper for one model |
+| `FunWithxgboost/submit_variant_training.sub` | Condor submit (default `VARIANT=split`) |
 
 ## Feature Extraction (BDTinput.C)
 
@@ -24,7 +26,7 @@ void BDTinput(const std::string &configname = "config_nom.yaml",
 
 Reads slimtree, computes 13 energy ratios (e.g., `e11_over_e33 = cluster_e11 / cluster_e33`), and writes 30-column space-separated text files.
 
-**Output files:** `shapes_split_{filetype}.txt` (e.g., `shapes_split_photon5.txt`)
+**Output files:** `shapes_{split|nosplit}_{filetype}.txt` and `shapes_{split|nosplit}_data_npb.txt` — tag derived from `cluster_node_name` in config (`CLUSTERINFO_CEMC` → `split`, `CLUSTERINFO_CEMC_NO_SPLIT` → `nosplit`). NPB data features come from the cluster node configured, so the NPB data file is also per-variant.
 
 **30 output columns:**
 ```
