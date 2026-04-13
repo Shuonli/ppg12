@@ -113,18 +113,16 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 2  Mean        -1.73712e+00   8.31735e-02  -1.32021e-04  -1.25750e-03
 3  Sigma        4.47289e+01   2.37499e-01   2.37499e-01  -5.45865e-02
 */
-    // Vertex reweighting for simulation (required when enabled):
-    //   results/vertex_reweight_bdt_none.root : h_vertexz_ratio_data_over_mccombined
+    // Vertex reweighting for simulation:
+    //   On-the-fly only — built per-config from the first-pass vtxscan files
+    //   (data and sim h_vertexz). The static fallback file is deprecated as of
+    //   the 8ac4d1b commit (it was outdated and produced biased h_truth_pT).
     TH1* h_vertex_reweight = nullptr;
     int vertex_reweight_on = 1;
-    std::string vertex_reweight_file = "results/vertex_reweight_bdt_none.root";
     std::string vtx_scan_data_file = "";
     if (issim)
     {
-        // optional config knobs (safe defaults)
         vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
-        vertex_reweight_file =
-            configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
         vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
     }
 
@@ -166,8 +164,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     }
 
     // Vertex reweighting in second pass:
-    // 1) Prefer on-the-fly ratio from first-pass scan files (sim + data).
-    // 2) Fall back to pre-made vertex_reweight_file if scan files are unavailable.
+    // Build the data/sim ratio on-the-fly from the first-pass scan files
+    // (h_vertexz in both data and sim vtxscan ROOT files). This is now the
+    // ONLY supported mode — the static fallback file was deprecated because
+    // it became outdated relative to the current data vertex distribution.
     if (!do_vertex_scan && issim && vertex_reweight_on)
     {
         std::string resolved_vtx_scan_data_file = vtx_scan_data_file;
@@ -236,44 +236,20 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
         if (!built_from_scan)
         {
-            std::cerr << "[VertexReweight] WARNING: first-pass scan files unavailable or invalid. "
-                      << "Falling back to " << vertex_reweight_file << std::endl;
-
-            TFile* fvtx = TFile::Open(vertex_reweight_file.c_str(), "READ");
-            if (!fvtx || fvtx->IsZombie())
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot open vertex reweight file: "
-                          << vertex_reweight_file << std::endl;
-                return;
-            }
-
-            TH1* htmp = dynamic_cast<TH1*>(fvtx->Get("h_vertexz_ratio_data_over_mccombined"));
-            if (!htmp)
-            {
-                std::cerr << "[VertexReweight] ERROR: cannot find histogram 'h_vertexz_ratio_data_over_mccombined' in "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-
-            std::string vtx_histname = htmp->GetName();
-            h_vertex_reweight = dynamic_cast<TH1*>(htmp->Clone("h_vertexz_ratio_data_over_mccombined_clone"));
-            if (!h_vertex_reweight)
-            {
-                std::cerr << "[VertexReweight] ERROR: failed to clone histogram from "
-                          << vertex_reweight_file << std::endl;
-                fvtx->Close();
-                delete fvtx;
-                return;
-            }
-
-            h_vertex_reweight->SetDirectory(nullptr);
-            h_vertex_reweight->Sumw2();
-            std::cout << "[VertexReweight] Using histogram weights from "
-                      << vertex_reweight_file << " : " << vtx_histname << std::endl;
-            fvtx->Close();
-            delete fvtx;
+            // The static fallback file (vertex_reweight_bdt_none.root) was found to
+            // be outdated — built from an older, wider data vertex distribution that
+            // does not match the current 1.5 mrad / 0 mrad data. Using it gives a
+            // bloated h_truth_pT integral (h_vertexcut/h_truth ~ 0.36 instead of
+            // ~0.99 expected for the current 1.5 mrad data). On-the-fly is now the
+            // ONLY supported path. The two-pass pipeline (run_showershape_double.sh,
+            // oneforall.sh) generates the vtxscan files automatically.
+            std::cerr << "[VertexReweight] FATAL: first-pass vtxscan files are missing or invalid:\n"
+                      << "  data: " << resolved_vtx_scan_data_file << "\n"
+                      << "  sim : " << vtxscan_outfilename << "\n"
+                      << "Run the two-pass pipeline (oneforall.sh / run_showershape_double.sh) "
+                      << "first to produce the vtxscan files. The static fallback file is "
+                      << "deprecated and no longer supported." << std::endl;
+            return;
         }
     }
 
