@@ -194,14 +194,39 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 TH1* hsim_clone  = dynamic_cast<TH1*>(hsim_vtx->Clone("h_vtx_sim_clone"));
                 hdata_clone->SetDirectory(nullptr);
                 hsim_clone->SetDirectory(nullptr);
+
+                // Rebin to wider bins to improve statistics in the tails.
+                // Source histogram is 200 bins of 1 cm from -100 to +100 cm.
+                // Rebin factor 5 → 40 bins of 5 cm width. This makes the data/sim ratio
+                // well-defined further out into the tails where 1 cm bins would be empty.
+                const int rebin_factor = configYaml["analysis"]["vertex_reweight_rebin"].as<int>(5);
+                if (rebin_factor > 1)
+                {
+                    hdata_clone->Rebin(rebin_factor);
+                    hsim_clone->Rebin(rebin_factor);
+                }
+
                 if (hdata_clone->Integral() > 0) hdata_clone->Scale(1.0 / hdata_clone->Integral());
                 if (hsim_clone->Integral() > 0)  hsim_clone->Scale(1.0 / hsim_clone->Integral());
                 hdata_clone->Divide(hsim_clone);
+
+                // Smooth the ratio to interpolate over residual low-statistics fluctuations.
+                // TH1::Smooth(n) applies the 353QH twice-smoothing algorithm n times.
+                const int smooth_passes = configYaml["analysis"]["vertex_reweight_smooth"].as<int>(1);
+                if (smooth_passes > 0)
+                {
+                    hdata_clone->Smooth(smooth_passes);
+                }
+
                 h_vertex_reweight = hdata_clone;
                 h_vertex_reweight->SetDirectory(nullptr);
                 built_from_scan = true;
                 std::cout << "[VertexReweight] On-the-fly weights derived from "
                           << resolved_vtx_scan_data_file << " / " << vtxscan_outfilename << std::endl;
+                std::cout << "[VertexReweight] Rebinned by factor " << rebin_factor
+                          << " (now " << h_vertex_reweight->GetNbinsX() << " bins, "
+                          << h_vertex_reweight->GetBinWidth(1) << " cm wide); smoothed "
+                          << smooth_passes << " pass(es)." << std::endl;
                 delete hsim_clone;
             }
         }
@@ -1341,17 +1366,31 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                               << std::endl;
                     return;
                 }
-                int bin = h_vertex_reweight->FindBin(*vertexz);
-                if (bin < 1) bin = 1;
-                if (bin > h_vertex_reweight->GetNbinsX()) bin = h_vertex_reweight->GetNbinsX();
-                vertex_weight = h_vertex_reweight->GetBinContent(bin);
+                // Linearly interpolate between bin centers for smooth reweight values.
+                // For events outside the histogram range (|vertexz| > histogram extent),
+                // set weight to 0 — these events are outside the data vertex acceptance.
+                const float vtx_lo = h_vertex_reweight->GetXaxis()->GetXmin();
+                const float vtx_hi = h_vertex_reweight->GetXaxis()->GetXmax();
+                if (*vertexz < vtx_lo || *vertexz > vtx_hi)
+                {
+                    vertex_weight = 0.0;
+                }
+                else
+                {
+                    // Interpolate handles values between bin centers; for values inside
+                    // the first/last bin (between edge and center), it falls back to
+                    // GetBinContent. Safe for our use case.
+                    vertex_weight = h_vertex_reweight->Interpolate(*vertexz);
+                }
             }
 
-            if (!std::isfinite(vertex_weight) || vertex_weight <= 0.0)
+            // Fallback: drop events with non-finite or negative weight (data has
+            // essentially zero events at this vertex position, so MC events here
+            // should NOT contribute). Previously used 1.0 which kept raw MC events
+            // at large |z| and biased h_truth_pT.
+            if (!std::isfinite(vertex_weight) || vertex_weight < 0.0)
             {
-                std::cout << "Warning: vertex weight is nan or inf" << std::endl;
-                std::cout << "vertexz: " << *vertexz << std::endl;
-                vertex_weight = 1.0;
+                vertex_weight = 0.0;
             }
 
             weight *= vertex_weight;
