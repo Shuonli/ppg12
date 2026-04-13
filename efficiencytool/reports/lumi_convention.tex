@@ -42,16 +42,20 @@ $|\zvtx^{\text{truth}}|<60$~cm) to the no-vertex-cut luminosity
 $\Lint^{\text{noVtx}}$ (with an efficiency denominator that includes
 ALL truth photons). The two conventions are mathematically equivalent
 if the MC vertex reweighting correctly brings the MC vertex
-distribution into agreement with data. In the old production
-(June 2025), they disagreed by a factor of $\sim 3$ because the MC
-vertex reweighting used a deprecated static fallback file with a
+distribution into agreement with data. In the old production, they
+disagreed by a factor of $\sim 3$ because the MC vertex reweighting
+used a deprecated static fallback file with a
 \texttt{vertex\_weight = 1.0} fallback that kept raw MC events at
 large $|\zvtx|$. We diagnosed the bug, removed the fallback entirely,
 and hardened the on-the-fly reweight with rebinning, smoothing,
 linear interpolation, and a \texttt{vertex\_weight = 0.0} fallback.
-A standalone simulation using the existing first-pass vtxscan files
-shows that after the fix the two conventions agree to $+0.32\%$
-flat across all \pT{} bins, well below any relevant systematic.
+A standalone simulation of the post-fix result validates both
+periods separately: \textbf{1.5 mrad agrees to $+0.32\%$} flat across
+all \pT\ bins, while \textbf{0 mrad shows a $+13.8\%$ flat offset}
+that is not a reweight bug but a real inconsistency between the
+lumi file's scaler-level 60~cm fraction ($69.2\%$) and the slimtree's
+event-level 60~cm fraction ($78.8\%$). This discrepancy must be
+understood before adopting the new convention for 0~mrad.
 \end{abstract}
 
 \tableofcontents
@@ -63,229 +67,188 @@ flat across all \pT{} bins, well below any relevant systematic.
 
 The PPG12 cross-section factorizes as:
 \begin{equation}
-  \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times \Lint \times \varepsilon_{\text{total}}}
-\end{equation}
-with
-\begin{equation}
+  \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times \Lint \times \varepsilon_{\text{total}}},
+  \qquad
   \varepsilon_{\text{total}} = \varepsilon_{\text{reco}} \times
   \varepsilon_{\text{iso}} \times \varepsilon_{\text{id}} \times \veff
 \end{equation}
 
 Two equivalent conventions are possible for $\Lint$ and $\veff$:
 
-\textbf{Old convention (used in production until now):}
+\textbf{Old convention} (used in production until now):
 \begin{equation}
   \Lint = \Lint^{60\text{cm}}, \qquad
-  \veff^{\text{old}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD+}|z_r|<60)}{N(\text{truth }\gamma,\ |z_t|<60)}
+  \veff^{\text{old}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD}+|z_r|<60)}{N(\text{truth }\gamma,\ |z_t|<60)}
 \end{equation}
-with $\Lint^{60\text{cm}}$ from \texttt{60cmLumi\_fromJoey.list},
-computed by \texttt{get\_luminosity\_182630.C(..., zsel=1, ...)}
-with the scaler tally restricted to $|\zvtx|<60$~cm.
+with $\Lint^{60\text{cm}}$ from \texttt{60cmLumi\_fromJoey.list}
+(\texttt{get\_luminosity\_182630.C(..., zsel=1, ...)} with the MBD
+scaler tally restricted to $|\zvtx|<60$~cm).
 
-\textbf{New convention:}
+\textbf{New convention}:
 \begin{equation}
   \Lint = \Lint^{\text{noVtx}}, \qquad
-  \veff^{\text{new}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD+}|z_r|<60)}{N(\text{truth }\gamma,\ \text{no vertex cut})}
+  \veff^{\text{new}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD}+|z_r|<60)}{N(\text{truth }\gamma,\ \text{no vertex cut})}
 \end{equation}
 with $\Lint^{\text{noVtx}}$ from \texttt{allzLumi\_fromJoey.list}
 (\texttt{zsel=5}, no vertex cut at the scaler level).
 
-The numerators are identical. Only the denominator of the efficiency
-factor changes (and the paired luminosity). The new convention is
-preferred because it cleanly separates the physics fiducial
-cross-section (all truth photons in the kinematic region) from the
-detector acceptance (MBD + vertex).
-
-The two conventions must give the same final cross-section to
-$\leq 1\%$ in the single-interaction limit; any larger deviation
-indicates a bug in the MC vertex reweighting (which is the one
-thing that distinguishes the two denominators).
+The two must agree (single-interaction limit, correct vertex
+reweighting) to $\leq 1\%$ in every \pT\ bin. Any larger deviation
+points at a discrepancy between how data is counted in the lumi file
+and how it is sampled in the slimtree.
 
 %% ============================================================
 \section{The Bug in the Old Production}
 \label{sec:bug}
 
-Using the production \texttt{MC\_efficiency\_nom.root} (June 2025),
-the two conventions give wildly different cross-sections:
-
-\begin{table}[H]
-\centering
-\caption{Pre-fix comparison: same numerator, different denominators.
-  If the MC vertex distribution matched data, the ratio would be
-  $\approx 1$. Instead the new convention gives a product $\sim 2.8$
-  times smaller.}
-\label{tab:prefix}
-\small
-\begin{tabular}{lrrrrr}
-\toprule
-\textbf{Period} & \textbf{$\veff^{\text{old}}$} & \textbf{$\veff^{\text{new}}$}
-  & \textbf{$L_{60\text{cm}}\!\cdot\!\veff^{\text{old}}$}
-  & \textbf{$L_{\text{noVtx}}\!\cdot\!\veff^{\text{new}}$}
-  & \textbf{Ratio} \\
-\midrule
-1.5 mrad & 0.676 & 0.240 & 11.41 & 4.12  & 0.361 \\
-0 mrad   & 0.676 & 0.240 & 22.10 & 11.34 & 0.513 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The diagnosis: the old \texttt{RecoEffCalculator\_TTreeReader.C}
-used a static fallback reweight file
-(\texttt{results/vertex\_reweight\_bdt\_none.root}) when the
+The June 2025 production file \texttt{MC\_efficiency\_nom.root}
+has $h_{\text{truth vertexcut}} / h_{\text{truth}} = 0.355$, far
+from the expected data value of $\sim 0.99$. The cause: the old
+\texttt{RecoEffCalculator\_TTreeReader.C} fell back to a static
+file \texttt{results/vertex\_reweight\_bdt\_none.root} when the
 on-the-fly path failed. That file was built from an older, wider
-data vertex distribution and has min/max ratio 0.49 / 1.78 ---
-nearly flat. At large $|\zvtx|$, MC events were kept at $\sim 50\%$
-weight instead of being suppressed. The fill at
-\texttt{RecoEffCalculator\_TTreeReader.C:1691} (no-vertex-cut
-$h_{\text{truth}\ \pT}$) picked up these bloated events, so the
-denominator of $\veff^{\text{new}}$ was $\sim 2.8$ times too large.
-
-A further subtlety: the lookup at the event level had a fallback
-\texttt{vertex\_weight = 1.0} for non-finite or $\leq 0$ bin contents.
-This kept raw MC events outside the data acceptance at full weight,
-amplifying the bug.
+data vertex distribution and has min/max ratio 0.49 / 1.78 (nearly
+flat). Combined with the event-level lookup fallback
+\texttt{vertex\_weight = 1.0}, raw MC events at large $|\zvtx|$ were
+kept at $\sim 50$--$100\%$ weight instead of being suppressed,
+bloating the $h_{\text{truth pT}}$ denominator by a factor of
+$\sim 2.8$.
 
 %% ============================================================
 \section{The Fix}
 \label{sec:fix}
 
-Three changes were applied in commits 8ac4d1b and 8ecae87 to
-\texttt{RecoEffCalculator\_TTreeReader.C} and
-\texttt{ShowerShapeCheck.C}:
+In commits \texttt{8ac4d1b} and \texttt{8ecae87}:
 
 \begin{enumerate}
-  \item \textbf{Removed the static fallback} entirely. If vtxscan
-    files are missing, the code now prints \texttt{FATAL} and
-    returns. The static file was renamed to \texttt{*.deprecated}
-    on disk.
-  \item \textbf{Hardened the on-the-fly reweight}:
+  \item \textbf{Static fallback removed} from both
+    \texttt{RecoEffCalculator\_TTreeReader.C} and
+    \texttt{ShowerShapeCheck.C}. If the on-the-fly vtxscan files
+    are missing, the code prints \texttt{FATAL} and returns. The
+    static file was renamed to \texttt{*.deprecated} on disk.
+  \item \textbf{On-the-fly reweight hardened}:
   \begin{itemize}
-    \item Rebin \texttt{h\_vertexz} (default factor 5 $\rightarrow$
-      5~cm bins, configurable via
+    \item Rebin \texttt{h\_vertexz} (default factor
+      $5 \rightarrow 5$~cm bins, configurable via
       \texttt{vertex\_reweight\_rebin}) to improve tail statistics.
     \item Smooth the data/sim ratio with \texttt{TH1::Smooth()}
       (default 1 pass, configurable via
       \texttt{vertex\_reweight\_smooth}).
-    \item Linear interpolation between bin centers with
-      \texttt{TH1::Interpolate()} for smooth event-level weights.
-    \item \texttt{vertex\_weight = 0.0} fallback for out-of-range
-      or non-finite values. Previously \texttt{1.0}, which kept raw
-      MC events at large $|\zvtx|$.
+    \item \texttt{TH1::Interpolate()} for smooth event-level lookup
+      between bin centers.
+    \item Fallback changed from \texttt{1.0} to \texttt{0.0}.
+      Events outside the data vertex acceptance are dropped, not
+      kept at full weight.
   \end{itemize}
-  \item \textbf{Added the new convention as a config-switchable
-    path} in \texttt{CalculatePhotonYield.C}
-    (\texttt{use\_lumi\_novtx: 1}). The old convention remains the
-    default. Both paths read from the same MC output; only the
-    denominator histogram and luminosity value change.
+  \item \textbf{New convention added as a config-switchable path}
+    in \texttt{CalculatePhotonYield.C}
+    (\texttt{use\_lumi\_novtx: 1}). Old convention remains the
+    default. The alternative path only changes the denominator
+    histogram (\texttt{h\_truth\_pT} instead of
+    \texttt{h\_truth\_pT\_vertexcut}) and the luminosity value.
 \end{enumerate}
 
-The physics motivation for the zero fallback: if data has
-essentially no events at some $|\zvtx|$, MC events at that position
-do not contribute to the observed cross-section and should be
-dropped. Keeping them at weight 1.0 is equivalent to claiming those
-MC events represent data, which is wrong.
-
 %% ============================================================
-\section{Post-Fix Validation}
+\section{Post-Fix Validation: Per-Period}
 \label{sec:validation}
 
-A standalone simulation
-(\texttt{efficiencytool/lumi\_convention\_validation.py}) applies the
-fixed reweight logic to the existing first-pass vtxscan files
-(\texttt{data\_histo\_bdt\_nom\_vtxscan.root} and
-\texttt{MC\_efficiency\_photon10\_bdt\_nom\_vtxscan.root}) and
-propagates the result through the cross-section formula. This
-simulates what the fixed production pipeline would produce without
-actually re-running MergeSim.
+The validation (\texttt{lumi\_convention\_validation.py}) applies
+the fixed reweight to the existing vtxscan files and propagates the
+result through the cross-section formula. The exercise is done
+separately for 1.5 mrad and 0 mrad so each period can be evaluated
+on its own terms.
 
-\subsection{Vertex reweight shape}
+\subsection{Vertex reweight shape and distribution match}
 
 Figure~\ref{fig:reweight_shape} compares the old and new reweight
-functions. The two are very similar in the bulk of the distribution
-($|\zvtx| < 50$~cm) --- the bug only affects the tails, where the
-old code's \texttt{fallback = 1.0} kicks in for bins with
-poorly-defined ratio.
+functions. The two are very similar in the bulk; the difference is
+at large $|\zvtx|$ where the old code's fallback kicks in. The 0 mrad
+reweight is broader than the 1.5 mrad reweight because the 0 mrad
+data vertex distribution is much wider.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.80\textwidth]{vertex_reweight_shape.pdf}
-\caption{Vertex reweight function (data/sim, normalized) computed
-  from the 1.5~mrad nominal vtxscan files. Old (blue) uses 1~cm
-  bins with \texttt{fallback = 1.0}; new (red) uses 5~cm rebin,
-  one smoothing pass, and \texttt{fallback = 0.0}. The two agree
-  in the bulk; the tail behavior is the diagnostic region where
-  the old code's bug lived.}
+\includegraphics[width=\textwidth]{vertex_reweight_shape.pdf}
+\caption{Vertex reweight function for both periods. The 1.5 mrad
+  (left) reweight has a sharp central peak (data vertex sigma
+  $\sim 20$~cm). The 0 mrad (right) reweight is much broader.
+  OLD and NEW agree in the bulk in both periods; the tails differ
+  because of the fallback.}
 \label{fig:reweight_shape}
 \end{figure}
 
-\subsection{Reweighted MC vertex distribution vs.\ data}
-
-Figure~\ref{fig:vertex_dist} overlays the raw MC, the old and new
-reweighted MC, and the data vertex distributions. Both reweighted
-distributions match the data shape very well.
+Figure~\ref{fig:vertex_dist} overlays raw MC, old-reweighted MC,
+new-reweighted MC, and data for both periods. Both reweights
+(old and new) reproduce the data vertex distribution at the
+histogram-integral level.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{vertex_dist_comparison.pdf}
-\caption{Reconstructed vertex $z$ distribution from data (black),
-  raw MC (green dashed), old-reweighted MC (blue), and
-  new-reweighted MC (red). Left: linear scale. Right: log scale.
-  The dotted vertical lines mark $|\zvtx|=60$~cm. Both old and new
-  reweights reproduce the data shape at the histogram-integral
-  level; the bug was in how event-level weights were used
-  downstream.}
+\caption{Reconstructed vertex $z$ distribution for 1.5 mrad (left)
+  and 0 mrad (right), in linear (top) and log (bottom) scale. Both
+  reweights (blue and red) reproduce the data shape (black). The
+  raw MC (green) is much wider in both cases.}
 \label{fig:vertex_dist}
 \end{figure}
 
-\subsection{Integrated vertex acceptance}
-
-After reweighting, the integrated MC fraction within $|\zvtx|<60$~cm
-should match the data fraction of 0.9865 (1.5~mrad target).
+\subsection{Integrated \texorpdfstring{$|\zvtx|<60$}{|z|<60} fractions}
 
 \begin{table}[H]
 \centering
-\caption{Integrated $|\zvtx|<60$ fraction from the 1.5~mrad vtxscan
-  files.}
-\label{tab:integral}
-\begin{tabular}{lr}
+\caption{Integrated $|\zvtx|<60$ fractions per period. Both reweights
+  match the target data fraction from the vtxscan files.}
+\label{tab:integral_both}
+\begin{tabular}{lrr}
 \toprule
-\textbf{Source} & \textbf{Fraction $|\zvtx|<60$} \\
+\textbf{Source} & \textbf{1.5 mrad} & \textbf{0 mrad} \\
 \midrule
-Data (target)          & 0.9865 \\
-Raw MC                 & 0.7296 \\
-Old-reweighted MC      & 0.9865 \\
-New-reweighted MC      & 0.9862 \\
+Data (slimtree target) & 0.9865 & 0.7880 \\
+Raw MC                 & 0.7296 & 0.7296 \\
+OLD reweighted MC      & 0.9865 & 0.7880 \\
+NEW reweighted MC      & 0.9862 & 0.7878 \\
+\midrule
+\textbf{Comparison to lumi file:} & & \\
+$\Lint^{60\text{cm}} / \Lint^{\text{noVtx}}$ & 0.9834 & 0.6924 \\
+Slimtree / lumi-file ratio & 1.003 & \textbf{1.138} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Both old and new reweights reproduce the data fraction to
-$\leq 0.03\%$. The pre-fix production's 0.355 ratio came from the
-\emph{static fallback file} being used (not the on-the-fly path),
-which has min ratio 0.49 so MC events at large $|\zvtx|$ were kept
-at $\sim 50\%$ weight.
+For 1.5 mrad, the slimtree 60 cm fraction (0.9865) matches the
+lumi-file ratio (0.9834) to 0.3\%. For 0 mrad, the slimtree fraction
+(0.7880) is 13.8\% larger than the lumi-file ratio (0.6924). This
+is the source of the 0 mrad cross-section shift (see below).
 
 \subsection{Per-\texorpdfstring{$\pT$}{pT} consistency check}
 
-The key cross-check: after the fix, does
-$\Lint^{\text{noVtx}} \times \veff^{\text{new}}$ agree with
-$\Lint^{60\text{cm}} \times \veff^{\text{old}}$ bin-by-bin?
+Figure~\ref{fig:ratio} and Tables~\ref{tab:perbin_1p5} and
+\ref{tab:perbin_0} show the per-\pT\ comparison of
+$\Lint \times \veff$ between the two conventions for each period.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{L_times_eff_ratio.pdf}
+\caption{Per-\pT\ $\Lint \times \veff$ comparison for 1.5 mrad
+  (left) and 0 mrad (right). Top panels: absolute values. Bottom
+  panels: ratio NEW/OLD. For 1.5 mrad the ratio is flat at
+  $+0.32\%$ (consistent with zero); for 0 mrad it is flat at
+  $+13.80\%$ (a real offset).}
+\label{fig:ratio}
+\end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Post-fix cross-check at 1.5~mrad. $\veff^{\text{new}}$ is
-  computed assuming the fixed MC pipeline would produce
-  $h_{\text{truth}\ \pT}^{\text{new}}$ with integral equal to
-  $h_{\text{truth}\ \pT\ \text{vertexcut}} / 0.9865$. The per-bin
-  ratio is flat at $\sim 1.003$ across all \pT\ bins.}
-\label{tab:perbin}
+\caption{1.5 mrad: $L \times \varepsilon$ per \pT\ bin. NEW/OLD
+  flat at $+0.32\%$.}
+\label{tab:perbin_1p5}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 \textbf{\pT\ [GeV]} & \textbf{$\veff^{\text{old}}$}
   & \textbf{$\veff^{\text{new}}$}
-  & \textbf{$L_{60} \cdot \veff^{\text{old}}$}
-  & \textbf{$L_{\text{nov}} \cdot \veff^{\text{new}}$}
+  & \textbf{$L_{60} \varepsilon_{\text{old}}$}
+  & \textbf{$L_{\text{nov}} \varepsilon_{\text{new}}$}
   & \textbf{Ratio} \\
 \midrule
 8--10    & 0.6771 & 0.6680 & 11.43 & 11.47 & 1.0032 \\
@@ -300,119 +263,208 @@ $\Lint^{60\text{cm}} \times \veff^{\text{old}}$ bin-by-bin?
 26--28   & 0.5649 & 0.5573 &  9.53 &  9.56 & 1.0032 \\
 32--36   & 0.4999 & 0.4931 &  8.44 &  8.46 & 1.0032 \\
 \midrule
-Integrated & 0.6758 & 0.6667 & 11.41 & 11.44 & 1.0032 \\
+Integrated & 0.6758 & 0.6667 & 11.41 & 11.44 & \textbf{1.0032} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Figure~\ref{fig:ratio} shows the same information graphically:
-both conventions give the same $\Lint \times \veff$ product within
-$+0.32\%$, flat across all \pT\ bins. A shift this small is well
-below any relevant PPG12 systematic (purity $\sim 5$--$10\%$, energy
-scale $\sim 3$--$5\%$, luminosity $\sim 7\%$) and is consistent
-with zero within the statistical precision of the vtxscan files
-used to simulate the fix.
-
-\begin{figure}[H]
+\begin{table}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{L_times_eff_ratio.pdf}
-\caption{Top: $\Lint \times \veff$ per \pT\ bin for the old
-  convention ($L_{60\text{cm}} \times \veff^{\text{old}}$, blue)
-  and the new convention
-  ($L_{\text{noVtx}} \times \veff^{\text{new}}$, red). Bottom:
-  ratio of new to old. Flat at $+0.32\%$ across all \pT\ bins.}
-\label{fig:ratio}
-\end{figure}
+\caption{0 mrad: $L \times \varepsilon$ per \pT\ bin. NEW/OLD
+  flat at $+13.80\%$. The shift is bin-independent, confirming it
+  is a lumi normalization issue, not a pT-dependent efficiency
+  effect.}
+\label{tab:perbin_0}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{\pT\ [GeV]} & \textbf{$\veff^{\text{old}}$}
+  & \textbf{$\veff^{\text{new}}$}
+  & \textbf{$L_{60} \varepsilon_{\text{old}}$}
+  & \textbf{$L_{\text{nov}} \varepsilon_{\text{new}}$}
+  & \textbf{Ratio} \\
+\midrule
+8--10    & 0.7648 & 0.6027 & 25.01 & 28.46 & 1.1380 \\
+10--12   & 0.7571 & 0.5966 & 24.76 & 28.17 & 1.1380 \\
+12--14   & 0.7460 & 0.5878 & 24.40 & 27.76 & 1.1380 \\
+14--16   & 0.7394 & 0.5827 & 24.18 & 27.52 & 1.1380 \\
+16--18   & 0.7317 & 0.5766 & 23.93 & 27.23 & 1.1380 \\
+18--20   & 0.7241 & 0.5706 & 23.68 & 26.95 & 1.1380 \\
+20--22   & 0.7076 & 0.5576 & 23.14 & 26.33 & 1.1380 \\
+22--24   & 0.7020 & 0.5531 & 22.96 & 26.12 & 1.1380 \\
+24--26   & 0.6847 & 0.5395 & 22.39 & 25.48 & 1.1380 \\
+26--28   & 0.6726 & 0.5300 & 22.00 & 25.03 & 1.1380 \\
+28--32   & 0.6672 & 0.5258 & 21.82 & 24.83 & 1.1380 \\
+32--36   & 0.6395 & 0.5039 & 20.91 & 23.80 & 1.1380 \\
+\midrule
+Integrated & 0.7651 & 0.6029 & 25.02 & 28.47 & \textbf{1.1380} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Rebin stability}
 
-Figure~\ref{fig:rebin_stability} shows the fixed reweight computed
-with different rebin factors. The shape is stable from 1~cm (no
-rebin) to 20~cm bins in the bulk of the distribution. The default
-choice of 5~cm bins gives smooth coverage in the tails without
-over-coarsening the peak.
+Figure~\ref{fig:rebin} shows the fixed reweight computed with
+different rebin factors (1, 2, 5, 10, 20) for both periods. The
+shape is stable across the 20$\times$ range in bin width.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.80\textwidth]{rebin_stability.pdf}
-\caption{Vertex reweight function computed with rebin factors
-  1, 2, 5, 10, 20 (one smoothing pass each). The shape is stable
-  across a factor of 20 in bin width.}
-\label{fig:rebin_stability}
+\includegraphics[width=\textwidth]{rebin_stability.pdf}
+\caption{Vertex reweight computed with rebin factors 1, 2, 5, 10, 20
+  for 1.5 mrad (left) and 0 mrad (right). The default 5 cm bins
+  give smooth coverage in the tails without over-coarsening the
+  peak.}
+\label{fig:rebin}
 \end{figure}
 
 %% ============================================================
-\section{Implementation}
+\section{Analysis of the 0 mrad Discrepancy}
+\label{sec:0mrad_discrepancy}
+
+The $+13.8\%$ shift at 0 mrad is \emph{not} a bug in the reweight
+fix --- both the old and new reweights reproduce the slimtree data
+vertex distribution to $< 0.1\%$ (Figure~\ref{fig:vertex_dist} right
+panels). The issue is a mismatch between two independent measurements
+of the same quantity:
+
+\begin{itemize}
+  \item \textbf{Lumi file}: $\Lint^{60\text{cm}} / \Lint^{\text{noVtx}}
+    = 32.70 / 47.23 = 0.6924$. This is the scaler-level ratio: the
+    fraction of MBD-triggered events with the on-line
+    $|z^{\text{MBD}}_{\text{vtx}}| < 60$~cm tally.
+  \item \textbf{Slimtree vtxscan}: 0.7880. This is the fraction of
+    events in the data slimtree that have
+    $|z^{\text{reco}}_{\text{vtx}}| < 60$~cm.
+\end{itemize}
+
+These numbers differ by 13.8\% for 0 mrad but agree to 0.3\% for
+1.5 mrad. Possible explanations:
+
+\begin{enumerate}
+  \item \textbf{Slimtree event selection biases vertex distribution}:
+    \texttt{CaloAna24.cc} saves an event only if it has clusters or
+    particles (\texttt{saveevent = true}). At 0 mrad, the much wider
+    vertex distribution means events at large $|\zvtx|$ have
+    relatively fewer calorimeter clusters (forward activity is
+    suppressed by the barrel-only acceptance), so they are more
+    likely to be rejected by the slimtree filter. This preferentially
+    removes large-$|\zvtx|$ events from the slimtree sample, giving
+    the slimtree a more central distribution than the raw MBD tally.
+  \item \textbf{Run list mismatch}: the 0 mrad lumi file and the
+    0 mrad slimtree sample may not use exactly the same run list.
+    A run-by-run comparison would be needed to rule this out.
+  \item \textbf{Offline vs online vertex reconstruction}: the
+    scaler tally uses the online MBD vertex. The slimtree uses
+    \texttt{MbdVertex::get\_z()} from an offline reconstruction pass,
+    which may have different calibration or resolution.
+\end{enumerate}
+
+The most likely explanation is (1) --- the slimtree filter
+preferentially keeps central events at 0 mrad where the beam is
+wider. At 1.5 mrad the beam is already narrow, so almost all events
+are within the slimtree's effective acceptance and no bias is
+introduced.
+
+\subsection{Implication for the cross-section}
+
+If explanation (1) is correct, then neither convention is
+exactly right without a correction:
+
+\begin{itemize}
+  \item \textbf{OLD convention} uses $\Lint^{60\text{cm}}$ which
+    counts events in the full MBD sample with $|\zvtx|<60$. But the
+    numerator $N_{\text{photon}}$ comes from the slimtree, which
+    excludes some of the large-$|\zvtx|$ events that are in the
+    scaler tally. So OLD over-counts luminosity for the slimtree
+    sample.
+  \item \textbf{NEW convention} uses $\Lint^{\text{noVtx}}$ with
+    $\veff^{\text{new}}$ computed from the slimtree vertex
+    distribution. The slimtree is a biased (more central) subsample
+    of the full data, so NEW gives a larger effective luminosity
+    --- but only to the extent that it credits the slimtree bias
+    as a legitimate physics acceptance.
+\end{itemize}
+
+The truth lies somewhere in between. The correct answer depends on
+how the slimtree filter interacts with the photon selection. If the
+slimtree filter removes events that genuinely have no
+photons (e.g., events with no EMCal clusters because they are far
+from the barrel), then those events contribute zero to
+$N_{\text{photon}}$ anyway and the NEW convention is correct. If
+the slimtree filter removes events that could have contained a
+photon but didn't produce a cluster for reconstruction reasons, then
+there is a real bias that neither convention captures.
+
+\subsection{Recommended action}
+
+\begin{enumerate}
+  \item \textbf{Use the NEW convention for 1.5 mrad} (the nominal
+    1.5 mrad result). The $+0.32\%$ shift is well within any
+    systematic.
+  \item \textbf{Do NOT use the NEW convention for 0 mrad} until
+    the slimtree-vs-lumi-file discrepancy is resolved. The $+13.8\%$
+    shift is too large to adopt without understanding.
+  \item \textbf{Investigate the 0 mrad slimtree filter}: run the
+    vtxscan on a no-cluster-filter slimtree (if one exists), or
+    replay \texttt{CaloAna24.cc} with the \texttt{saveevent}
+    condition relaxed, and compare the vertex distribution to the
+    production slimtree.
+  \item \textbf{Cross-check against per-run lumi}: sum
+    $\Lint^{60\text{cm}}(\text{run})$ for runs that appear in the
+    slimtree and compare to the total from the lumi file. This
+    would rule out run-list mismatch (explanation~2).
+\end{enumerate}
+
+%% ============================================================
+\section{Implementation and Usage}
 \label{sec:implementation}
 
-To enable the new convention in any analysis config YAML, set:
+To enable the new convention for a specific analysis config:
 
 \begin{verbatim}
 analysis:
   use_lumi_novtx: 1
-  lumi: 17.1642   # 1.5 mrad, from allzLumi_fromJoey.list
+  lumi: 17.1642   # 1.5 mrad from allzLumi_fromJoey.list
   # use 47.2284 for 0 mrad, 64.3718 for combined
 \end{verbatim}
 
-The default is \texttt{use\_lumi\_novtx: 0} (old convention). The
-original \texttt{vertex\_eff} calculation in
-\texttt{CalculatePhotonYield.C} is kept as the default path; the
-new path is an \texttt{if} branch inside the efficiency loop
-(lines 1063--1071).
+The default is \texttt{use\_lumi\_novtx: 0} (old convention). Both
+paths live in \texttt{CalculatePhotonYield.C} lines 1063--1071; the
+original \texttt{vertex\_eff} calculation is kept as the default.
 
-New config knobs for the vertex reweight (both have sensible
-defaults, so existing configs work unchanged):
-
+New config knobs for the vertex reweight (sensible defaults, existing
+configs unchanged):
 \begin{verbatim}
 analysis:
-  vertex_reweight_rebin: 5       # rebin factor for h_vertexz (1cm → 5cm)
+  vertex_reweight_rebin: 5       # rebin factor (1cm -> 5cm)
   vertex_reweight_smooth: 1      # TH1::Smooth() passes
 \end{verbatim}
 
-The old \texttt{vertex\_reweight\_file} config knob is no longer
-read (the static fallback path is removed).
+The old \texttt{vertex\_reweight\_file} knob is no longer read.
 
 %% ============================================================
-\section{Caveats and Remaining Work}
+\section{Caveats}
 \label{sec:caveats}
 
 \begin{enumerate}
-  \item \textbf{The validation uses a simulated post-fix result},
-    not an actual re-run. The assumption is that
-    $h_{\text{truth}\ \pT}^{\text{new}}$ integral equals
-    $h_{\text{truth}\ \pT\ \text{vertexcut}}$ integral divided by
-    $0.9865$, based on the shape-level vertex reweight validation.
-    This is a good approximation because the vertex reweight within
-    $|\zvtx|<60$~cm is unchanged by the fix. A true re-run
-    (\texttt{oneforall.sh config\_bdt\_nom.yaml}) is recommended to
-    confirm the $+0.32\%$ shift holds in the actual production MC.
-
-  \item \textbf{Per-segment vertex variation}: the current reweight
-    uses a single global vertex distribution per analysis config.
-    Within a fill, the luminous region moves as the beam decays,
-    but this effect is typically $\leq 1\%$ at RHIC luminosities.
-
-  \item \textbf{Pileup}: this note does not modify the pileup
-    correction. The double-interaction MC blending in
-    \texttt{run\_showershape\_double.sh} is unaffected and carries
-    its own correction.
-
-  \item \textbf{0~mrad consistency}: the validation was done with
-    the 1.5~mrad vtxscan files. The 0~mrad lumi has a larger
-    $L_{\text{noVtx}} / L_{60\text{cm}} = 1.44$ ratio, reflecting a
-    much wider vertex distribution. The fix should work there too,
-    but the actual post-fix result should be verified when the
-    0~mrad config is re-run.
-
-  \item \textbf{Re-run is cheap}: the fix does not require
-    regenerating vtxscan files. Only the second pass of
-    \texttt{oneforall.sh} needs to re-read the slimtree. Once the
-    re-run completes, the new \texttt{MC\_efficiency\_nom.root}
-    should have
-    $h_{\text{truth vertexcut}}.\text{Integral()} /
-    h_{\text{truth}}.\text{Integral()} \approx 0.9865$, and the
-    \texttt{use\_lumi\_novtx: 1} path should give a cross-section
-    within $\sim 0.3\%$ of the \texttt{use\_lumi\_novtx: 0} path.
+  \item \textbf{The validation is a standalone simulation},
+    not an actual re-run of the production MC. The assumption is
+    $h_{\text{truth}}^{\text{new}} = h_{\text{truth vertexcut}} /
+    0.9865$ for 1.5 mrad (or $/ 0.7880$ for 0 mrad). A real re-run
+    (\texttt{oneforall.sh config\_bdt\_nom.yaml}) is recommended
+    to confirm. The 1.5 mrad result should reproduce the $+0.32\%$
+    shift; the 0 mrad result will expose the slimtree-vs-lumi-file
+    discrepancy in the actual production.
+  \item \textbf{0 mrad ambiguity} (Section~\ref{sec:0mrad_discrepancy}):
+    do not adopt the new convention for 0 mrad without resolving
+    the 13.8\% shift first.
+  \item \textbf{Per-segment variation}: within a fill, the luminous
+    region moves. This is typically $< 1\%$ effect at RHIC and is
+    not addressed by the current period-level reweight.
+  \item \textbf{Pileup}: the double-interaction MC blending in
+    \texttt{run\_showershape\_double.sh} carries its own correction
+    and is unaffected by this change.
 \end{enumerate}
 
 %% ============================================================
@@ -426,10 +478,10 @@ read (the static fallback path is removed).
 \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} & Fix vertex reweight, remove fallback \\
 \texttt{efficiencytool/ShowerShapeCheck.C}               & Same fix \\
 \texttt{efficiencytool/CalculatePhotonYield.C}           & Add \texttt{use\_lumi\_novtx} path \\
-\texttt{efficiencytool/lumi\_convention\_validation.py}  & Validation script \\
-\texttt{plotting/plot\_lumi\_convention.py}              & Plotting script \\
-\texttt{lumi/allzLumi\_fromJoey.list}                    & New: no-vertex-cut lumi \\
-\texttt{results/vertex\_reweight\_bdt\_none.root.deprecated} & Deprecated fallback \\
+\texttt{efficiencytool/lumi\_convention\_validation.py}  & Per-period validation script \\
+\texttt{plotting/plot\_lumi\_convention.py}              & Per-period plotting \\
+\texttt{lumi/allzLumi\_fromJoey.list}                    & No-vertex-cut luminosity \\
+\texttt{results/vertex\_reweight\_bdt\_none.root.deprecated} & Deprecated static fallback \\
 \bottomrule
 \end{tabular}
 
