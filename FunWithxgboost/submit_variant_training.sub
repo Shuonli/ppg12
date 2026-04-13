@@ -1,9 +1,20 @@
+# Condor submit file for photon-ID BDT variant training (split or nosplit).
+#
+# Default variant is "split". Override on the command line without editing:
+#   condor_submit submit_variant_training.sub                        # split
+#   condor_submit submit_variant_training.sub -append "VARIANT=nosplit"
+#
+# Prerequisites: run `python make_variant_configs.py --variant {split,nosplit}`
+# first so that variant_configs/filelist_{variant}.txt exists.
+
+VARIANT      = split
+
 universe     = vanilla
-executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_split_training.sh
-arguments    = split_configs/$(cfg)
-output       = logs/split_train_$(Cluster).$(Process).out
-error        = logs/split_train_$(Cluster).$(Process).err
-log          = /tmp/split_train_$(Cluster).log
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_variant_training.sh
+arguments    = variant_configs/$(cfg)
+output       = logs/variant_train_$(VARIANT)_$(Cluster).$(Process).out
+error        = logs/variant_train_$(VARIANT)_$(Cluster).$(Process).err
+log          = /tmp/variant_train_$(VARIANT)_$(Cluster).log
 getenv       = true
 request_memory = 14GB
-queue cfg from split_configs/filelist.txt
+queue cfg from variant_configs/filelist_$(VARIANT).txt

@@ -1,13 +1,14 @@
-# NPB Score Training Configuration — SPLIT variant
+# NPB Score Training Configuration — NOSPLIT variant
 #
-# Same as config_npb_training.yaml but uses shapes_split_jet*.txt for signal.
-# Outputs npb_models/npb_score_split_tmva.root (loaded by apply_BDT.C when use_split_bdt: 1).
-# - Positive (label=1): Real clusters from split Jet MC samples
-# - Negative (label=0): NPB-tagged clusters from data (unchanged — data has no split version)
+# Same as config_npb_training_split.yaml but uses shapes_nosplit_jet*.txt for signal.
+# Outputs npb_models/npb_score_nosplit_tmva.root (loaded by apply_BDT.C when use_split_bdt: 0).
+# - Positive (label=1): Real clusters from nosplit Jet MC samples
+# - Negative (label=0): NPB-tagged clusters from data (unchanged — NPB tagging uses
+#   jet-delta-R + MBD timing, not shower splitting, so the data file is shared)
 
 training:
   output_dir: "npb_models"  # Output directory for models/plots
-  model_name: "npb_score_split"   # Base name for saved files
+  model_name: "npb_score_nosplit"   # Base name for saved files
   random_seed: 42
 
   # Data split ratios (must sum to 1.0)
@@ -52,17 +53,17 @@ training:
       n_estimators: [300, 600, 900]
 
 data:
-  # Real clusters from split Jet MC (positive samples)
+  # Real clusters from nosplit Jet MC (positive samples)
   signal_files:
-    - "shapes_split_jet5.txt"
-    - "shapes_split_jet12.txt"
-    - "shapes_split_jet20.txt"
-    - "shapes_split_jet30.txt"
-    - "shapes_split_jet40.txt"
+    - "shapes_nosplit_jet5.txt"
+    - "shapes_nosplit_jet12.txt"
+    - "shapes_nosplit_jet20.txt"
+    - "shapes_nosplit_jet30.txt"
+    - "shapes_nosplit_jet40.txt"
 
-  # NPB clusters from data (negative samples) — features extracted from split cluster node
+  # NPB clusters from data (negative samples) — features extracted from no-split cluster node
   background_files:
-    - "shapes_split_data_npb.txt"
+    - "shapes_nosplit_data_npb.txt"
 
   # Selection criteria (pandas query syntax)
   signal_selection: "pid != -1"      # All real clusters

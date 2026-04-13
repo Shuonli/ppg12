@@ -171,6 +171,18 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
 
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
 
+    // Derive output filename tag from cluster node to prevent mislabeling split vs no-split training inputs
+    std::string cluster_tag;
+    if (clusternodename == "CLUSTERINFO_CEMC") {
+        cluster_tag = "split";
+    } else if (clusternodename == "CLUSTERINFO_CEMC_NO_SPLIT") {
+        cluster_tag = "nosplit";
+    } else {
+        std::cerr << "ERROR: BDTinput.C does not know how to tag cluster node '" << clusternodename
+                  << "'. Expected CLUSTERINFO_CEMC or CLUSTERINFO_CEMC_NO_SPLIT." << std::endl;
+        return;
+    }
+
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
     // If enabled, write MC clusters to the txt output even when they fail `common_pass`.
     // This is useful for NPB-score / preselection studies without photon-ID bias.
@@ -472,11 +484,13 @@ void BDTinput(const std::string &configname = "config_nom.yaml", const std::stri
     std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
     // output text file for the showershapes
     std::ofstream outputfile;
-    std::string outputname = "shapes_split_" + filetype + ".txt";
+    std::string outputname = "shapes_" + cluster_tag + "_" + filetype + ".txt";
 
-    // Override output name for data NPB
+    // Override output name for data NPB — NPB tagging on data is cluster-variant agnostic
+    // (driven by jet-dR + MBD timing) but the shower-shape features written per tagged cluster
+    // come from the configured cluster_node_name, so the file is tagged per variant.
     if (!issim && npb_cut_on) {
-        outputname = "shapes_split_data_npb.txt";
+        outputname = "shapes_" + cluster_tag + "_data_npb.txt";
     }
 
     // Open output file for MC or data NPB
