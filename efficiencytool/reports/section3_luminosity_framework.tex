@@ -251,11 +251,22 @@ ratio against \texttt{h\_truth\_pT\_vertexcut}, and the no-vertex-cut
 convention will give a cross-section consistent with the original
 within $\leq 1\%$.
 
-\subsection{Defensive code changes applied}
+\subsection{Code changes applied (commits 8ac4d1b, 8ecae87)}
 
-In addition to relying on the on-the-fly path, the following
-robustness improvements are committed in
-\texttt{RecoEffCalculator\_TTreeReader.C}:
+The static fallback path has been fully removed from the production
+code. The on-the-fly path is now the ONLY supported mode in both
+\texttt{RecoEffCalculator\_TTreeReader.C} and
+\texttt{ShowerShapeCheck.C}. The static fallback file
+\texttt{vertex\_reweight\_bdt\_none.root} has been renamed to
+\texttt{*.deprecated} to make accidental use impossible.
+
+If the first-pass vtxscan files are missing when the second pass
+runs, the code now prints \texttt{FATAL} and returns instead of
+silently using the stale static file. This is a safer failure mode
+that forces the two-pass pipeline to be run correctly.
+
+The on-the-fly path itself was hardened with the following
+improvements:
 
 \begin{enumerate}
   \item \textbf{Rebin before computing the ratio} (configurable,
@@ -270,8 +281,8 @@ robustness improvements are committed in
     (\texttt{TH1::Interpolate()}) for smooth lookup at event level,
     instead of nearest-bin lookup with \texttt{GetBinContent()}.
 
-  \item \textbf{Zero fallback for out-of-range and undefined bins}
-    (line 1350): changed from \texttt{vertex\_weight = 1.0} to
+  \item \textbf{Zero fallback for out-of-range and undefined bins}:
+    changed from \texttt{vertex\_weight = 1.0} to
     \texttt{vertex\_weight = 0.0}. Events with $|z_{\text{reco}}|$
     outside the histogram range or where the ratio is non-finite are
     now \emph{dropped} (zero weight) instead of being kept at full
@@ -283,6 +294,12 @@ New config knobs:
 analysis:
   vertex_reweight_rebin: 5       # rebin factor for h_vertexz before ratio
   vertex_reweight_smooth: 1      # number of TH1::Smooth() passes
+\end{verbatim}
+
+Removed config knobs (no longer read):
+\begin{verbatim}
+analysis:
+  vertex_reweight_file: ...      # ignored — on-the-fly only
 \end{verbatim}
 
 \subsection{Recommended action sequence}
