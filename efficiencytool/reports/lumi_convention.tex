@@ -49,12 +49,16 @@ used a deprecated static fallback file with a
 large $|\zvtx|$. We diagnosed the bug, removed the fallback entirely,
 and hardened the on-the-fly reweight with rebinning, smoothing,
 linear interpolation, and a \texttt{vertex\_weight = 0.0} fallback.
-A standalone simulation of the post-fix result validates both
-periods separately: \textbf{1.5 mrad agrees to $+0.32\%$} flat across
-all \pT\ bins, while \textbf{0 mrad shows a $+13.8\%$ flat offset}
-that is not a reweight bug but a real inconsistency between the
-lumi file's scaler-level 60~cm fraction ($69.2\%$) and the slimtree's
-event-level 60~cm fraction ($78.8\%$). This discrepancy must be
+A full re-run of the nominal efficiency pipeline (photon5, photon10,
+photon20 merged via \texttt{MergeSim.C}) with the fix applied
+validates both periods separately: \textbf{1.5 mrad agrees to
+$-0.34\%$ flat across all \pT\ bins} (integrated $L\times\veff$:
+$15.33 \rightarrow 15.30$), while \textbf{0 mrad shows a $+14.16\%$
+flat offset} (integrated $L\times\veff$: $29.29 \rightarrow 33.45$).
+The 1.5 mrad agreement confirms the fix; the 0 mrad offset is not a
+reweight bug but a real inconsistency between the lumi file's
+scaler-level 60~cm fraction ($69.2\%$) and the slimtree's event-level
+60~cm fraction ($79.1\%$, rerun-confirmed). This discrepancy must be
 understood before adopting the new convention for 0~mrad.
 \end{abstract}
 
@@ -149,14 +153,20 @@ In commits \texttt{8ac4d1b} and \texttt{8ecae87}:
 \end{enumerate}
 
 %% ============================================================
-\section{Post-Fix Validation: Per-Period}
+\section{Post-Fix Validation: Full Production Re-Run}
 \label{sec:validation}
 
-The validation (\texttt{lumi\_convention\_validation.py}) applies
-the fixed reweight to the existing vtxscan files and propagates the
-result through the cross-section formula. The exercise is done
-separately for 1.5 mrad and 0 mrad so each period can be evaluated
-on its own terms.
+The validation is a full re-run of the nominal efficiency pipeline
+(\texttt{RecoEffCalculator\_TTreeReader.C} on photon5, photon10,
+photon20 followed by \texttt{MergeSim.C}) with the fix applied.
+Both periods are re-run separately using \texttt{config\_bdt\_nom.yaml}
+(1.5 mrad) and \texttt{config\_bdt\_0rad.yaml} (0 mrad). The per-$\pT$
+$L \times \veff$ tables below are extracted directly from the
+\texttt{h\_truth\_pT\_vertexcut\_0},
+\texttt{h\_truth\_pT\_vertexcut\_mbd\_cut\_0}, and
+\texttt{h\_truth\_pT\_0} histograms in the merged
+\texttt{MC\_efficiency\_bdt\_\{nom,0rad\}.root} files (not a standalone
+Python simulation).
 
 \subsection{Vertex reweight shape and distribution match}
 
@@ -196,29 +206,35 @@ histogram-integral level.
 
 \begin{table}[H]
 \centering
-\caption{Integrated $|\zvtx|<60$ fractions per period. Both reweights
-  match the target data fraction from the vtxscan files.}
+\caption{Integrated $|\zvtx|<60$ fractions per period. Pre-fix and
+  post-fix columns are from the standalone vtxscan files; the
+  ``Production rerun'' row is the \texttt{h\_truth\_pT\_vertexcut /
+  h\_truth\_pT} ratio from the merged production MC after applying
+  the full fix.}
 \label{tab:integral_both}
 \begin{tabular}{lrr}
 \toprule
 \textbf{Source} & \textbf{1.5 mrad} & \textbf{0 mrad} \\
 \midrule
-Data (slimtree target) & 0.9865 & 0.7880 \\
-Raw MC                 & 0.7296 & 0.7296 \\
-OLD reweighted MC      & 0.9865 & 0.7880 \\
-NEW reweighted MC      & 0.9862 & 0.7878 \\
+Data (slimtree target, vtxscan)   & 0.9865 & 0.7880 \\
+Raw MC (vtxscan)                  & 0.7296 & 0.7296 \\
+OLD reweighted MC (vtxscan)       & 0.9865 & 0.7880 \\
+NEW reweighted MC (vtxscan)       & 0.9862 & 0.7878 \\
+\textbf{Production rerun} (merged MC) & \textbf{0.9816} & \textbf{0.7908} \\
 \midrule
 \textbf{Comparison to lumi file:} & & \\
 $\Lint^{60\text{cm}} / \Lint^{\text{noVtx}}$ & 0.9834 & 0.6924 \\
-Slimtree / lumi-file ratio & 1.003 & \textbf{1.138} \\
+Production / lumi-file ratio      & 0.998  & \textbf{1.142} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-For 1.5 mrad, the slimtree 60 cm fraction (0.9865) matches the
-lumi-file ratio (0.9834) to 0.3\%. For 0 mrad, the slimtree fraction
-(0.7880) is 13.8\% larger than the lumi-file ratio (0.6924). This
-is the source of the 0 mrad cross-section shift (see below).
+For 1.5 mrad, the production rerun 60 cm fraction (0.9816) matches
+the lumi-file ratio (0.9834) to 0.2\%. For 0 mrad, the production
+rerun fraction (0.7908) is 14.2\% larger than the lumi-file ratio
+(0.6924), consistent with the slimtree vtxscan prediction (13.8\%).
+This $\sim 14\%$ mismatch is the source of the 0 mrad cross-section
+shift (see below).
 
 \subsection{Per-\texorpdfstring{$\pT$}{pT} consistency check}
 
@@ -230,74 +246,76 @@ $\Lint \times \veff$ between the two conventions for each period.
 \centering
 \includegraphics[width=\textwidth]{L_times_eff_ratio.pdf}
 \caption{Per-\pT\ $\Lint \times \veff$ comparison for 1.5 mrad
-  (left) and 0 mrad (right). Top panels: absolute values. Bottom
-  panels: ratio NEW/OLD. For 1.5 mrad the ratio is flat at
-  $+0.32\%$ (consistent with zero); for 0 mrad it is flat at
-  $+13.80\%$ (a real offset).}
+  (left) and 0 mrad (right), extracted from the full production
+  rerun (merged photon5/10/20 MC). Top panels: absolute values.
+  Bottom panels: ratio NEW/OLD. For 1.5 mrad the ratio is flat at
+  $-0.34\%$ (consistent with zero to within bin-to-bin scatter);
+  for 0 mrad it is flat at $+14.16\%$ (a real offset).}
 \label{fig:ratio}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{1.5 mrad: $L \times \varepsilon$ per \pT\ bin. NEW/OLD
-  flat at $+0.32\%$.}
+\caption{1.5 mrad: $L \times \veff$ per \pT\ bin from the full
+  production rerun. NEW/OLD flat at $-0.34\%$ (integrated).}
 \label{tab:perbin_1p5}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 \textbf{\pT\ [GeV]} & \textbf{$\veff^{\text{old}}$}
   & \textbf{$\veff^{\text{new}}$}
-  & \textbf{$L_{60} \varepsilon_{\text{old}}$}
-  & \textbf{$L_{\text{nov}} \varepsilon_{\text{new}}$}
+  & \textbf{$L_{60} \veff^{\text{old}}$}
+  & \textbf{$L_{\text{nov}} \veff^{\text{new}}$}
   & \textbf{Ratio} \\
 \midrule
-8--10    & 0.6771 & 0.6680 & 11.43 & 11.47 & 1.0032 \\
-10--12   & 0.6670 & 0.6580 & 11.26 & 11.29 & 1.0032 \\
-12--14   & 0.6568 & 0.6479 & 11.09 & 11.12 & 1.0032 \\
-14--16   & 0.6452 & 0.6365 & 10.89 & 10.92 & 1.0032 \\
-16--18   & 0.6347 & 0.6261 & 10.71 & 10.75 & 1.0032 \\
-18--20   & 0.6219 & 0.6135 & 10.50 & 10.53 & 1.0032 \\
-20--22   & 0.6095 & 0.6012 & 10.29 & 10.32 & 1.0032 \\
-22--24   & 0.6027 & 0.5946 & 10.17 & 10.21 & 1.0032 \\
-24--26   & 0.5789 & 0.5711 &  9.77 &  9.80 & 1.0032 \\
-26--28   & 0.5649 & 0.5573 &  9.53 &  9.56 & 1.0032 \\
-32--36   & 0.4999 & 0.4931 &  8.44 &  8.46 & 1.0032 \\
+8--10    & 0.9081 & 0.8913 & 15.3273 & 15.2986 & 0.9981 \\
+10--12   & 0.9042 & 0.8865 & 15.2626 & 15.2159 & 0.9969 \\
+12--14   & 0.9008 & 0.8845 & 15.2052 & 15.1809 & 0.9984 \\
+14--16   & 0.8993 & 0.8819 & 15.1791 & 15.1368 & 0.9972 \\
+16--18   & 0.8979 & 0.8803 & 15.1555 & 15.1090 & 0.9969 \\
+18--20   & 0.8972 & 0.8792 & 15.1443 & 15.0912 & 0.9965 \\
+20--22   & 0.8879 & 0.8681 & 14.9862 & 14.9008 & 0.9943 \\
+22--24   & 0.8896 & 0.8724 & 15.0159 & 14.9734 & 0.9972 \\
+24--26   & 0.8790 & 0.8621 & 14.8369 & 14.7972 & 0.9973 \\
+26--28   & 0.8737 & 0.8549 & 14.7465 & 14.6736 & 0.9951 \\
+28--32   & 0.8673 & 0.8514 & 14.6388 & 14.6130 & 0.9982 \\
+32--36   & 0.8650 & 0.8446 & 14.6000 & 14.4971 & 0.9930 \\
 \midrule
-Integrated & 0.6758 & 0.6667 & 11.41 & 11.44 & \textbf{1.0032} \\
+Integrated & 0.9082 & 0.8914 & 15.3288 & 15.3008 & \textbf{0.9982} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{0 mrad: $L \times \varepsilon$ per \pT\ bin. NEW/OLD
-  flat at $+13.80\%$. The shift is bin-independent, confirming it
-  is a lumi normalization issue, not a pT-dependent efficiency
-  effect.}
+\caption{0 mrad: $L \times \veff$ per \pT\ bin from the full
+  production rerun. NEW/OLD flat at $+14.21\%$ (integrated).
+  The shift is bin-independent, confirming it is a lumi
+  normalization issue, not a pT-dependent efficiency effect.}
 \label{tab:perbin_0}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 \textbf{\pT\ [GeV]} & \textbf{$\veff^{\text{old}}$}
   & \textbf{$\veff^{\text{new}}$}
-  & \textbf{$L_{60} \varepsilon_{\text{old}}$}
-  & \textbf{$L_{\text{nov}} \varepsilon_{\text{new}}$}
+  & \textbf{$L_{60} \veff^{\text{old}}$}
+  & \textbf{$L_{\text{nov}} \veff^{\text{new}}$}
   & \textbf{Ratio} \\
 \midrule
-8--10    & 0.7648 & 0.6027 & 25.01 & 28.46 & 1.1380 \\
-10--12   & 0.7571 & 0.5966 & 24.76 & 28.17 & 1.1380 \\
-12--14   & 0.7460 & 0.5878 & 24.40 & 27.76 & 1.1380 \\
-14--16   & 0.7394 & 0.5827 & 24.18 & 27.52 & 1.1380 \\
-16--18   & 0.7317 & 0.5766 & 23.93 & 27.23 & 1.1380 \\
-18--20   & 0.7241 & 0.5706 & 23.68 & 26.95 & 1.1380 \\
-20--22   & 0.7076 & 0.5576 & 23.14 & 26.33 & 1.1380 \\
-22--24   & 0.7020 & 0.5531 & 22.96 & 26.12 & 1.1380 \\
-24--26   & 0.6847 & 0.5395 & 22.39 & 25.48 & 1.1380 \\
-26--28   & 0.6726 & 0.5300 & 22.00 & 25.03 & 1.1380 \\
-28--32   & 0.6672 & 0.5258 & 21.82 & 24.83 & 1.1380 \\
-32--36   & 0.6395 & 0.5039 & 20.91 & 23.80 & 1.1380 \\
+8--10    & 0.8951 & 0.7081 & 29.2717 & 33.4415 & 1.1425 \\
+10--12   & 0.8919 & 0.7033 & 29.1698 & 33.2154 & 1.1387 \\
+12--14   & 0.8863 & 0.7012 & 28.9843 & 33.1170 & 1.1426 \\
+14--16   & 0.8843 & 0.6996 & 28.9194 & 33.0431 & 1.1426 \\
+16--18   & 0.8836 & 0.6979 & 28.8981 & 32.9609 & 1.1406 \\
+18--20   & 0.8799 & 0.6941 & 28.7746 & 32.7791 & 1.1392 \\
+20--22   & 0.8727 & 0.6880 & 28.5390 & 32.4950 & 1.1386 \\
+22--24   & 0.8704 & 0.6884 & 28.4639 & 32.5113 & 1.1422 \\
+24--26   & 0.8596 & 0.6825 & 28.1109 & 32.2345 & 1.1467 \\
+26--28   & 0.8597 & 0.6723 & 28.1137 & 31.7523 & 1.1294 \\
+28--32   & 0.8568 & 0.6849 & 28.0203 & 32.3451 & 1.1543 \\
+32--36   & 0.8471 & 0.6699 & 27.7037 & 31.6392 & 1.1421 \\
 \midrule
-Integrated & 0.7651 & 0.6029 & 25.02 & 28.47 & \textbf{1.1380} \\
+Integrated & 0.8956 & 0.7083 & 29.2897 & 33.4516 & \textbf{1.1421} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -322,11 +340,14 @@ shape is stable across the 20$\times$ range in bin width.
 \section{Analysis of the 0 mrad Discrepancy}
 \label{sec:0mrad_discrepancy}
 
-The $+13.8\%$ shift at 0 mrad is \emph{not} a bug in the reweight
+The $+14.2\%$ shift at 0 mrad is \emph{not} a bug in the reweight
 fix --- both the old and new reweights reproduce the slimtree data
 vertex distribution to $< 0.1\%$ (Figure~\ref{fig:vertex_dist} right
-panels). The issue is a mismatch between two independent measurements
-of the same quantity:
+panels), and the production rerun gives
+$h_{\text{truth pT vertexcut}}/h_{\text{truth pT}} = 0.7908$ in the
+merged MC, confirming the fix is functioning at the histogram level.
+The issue is a mismatch between two independent measurements of the
+same quantity:
 
 \begin{itemize}
   \item \textbf{Lumi file}: $\Lint^{60\text{cm}} / \Lint^{\text{noVtx}}
@@ -336,9 +357,12 @@ of the same quantity:
   \item \textbf{Slimtree vtxscan}: 0.7880. This is the fraction of
     events in the data slimtree that have
     $|z^{\text{reco}}_{\text{vtx}}| < 60$~cm.
+  \item \textbf{Production MC (after fix)}: 0.7908. The reweighted
+    MC truth-level ratio confirms the slimtree target is being
+    reproduced in the full pipeline.
 \end{itemize}
 
-These numbers differ by 13.8\% for 0 mrad but agree to 0.3\% for
+These numbers differ by 14.2\% for 0 mrad but agree to 0.2\% for
 1.5 mrad. Possible explanations:
 
 \begin{enumerate}
@@ -400,10 +424,11 @@ there is a real bias that neither convention captures.
 
 \begin{enumerate}
   \item \textbf{Use the NEW convention for 1.5 mrad} (the nominal
-    1.5 mrad result). The $+0.32\%$ shift is well within any
-    systematic.
+    1.5 mrad result). The $-0.34\%$ shift is well within any
+    systematic, and the per-$\pT$ ratio (Figure~\ref{fig:ratio}
+    bottom-left) is flat within bin-to-bin scatter.
   \item \textbf{Do NOT use the NEW convention for 0 mrad} until
-    the slimtree-vs-lumi-file discrepancy is resolved. The $+13.8\%$
+    the slimtree-vs-lumi-file discrepancy is resolved. The $+14.2\%$
     shift is too large to adopt without understanding.
   \item \textbf{Investigate the 0 mrad slimtree filter}: run the
     vtxscan on a no-cluster-filter slimtree (if one exists), or
@@ -448,23 +473,29 @@ The old \texttt{vertex\_reweight\_file} knob is no longer read.
 \label{sec:caveats}
 
 \begin{enumerate}
-  \item \textbf{The validation is a standalone simulation},
-    not an actual re-run of the production MC. The assumption is
-    $h_{\text{truth}}^{\text{new}} = h_{\text{truth vertexcut}} /
-    0.9865$ for 1.5 mrad (or $/ 0.7880$ for 0 mrad). A real re-run
-    (\texttt{oneforall.sh config\_bdt\_nom.yaml}) is recommended
-    to confirm. The 1.5 mrad result should reproduce the $+0.32\%$
-    shift; the 0 mrad result will expose the slimtree-vs-lumi-file
-    discrepancy in the actual production.
   \item \textbf{0 mrad ambiguity} (Section~\ref{sec:0mrad_discrepancy}):
     do not adopt the new convention for 0 mrad without resolving
-    the 13.8\% shift first.
+    the 14.2\% shift first.
   \item \textbf{Per-segment variation}: within a fill, the luminous
     region moves. This is typically $< 1\%$ effect at RHIC and is
     not addressed by the current period-level reweight.
   \item \textbf{Pileup}: the double-interaction MC blending in
     \texttt{run\_showershape\_double.sh} carries its own correction
     and is unaffected by this change.
+  \item \textbf{Jet sample reuse}: the production rerun used the
+    existing jet12/jet20/jet30/jet40 MC files (from 2025-04-11),
+    which already used the post-fix reweight logic. Only the
+    photon samples were re-run from scratch as part of this
+    validation.
+  \item \textbf{Full pipeline rerun}: in addition to the
+    \texttt{RecoEffCalculator\_TTreeReader.C} photon jobs,
+    \texttt{MergeSim.C}, the data Pass~2 jobs
+    (\texttt{RecoEffCalculator\_TTreeReader.C} on data, both periods),
+    and \texttt{CalculatePhotonYield.C} were also re-run to regenerate
+    \texttt{Photon\_final\_bdt\_nom.root} and
+    \texttt{Photon\_final\_bdt\_0rad.root} (both default, old
+    convention). The updated final files are available for use in
+    downstream plotting and systematics aggregation.
 \end{enumerate}
 
 %% ============================================================
@@ -478,8 +509,11 @@ The old \texttt{vertex\_reweight\_file} knob is no longer read.
 \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} & Fix vertex reweight, remove fallback \\
 \texttt{efficiencytool/ShowerShapeCheck.C}               & Same fix \\
 \texttt{efficiencytool/CalculatePhotonYield.C}           & Add \texttt{use\_lumi\_novtx} path \\
-\texttt{efficiencytool/lumi\_convention\_validation.py}  & Per-period validation script \\
-\texttt{plotting/plot\_lumi\_convention.py}              & Per-period plotting \\
+\texttt{efficiencytool/lumi\_convention\_validation.py}  & Per-period vtxscan cross-check \\
+\texttt{plotting/plot\_lumi\_convention.py}              & Per-period plotting (vtxscan) \\
+\texttt{plotting/plot\_lumi\_convention\_production.py}  & Production rerun per-$\pT$ plot \\
+\texttt{results/MC\_efficiency\_bdt\_nom.root}            & Merged 1.5 mrad production (rerun) \\
+\texttt{results/MC\_efficiency\_bdt\_0rad.root}           & Merged 0 mrad production (rerun) \\
 \texttt{lumi/allzLumi\_fromJoey.list}                    & No-vertex-cut luminosity \\
 \texttt{results/vertex\_reweight\_bdt\_none.root.deprecated} & Deprecated static fallback \\
 \bottomrule
