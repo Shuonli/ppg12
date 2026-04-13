@@ -134,33 +134,6 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     float mbd_eff_scale = configYaml["analysis"]["mbd_eff_scale"].as<float>(0.0);
 
-    // ===================================================================
-    // No-vertex-cut luminosity convention (lumi note Section 3 simplification)
-    // ===================================================================
-    // When use_lumi_novtx = 1, switch the analysis to use the no-vertex-cut
-    // luminosity (L_noVtx, from allzLumi_fromJoey.list) paired with a vertex
-    // efficiency that uses ALL truth photons in the denominator (h_truth_pT)
-    // instead of only those with |z_truth|<60 (h_truth_pT_vertexcut).
-    //
-    // The two conventions are mathematically equivalent in the single-
-    // interaction limit (after MC vertex reweighting):
-    //   L_60cm × (mbd_cut / vertexcut)  ≈  L_noVtx × (mbd_cut / h_truth_pT)
-    //
-    // The new convention is more transparent and aligns with the lumi note,
-    // which prescribes total luminosity in the denominator and a single
-    // efficiency factor that includes the full vertex+MBD acceptance.
-    //
-    // To use: set use_lumi_novtx: 1 and set lumi: to the no-vertex-cut value
-    // from allzLumi_fromJoey.list (e.g., 17.1642 for 1.5 mrad, 47.2284 for 0 mrad).
-    int use_lumi_novtx = configYaml["analysis"]["use_lumi_novtx"].as<int>(0);
-    if (use_lumi_novtx)
-    {
-        std::cout << "[lumi-novtx] Using no-vertex-cut luminosity convention" << std::endl;
-        std::cout << "[lumi-novtx] Lumi from config (should be from allzLumi_fromJoey.list): "
-                  << luminosity << " pb^-1" << std::endl;
-        std::cout << "[lumi-novtx] vertex_eff denominator will use h_truth_pT instead of h_truth_pT_vertexcut" << std::endl;
-    }
-
     std::string histogram_postfix = "_0";
 
     std::string tight_iso_cluster_name = "h_tight_iso_cluster"; // A
@@ -218,9 +191,6 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     TH1F *h_nontight_noniso_cluster_notmatch = (TH1F *)fsimin->Get(nontight_noniso_cluster_notmatch_name.c_str());
 
     TH1F *h_truth_pT_vertexcut = (TH1F *)fsimin->Get(truth_with_vertex_name.c_str());
-
-    // h_truth_pT (no vertex cut) — used as denominator when use_lumi_novtx=1
-    TH1F *h_truth_pT_all = (TH1F *)fsimin->Get(truth_pythia_name.c_str());
 
     TH1F *h_truth_pT_vertexcut_mbd_cut = (TH1F *)fsimin->Get(truth_with_vertex_mbd_name.c_str());
     TH1F *h_truth_pT_vertexcut_mbd_north_cut = (TH1F *)fsimin->Get(truth_with_vertex_mbd_north_name.c_str());
@@ -1036,39 +1006,7 @@ std::cout << "p-value = " << pvalue << "\n";
             float eff_iso_val = eff_iso->GetEfficiency(ibin);
             float eff_id_val = eff_id->GetEfficiency(ibin);
 
-            // ===========================================================
-            // Vertex+MBD efficiency factor.
-            //
-            // Two equivalent conventions, selected by use_lumi_novtx:
-            //
-            // (1) ORIGINAL — use_lumi_novtx = 0 (default):
-            //     denom = h_truth_pT_vertexcut (truth photons with |z_truth|<60)
-            //     num   = + MBD + |z_reco|<60
-            //     Paired with L_60cm from 60cmLumi_fromJoey.list (zsel=1).
-            //
-            // (2) NO-VTX-CUT — use_lumi_novtx = 1:
-            //     denom = h_truth_pT (ALL truth photons, no z-vertex cut)
-            //     num   = + MBD + |z_reco|<60 (same as original)
-            //     Paired with L_noVtx from allzLumi_fromJoey.list (zsel=5).
-            //
-            // The two are mathematically equivalent in the single-interaction limit
-            // because the MC vertex reweighting (in RecoEffCalculator) brings the
-            // MC truth vertex distribution into approximate agreement with data, so:
-            //   L_noVtx × (mbd_cut / h_truth_pT)  ≈  L_60cm × (mbd_cut / vertexcut)
-            //
-            // The new convention is more transparent and aligns with the lumi note,
-            // which prescribes total luminosity in the denominator and a single
-            // efficiency factor that includes the full vertex+MBD acceptance.
-            // ===========================================================
-            float vertex_eff_val;
-            if (use_lumi_novtx && h_truth_pT_all)
-            {
-                vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_all->GetBinContent(ibin) + mbd_eff_scale;
-            }
-            else
-            {
-                vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_vertexcut->GetBinContent(ibin) + mbd_eff_scale;
-            }
+            float vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_vertexcut->GetBinContent(ibin) + mbd_eff_scale;
 
             float total_eff = eff_reco_val * eff_iso_val * eff_id_val * vertex_eff_val;
 
