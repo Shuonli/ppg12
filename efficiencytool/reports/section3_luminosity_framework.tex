@@ -8,25 +8,20 @@
 \usepackage{xcolor}
 \usepackage{caption}
 \usepackage{float}
-\usepackage{longtable}
 
 \hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
 
-% Local macros
 \newcommand{\pp}{\mbox{$p$+$p$}}
 \newcommand{\sqs}{\mbox{$\sqrt{s}$}}
 \newcommand{\pT}{\ensuremath{p_{\text{T}}}}
-\newcommand{\ET}{\ensuremath{E_{\text{T}}}}
 \newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
-\newcommand{\fcorr}{\ensuremath{f_{\text{corr}}}}
-\newcommand{\Leff}{\ensuremath{\mathcal{L}_{\text{eff}}}}
 \newcommand{\Lint}{\ensuremath{\mathcal{L}_{\text{int}}}}
 
 \title{%
   \vspace{-1cm}
   {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
-  {\LARGE \textbf{Section 3 Luminosity Framework:\\
-  Switching from L(60cm) to L(noVtx) + f\_corr}}\\[0.3cm]
+  {\LARGE \textbf{Luminosity Convention:\\
+  L(60cm) vs.\ L(noVtx) for PPG12}}\\[0.3cm]
   {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
 }
 \author{sPHENIX Collaboration}
@@ -37,512 +32,244 @@
 \maketitle
 
 \begin{abstract}
-This note documents the implementation of the sPHENIX luminosity note
-Section~3 correction in the PPG12 isolated photon cross-section
-measurement. The previous approach used a 60~cm-vertex-cut luminosity
-paired with a vertex-reweighted MC efficiency. The new framework uses
-the total (no-vertex-cut) luminosity paired with a Poisson-weighted
-f\_corr factor that convolves the MC-derived MBD response function
-with the data z-vertex distribution measured per crossing-angle period.
-The new approach correctly handles pileup effects on the vertex+MBD
-acceptance (+5--7\% at 0~mrad, +0.7--1.5\% at 1.5~mrad) and uses the
-actual per-period data vertex profile rather than a single global
-vertex reweight. The implementation preserves the original code path
-as a reference (config-switchable) and is validated step by step
-against the production MC. This note summarizes the physics,
-implementation, per-$\pT$ numbers, and recommendations.
+We considered switching the PPG12 cross-section normalization from the
+current 60~cm-vertex-cut luminosity ($\Lint^{60\text{cm}}$, paired with a
+\texttt{vertex\_eff} factor whose denominator is truth photons within
+$|z_{\text{vtx}}^{\text{truth}}|<60$~cm) to the no-vertex-cut luminosity
+($\Lint^{\text{noVtx}}$, paired with a vertex efficiency that uses ALL
+truth photons in the denominator). The two conventions should be
+mathematically equivalent in the single-interaction limit. In practice,
+they differ by a factor of $\sim 3$ at 1.5~mrad and $\sim 2$ at 0~mrad,
+because of a quirk in the MC vertex reweighting that affects the
+no-vertex-cut denominator but not the 60-cm-cut denominator. We document
+the issue, the per-$\pT$ comparison, and recommend keeping the current
+convention until the MC vertex reweighting is reviewed.
 \end{abstract}
 
-\tableofcontents
-\newpage
-
 %% ============================================================
-\section{Motivation}
-\label{sec:motivation}
+\section{The Two Conventions}
+\label{sec:conventions}
 
-The PPG12 cross-section formula factorizes as:
+\textbf{Original (current production):}
 \begin{equation}
-  \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times \Lint \times \varepsilon_{\text{total}}}
-\end{equation}
-
-In the existing production pipeline (\texttt{CalculatePhotonYield.C:1009}),
-the efficiency chain separates the MBD+vertex acceptance as a distinct
-factor \texttt{vertex\_eff}:
-\begin{equation}
-  \varepsilon_{\text{total}} = \varepsilon_{\text{reco}} \times
+  \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times
+  \Lint^{60\text{cm}} \times \varepsilon_{\text{reco}} \times
   \varepsilon_{\text{iso}} \times \varepsilon_{\text{id}} \times
-  \varepsilon_{\text{vtx+MBD}}^{\text{MC}}
-  \label{eq:old}
+  \varepsilon_{\text{vtx+MBD}}^{\text{old}}}
 \end{equation}
 where
 \begin{equation}
-  \varepsilon_{\text{vtx+MBD}}^{\text{MC}} =
-  \frac{N(\text{truth photons with }|\zvtx^{\text{truth}}|<60~\text{cm}, \text{MBD fires}, |\zvtx^{\text{reco}}|<60~\text{cm})}
-       {N(\text{truth photons with }|\zvtx^{\text{truth}}|<60~\text{cm})}
+  \varepsilon_{\text{vtx+MBD}}^{\text{old}} = \frac{N(\text{truth photons, }|z_{\text{truth}}|<60, \text{MBD+}|z_{\text{reco}}|<60)}{N(\text{truth photons, }|z_{\text{truth}}|<60)}
 \end{equation}
+The luminosity $\Lint^{60\text{cm}}$ is the value from
+\texttt{60cmLumi\_fromJoey.list}, which is computed by
+\texttt{get\_luminosity\_182630.C} with \texttt{zsel=1} ($|z_{\text{vtx}}|<60$~cm
+applied at the scaler tally level).
 
-This is paired with $\Lint^{60\text{cm}}$ from
-\texttt{60cmLumi\_fromJoey.list}, which counts only MBD-triggered
-crossings with a reco-vertex cut at $|\zvtx|<60$~cm already applied
-in the scaler tally (via \texttt{get\_luminosity\_182630.C} with
-\texttt{zsel=1}).
-
-The sPHENIX luminosity note Section 3 describes the correct handling
-for analyses requiring both an MBD coincidence and a z-vertex cut:
+\textbf{Alternative (no-vertex-cut convention):}
 \begin{equation}
   \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times
-  \Lint^{\text{noVtx}} \times \fcorr \times \varepsilon_{\text{reco}}
-  \times \varepsilon_{\text{iso}} \times \varepsilon_{\text{id}}}
-  \label{eq:new}
+  \Lint^{\text{noVtx}} \times \varepsilon_{\text{reco}} \times
+  \varepsilon_{\text{iso}} \times \varepsilon_{\text{id}} \times
+  \varepsilon_{\text{vtx+MBD}}^{\text{new}}}
 \end{equation}
-where $\fcorr$ is Poisson-weighted over pileup multiplicities:
+where
 \begin{equation}
-  \fcorr(\pT) = \frac{1}{1-\text{Prob}_0}\sum_{k\geq 1}
-  \text{Prob}_k(\mu) \times \text{Pass}_k(\pT)
-  \label{eq:fcorr}
+  \varepsilon_{\text{vtx+MBD}}^{\text{new}} = \frac{N(\text{truth photons, }|z_{\text{truth}}|<60, \text{MBD+}|z_{\text{reco}}|<60)}{N(\text{truth photons, no vertex cut})}
 \end{equation}
-and each $\text{Pass}_k$ convolves the MC-derived MBD response function
-with the segment's data z-vertex distribution:
-\begin{equation}
-  \text{Pass}_k(\pT) = \int P_k(\text{MBD+vtx}\,|\,z_{\text{truth}}, \pT)
-  \, f_{\text{data}}(z) \, dz
-  \label{eq:passk}
-\end{equation}
+The luminosity $\Lint^{\text{noVtx}}$ is from \texttt{allzLumi\_fromJoey.list}
+(\texttt{zsel=5}, no vertex cut at the scaler level).
 
-The two approaches agree in the single-interaction limit when the MC
-vertex reweighting perfectly matches the data vertex distribution for
-the target period. They differ by (a) the pileup correction, and (b)
-residual imperfections in the global vertex reweight (which is tuned
-to 1.5~mrad but applied to both periods).
+The numerators of the two efficiency factors are \textbf{identical}.
+Only the denominator differs: original uses truth photons with
+$|z_{\text{truth}}|<60$, new uses ALL truth photons.
+
+\textbf{Conceptual equivalence}: in the single-interaction limit, with
+MC truth vertex distribution matching data, the two products should
+satisfy:
+\begin{equation}
+  \Lint^{\text{noVtx}} \times \varepsilon_{\text{vtx+MBD}}^{\text{new}}
+  \approx
+  \Lint^{60\text{cm}} \times \varepsilon_{\text{vtx+MBD}}^{\text{old}}
+  \label{eq:equiv}
+\end{equation}
+because $\Lint^{60\text{cm}} / \Lint^{\text{noVtx}} = $ data fraction with
+$|z_{\text{vtx}}|<60$, and the same fraction should appear in the MC truth
+vertex distribution after reweighting.
 
 %% ============================================================
-\section{Implementation (Steps B1--B6)}
-\label{sec:implementation}
-
-The implementation follows a 6-step plan, with the original production
-code path preserved as a reference throughout:
-
-\subsection{Step B1 --- MC MBD response function}
-\label{sec:b1}
-
-Script: \texttt{efficiencytool/extract\_mbd\_response.py}.
-
-Processes single-interaction (\texttt{photon5/10/20}) and
-double-interaction (\texttt{photon10\_double}) MC to build a 2D
-response function
-$P(\text{MBD+vtx}|z_{\text{truth}}, \pT)$ binned in 200 z-bins
-(2~cm wide from $-200$ to $+200$~cm) and 12 $\pT$ bins
-(analysis binning 8--36~GeV).
-
-Output: \texttt{results/mbd\_response\_function.root} containing
-\texttt{h\_response\_single\_2d} and \texttt{h\_response\_double\_2d}.
-
-\textbf{Validation}: integrating the response over the raw MC
-$z_{\text{truth}}$ distribution (which has RMS $\sim$55~cm, much wider
-than data) gives $\varepsilon_{\text{vtx+MBD}}^{\text{raw MC}}
-\approx 0.43$, consistent with an unweighted $\sim$35\% vertex
-acceptance times a $\sim$0.69 MBD coincidence rate.
-
-\subsection{Step B2 --- Data z-vertex distributions}
-\label{sec:b2}
-
-Script: \texttt{efficiencytool/extract\_data\_vertex.py}.
-
-Histograms the \texttt{vertexz} branch from all data slimtree events
-per run (1568 runs, 70.6M events total) and merges into per-period
-distributions. The slimtree events are pre-selected to have a valid
-MBD vertex (from \texttt{CaloAna24.cc:577--586}), which matches the
-denominator of the no-vertex-cut luminosity.
-
-\begin{table}[htbp]
-\centering
-\caption{Data z-vertex distribution statistics per period.}
-\label{tab:datavtx}
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Period} & \textbf{Runs} & \textbf{Events} & \textbf{RMS [cm]} & \textbf{Within $\pm 60$~cm} \\
-\midrule
-0 mrad   & 751  & 48{,}515{,}339 & 54.3 & 73.5\% \\
-1.5 mrad & 817  & 22{,}057{,}247 & 21.4 & 98.1\% \\
-All      & 1568 & 70{,}572{,}586 & 46.6 & 81.2\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The dramatic difference between 0 mrad (wide vertex, 73.5\% acceptance)
-and 1.5 mrad (narrow vertex, 98.1\% acceptance) reflects the luminous
-region shape at the two crossing angles. The period-specific vertex
-profiles are the central input for the f\_corr computation.
-
-\subsection{Step B3 --- Convolution}
-\label{sec:b3}
-
-Script: \texttt{efficiencytool/compute\_section3\_fcorr.py}.
-
-For each period, computes $\text{Pass}_1(\pT)$ (single-interaction)
-and $\text{Pass}_2(\pT)$ (double-interaction) as:
-\begin{equation}
-  \text{Pass}_k(\pT) = \sum_{i} P_k(z_i, \pT) \times f_{\text{data}}(z_i)
-\end{equation}
-where $f_{\text{data}}$ is normalized as a probability mass function
-(sum = 1) so no $dz$ factor is needed.
-
-\begin{table}[htbp]
-\centering
-\caption{$\text{Pass}_1$ and $\text{Pass}_2$ per $\pT$ bin from the
-  convolution of MC response with data z-vertex distributions.}
-\label{tab:pass12}
-\small
-\begin{tabular}{lrrrr}
-\toprule
-& \multicolumn{2}{c}{\textbf{0 mrad}} & \multicolumn{2}{c}{\textbf{1.5 mrad}} \\
-\cmidrule(lr){2-3} \cmidrule(l){4-5}
-\textbf{$\pT$ bin [GeV]} & $\text{Pass}_1$ & $\text{Pass}_2$ & $\text{Pass}_1$ & $\text{Pass}_2$ \\
-\midrule
-8--10    & 0.5152 & 0.7307 & 0.6871 & 0.8186 \\
-10--12   & 0.5067 & 0.7295 & 0.6737 & 0.8186 \\
-12--14   & 0.4979 & 0.7280 & 0.6574 & 0.8136 \\
-14--16   & 0.4903 & 0.7241 & 0.6538 & 0.8066 \\
-16--18   & 0.4803 & 0.7241 & 0.6328 & 0.8103 \\
-18--20   & 0.4964 & 0.7205 & 0.6649 & 0.8028 \\
-20--22   & 0.4566 & 0.7261 & 0.6217 & 0.8146 \\
-22--24   & 0.4638 & 0.7019 & 0.6246 & 0.7815 \\
-24--26   & 0.4296 & 0.7154 & 0.5733 & 0.7863 \\
-26--28   & 0.4376 & 0.6973 & 0.5701 & 0.7605 \\
-28--32   & 0.4477 & 0.6993 & 0.5690 & 0.7945 \\
-32--36   & 0.4213 & 0.6564 & 0.5753 & 0.7236 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Step B4 --- Pileup correction}
-\label{sec:b4}
-
-$\mu$ per period is derived from the event-level double-interaction
-fractions documented in \texttt{.claude/rules/double-interaction.md}
-using Newton's bisection method:
-\begin{equation}
-  P(n\geq 2 | n\geq 1) = 1 - \frac{\mu e^{-\mu}}{1-e^{-\mu}}
-\end{equation}
-
-\begin{table}[htbp]
-\centering
-\caption{Pileup parameters per period.}
-\label{tab:pileup}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Period} & \textbf{$f_{\text{double}}$ (event)} & \textbf{$\mu$} & \textbf{$P(1|\geq 1)$} \\
-\midrule
-0 mrad   & 11.1\% & 0.2309 & 0.8890 \\
-1.5 mrad & 3.9\%  & 0.0790 & 0.9610 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Step B5 --- Poisson-weighted $\fcorr$}
-\label{sec:b5}
-
-Triple+ interactions are folded into $\text{Pass}_2$ (valid
-approximation since $P(\geq 3|\geq 1) < 1\%$ for both periods):
-\begin{equation}
-  \fcorr = P(1|\geq 1) \times \text{Pass}_1 +
-  [P(2|\geq 1) + P(\geq 3|\geq 1)] \times \text{Pass}_2
-\end{equation}
-
-\begin{table}[htbp]
-\centering
-\caption{Poisson-weighted $\fcorr$ and pileup correction per $\pT$ bin.}
-\label{tab:fcorr}
-\small
-\begin{tabular}{lrrrr}
-\toprule
-& \multicolumn{2}{c}{\textbf{0 mrad}} & \multicolumn{2}{c}{\textbf{1.5 mrad}} \\
-\cmidrule(lr){2-3} \cmidrule(l){4-5}
-\textbf{$\pT$ bin [GeV]} & $\fcorr$ & PU corr & $\fcorr$ & PU corr \\
-\midrule
-8--10    & 0.5391 & +4.6\% & 0.6922 & +0.7\% \\
-10--12   & 0.5315 & +4.9\% & 0.6793 & +0.8\% \\
-12--14   & 0.5235 & +5.1\% & 0.6635 & +0.9\% \\
-14--16   & 0.5163 & +5.3\% & 0.6598 & +0.9\% \\
-16--18   & 0.5073 & +5.6\% & 0.6398 & +1.1\% \\
-18--20   & 0.5213 & +5.0\% & 0.6703 & +0.8\% \\
-20--22   & 0.4865 & +6.6\% & 0.6292 & +1.2\% \\
-22--24   & 0.4902 & +5.7\% & 0.6307 & +1.0\% \\
-24--26   & 0.4613 & +7.4\% & 0.5816 & +1.4\% \\
-26--28   & 0.4664 & +6.6\% & 0.5775 & +1.3\% \\
-28--32   & 0.4756 & +6.2\% & 0.5778 & +1.5\% \\
-32--36   & 0.4474 & +6.2\% & 0.5811 & +1.0\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Step B6 --- Code wiring}
-\label{sec:b6}
-
-The alternative path is added to \texttt{CalculatePhotonYield.C}
-(lines 137--198 for config reading and histogram loading; lines
-1072--1114 for the efficiency loop branch). The original code is
-\emph{preserved as a reference} and fully documented with comments.
-A config switch (\texttt{use\_section3\_lumi}) selects which path is
-active:
-
-\begin{itemize}
-  \item \texttt{use\_section3\_lumi: 0} (default) --- use
-    $\Lint^{60\text{cm}} \times \varepsilon_{\text{vtx+MBD}}^{\text{MC}}$
-    (original path).
-  \item \texttt{use\_section3\_lumi: 1} --- use
-    $\Lint^{\text{noVtx}} \times \fcorr$ (new path).
-\end{itemize}
-
-New config parameters:
-\begin{itemize}
-  \item \texttt{section3\_fcorr\_file}: ROOT file with $\fcorr$
-    histograms (default \texttt{results/section3\_fcorr.root}).
-  \item \texttt{section3\_lumi\_novtx}: total no-vertex-cut luminosity
-    (pb$^{-1}$) for this period.
-  \item \texttt{section3\_apply\_pileup}: 0 = $\text{Pass}_1$ only,
-    1 = Poisson-weighted $\fcorr$.
-  \item \texttt{section3\_period}: \texttt{"0mrad"} or
-    \texttt{"1p5mrad"}.
-\end{itemize}
-
-Fallback behavior: if the ROOT file or histogram cannot be loaded,
-the code falls back to the original path and logs an error. This
-preserves production stability.
-
-%% ============================================================
-\section{Validation: Old vs.\ New Cross-Section}
+\section{Validation: Numerical Test}
 \label{sec:validation}
 
-Per $\pT$ bin, we compare
-$\Lint^{60\text{cm}} \times \varepsilon_{\text{vtx+MBD}}^{\text{MC}}$ (OLD)
-against $\Lint^{\text{noVtx}} \times \fcorr$ (NEW). The ratio gives
-the expected cross-section shift.
-
-\subsection{Luminosity values}
-\label{sec:lumival}
+Using histograms from the production
+\texttt{MC\_efficiency\_nom.root} and the lumi files:
 
 \begin{table}[htbp]
 \centering
-\caption{Per-period luminosity from both lumi files
-  (\texttt{60cmLumi\_fromJoey.list} vs.\ \texttt{allzLumi\_fromJoey.list}).}
-\label{tab:lumi}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Period} & \textbf{$\Lint^{60\text{cm}}$ [pb$^{-1}$]} &
-  \textbf{$\Lint^{\text{noVtx}}$ [pb$^{-1}$]} & \textbf{Ratio} \\
-\midrule
-0 mrad   & 32.7034 & 47.2284 & 1.4441 \\
-1.5 mrad & 16.8790 & 17.1642 & 1.0169 \\
-All      & 49.5621 & 64.3718 & 1.2988 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The 1.5~mrad ratio is close to unity (98.3\% vertex acceptance), while
-0~mrad has only 69.3\% vertex acceptance due to the wider luminous
-region.
-
-\subsection{Per-$\pT$ comparison}
-\label{sec:perpt}
-
-\begin{table}[htbp]
-\centering
-\caption{Validation: $\Lint \times \fcorr$ product per $\pT$ bin.
-  OLD uses the \texttt{vertex\_eff} from \texttt{MC\_efficiency\_nom.root}
-  (which has 1.5~mrad vertex reweighting) paired with $\Lint^{60\text{cm}}$.
-  NEW uses the Section 3 $\fcorr$ paired with $\Lint^{\text{noVtx}}$.
-  Bin 28--32~GeV shows 0 in OLD due to a known production binning
-  mismatch.}
+\caption{Per-$\pT$ comparison of the two conventions for 1.5~mrad.
+  ``OLD'' = $\Lint^{60\text{cm}} \times \varepsilon^{\text{old}}$ ;
+  ``NEW'' = $\Lint^{\text{noVtx}} \times \varepsilon^{\text{new}}$.
+  The ratio should be $\approx 1$ if the conventions are equivalent.}
 \label{tab:validation}
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
-& \multicolumn{2}{c}{\textbf{0 mrad}} & \multicolumn{2}{c}{\textbf{1.5 mrad}} \\
-\cmidrule(lr){2-3} \cmidrule(l){4-5}
-\textbf{$\pT$ bin [GeV]} & OLD & NEW (PU) & OLD & NEW (PU) \\
+\textbf{$\pT$ bin [GeV]} & \textbf{$\varepsilon^{\text{old}}$} &
+  \textbf{$\varepsilon^{\text{new}}$} & \textbf{$L\!\times\!\varepsilon^{\text{old}}$} &
+  \textbf{$L\!\times\!\varepsilon^{\text{new}}$} & \textbf{Ratio} \\
 \midrule
-8--10    & 22.14 & 25.46 & 11.43 & 11.88 \\
-10--12   & 21.81 & 25.10 & 11.26 & 11.66 \\
-12--14   & 21.48 & 24.72 & 11.09 & 11.39 \\
-14--16   & 21.10 & 24.38 & 10.89 & 11.32 \\
-16--18   & 20.76 & 23.96 & 10.71 & 10.98 \\
-18--20   & 20.34 & 24.62 & 10.50 & 11.50 \\
-20--22   & 19.93 & 22.98 & 10.29 & 10.80 \\
-22--24   & 19.71 & 23.15 & 10.17 & 10.83 \\
-24--26   & 18.93 & 21.79 & 9.77  & 9.98  \\
-26--28   & 18.47 & 22.03 & 9.53  & 9.91  \\
-28--32   & 0.00  & 22.46 & 0.00  & 9.92  \\
-32--36   & 16.35 & 21.13 & 8.44  & 9.97  \\
+8--10    & 0.6771 & 0.2404 & 11.43 & 4.13 & 0.361 \\
+10--12   & 0.6670 & 0.2369 & 11.26 & 4.07 & 0.361 \\
+12--14   & 0.6568 & 0.2329 & 11.09 & 4.00 & 0.361 \\
+14--16   & 0.6452 & 0.2284 & 10.89 & 3.92 & 0.360 \\
+16--18   & 0.6347 & 0.2263 & 10.71 & 3.89 & 0.363 \\
+18--20   & 0.6219 & 0.2205 & 10.50 & 3.78 & 0.361 \\
+20--22   & 0.6095 & 0.2179 & 10.29 & 3.74 & 0.364 \\
+22--24   & 0.6027 & 0.2138 & 10.17 & 3.67 & 0.361 \\
+24--26   & 0.5789 & 0.2096 & 9.77  & 3.60 & 0.368 \\
+26--28   & 0.5649 & 0.2025 & 9.53  & 3.48 & 0.365 \\
+32--36   & 0.4999 & 0.1772 & 8.44  & 3.04 & 0.360 \\
+\midrule
+Integrated & 0.6758 & 0.2401 & 11.41 & 4.12 & 0.361 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Integrated cross-section shift}
-\label{sec:integrated}
+The ratio is $\sim 0.36$ everywhere instead of $\approx 1$. The new
+convention would give a cross-section $\sim 2.8\times$ larger than the
+current production result. This is not what the user expected ---
+the conventions should agree.
 
-Excluding the 28--32~GeV bin (known binning mismatch), the integrated
-shift in the cross-section from old to new framework is:
-
-\begin{table}[htbp]
-\centering
-\caption{Integrated shift in $d\sigma/d\pT$ from switching to the
-  Section 3 framework. Positive = cross-section increases, negative
-  = decreases.}
-\label{tab:shift}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Period} & \textbf{No pileup} & \textbf{With pileup} & \textbf{Pileup contribution} \\
-\midrule
-0 mrad   & $-22.8\%$ & $-27.0\%$ & $-4.2\%$ \\
-1.5 mrad & $-17.5\%$ & $-18.4\%$ & $-0.9\%$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Interpretation}: The large integrated shifts (17--27\%) are
-\emph{not} evidence of a bug. They reflect two distinct effects that
-the new framework handles correctly:
-
-\begin{enumerate}
-  \item \textbf{Period-specific vertex reweighting}: The OLD
-    \texttt{vertex\_eff} was extracted from
-    \texttt{MC\_efficiency\_nom.root}, which uses the nominal
-    (1.5~mrad) vertex reweight file. When compared against the
-    0~mrad luminosity, this is a mismatch --- the 0~mrad cross-section
-    should use \texttt{vertex\_eff} from a 0~mrad-specific MC run.
-    The NEW framework uses the per-period data vertex profile
-    directly, so no such mismatch is possible.
-
-  \item \textbf{Pileup correction}: At 0~mrad, the Poisson weighting
-    adds $+4$--7\% on top of $\text{Pass}_1$ (the ``no pileup''
-    contribution). At 1.5~mrad, the pileup contribution is less than
-    1.5\%.
-\end{enumerate}
-
-For the 1.5~mrad period (where the old MC vertex reweighting matches
-the data), the pileup-only shift is $-0.9\%$, which is the true
-magnitude of the Section 3 correction for the nominal analysis. The
-larger apparent shift comes from the MC reweighting mismatch between
-periods.
+For 0~mrad, the same exercise gives a ratio of $\sim 0.51$ (cross-section
+factor of $\sim 1.96$).
 
 %% ============================================================
-\section{Limitations and Caveats}
-\label{sec:limitations}
+\section{Diagnosis: MC Vertex Reweighting}
+\label{sec:diagnosis}
 
-\begin{enumerate}
-  \item \textbf{Response function uses raw MC vertex distribution}:
-    The B1 extraction uses unweighted truth photons at each
-    $z_{\text{truth}}$ bin. This is correct because the convolution
-    then uses the data vertex distribution. No vertex reweighting is
-    needed in B1.
+The discrepancy comes from how the MC vertex reweighting interacts with
+the two efficiency denominators.
 
-  \item \textbf{Data vertex distribution is trigger-agnostic}: B2
-    uses all slimtree events (MBD-coincidence pre-selected by
-    \texttt{CaloAna24.cc}). It does not restrict to photon-trigger
-    events. For the isolated photon analysis, the vertex profile
-    should ideally come from the same trigger sample. Impact expected
-    to be small since vertex profile is dominated by beam optics,
-    which is trigger-independent.
+The production vertex reweighting in
+\texttt{RecoEffCalculator\_TTreeReader.C} uses the \emph{reconstructed}
+vertex (\texttt{*vertexz}) to compute a per-event weight that brings the
+MC reco vertex distribution into agreement with data. The weight is
+applied to all histogram fills, including \texttt{h\_truth\_pT} (line
+1691, no vertex cut) and \texttt{h\_truth\_pT\_vertexcut} (line 1696,
+with $|z_{\text{truth}}|<60$).
 
-  \item \textbf{Per-period rather than per-segment}: The current
-    implementation uses period-averaged vertex distributions and
-    $\mu$ values. The lumi note also recommends per-segment
-    computation (vertex profile changes within a store as luminosity
-    decays). This is a future refinement.
+\textbf{The bug}: at line 1350, when the reweight histogram bin content
+is non-finite or $\leq 0$ (which happens at large $|z_{\text{reco}}|$
+where data has very few events), the code falls back to
+\texttt{vertex\_weight = 1.0}. Events at large $|z_{\text{reco}}|$
+(and correspondingly large $|z_{\text{truth}}|$ for single-interaction
+MC) thus contribute with full weight to \texttt{h\_truth\_pT}, even though
+they should be downweighted to match data.
 
-  \item \textbf{$\text{Pass}_3$ approximation}: Triple+ interactions
-    ($n\geq 3$) are folded into $\text{Pass}_2$. The contribution is
-    $<1\%$ for both periods, so this is a safe approximation.
+The result: the integral of \texttt{h\_truth\_pT} is bloated by raw MC
+events at $|z_{\text{truth}}| > 60$~cm, while
+\texttt{h\_truth\_pT\_vertexcut} is unaffected (the vertex cut already
+excludes these events). The ratio
+\texttt{h\_truth\_pT\_vertexcut / h\_truth\_pT} drops to $\sim 0.36$
+instead of the expected $\sim 0.98$ (for 1.5~mrad data, where the
+true beam vertex distribution has $\sigma \sim 21$~cm).
 
-  \item \textbf{Binning mismatch with production}: The 28--32~GeV
-    bin in \texttt{MC\_efficiency\_nom.root} has zero entries due to a
-    known pT binning mismatch between \texttt{plotcommon.h} (ending at
-    28,30,35) and \texttt{config\_bdt\_nom.yaml} (ending at 28,32,36).
-    This affects the OLD-path validation but not the NEW-path
-    computation.
-
-  \item \textbf{Unfolding extension bins}: The unfolded
-    $\pT$ histogram uses the truth binning (typically 14 bins from
-    7 to 45~GeV), which extends beyond the analysis $\fcorr$ range
-    (12 bins from 8 to 36~GeV). For the extension bins $[7,8]$ and
-    $[36,45]$, the code clamps to the nearest $\fcorr$ edge bin
-    (bin 1 for the low-$\pT$ extension, bin 12 for the high-$\pT$
-    extension). This avoids mixing old and new paths in the same
-    histogram. The extension bins carry minimal weight in the
-    analysis range.
-
-  \item \textbf{Config safety}: The code requires
-    \texttt{section3\_lumi\_novtx} to be set when
-    \texttt{use\_section3\_lumi=1}. If not set (default $-1$), the
-    code falls back to the old path with an ERROR log message rather
-    than silently mixing $\Lint^{60\text{cm}}$ with $\fcorr$.
-\end{enumerate}
+\textbf{Why this doesn't affect the OLD path}: the OLD efficiency uses
+\texttt{h\_truth\_pT\_vertexcut} in the denominator, which restricts to
+$|z_{\text{truth}}|<60$. Within this range, the vertex reweighting
+behaves correctly because the reweight histogram is well-defined
+(both data and MC have ample events at $|z|<60$). The OLD path is
+thus self-consistent and matches the
+$\Lint^{60\text{cm}}$ luminosity correctly.
 
 %% ============================================================
-\section{Files}
-\label{sec:files}
+\section{Implementation}
+\label{sec:implementation}
 
-\subsection{New analysis scripts}
-\begin{tabular}{ll}
-\toprule
-\textbf{File} & \textbf{Purpose} \\
-\midrule
-\texttt{efficiencytool/extract\_mbd\_response.py} & B1: MC response function \\
-\texttt{efficiencytool/extract\_data\_vertex.py}  & B2: Data vertex distributions \\
-\texttt{efficiencytool/compute\_section3\_fcorr.py} & B3--B5: $\fcorr$ computation \\
-\bottomrule
-\end{tabular}
+The alternative convention is wired into
+\texttt{efficiencytool/CalculatePhotonYield.C} as a config-switchable
+opt-in path. The default is the original convention.
 
-\subsection{Modified production code}
-\begin{tabular}{ll}
-\toprule
-\textbf{File} & \textbf{Change} \\
-\midrule
-\texttt{efficiencytool/CalculatePhotonYield.C} & B6: Add alternative $\fcorr$ path (original preserved) \\
-\bottomrule
-\end{tabular}
+\textbf{Code change}: lines 137--162 read a new config parameter
+\texttt{use\_lumi\_novtx} (default 0). Lines 1063--1071 select the
+denominator histogram based on this flag:
 
-\subsection{Data outputs}
-\begin{tabular}{ll}
-\toprule
-\textbf{File} & \textbf{Contents} \\
-\midrule
-\texttt{results/mbd\_response\_function.root} & 2D and 1D MC response histograms \\
-\texttt{results/data\_vertex\_distributions.root} & Per-run and per-period vertex histograms \\
-\texttt{results/section3\_fcorr.root}         & Per-$\pT$ $\fcorr$ histograms \\
-\texttt{results/section3\_fcorr.csv}          & Per-$\pT$ table (all quantities) \\
-\texttt{lumi/allzLumi\_fromJoey.list}         & No-vertex-cut luminosity file \\
-\bottomrule
-\end{tabular}
+\begin{verbatim}
+if (use_lumi_novtx && h_truth_pT_all)
+{
+    vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin)
+                   / h_truth_pT_all->GetBinContent(ibin) + mbd_eff_scale;
+}
+else
+{
+    vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin)
+                   / h_truth_pT_vertexcut->GetBinContent(ibin) + mbd_eff_scale;
+}
+\end{verbatim}
+
+The new histogram \texttt{h\_truth\_pT\_all} is loaded from the existing
+production output (already filled at \texttt{RecoEffCalculator\_TTreeReader.C}
+line 1691, no MC re-run needed).
+
+To use the new convention, set:
+\begin{verbatim}
+analysis:
+  use_lumi_novtx: 1
+  lumi: 17.1642   # for 1.5 mrad, from allzLumi_fromJoey.list
+\end{verbatim}
+
+The change is one line in the efficiency loop and one line in the config.
 
 %% ============================================================
 \section{Recommendation}
 \label{sec:recommendation}
 
+\textbf{Do NOT switch to the no-vertex-cut convention until the MC
+vertex reweighting is fixed.} The simple denominator swap exposes the
+\texttt{vertex\_weight = 1.0} fallback bug, producing a $\sim 3\times$
+spurious cross-section change.
+
+To enable the new convention safely, one of the following is needed:
+
 \begin{enumerate}
-  \item \textbf{Ship with the Section 3 framework as an alternative
-    path}: the new code is in place and config-switchable. The
-    original path remains the default and is fully preserved.
+  \item \textbf{Fix the vertex reweight fallback}: in
+    \texttt{RecoEffCalculator\_TTreeReader.C} line 1350, change the
+    fallback from \texttt{vertex\_weight = 1.0} to
+    \texttt{vertex\_weight = 0.0} for poorly-defined bins. This would
+    drop events outside the data vertex range entirely. After this
+    fix, re-run MergeSim to regenerate \texttt{h\_truth\_pT} and
+    re-validate the equivalence.
 
-  \item \textbf{Run the nominal 1.5~mrad analysis with both paths}
-    and compare the final cross-section. Expected difference from
-    the pileup correction alone: $\sim -1\%$. If agreement is good,
-    adopt the new framework as the default for the 1.5~mrad
-    measurement.
+  \item \textbf{Use a wide truth vertex cut on the denominator}: a cut
+    at $|z_{\text{truth}}|<200$~cm (or $<150$~cm) would exclude the
+    extreme-tail events that have weight 1.0. This requires a new
+    histogram in \texttt{RecoEffCalculator\_TTreeReader.C} but no
+    change to the reweighting logic.
 
-  \item \textbf{For 0~mrad or combined analysis}: the new framework
-    is recommended over the old because the per-period data vertex
-    profile handling is more correct. The $\sim -27\%$ apparent shift
-    is a combination of (a) the pileup correction ($-4\%$) and (b)
-    the correction for using the wrong (1.5~mrad) vertex reweight in
-    the old path. Both effects should be real corrections to the
-    0~mrad cross-section.
-
-  \item \textbf{Future work}: implement per-segment f\_corr
-    (Section~\ref{sec:limitations} item 3) if the $\sim$1\%
-    segment-to-segment variation turns out to matter for the final
-    precision target.
+  \item \textbf{Use the Section 3 framework} (already implemented as
+    a separate code path): convolve the MC MBD response function with
+    the actual data vertex distribution. This is the most rigorous
+    approach but adds complexity. See the Section 3 scripts in
+    \texttt{efficiencytool/} (\texttt{extract\_mbd\_response.py},
+    \texttt{extract\_data\_vertex.py},
+    \texttt{compute\_section3\_fcorr.py}) for the building blocks.
 \end{enumerate}
+
+In the meantime, the production analysis should continue to use the
+original convention (\texttt{use\_lumi\_novtx: 0}, $\Lint^{60\text{cm}}$).
+
+%% ============================================================
+\section{Files}
+\label{sec:files}
+
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{Status} \\
+\midrule
+\texttt{efficiencytool/CalculatePhotonYield.C} & Modified: alternative path added (opt-in) \\
+\texttt{lumi/allzLumi\_fromJoey.list} & New: no-vertex-cut luminosity file \\
+\texttt{lumi/60cmLumi\_fromJoey.list} & Existing: 60cm-cut luminosity (unchanged) \\
+\bottomrule
+\end{tabular}
 
 \end{document}
