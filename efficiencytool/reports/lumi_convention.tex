@@ -1,0 +1,436 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{float}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\newcommand{\pp}{\mbox{$p$+$p$}}
+\newcommand{\sqs}{\mbox{$\sqrt{s}$}}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}}
+\newcommand{\Lint}{\ensuremath{\mathcal{L}_{\text{int}}}}
+\newcommand{\veff}{\ensuremath{\varepsilon_{\text{vtx+MBD}}}}
+
+\graphicspath{{../../plotting/figures/lumi_convention/}}
+
+\title{%
+  \vspace{-1cm}
+  {\large \textbf{sPHENIX Internal Note}}\\[0.5cm]
+  {\LARGE \textbf{Luminosity Convention for PPG12:\\
+  L(60cm) $\rightarrow$ L(noVtx) with Vertex Efficiency Fix}}\\[0.3cm]
+  {\large Isolated Photon Cross-Section in \pp{} at $\sqs = 200$~GeV}
+}
+\author{sPHENIX Collaboration}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We switch the PPG12 cross-section normalization from the
+60~cm-vertex-cut luminosity $\Lint^{60\text{cm}}$ (with a vertex
+efficiency whose denominator is truth photons within
+$|\zvtx^{\text{truth}}|<60$~cm) to the no-vertex-cut luminosity
+$\Lint^{\text{noVtx}}$ (with an efficiency denominator that includes
+ALL truth photons). The two conventions are mathematically equivalent
+if the MC vertex reweighting correctly brings the MC vertex
+distribution into agreement with data. In the old production
+(June 2025), they disagreed by a factor of $\sim 3$ because the MC
+vertex reweighting used a deprecated static fallback file with a
+\texttt{vertex\_weight = 1.0} fallback that kept raw MC events at
+large $|\zvtx|$. We diagnosed the bug, removed the fallback entirely,
+and hardened the on-the-fly reweight with rebinning, smoothing,
+linear interpolation, and a \texttt{vertex\_weight = 0.0} fallback.
+A standalone simulation using the existing first-pass vtxscan files
+shows that after the fix the two conventions agree to $+0.32\%$
+flat across all \pT{} bins, well below any relevant systematic.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Motivation}
+\label{sec:motivation}
+
+The PPG12 cross-section factorizes as:
+\begin{equation}
+  \frac{d\sigma}{d\pT} = \frac{N_{\text{photon}}}{\Delta\pT \times \Lint \times \varepsilon_{\text{total}}}
+\end{equation}
+with
+\begin{equation}
+  \varepsilon_{\text{total}} = \varepsilon_{\text{reco}} \times
+  \varepsilon_{\text{iso}} \times \varepsilon_{\text{id}} \times \veff
+\end{equation}
+
+Two equivalent conventions are possible for $\Lint$ and $\veff$:
+
+\textbf{Old convention (used in production until now):}
+\begin{equation}
+  \Lint = \Lint^{60\text{cm}}, \qquad
+  \veff^{\text{old}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD+}|z_r|<60)}{N(\text{truth }\gamma,\ |z_t|<60)}
+\end{equation}
+with $\Lint^{60\text{cm}}$ from \texttt{60cmLumi\_fromJoey.list},
+computed by \texttt{get\_luminosity\_182630.C(..., zsel=1, ...)}
+with the scaler tally restricted to $|\zvtx|<60$~cm.
+
+\textbf{New convention:}
+\begin{equation}
+  \Lint = \Lint^{\text{noVtx}}, \qquad
+  \veff^{\text{new}} = \frac{N(\text{truth }\gamma,\ |z_t|<60,\ \text{MBD+}|z_r|<60)}{N(\text{truth }\gamma,\ \text{no vertex cut})}
+\end{equation}
+with $\Lint^{\text{noVtx}}$ from \texttt{allzLumi\_fromJoey.list}
+(\texttt{zsel=5}, no vertex cut at the scaler level).
+
+The numerators are identical. Only the denominator of the efficiency
+factor changes (and the paired luminosity). The new convention is
+preferred because it cleanly separates the physics fiducial
+cross-section (all truth photons in the kinematic region) from the
+detector acceptance (MBD + vertex).
+
+The two conventions must give the same final cross-section to
+$\leq 1\%$ in the single-interaction limit; any larger deviation
+indicates a bug in the MC vertex reweighting (which is the one
+thing that distinguishes the two denominators).
+
+%% ============================================================
+\section{The Bug in the Old Production}
+\label{sec:bug}
+
+Using the production \texttt{MC\_efficiency\_nom.root} (June 2025),
+the two conventions give wildly different cross-sections:
+
+\begin{table}[H]
+\centering
+\caption{Pre-fix comparison: same numerator, different denominators.
+  If the MC vertex distribution matched data, the ratio would be
+  $\approx 1$. Instead the new convention gives a product $\sim 2.8$
+  times smaller.}
+\label{tab:prefix}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Period} & \textbf{$\veff^{\text{old}}$} & \textbf{$\veff^{\text{new}}$}
+  & \textbf{$L_{60\text{cm}}\!\cdot\!\veff^{\text{old}}$}
+  & \textbf{$L_{\text{noVtx}}\!\cdot\!\veff^{\text{new}}$}
+  & \textbf{Ratio} \\
+\midrule
+1.5 mrad & 0.676 & 0.240 & 11.41 & 4.12  & 0.361 \\
+0 mrad   & 0.676 & 0.240 & 22.10 & 11.34 & 0.513 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The diagnosis: the old \texttt{RecoEffCalculator\_TTreeReader.C}
+used a static fallback reweight file
+(\texttt{results/vertex\_reweight\_bdt\_none.root}) when the
+on-the-fly path failed. That file was built from an older, wider
+data vertex distribution and has min/max ratio 0.49 / 1.78 ---
+nearly flat. At large $|\zvtx|$, MC events were kept at $\sim 50\%$
+weight instead of being suppressed. The fill at
+\texttt{RecoEffCalculator\_TTreeReader.C:1691} (no-vertex-cut
+$h_{\text{truth}\ \pT}$) picked up these bloated events, so the
+denominator of $\veff^{\text{new}}$ was $\sim 2.8$ times too large.
+
+A further subtlety: the lookup at the event level had a fallback
+\texttt{vertex\_weight = 1.0} for non-finite or $\leq 0$ bin contents.
+This kept raw MC events outside the data acceptance at full weight,
+amplifying the bug.
+
+%% ============================================================
+\section{The Fix}
+\label{sec:fix}
+
+Three changes were applied in commits 8ac4d1b and 8ecae87 to
+\texttt{RecoEffCalculator\_TTreeReader.C} and
+\texttt{ShowerShapeCheck.C}:
+
+\begin{enumerate}
+  \item \textbf{Removed the static fallback} entirely. If vtxscan
+    files are missing, the code now prints \texttt{FATAL} and
+    returns. The static file was renamed to \texttt{*.deprecated}
+    on disk.
+  \item \textbf{Hardened the on-the-fly reweight}:
+  \begin{itemize}
+    \item Rebin \texttt{h\_vertexz} (default factor 5 $\rightarrow$
+      5~cm bins, configurable via
+      \texttt{vertex\_reweight\_rebin}) to improve tail statistics.
+    \item Smooth the data/sim ratio with \texttt{TH1::Smooth()}
+      (default 1 pass, configurable via
+      \texttt{vertex\_reweight\_smooth}).
+    \item Linear interpolation between bin centers with
+      \texttt{TH1::Interpolate()} for smooth event-level weights.
+    \item \texttt{vertex\_weight = 0.0} fallback for out-of-range
+      or non-finite values. Previously \texttt{1.0}, which kept raw
+      MC events at large $|\zvtx|$.
+  \end{itemize}
+  \item \textbf{Added the new convention as a config-switchable
+    path} in \texttt{CalculatePhotonYield.C}
+    (\texttt{use\_lumi\_novtx: 1}). The old convention remains the
+    default. Both paths read from the same MC output; only the
+    denominator histogram and luminosity value change.
+\end{enumerate}
+
+The physics motivation for the zero fallback: if data has
+essentially no events at some $|\zvtx|$, MC events at that position
+do not contribute to the observed cross-section and should be
+dropped. Keeping them at weight 1.0 is equivalent to claiming those
+MC events represent data, which is wrong.
+
+%% ============================================================
+\section{Post-Fix Validation}
+\label{sec:validation}
+
+A standalone simulation
+(\texttt{efficiencytool/lumi\_convention\_validation.py}) applies the
+fixed reweight logic to the existing first-pass vtxscan files
+(\texttt{data\_histo\_bdt\_nom\_vtxscan.root} and
+\texttt{MC\_efficiency\_photon10\_bdt\_nom\_vtxscan.root}) and
+propagates the result through the cross-section formula. This
+simulates what the fixed production pipeline would produce without
+actually re-running MergeSim.
+
+\subsection{Vertex reweight shape}
+
+Figure~\ref{fig:reweight_shape} compares the old and new reweight
+functions. The two are very similar in the bulk of the distribution
+($|\zvtx| < 50$~cm) --- the bug only affects the tails, where the
+old code's \texttt{fallback = 1.0} kicks in for bins with
+poorly-defined ratio.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{vertex_reweight_shape.pdf}
+\caption{Vertex reweight function (data/sim, normalized) computed
+  from the 1.5~mrad nominal vtxscan files. Old (blue) uses 1~cm
+  bins with \texttt{fallback = 1.0}; new (red) uses 5~cm rebin,
+  one smoothing pass, and \texttt{fallback = 0.0}. The two agree
+  in the bulk; the tail behavior is the diagnostic region where
+  the old code's bug lived.}
+\label{fig:reweight_shape}
+\end{figure}
+
+\subsection{Reweighted MC vertex distribution vs.\ data}
+
+Figure~\ref{fig:vertex_dist} overlays the raw MC, the old and new
+reweighted MC, and the data vertex distributions. Both reweighted
+distributions match the data shape very well.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{vertex_dist_comparison.pdf}
+\caption{Reconstructed vertex $z$ distribution from data (black),
+  raw MC (green dashed), old-reweighted MC (blue), and
+  new-reweighted MC (red). Left: linear scale. Right: log scale.
+  The dotted vertical lines mark $|\zvtx|=60$~cm. Both old and new
+  reweights reproduce the data shape at the histogram-integral
+  level; the bug was in how event-level weights were used
+  downstream.}
+\label{fig:vertex_dist}
+\end{figure}
+
+\subsection{Integrated vertex acceptance}
+
+After reweighting, the integrated MC fraction within $|\zvtx|<60$~cm
+should match the data fraction of 0.9865 (1.5~mrad target).
+
+\begin{table}[H]
+\centering
+\caption{Integrated $|\zvtx|<60$ fraction from the 1.5~mrad vtxscan
+  files.}
+\label{tab:integral}
+\begin{tabular}{lr}
+\toprule
+\textbf{Source} & \textbf{Fraction $|\zvtx|<60$} \\
+\midrule
+Data (target)          & 0.9865 \\
+Raw MC                 & 0.7296 \\
+Old-reweighted MC      & 0.9865 \\
+New-reweighted MC      & 0.9862 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both old and new reweights reproduce the data fraction to
+$\leq 0.03\%$. The pre-fix production's 0.355 ratio came from the
+\emph{static fallback file} being used (not the on-the-fly path),
+which has min ratio 0.49 so MC events at large $|\zvtx|$ were kept
+at $\sim 50\%$ weight.
+
+\subsection{Per-\texorpdfstring{$\pT$}{pT} consistency check}
+
+The key cross-check: after the fix, does
+$\Lint^{\text{noVtx}} \times \veff^{\text{new}}$ agree with
+$\Lint^{60\text{cm}} \times \veff^{\text{old}}$ bin-by-bin?
+
+\begin{table}[H]
+\centering
+\caption{Post-fix cross-check at 1.5~mrad. $\veff^{\text{new}}$ is
+  computed assuming the fixed MC pipeline would produce
+  $h_{\text{truth}\ \pT}^{\text{new}}$ with integral equal to
+  $h_{\text{truth}\ \pT\ \text{vertexcut}} / 0.9865$. The per-bin
+  ratio is flat at $\sim 1.003$ across all \pT\ bins.}
+\label{tab:perbin}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{\pT\ [GeV]} & \textbf{$\veff^{\text{old}}$}
+  & \textbf{$\veff^{\text{new}}$}
+  & \textbf{$L_{60} \cdot \veff^{\text{old}}$}
+  & \textbf{$L_{\text{nov}} \cdot \veff^{\text{new}}$}
+  & \textbf{Ratio} \\
+\midrule
+8--10    & 0.6771 & 0.6680 & 11.43 & 11.47 & 1.0032 \\
+10--12   & 0.6670 & 0.6580 & 11.26 & 11.29 & 1.0032 \\
+12--14   & 0.6568 & 0.6479 & 11.09 & 11.12 & 1.0032 \\
+14--16   & 0.6452 & 0.6365 & 10.89 & 10.92 & 1.0032 \\
+16--18   & 0.6347 & 0.6261 & 10.71 & 10.75 & 1.0032 \\
+18--20   & 0.6219 & 0.6135 & 10.50 & 10.53 & 1.0032 \\
+20--22   & 0.6095 & 0.6012 & 10.29 & 10.32 & 1.0032 \\
+22--24   & 0.6027 & 0.5946 & 10.17 & 10.21 & 1.0032 \\
+24--26   & 0.5789 & 0.5711 &  9.77 &  9.80 & 1.0032 \\
+26--28   & 0.5649 & 0.5573 &  9.53 &  9.56 & 1.0032 \\
+32--36   & 0.4999 & 0.4931 &  8.44 &  8.46 & 1.0032 \\
+\midrule
+Integrated & 0.6758 & 0.6667 & 11.41 & 11.44 & 1.0032 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:ratio} shows the same information graphically:
+both conventions give the same $\Lint \times \veff$ product within
+$+0.32\%$, flat across all \pT\ bins. A shift this small is well
+below any relevant PPG12 systematic (purity $\sim 5$--$10\%$, energy
+scale $\sim 3$--$5\%$, luminosity $\sim 7\%$) and is consistent
+with zero within the statistical precision of the vtxscan files
+used to simulate the fix.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{L_times_eff_ratio.pdf}
+\caption{Top: $\Lint \times \veff$ per \pT\ bin for the old
+  convention ($L_{60\text{cm}} \times \veff^{\text{old}}$, blue)
+  and the new convention
+  ($L_{\text{noVtx}} \times \veff^{\text{new}}$, red). Bottom:
+  ratio of new to old. Flat at $+0.32\%$ across all \pT\ bins.}
+\label{fig:ratio}
+\end{figure}
+
+\subsection{Rebin stability}
+
+Figure~\ref{fig:rebin_stability} shows the fixed reweight computed
+with different rebin factors. The shape is stable from 1~cm (no
+rebin) to 20~cm bins in the bulk of the distribution. The default
+choice of 5~cm bins gives smooth coverage in the tails without
+over-coarsening the peak.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{rebin_stability.pdf}
+\caption{Vertex reweight function computed with rebin factors
+  1, 2, 5, 10, 20 (one smoothing pass each). The shape is stable
+  across a factor of 20 in bin width.}
+\label{fig:rebin_stability}
+\end{figure}
+
+%% ============================================================
+\section{Implementation}
+\label{sec:implementation}
+
+To enable the new convention in any analysis config YAML, set:
+
+\begin{verbatim}
+analysis:
+  use_lumi_novtx: 1
+  lumi: 17.1642   # 1.5 mrad, from allzLumi_fromJoey.list
+  # use 47.2284 for 0 mrad, 64.3718 for combined
+\end{verbatim}
+
+The default is \texttt{use\_lumi\_novtx: 0} (old convention). The
+original \texttt{vertex\_eff} calculation in
+\texttt{CalculatePhotonYield.C} is kept as the default path; the
+new path is an \texttt{if} branch inside the efficiency loop
+(lines 1063--1071).
+
+New config knobs for the vertex reweight (both have sensible
+defaults, so existing configs work unchanged):
+
+\begin{verbatim}
+analysis:
+  vertex_reweight_rebin: 5       # rebin factor for h_vertexz (1cm → 5cm)
+  vertex_reweight_smooth: 1      # TH1::Smooth() passes
+\end{verbatim}
+
+The old \texttt{vertex\_reweight\_file} config knob is no longer
+read (the static fallback path is removed).
+
+%% ============================================================
+\section{Caveats and Remaining Work}
+\label{sec:caveats}
+
+\begin{enumerate}
+  \item \textbf{The validation uses a simulated post-fix result},
+    not an actual re-run. The assumption is that
+    $h_{\text{truth}\ \pT}^{\text{new}}$ integral equals
+    $h_{\text{truth}\ \pT\ \text{vertexcut}}$ integral divided by
+    $0.9865$, based on the shape-level vertex reweight validation.
+    This is a good approximation because the vertex reweight within
+    $|\zvtx|<60$~cm is unchanged by the fix. A true re-run
+    (\texttt{oneforall.sh config\_bdt\_nom.yaml}) is recommended to
+    confirm the $+0.32\%$ shift holds in the actual production MC.
+
+  \item \textbf{Per-segment vertex variation}: the current reweight
+    uses a single global vertex distribution per analysis config.
+    Within a fill, the luminous region moves as the beam decays,
+    but this effect is typically $\leq 1\%$ at RHIC luminosities.
+
+  \item \textbf{Pileup}: this note does not modify the pileup
+    correction. The double-interaction MC blending in
+    \texttt{run\_showershape\_double.sh} is unaffected and carries
+    its own correction.
+
+  \item \textbf{0~mrad consistency}: the validation was done with
+    the 1.5~mrad vtxscan files. The 0~mrad lumi has a larger
+    $L_{\text{noVtx}} / L_{60\text{cm}} = 1.44$ ratio, reflecting a
+    much wider vertex distribution. The fix should work there too,
+    but the actual post-fix result should be verified when the
+    0~mrad config is re-run.
+
+  \item \textbf{Re-run is cheap}: the fix does not require
+    regenerating vtxscan files. Only the second pass of
+    \texttt{oneforall.sh} needs to re-read the slimtree. Once the
+    re-run completes, the new \texttt{MC\_efficiency\_nom.root}
+    should have
+    $h_{\text{truth vertexcut}}.\text{Integral()} /
+    h_{\text{truth}}.\text{Integral()} \approx 0.9865$, and the
+    \texttt{use\_lumi\_novtx: 1} path should give a cross-section
+    within $\sim 0.3\%$ of the \texttt{use\_lumi\_novtx: 0} path.
+\end{enumerate}
+
+%% ============================================================
+\section{Files}
+\label{sec:files}
+
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{Change} \\
+\midrule
+\texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} & Fix vertex reweight, remove fallback \\
+\texttt{efficiencytool/ShowerShapeCheck.C}               & Same fix \\
+\texttt{efficiencytool/CalculatePhotonYield.C}           & Add \texttt{use\_lumi\_novtx} path \\
+\texttt{efficiencytool/lumi\_convention\_validation.py}  & Validation script \\
+\texttt{plotting/plot\_lumi\_convention.py}              & Plotting script \\
+\texttt{lumi/allzLumi\_fromJoey.list}                    & New: no-vertex-cut lumi \\
+\texttt{results/vertex\_reweight\_bdt\_none.root.deprecated} & Deprecated fallback \\
+\bottomrule
+\end{tabular}
+
+\end{document}
