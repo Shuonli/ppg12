@@ -134,6 +134,86 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     float mbd_eff_scale = configYaml["analysis"]["mbd_eff_scale"].as<float>(0.0);
 
+    // ===================================================================
+    // Section 3 luminosity correction (lumi note Section 5, PPG12 Section 3)
+    // ===================================================================
+    // When enabled, use L(noVtx) × f_corr instead of L(60cm) × vertex_eff.
+    // f_corr is the Poisson-weighted Pass_k convolution of the MBD response
+    // function with the data z-vertex distribution. See reports/pileup_vertex_acceptance.tex
+    // and reports/section3_luminosity_framework.tex for physics background.
+    //
+    // Config parameters:
+    //   use_section3_lumi: 0 = old path (L_60cm × vertex_eff from MC), 1 = new path (L_noVtx × f_corr)
+    //   section3_fcorr_file: ROOT file from compute_section3_fcorr.py (default: results/section3_fcorr.root)
+    //   section3_lumi_novtx: total no-vertex-cut luminosity for this period (pb^-1)
+    //   section3_apply_pileup: 0 = Pass1 only (no pileup), 1 = Poisson-weighted f_corr
+    int use_section3_lumi = configYaml["analysis"]["use_section3_lumi"].as<int>(0);
+    std::string section3_fcorr_file = configYaml["analysis"]["section3_fcorr_file"].as<std::string>("results/section3_fcorr.root");
+    float section3_lumi_novtx = configYaml["analysis"]["section3_lumi_novtx"].as<float>(-1.0);
+    int section3_apply_pileup = configYaml["analysis"]["section3_apply_pileup"].as<int>(1);
+    std::string section3_period = configYaml["analysis"]["section3_period"].as<std::string>("1p5mrad");
+
+    // Load Section 3 f_corr histogram if enabled
+    // Note: uproot writes TH1D, but we cast via TH1* base class to avoid
+    // type confusion. GetBinContent is virtual so it dispatches correctly.
+    TH1 *h_section3_fcorr = nullptr;
+    if (use_section3_lumi && !isMC)
+    {
+        // Sanity check: section3_lumi_novtx must be set or we'd silently use
+        // L(60cm) with f_corr, which is physically wrong.
+        if (section3_lumi_novtx <= 0)
+        {
+            std::cerr << "ERROR: use_section3_lumi=1 but section3_lumi_novtx not set "
+                      << "(or <= 0). Cannot proceed with Section 3 path — falling back to old path."
+                      << std::endl;
+            use_section3_lumi = 0;
+        }
+        else
+        {
+            TFile *f_section3 = TFile::Open(section3_fcorr_file.c_str(), "READ");
+            if (!f_section3 || f_section3->IsZombie())
+            {
+                std::cerr << "ERROR: Cannot open Section 3 f_corr file " << section3_fcorr_file
+                          << ". Falling back to old path." << std::endl;
+                use_section3_lumi = 0;
+                if (f_section3) f_section3->Close();
+            }
+            else
+            {
+                std::string hname = section3_apply_pileup
+                    ? ("h_f_corr_pileup_" + section3_period)
+                    : ("h_f_corr_single_" + section3_period);
+                TH1 *h_tmp = (TH1 *)f_section3->Get(hname.c_str());
+                if (!h_tmp)
+                {
+                    std::cerr << "ERROR: Cannot find " << hname << " in " << section3_fcorr_file
+                              << ". Falling back to old path." << std::endl;
+                    use_section3_lumi = 0;
+                }
+                else
+                {
+                    h_section3_fcorr = (TH1 *)h_tmp->Clone("h_section3_fcorr_loaded");
+                    h_section3_fcorr->SetDirectory(nullptr);
+                    std::cout << "[Section 3] Loaded f_corr from " << section3_fcorr_file
+                              << " (histogram: " << hname << ")" << std::endl;
+                    std::cout << "[Section 3] Period: " << section3_period
+                              << ", apply_pileup: " << section3_apply_pileup
+                              << ", L(noVtx): " << section3_lumi_novtx << " pb^-1" << std::endl;
+                    std::cout << "[Section 3] f_corr has " << h_section3_fcorr->GetNbinsX()
+                              << " bins, range [" << h_section3_fcorr->GetXaxis()->GetXmin()
+                              << ", " << h_section3_fcorr->GetXaxis()->GetXmax() << "] GeV"
+                              << std::endl;
+
+                    // Override luminosity with no-vertex-cut value
+                    std::cout << "[Section 3] Overriding luminosity: "
+                              << luminosity << " → " << section3_lumi_novtx << " pb^-1" << std::endl;
+                    luminosity = section3_lumi_novtx;
+                }
+                f_section3->Close();
+            }
+        }
+    }
+
     std::string histogram_postfix = "_0";
 
     std::string tight_iso_cluster_name = "h_tight_iso_cluster"; // A
@@ -1006,9 +1086,57 @@ std::cout << "p-value = " << pvalue << "\n";
             float eff_iso_val = eff_iso->GetEfficiency(ibin);
             float eff_id_val = eff_id->GetEfficiency(ibin);
 
+            // ===========================================================
+            // ORIGINAL PATH (kept as reference, active when use_section3_lumi = 0):
+            // vertex_eff from reweighted single-interaction MC
+            //   denominator: truth photons with |z_vtx_truth| < 60 cm
+            //   numerator:   + MBD N&S≥1 + |z_vtx_reco| < 60 cm
+            // Paired with L(60cm) luminosity from 60cmLumi_fromJoey.list
+            // ===========================================================
             float vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin) / h_truth_pT_vertexcut->GetBinContent(ibin) + mbd_eff_scale;
 
             float total_eff = eff_reco_val * eff_iso_val * eff_id_val * vertex_eff_val;
+
+            // ===========================================================
+            // ALTERNATIVE PATH (Section 3 from lumi note, active when use_section3_lumi = 1):
+            // f_corr from convolving MC MBD response × data z-vertex distribution
+            //   f_corr(pT) = [1/(1-Prob0)] × Σ Prob_k × Pass_k
+            // Paired with L(noVtx) luminosity from allzLumi_fromJoey.list
+            //
+            // The two approaches should agree in the single-interaction limit when
+            // the MC vertex reweighting perfectly matches the data vertex distribution.
+            // They differ by the pileup correction (~2-4% at 0 mrad, <1% at 1.5 mrad)
+            // and by residual vertex-reweighting imperfections.
+            //
+            // NOTE: luminosity was already overridden above if use_section3_lumi = 1.
+            //       Here we replace vertex_eff with f_corr from section3_fcorr.root.
+            // ===========================================================
+            if (use_section3_lumi && h_section3_fcorr)
+            {
+                // f_corr histogram uses analysis pT binning (8-36 GeV, 12 bins).
+                // The unfold histogram uses truth binning (typically 7-45 GeV, 14 bins,
+                // with extension bins [7,8] and [36,45] for unfolding overflow).
+                //
+                // For pT centers in the extension bins, we CLAMP to the nearest f_corr
+                // edge bin rather than fall back to vertex_eff. This ensures consistent
+                // efficiency across all bins in the unfolded histogram — no mixing of
+                // old and new paths in the same result.
+                float bin_center = h_unfold_sub->GetBinCenter(ibin);
+                int fcorr_nbins = h_section3_fcorr->GetNbinsX();
+                int fcorr_bin = h_section3_fcorr->FindBin(bin_center);
+                // Clamp underflow (below f_corr range) to first bin
+                if (fcorr_bin < 1) fcorr_bin = 1;
+                // Clamp overflow (above f_corr range) to last bin
+                if (fcorr_bin > fcorr_nbins) fcorr_bin = fcorr_nbins;
+                float f_corr_val = h_section3_fcorr->GetBinContent(fcorr_bin);
+                if (f_corr_val > 0)
+                {
+                    // Replace vertex_eff with f_corr — note these are conceptually different:
+                    //   vertex_eff denom = |z_truth|<60, f_corr denom = any z_truth
+                    // so L(noVtx) × f_corr ≈ L(60cm) × vertex_eff in the right limit
+                    total_eff = eff_reco_val * eff_iso_val * eff_id_val * f_corr_val;
+                }
+            }
 
             // std::cout << "ibin: " << ibin << " eff_reco_val: " << eff_reco_val << " eff_iso_val: " << eff_iso_val << " eff_id_val: " << eff_id_val << std::endl;
 
