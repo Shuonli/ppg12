@@ -74,7 +74,7 @@ void plot_efficiency_comparison_deltaR()
     // Sample set info
     const char *sampleSets[]  = {"single", "double", "mixed"};
     const char *sampleLabels[] = {"Single-interaction MC", "Double-interaction MC",
-                                   "Mixed 0 mrad (81.3% single + 18.7% double)"};
+                                   "Mixed 0 mrad (77.6% single + 22.4% double)"};
     const int nSamples = 3;
 
     // Y-axis ranges per stage
@@ -217,7 +217,20 @@ void plot_efficiency_comparison_deltaR()
             lunit->SetLineWidth(2);
             lunit->Draw("same");
 
-            TLegend *leg = new TLegend(0.45, 0.68, 0.92, 0.88);
+            // Legend placement: ratio data ranges differ per stage, so we
+            // pick a corner without data on a per-stage basis:
+            //   Reconstruction (iStage 0): Mixed climbs to ~1.23; Single ~1.03.
+            //     → put legend at lower-right (below both curves).
+            //   Isolation (iStage 1): both ratios near 1.0 (0.97-1.01).
+            //     → put legend at upper-right (above data band).
+            //   Photon ID (iStage 2): ratios in [0.95, 1.0].
+            //     → put legend at upper-right (above data band).
+            //   Overall (iStage 3): Mixed climbs to ~1.21; Single ~1.04.
+            //     → put legend at lower-right (below both curves).
+            double legX1 = 0.55, legY1, legX2 = 0.94, legY2;
+            if (iStage == 0 || iStage == 3) { legY1 = 0.18; legY2 = 0.36; }
+            else                            { legY1 = 0.72; legY2 = 0.90; }
+            TLegend *leg = new TLegend(legX1, legY1, legX2, legY2);
             legStyle(leg, 0.20, 0.042);
 
             for (int iR = 0; iR < nRatio; ++iR)
@@ -389,28 +402,34 @@ void plot_efficiency_comparison_deltaR()
     // Canvas 6: Summary table (TLatex-based)
     // ===================================================================
     {
-        TCanvas *c = new TCanvas("c_summary", "", 1000, 800);
+        TCanvas *c = new TCanvas("c_summary", "", 1200, 820);
         gPad->SetLeftMargin(0.02);
         gPad->SetRightMargin(0.02);
         gPad->SetTopMargin(0.06);
         gPad->SetBottomMargin(0.02);
 
-        // Title
+        // sPHENIX watermark (top-right, placed FIRST so title has room)
+        myText(0.70, 0.965, 1, strleg1.c_str(), 0.032, 0);
+
+        // Title (line 1, full-width; sPHENIX label lives in top-right corner above)
         TLatex title;
         title.SetNDC();
-        title.SetTextSize(0.040);
+        title.SetTextSize(0.036);
         title.SetTextFont(62);
-        title.DrawLatex(0.10, 0.94, "Efficiency Summary: with vs without #Delta#it{R} < 0.1 truth-matching cut");
+        title.DrawLatex(0.04, 0.925,
+            "Efficiency Summary: with vs without #Delta#it{R} < 0.1 truth-matching cut");
 
         // Column headers
         TLatex tex;
         tex.SetNDC();
-        tex.SetTextSize(0.030);
+        tex.SetTextSize(0.028);
         tex.SetTextFont(42);
 
-        // Table layout
-        const float x0 = 0.04;  // row labels
-        const float xCols[] = {0.22, 0.40, 0.58, 0.76}; // stage columns
+        // Table layout: widened canvas (1200px) + widened column spacing so
+        // the ratio-row label ("Ratio (no#DeltaR / #DeltaR)") no longer
+        // bleeds into the first numeric column.
+        const float x0 = 0.03;                             // row labels
+        const float xCols[] = {0.30, 0.48, 0.66, 0.84};    // stage columns (shifted right)
         const float yHeader = 0.86;
         const float rowHeight = 0.042;
 
@@ -444,7 +463,9 @@ void plot_efficiency_comparison_deltaR()
                     tex.DrawLatex(x0, yRow, sampleSets[iS]);
                     tex.SetTextFont(42);
                 }
-                tex.DrawLatex(x0 + 0.07, yRow, matchLabel);
+                // Matching label sits in the row-label column (to the right of the
+                // sample name but well left of the first numeric column at xCols[0]=0.30).
+                tex.DrawLatex(x0 + 0.12, yRow, matchLabel);
 
                 // Efficiency values
                 for (int iStage = 0; iStage < nStages; ++iStage)
@@ -466,16 +487,17 @@ void plot_efficiency_comparison_deltaR()
                         ? std::sqrt(avgEff * (1 - avgEff) / sumTotal) : 0;
 
                     tex.DrawLatex(xCols[iStage], yRow,
-                        Form("%.3f #pm %.3f", avgEff, avgErr));
+                        Form("%.4f #pm %.4f", avgEff, avgErr));
                 }
                 ++iRow;
             }
 
-            // Ratio row
+            // Ratio row — label goes in the row-label column (x0 + small indent);
+            // x0 + 0.07 previously collided with the first numeric column at xCols[0].
             {
                 float yRow = yHeader - (iRow + 1) * rowHeight - 0.015;
                 tex.SetTextColor(kBlue + 2);
-                tex.DrawLatex(x0 + 0.07, yRow, "Ratio (no#Delta#it{R} / #Delta#it{R})");
+                tex.DrawLatex(x0 + 0.03, yRow, "Ratio (no#Delta#it{R} / #Delta#it{R})");
 
                 for (int iStage = 0; iStage < nStages; ++iStage)
                 {
@@ -543,11 +565,10 @@ void plot_efficiency_comparison_deltaR()
                 ? std::sqrt(avgEff * (1 - avgEff) / sumTotal) : 0;
 
             tex.DrawLatex(xCols[0], yRow,
-                Form("Integrated: %.3f #pm %.3f", avgEff, avgErr));
+                Form("Integrated: %.4f #pm %.4f", avgEff, avgErr));
         }
 
-        // sPHENIX watermark
-        myText(0.70, 0.94, 1, strleg1.c_str(), 0.035, 0);
+        // (sPHENIX watermark drawn at top of this canvas, above the title.)
 
         c->SaveAs(Form("%s/efficiency_summary_table.pdf", savePath.c_str()));
         delete c;

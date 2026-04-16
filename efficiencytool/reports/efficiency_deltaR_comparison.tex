@@ -77,14 +77,15 @@ the data-driven z-vertex reweighting used in the main pipeline.
 The response is examined at the trkID-matched (``matched''), post-common-cuts
 (``reco''), and fully-selected (``selected'') levels.
 At the matched level, the pileup-induced vertex shift produces a direct
-kinematic bias ($\sim$7~pp mean shift and $\sim$50\% relative width increase
-comparing double to single); after the common and tight selections the bias
-is largely absorbed by the cut boundaries, leaving a residual $\sim$1~pp mean
-shift and $\sim$20\% width increase. The 1.5~mrad mixed sample (the nominal
-production period) tracks single-interaction MC closely; the 0~mrad mixed
-sample exhibits a measurably different response that motivates treating the
-two running periods separately in the pileup systematic. Vertex reweighting
-modifies the response by less than $\sim$1~pp at the reco level, confirming
+kinematic bias ($\sim$3~pp mean shift and $\sim$30\% relative width increase
+comparing double to single); after the common cuts the mean bias is largely
+absorbed by the cut boundaries, leaving a residual $\sim$0.3~pp mean shift
+and $\sim$22\% relative width increase. The 1.5~mrad mixed sample (the
+nominal production period) tracks single-interaction MC to within $\sim$0.1~pp
+in mean at the reco and selected levels. The 0~mrad mixed sample
+exhibits a measurably different response that motivates treating the two
+running periods separately in the pileup systematic. Vertex reweighting
+modifies the response by less than $\sim$0.5~pp at the reco level, confirming
 that it is sub-dominant relative to the interaction-type composition itself.
 \end{abstract}
 
@@ -275,13 +276,15 @@ The key observations are:
 \end{itemize}
 
 Figure~\ref{fig:ratio} shows the \pT-dependent efficiency ratio for all
-four stages and all three sample sets.
+four stages, for single and mixed 0~mrad MC. The pure double-interaction
+sample is omitted from this ratio view because its $\DR$ rejection rate
+(65\%) produces a ratio far off the displayed scale.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{efficiency_ratio.pdf}
 \caption{Ratio of efficiency without $\DR$ cut to efficiency with $\DR$ cut as
-  a function of truth \pT{} for single (blue) and mixed (red) MC.
+  a function of truth \pT{} for single (blue) and mixed 0~mrad (red) MC.
   The reconstruction stage shows the largest change, particularly for the
   mixed sample containing 22.4\% double-interaction events.
   Isolation is flat. Photon ID shows a deficit in the mixed sample at all \pT.}
@@ -753,8 +756,8 @@ reco level for the two reweighting pairs, together with the differences.
              & $\Delta \langle R_{\ET}\rangle$ [pp]
              & $\Delta \sigma$ [pp] \\
 \midrule
-mixed 0~mrad   & 0.9490 & 0.1196 & 0.9496 & 0.1195 & $+0.06$ & $-0.01$ \\
-mixed 1.5~mrad & 0.9485 & 0.1154 & 0.9530 & 0.1135 & $+0.45$ & $-0.19$ \\
+mixed 0~mrad   & 0.949 & 0.120 & 0.950 & 0.120 & $+0.06$ & $-0.01$ \\
+mixed 1.5~mrad & 0.948 & 0.115 & 0.953 & 0.114 & $+0.45$ & $-0.19$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -902,15 +905,16 @@ factorized photon efficiency:
     \pT^{\text{truth}}$; Jensen-inequality suppression of $\langle 1/\cosh\rangle$
     explains the sign. After the common cuts, the mean bias is absorbed
     (residual $<$0.4~pp) but a 22\% relative width increase survives.
-    After the full tight selection, all six samples agree on mean and
-    width to within 1~pp in $\langle R_{\ET}\rangle$ and 22~pp relative in
-    $\sigma$, so the impact on the final cross-section is at the
+    After the full tight selection, all six samples agree on mean
+    within 1~pp in $\langle R_{\ET}\rangle$, with a residual 22\% relative
+    spread in $\sigma$. The impact on the final cross-section is at the
     sub-percent level.
 
   \item \textbf{0 mrad vs 1.5 mrad} (Tables~\ref{tab:resp_integrated},
     \ref{tab:resp_vtxrw}): The 1.5~mrad mixed MC (nominal production
-    period, 7.9\% DI) tracks single-interaction MC to better than 0.2~pp
-    in $\langle R_{\ET}\rangle$ at every level. The 0~mrad mixed MC
+    period, 7.9\% DI) tracks single-interaction MC to better than 0.1~pp
+    in $\langle R_{\ET}\rangle$ at the reco and selected levels (and
+    within $\sim$0.3~pp at the matched level). The 0~mrad mixed MC
     (22.4\% DI) sits between single and double as expected from linear
     composition. These two periods should be quoted separately in any
     pileup-systematic scan rather than averaged with a single vertex

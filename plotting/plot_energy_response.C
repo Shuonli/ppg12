@@ -70,6 +70,7 @@ static void draw_labels(float x = 0.22, float y0 = 0.88, float dy = 0.055, float
 }
 
 // Single-panel overlay of a set of TH1 summary histograms vs truth pT
+//   leg_loc: "lower-left" (default), "upper-right", "upper-left", "lower-right"
 static void overlay_summary(TFile *fin,
                              const char *hname_fmt,
                              const char *level,
@@ -77,7 +78,8 @@ static void overlay_summary(TFile *fin,
                              double ylo, double yhi,
                              const char *ytitle,
                              const char *extra_label,
-                             const char *outpdf)
+                             const char *outpdf,
+                             const char *leg_loc = "lower-left")
 {
     TCanvas c("c_summary", "", 800, 650);
     gPad->SetLeftMargin(0.17);
@@ -90,7 +92,24 @@ static void overlay_summary(TFile *fin,
     frame->GetXaxis()->SetRangeUser(7, 40);
     frame->Draw();
 
-    TLegend leg(0.22, 0.18, 0.62, 0.18 + 0.05 * nidx);
+    // Pick legend coordinates based on requested corner (NDC)
+    double lx1 = 0.22, ly1 = 0.18, lx2 = 0.62, ly2 = 0.18 + 0.05 * nidx;
+    float label_x = 0.22, label_y0 = 0.88;
+    if (std::string(leg_loc) == "upper-right") {
+        // narrow column on the right; sPHENIX labels stay upper-left
+        lx1 = 0.48; lx2 = 0.93;
+        ly2 = 0.93; ly1 = ly2 - 0.045 * nidx;
+    } else if (std::string(leg_loc) == "upper-left") {
+        lx1 = 0.22; lx2 = 0.62;
+        ly2 = 0.88; ly1 = ly2 - 0.05 * nidx;
+        // push sPHENIX labels down so they don't collide
+        label_y0 = 0.55;
+    } else if (std::string(leg_loc) == "lower-right") {
+        lx1 = 0.52; lx2 = 0.93;
+        ly1 = 0.18; ly2 = 0.18 + 0.05 * nidx;
+    }
+
+    TLegend leg(lx1, ly1, lx2, ly2);
     leg.SetFillStyle(0); leg.SetBorderSize(0); leg.SetTextFont(42); leg.SetTextSize(0.038);
 
     std::vector<TH1*> keep;
@@ -104,7 +123,7 @@ static void overlay_summary(TFile *fin,
         keep.push_back(h);
     }
     leg.Draw();
-    draw_labels(0.22, 0.88, 0.055, 0.042, extra_label);
+    draw_labels(label_x, label_y0, 0.055, 0.042, extra_label);
     c.SaveAs(outpdf);
 }
 
@@ -220,16 +239,23 @@ void plot_energy_response()
     // -----------------------------------------------------------------
     // Vertex-reweighting overlay (0 mrad / 1.5 mrad, w/wo rw) at reco level
     // -----------------------------------------------------------------
+    // Data slopes down from upper-left to lower-right; move legend to upper-right
+    // where the panel is empty (previously lower-left overlapped the data curves).
     overlay_summary(fin, "h_respET_mean_%s_%s",  "reco",
         kVtxRwIdx, kNvtxRwIdx, 0.94, 1.02,
         "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT",
         "effect of z_{vtx} reweighting",
-        (outDir + "/resp_mean_reco_vtxrw.pdf").c_str());
+        (outDir + "/resp_mean_reco_vtxrw.pdf").c_str(),
+        "upper-right");
+    // Data values for mixed_0mrad variants extend up to ~0.093 at low pT;
+    // widen yhi so they are not clipped (previously clipped at 0.09, making
+    // the 0 mrad curves disappear for pT < 20 GeV).
     overlay_summary(fin, "h_respET_sigma_%s_%s", "reco",
-        kVtxRwIdx, kNvtxRwIdx, 0.03, 0.09,
+        kVtxRwIdx, kNvtxRwIdx, 0.03, 0.11,
         "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})",
         "effect of z_{vtx} reweighting",
-        (outDir + "/resp_sigma_reco_vtxrw.pdf").c_str());
+        (outDir + "/resp_sigma_reco_vtxrw.pdf").c_str(),
+        "lower-right");
 
     // -----------------------------------------------------------------
     // Response projections at 3 representative pT bins (matched level)
@@ -284,18 +310,25 @@ void plot_energy_response()
             l.DrawLatex(0.22, 0.75, lvl_label);
         };
 
-        drawPanel(1, "h_respET_mean_%s_%s",  "matched", 0.78, 1.05,
+        // Tightened matched-mean y-range [0.86, 1.02] (was [0.78, 1.05]) so the
+        // data (which lives in [0.88, 0.97]) fills the panel instead of being
+        // compressed into the upper half.
+        drawPanel(1, "h_respET_mean_%s_%s",  "matched", 0.86, 1.02,
                   "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "matched");
         drawPanel(2, "h_respET_mean_%s_%s",  "reco",    0.88, 1.05,
                   "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "reco");
         drawPanel(3, "h_respET_sigma_%s_%s", "matched", 0.02, 0.22,
                   "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "matched");
-        drawPanel(4, "h_respET_sigma_%s_%s", "reco",    0.02, 0.12,
+        // Widened reco sigma yhi to 0.16 (was 0.12) so the full double-interaction
+        // MC curve (sigma ~0.10-0.13) is visible; the previous 0.12 clipped all
+        // but two bins, leaving a single stray-looking red point at pT ~34 GeV.
+        drawPanel(4, "h_respET_sigma_%s_%s", "reco",    0.02, 0.16,
                   "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "reco");
 
-        // Legend on pad 2 (top right)
+        // Legend on pad 2 (moved to lower-left so it does not cut through the
+        // reco-mean data curves at pT 25-30 GeV, where the series slope down).
         c.cd(2);
-        TLegend leg(0.50, 0.22, 0.93, 0.22 + 0.04 * kNsets);
+        TLegend leg(0.22, 0.22, 0.65, 0.22 + 0.04 * kNsets);
         leg.SetFillStyle(0); leg.SetBorderSize(0); leg.SetTextFont(42); leg.SetTextSize(0.030);
         for (int i = 0; i < kNsets; i++) {
             TH1 *h = (TH1*)fin->Get(Form("h_respET_mean_%s_reco", kSets[i].name));
@@ -314,8 +347,17 @@ void plot_energy_response()
         TCanvas c("cvtx", "", 1200, 550);
         c.Divide(2, 1, 0.002, 0.002);
 
+        // TLatex reused for both panels: sPHENIX header + panel title
+        TLatex ltx; ltx.SetNDC(); ltx.SetTextFont(42);
+
+        // Heap-allocate legends so they outlive the if-block scope (otherwise
+        // the stack TLegend is destroyed before c.SaveAs runs, leaving the pad
+        // with no legend rendered in the final PDF).
+        TLegend *leg1 = nullptr;
+        TLegend *leg2 = nullptr;
+
         c.cd(1);
-        gPad->SetLeftMargin(0.16); gPad->SetBottomMargin(0.16);
+        gPad->SetLeftMargin(0.16); gPad->SetBottomMargin(0.16); gPad->SetTopMargin(0.06);
         TH1 *h_single = (TH1*)fin->Get("h_vtxz_single");
         TH1 *h_double = (TH1*)fin->Get("h_vtxz_double");
         if (h_single && h_double) {
@@ -324,19 +366,28 @@ void plot_energy_response()
             h_single->SetLineColor(kBlue);    h_single->SetLineWidth(2);
             h_double->SetLineColor(kRed+1);   h_double->SetLineWidth(2);
             h_single->SetTitle(";z_{vtx} [cm];Normalized entries");
-            h_single->GetYaxis()->SetRangeUser(0, 1.2 * std::max(h_single->GetMaximum(),
-                                                                  h_double->GetMaximum()));
+            h_single->GetYaxis()->SetRangeUser(0, 1.35 * std::max(h_single->GetMaximum(),
+                                                                   h_double->GetMaximum()));
             h_single->Draw("HIST");
             h_double->Draw("HIST SAME");
-            TLegend leg(0.18, 0.70, 0.55, 0.88);
-            leg.SetFillStyle(0); leg.SetBorderSize(0); leg.SetTextFont(42); leg.SetTextSize(0.045);
-            leg.AddEntry(h_single, "photon10 (single)", "l");
-            leg.AddEntry(h_double, "photon10_double",   "l");
-            leg.Draw();
+            // sPHENIX labels + panel title (upper-left)
+            ltx.SetTextSize(0.045);
+            ltx.DrawLatex(0.20, 0.90, "MC Vertex Distributions");
+            ltx.SetTextSize(0.040);
+            ltx.DrawLatex(0.20, 0.85, strleg1.c_str());
+            ltx.DrawLatex(0.20, 0.80, strleg2.c_str());
+            // Legend: middle-right (the peaks sit near z=0 at the top-center,
+            // and the tails drop off outside |z|>60 cm, leaving room on the right)
+            leg1 = new TLegend(0.52, 0.55, 0.93, 0.70);
+            leg1->SetFillStyle(0); leg1->SetBorderSize(0);
+            leg1->SetTextFont(42); leg1->SetTextSize(0.040);
+            leg1->AddEntry(h_single, "photon10 (single) MC", "l");
+            leg1->AddEntry(h_double, "photon10_double MC",   "l");
+            leg1->Draw();
         }
 
         c.cd(2);
-        gPad->SetLeftMargin(0.16); gPad->SetBottomMargin(0.16);
+        gPad->SetLeftMargin(0.16); gPad->SetBottomMargin(0.16); gPad->SetTopMargin(0.06);
         TH1 *w0  = (TH1*)fin->Get("h_vtx_weight_mixed_0mrad_vtxrw");
         TH1 *w15 = (TH1*)fin->Get("h_vtx_weight_mixed_1p5mrad_vtxrw");
         if (w0 && w15) {
@@ -344,18 +395,29 @@ void plot_energy_response()
             w15->SetLineColor(kMagenta+1); w15->SetLineWidth(2);
             w0->SetTitle(";z_{vtx} [cm];data / sim ratio");
             double m = std::max(w0->GetMaximum(), w15->GetMaximum());
-            w0->GetYaxis()->SetRangeUser(0, 1.2 * m);
+            w0->GetYaxis()->SetRangeUser(0, 1.45 * m);
             w0->GetXaxis()->SetRangeUser(-60, 60);
             w0 ->Draw("HIST");
             w15->Draw("HIST SAME");
-            TLegend leg(0.18, 0.70, 0.60, 0.88);
-            leg.SetFillStyle(0); leg.SetBorderSize(0); leg.SetTextFont(42); leg.SetTextSize(0.045);
-            leg.AddEntry(w0,  "0 mrad data / 0 mrad sim",   "l");
-            leg.AddEntry(w15, "1.5 mrad data / 1.5 mrad sim","l");
-            leg.Draw();
+            // sPHENIX labels + panel title (upper-left)
+            ltx.SetTextSize(0.045);
+            ltx.DrawLatex(0.20, 0.90, "Data / MC Vertex Reweighting");
+            ltx.SetTextSize(0.040);
+            ltx.DrawLatex(0.20, 0.85, strleg1.c_str());
+            ltx.DrawLatex(0.20, 0.80, strleg2.c_str());
+            // Legend: middle-right (1.5 mrad curve peaks at z~0; 0 mrad curve
+            // is flat-ish so left edges are busy — right side is cleaner)
+            leg2 = new TLegend(0.52, 0.60, 0.93, 0.74);
+            leg2->SetFillStyle(0); leg2->SetBorderSize(0);
+            leg2->SetTextFont(42); leg2->SetTextSize(0.038);
+            leg2->AddEntry(w0,  "0 mrad (data / sim)",   "l");
+            leg2->AddEntry(w15, "1.5 mrad (data / sim)", "l");
+            leg2->Draw();
         }
 
         c.SaveAs((outDir + "/resp_vtxrw_diagnostics.pdf").c_str());
+        delete leg1;
+        delete leg2;
     }
 
     std::cout << "[plot_energy_response] done: figures in " << outDir << std::endl;
