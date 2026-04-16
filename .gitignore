@@ -42,8 +42,10 @@ __pycache__/
 *.pcm
 *_ACLiC_dict*
 
-# gh-pages worktree
+# gh-pages worktree + snapshot worktree + dry-run preview
 _gh-pages-worktree/
+_gh-pages-snapshot/
+_dry_run_index.html
 
 # === Data and binary files ===
 *.root
