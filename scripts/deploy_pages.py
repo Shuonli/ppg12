@@ -544,36 +544,56 @@ def generate_index_html(reports: list[dict], figures: list[dict], cfg: dict) -> 
 # Deploy
 # ---------------------------------------------------------------------------
 
+def _needs_copy(src: Path, dst: Path) -> bool:
+    """True if dst is missing or its size/mtime differs from src."""
+    if not dst.exists():
+        return True
+    ss, ds = src.stat(), dst.stat()
+    if ss.st_size != ds.st_size:
+        return True
+    return abs(ss.st_mtime - ds.st_mtime) > 1.0
+
+
+def _sync_dir(dst_dir: Path, items: list[dict], label: str) -> tuple[int, int]:
+    """Sync items into dst_dir: copy new/changed, remove stale.
+    Returns (copied, removed)."""
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    expected = {item["name"]: item for item in items}
+
+    removed = 0
+    for existing in list(dst_dir.iterdir()):
+        if existing.is_file() and existing.name not in expected:
+            existing.unlink()
+            removed += 1
+
+    copied = 0
+    for name, item in expected.items():
+        dst = dst_dir / name
+        if _needs_copy(item["path"], dst):
+            shutil.copy2(item["path"], dst)
+            copied += 1
+
+    if copied or removed:
+        print(f"  {label}: {copied} copied, {removed} removed (of {len(items)})")
+    else:
+        print(f"  {label}: unchanged ({len(items)} files)")
+    return copied, removed
+
+
 def copy_to_worktree(
     wt_path: Path,
     reports: list[dict],
     figures: list[dict],
 ) -> list[str]:
-    """Copy collected files into the worktree, returning a list of deployed
-    relative paths."""
-    deployed: list[str] = []
+    """Diff-copy reports/figures into the worktree.
 
-    # Clean and re-populate reports/.
-    reports_dest = wt_path / "reports"
-    if reports_dest.exists():
-        shutil.rmtree(reports_dest)
-    reports_dest.mkdir(parents=True, exist_ok=True)
-    for r in reports:
-        dst = reports_dest / r["name"]
-        shutil.copy2(r["path"], dst)
-        deployed.append(f"reports/{r['name']}")
-
-    # Clean and re-populate figures/.
-    figures_dest = wt_path / "figures"
-    if figures_dest.exists():
-        shutil.rmtree(figures_dest)
-    figures_dest.mkdir(parents=True, exist_ok=True)
-    for fig in figures:
-        dst = figures_dest / fig["name"]
-        shutil.copy2(fig["path"], dst)
-        deployed.append(f"figures/{fig['name']}")
-
-    return deployed
+    Only changed files are copied; files no longer in the include set are
+    removed.  Git still sees only content deltas, but we avoid churning the
+    filesystem on every deploy.
+    """
+    _sync_dir(wt_path / "reports", reports, "reports")
+    _sync_dir(wt_path / "figures", figures, "figures")
+    return [f"reports/{r['name']}" for r in reports] + [f"figures/{f['name']}" for f in figures]
 
 
 def deploy(wt_path: Path, message: str) -> bool:
@@ -592,6 +612,161 @@ def deploy(wt_path: Path, message: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Tags, snapshots, backfill
+# ---------------------------------------------------------------------------
+
+def apply_tags(repo_root: Path, wt_path: Path, tag_name: str, tag_main: bool) -> None:
+    """Tag the current gh-pages HEAD as site/<name> and (optionally) main HEAD
+    as src/<name>.  Tags are pushed to origin.  Refuses to overwrite existing
+    tags — delete and re-run if you need to move a tag."""
+    site_tag = f"site/{tag_name}"
+    src_tag = f"src/{tag_name}"
+
+    # gh-pages side.
+    proc = git("tag", site_tag, cwd=wt_path, check=False)
+    if proc.returncode != 0:
+        print(f"  WARNING: could not create {site_tag}: {proc.stderr.strip()}")
+        print(f"    (delete with `git tag -d {site_tag}` or pick a different name)")
+    else:
+        print(f"  Tagged gh-pages as {site_tag}")
+        git("push", "origin", site_tag, cwd=wt_path)
+
+    # main side.
+    if tag_main:
+        proc = git("tag", src_tag, cwd=repo_root, check=False)
+        if proc.returncode != 0:
+            print(f"  WARNING: could not create {src_tag}: {proc.stderr.strip()}")
+        else:
+            head = git("rev-parse", "--abbrev-ref", "HEAD", cwd=repo_root).stdout.strip()
+            print(f"  Tagged {head} HEAD as {src_tag}")
+            git("push", "origin", src_tag, cwd=repo_root)
+
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _resolve_ref(repo_root: Path, ref: str, branch: str) -> str:
+    """Resolve a user-supplied ref to a commit hash.
+
+    If ref looks like YYYY-MM-DD, return the most recent branch commit on or
+    before that date.  Otherwise return ref unchanged (git will validate)."""
+    if _DATE_RE.match(ref):
+        proc = git(
+            "rev-list", "-1",
+            f"--before={ref} 23:59:59",
+            branch,
+            cwd=repo_root,
+            check=False,
+        )
+        resolved = proc.stdout.strip()
+        if not resolved:
+            print(f"ERROR: no {branch} commit found on or before {ref}.")
+            sys.exit(1)
+        print(f"Resolved {ref} -> {resolved[:8]}")
+        return resolved
+    return ref
+
+
+def snapshot_at(repo_root: Path, ref: str, deploy_cfg: dict) -> Path:
+    """Create a detached worktree at a past gh-pages state for local browsing."""
+    snap_dir = deploy_cfg.get("snapshot_dir", "_gh-pages-snapshot")
+    branch = deploy_cfg.get("branch", "gh-pages")
+    snap_path = repo_root / snap_dir
+
+    resolved = _resolve_ref(repo_root, ref, branch)
+
+    # Remove any existing snapshot worktree at that path.
+    existing = git("worktree", "list", "--porcelain", cwd=repo_root).stdout
+    if str(snap_path) in existing:
+        print(f"Removing existing snapshot at {snap_path} ...")
+        git("worktree", "remove", "--force", str(snap_path), cwd=repo_root, check=False)
+    elif snap_path.exists():
+        print(f"ERROR: {snap_path} exists but is not a git worktree. Remove it manually.")
+        sys.exit(1)
+
+    print(f"Creating snapshot worktree at {snap_path} (ref: {resolved[:12]}) ...")
+    git("worktree", "add", "--detach", str(snap_path), resolved, cwd=repo_root)
+
+    proc = git("log", "-1", "--format=%h %ad %s", "--date=short", cwd=snap_path)
+    print(f"Snapshot commit: {proc.stdout.strip()}")
+    print(f"\nBrowse at: {snap_path}")
+    print(f"Open: file://{snap_path}/index.html")
+    print(f"Close later: python3 scripts/deploy_pages.py --close-snapshot")
+    return snap_path
+
+
+def close_snapshot(repo_root: Path, deploy_cfg: dict) -> None:
+    snap_dir = deploy_cfg.get("snapshot_dir", "_gh-pages-snapshot")
+    snap_path = repo_root / snap_dir
+    if not snap_path.exists():
+        print(f"No snapshot worktree at {snap_path}.")
+        return
+    print(f"Removing snapshot worktree at {snap_path} ...")
+    git("worktree", "remove", "--force", str(snap_path), cwd=repo_root)
+    print("Done.")
+
+
+def backfill_tags(repo_root: Path, deploy_cfg: dict, push: bool = True) -> None:
+    """Create site/YYYY-MM-DD[-N] tags for every existing gh-pages commit.
+
+    For dates with a single deploy: site/YYYY-MM-DD.
+    For dates with multiple deploys: site/YYYY-MM-DD-1, ...-2, ... in
+    chronological order (oldest first).  Tags that already exist are skipped.
+    """
+    branch = deploy_cfg.get("branch", "gh-pages")
+    proc = git(
+        "log", branch,
+        "--reverse",
+        "--format=%H %ad",
+        "--date=format:%Y-%m-%d",
+        cwd=repo_root,
+    )
+    lines = [ln for ln in proc.stdout.strip().splitlines() if ln]
+    if not lines:
+        print(f"No commits on {branch}.")
+        return
+
+    by_date: dict[str, list[str]] = {}
+    for line in lines:
+        h, date = line.split(None, 1)
+        by_date.setdefault(date, []).append(h)
+
+    tags: list[tuple[str, str]] = []
+    for date, hashes in by_date.items():
+        if len(hashes) == 1:
+            tags.append((f"site/{date}", hashes[0]))
+        else:
+            for i, h in enumerate(hashes, start=1):
+                tags.append((f"site/{date}-{i}", h))
+
+    existing = set(
+        git("tag", "-l", "site/*", cwd=repo_root).stdout.strip().splitlines()
+    )
+
+    created: list[str] = []
+    for tag_name, commit in tags:
+        if tag_name in existing:
+            continue
+        proc = git("tag", tag_name, commit, cwd=repo_root, check=False)
+        if proc.returncode == 0:
+            created.append(tag_name)
+        else:
+            print(f"  WARNING: could not create {tag_name}: {proc.stderr.strip()}")
+
+    print(f"Backfill: {len(created)} new tags created, "
+          f"{len(tags) - len(created)} already existed.")
+
+    if created and push:
+        print(f"Pushing {len(created)} tag(s) to origin ...")
+        # Push in batches to avoid huge command lines.
+        batch_size = 50
+        for i in range(0, len(created), batch_size):
+            batch = created[i : i + batch_size]
+            git("push", "origin", *batch, cwd=repo_root)
+        print("Done.")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -607,12 +782,40 @@ def main() -> None:
     parser.add_argument(
         "--message",
         default=None,
-        help="Custom commit message (default: 'Update site: YYYY-MM-DD').",
+        help="Custom commit message (default: 'Update site: YYYY-MM-DD HH:MM TZ').",
     )
     parser.add_argument(
         "--config",
         default=None,
         help="Path to site_config.yaml (default: scripts/site_config.yaml relative to repo root).",
+    )
+    parser.add_argument(
+        "--tag",
+        metavar="NAME",
+        default=None,
+        help="After deploy, tag gh-pages as site/NAME and main HEAD as src/NAME; push both tags.",
+    )
+    parser.add_argument(
+        "--no-tag-main",
+        action="store_true",
+        help="When --tag is given, skip the src/NAME tag on main.",
+    )
+    parser.add_argument(
+        "--snapshot-at",
+        metavar="REF",
+        default=None,
+        help="Materialize a past gh-pages snapshot in _gh-pages-snapshot/ and exit. "
+             "REF may be a commit hash, tag (e.g. site/2026-04-15), or YYYY-MM-DD.",
+    )
+    parser.add_argument(
+        "--close-snapshot",
+        action="store_true",
+        help="Remove the snapshot worktree and exit.",
+    )
+    parser.add_argument(
+        "--backfill-tags",
+        action="store_true",
+        help="Create site/YYYY-MM-DD[-N] tags for every existing gh-pages commit, push, and exit.",
     )
     args = parser.parse_args()
 
@@ -626,6 +829,19 @@ def main() -> None:
     else:
         print(f"Config not found at {config_path}, using defaults.")
         cfg = {}
+
+    deploy_cfg = cfg.get("deploy", {})
+
+    # ----- Standalone subcommands (exit early) ----------------------------
+    if args.backfill_tags:
+        backfill_tags(repo_root, deploy_cfg)
+        return
+    if args.close_snapshot:
+        close_snapshot(repo_root, deploy_cfg)
+        return
+    if args.snapshot_at:
+        snapshot_at(repo_root, args.snapshot_at, deploy_cfg)
+        return
 
     # ----- Compile .tex reports if needed -----------------------------------
     compiled = compile_tex_reports(repo_root, cfg)
@@ -662,7 +878,6 @@ def main() -> None:
         return
 
     # ----- Ensure worktree ------------------------------------------------
-    deploy_cfg = cfg.get("deploy", {})
     wt_dir = deploy_cfg.get("worktree_dir", "_gh-pages-worktree")
     branch = deploy_cfg.get("branch", "gh-pages")
     wt_path = ensure_worktree(repo_root, wt_dir, branch)
@@ -679,8 +894,12 @@ def main() -> None:
         print(f"  {d}")
 
     # ----- Commit and push ------------------------------------------------
-    message = args.message or f"Update site: {datetime.now(_EASTERN).strftime('%Y-%m-%d')}"
+    message = args.message or f"Update site: {datetime.now(_EASTERN).strftime('%Y-%m-%d %H:%M %Z')}"
     pushed = deploy(wt_path, message)
+
+    # ----- Tagging (after deploy so tag points at the freshly pushed commit)
+    if args.tag:
+        apply_tags(repo_root, wt_path, args.tag, tag_main=not args.no_tag_main)
 
     if pushed:
         print(f"\nDeployed to https://shuonli.github.io/ppg12/")

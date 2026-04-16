@@ -28,4 +28,5 @@ figures:
 
 deploy:
   worktree_dir: "_gh-pages-worktree"
+  snapshot_dir: "_gh-pages-snapshot"
   branch: "gh-pages"
