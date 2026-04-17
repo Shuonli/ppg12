@@ -11,13 +11,15 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-17 16:40 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-17 18:56 EDT</div>
     </div>
   </header>
 
   <main class="container">
     <section id="reports">
       <h2 class="section-title">Reports</h2>
+      <div class="reports-group" id="group-double-interaction">
+        <h3 class="group-title">Double Interaction / Pileup <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
           <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
@@ -25,10 +27,70 @@
         <tbody>
           <tr>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/vertex_distribution_study.pdf" target="_blank" rel="noopener">Vertex Distribution and Δz in Single vs. Double-Interaction MC</a></td>
-            <td data-label="Description">This note characterizes the vertex distributions and vertex displacement (Δz = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHEN…</td>
-            <td data-label="Size">0.5 MB</td>
+            <td data-label="Title"><a href="reports/double_interaction_shower_shape_comparison.pdf" target="_blank" rel="noopener">Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</a></td>
+            <td data-label="Description">In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</td>
+            <td data-label="Size">1.2 MB</td>
           </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-bdt">
+        <h3 class="group-title">BDT Training &amp; Systematics <span class="group-count">(1)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/bdt_training_audit.pdf" target="_blank" rel="noopener">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a></td>
+            <td data-label="Description">A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γreweighting actually produces flat E_T^γspectra for signal and background, (b…</td>
+            <td data-label="Size">0.8 MB</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-shower-shape">
+        <h3 class="group-title">Shower Shape <span class="group-count">(4)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/converted_photon_study.pdf" target="_blank" rel="noopener">Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</a></td>
+            <td data-label="Description">We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</td>
+            <td data-label="Size">0.9 MB</td>
+          </tr>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/cluster_size_vs_et.pdf" target="_blank" rel="noopener">Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</a></td>
+            <td data-label="Description">Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</td>
+            <td data-label="Size">0.6 MB</td>
+          </tr>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/cluster_size_short.pdf" target="_blank" rel="noopener">Cluster Size vs E_T — Per-Period, Per-Selection: Data vs MC with truth-vertex reweighting and DI mixing</a></td>
+            <td data-label="Description">[H] [width=0.9]figures/cluster_size/cluster_size_period_overlay_split_1p5mrad.pdf 1.5 mrad, split container. Overlay of data and MC at three selections: baseline (open markers), common-pass (half-emp…</td>
+            <td data-label="Size">0.7 MB</td>
+          </tr>
+          <tr>
+            <td data-label="Date">2026-04-13</td>
+            <td data-label="Title"><a href="reports/showershape_report.pdf" target="_blank" rel="noopener">Shower Shape Distributions: Configuration Variations</a></td>
+            <td data-label="Description">Shower Shape Distributions: Configuration Variations</td>
+            <td data-label="Size">8.8 MB</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-efficiency">
+        <h3 class="group-title">Efficiency &amp; Energy Response <span class="group-count">(3)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
           <tr>
             <td data-label="Date">2026-04-17</td>
             <td data-label="Title"><a href="reports/eta_migration_study.pdf" target="_blank" rel="noopener">Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</a></td>
@@ -47,71 +109,75 @@
             <td data-label="Description">This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</td>
             <td data-label="Size">0.3 MB</td>
           </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</a></td>
-            <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
-            <td data-label="Size">0.7 MB</td>
-          </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/post_preliminary_updates.pdf" target="_blank" rel="noopener">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a></td>
-            <td data-label="Description">This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</td>
-            <td data-label="Size">1.4 MB</td>
-          </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/mc_purity_correction_investigation.pdf" target="_blank" rel="noopener">Investigation: MC Purity Correction Factor in PPG12</a></td>
-            <td data-label="Description">The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</td>
-            <td data-label="Size">0.5 MB</td>
-          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-isolation">
+        <h3 class="group-title">Isolation <span class="group-count">(1)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
           <tr>
             <td data-label="Date">2026-04-17</td>
             <td data-label="Title"><a href="reports/isolation_ET_comparison.pdf" target="_blank" rel="noopener">Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</a></td>
             <td data-label="Description">The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</td>
             <td data-label="Size">0.6 MB</td>
           </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-purity">
+        <h3 class="group-title">Purity <span class="group-count">(1)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
           <tr>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/double_interaction_shower_shape_comparison.pdf" target="_blank" rel="noopener">Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</a></td>
-            <td data-label="Description">In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</td>
-            <td data-label="Size">1.2 MB</td>
+            <td data-label="Title"><a href="reports/mc_purity_correction_investigation.pdf" target="_blank" rel="noopener">Investigation: MC Purity Correction Factor in PPG12</a></td>
+            <td data-label="Description">The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</td>
+            <td data-label="Size">0.5 MB</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-vertex">
+        <h3 class="group-title">Vertex <span class="group-count">(2)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/vertex_distribution_study.pdf" target="_blank" rel="noopener">Vertex Distribution and Δz in Single vs. Double-Interaction MC</a></td>
+            <td data-label="Description">This note characterizes the vertex distributions and vertex displacement (Δz = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHEN…</td>
+            <td data-label="Size">0.5 MB</td>
           </tr>
           <tr>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/converted_photon_study.pdf" target="_blank" rel="noopener">Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</a></td>
-            <td data-label="Description">We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</td>
-            <td data-label="Size">0.8 MB</td>
-          </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/cluster_size_vs_et.pdf" target="_blank" rel="noopener">Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</a></td>
-            <td data-label="Description">Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</td>
-            <td data-label="Size">0.6 MB</td>
-          </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/cluster_size_short.pdf" target="_blank" rel="noopener">Cluster Size vs E_T — Per-Period, Per-Selection: Data vs MC with truth-vertex reweighting and DI mixing</a></td>
-            <td data-label="Description">[H] [width=0.9]figures/cluster_size/cluster_size_period_overlay_split_1p5mrad.pdf 1.5 mrad, split container. Overlay of data and MC at three selections: baseline (open markers), common-pass (half-emp…</td>
+            <td data-label="Title"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</a></td>
+            <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
             <td data-label="Size">0.7 MB</td>
           </tr>
-          <tr>
-            <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/bdt_training_audit.pdf" target="_blank" rel="noopener">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a></td>
-            <td data-label="Description">A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γreweighting actually produces flat E_T^γspectra for signal and background, (b…</td>
-            <td data-label="Size">0.8 MB</td>
-          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="reports-group" id="group-selection">
+        <h3 class="group-title">Selection &amp; Config Comparisons <span class="group-count">(2)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
           <tr>
             <td data-label="Date">2026-04-17</td>
             <td data-label="Title"><a href="reports/comparison_report.pdf" target="_blank" rel="noopener">Selection Plots: Config Comparisons</a></td>
             <td data-label="Description">difffile— config\_bdt\_nom.yaml difffile+++ config\_bdt\_tightbdt50.yaml diffhunk@@ -20,5 +20,5 @@ response\_outfile: &quot;/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response&quot; data\_outfile…</td>
             <td data-label="Size">3.2 MB</td>
-          </tr>
-          <tr>
-            <td data-label="Date">2026-04-13</td>
-            <td data-label="Title"><a href="reports/showershape_report.pdf" target="_blank" rel="noopener">Shower Shape Distributions: Configuration Variations</a></td>
-            <td data-label="Description">Shower Shape Distributions: Configuration Variations</td>
-            <td data-label="Size">8.8 MB</td>
           </tr>
           <tr>
             <td data-label="Date">2026-04-08</td>
@@ -121,6 +187,23 @@
           </tr>
         </tbody>
       </table>
+      </div>
+      <div class="reports-group" id="group-updates">
+        <h3 class="group-title">Status Updates &amp; Summaries <span class="group-count">(1)</span></h3>
+      <table class="reports-table">
+        <thead>
+          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Date">2026-04-17</td>
+            <td data-label="Title"><a href="reports/post_preliminary_updates.pdf" target="_blank" rel="noopener">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a></td>
+            <td data-label="Description">This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</td>
+            <td data-label="Size">1.4 MB</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
     </section>
 
     <section id="past-deploys">
@@ -129,583 +212,678 @@
         <summary>Browse 95 past deploy(s) on GitHub</summary>
         <table class="deploys-table">
           <thead>
-            <tr><th>Date</th><th>Tag</th><th>Commit</th><th>Message</th></tr>
+            <tr><th>Date</th><th>Tag</th><th>Commit</th><th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>
           </thead>
           <tbody>
             <tr>
               <td data-label="Date">2026-04-17 02:00</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-17" target="_blank" rel="noopener">site/2026-04-17</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/8a0e19a" target="_blank" rel="noopener">8a0e19a</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-21...site/2026-04-17" target="_blank" rel="noopener" title="Compare with site/2026-04-16-21">diff</a></td>
               <td data-label="Message">Fix report titles and content issues: deploy_pages.py title extraction, DI report caption/table sync, f_1/e_{t1} collision, various numeric/terminology fixes</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 22:42</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-21" target="_blank" rel="noopener">site/2026-04-16-21</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/f254182" target="_blank" rel="noopener">f254182</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-20...site/2026-04-16-21" target="_blank" rel="noopener" title="Compare with site/2026-04-16-20">diff</a></td>
               <td data-label="Message">New report: converted photon study (showershape, iso, energy response in photon10 MC)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:51</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-20" target="_blank" rel="noopener">site/2026-04-16-20</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/498167e" target="_blank" rel="noopener">498167e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-19...site/2026-04-16-20" target="_blank" rel="noopener" title="Compare with site/2026-04-16-19">diff</a></td>
               <td data-label="Message">Update site: 2026-04-16 21:51 EDT</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:50</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-19" target="_blank" rel="noopener">site/2026-04-16-19</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/1540b38" target="_blank" rel="noopener">1540b38</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-18...site/2026-04-16-19" target="_blank" rel="noopener" title="Compare with site/2026-04-16-18">diff</a></td>
               <td data-label="Message">Update site: 2026-04-16 21:50 EDT</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:50</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-18" target="_blank" rel="noopener">site/2026-04-16-18</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/0da8f99" target="_blank" rel="noopener">0da8f99</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-17...site/2026-04-16-18" target="_blank" rel="noopener" title="Compare with site/2026-04-16-17">diff</a></td>
               <td data-label="Message">Update site: 2026-04-16 21:50 EDT</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:49</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-17" target="_blank" rel="noopener">site/2026-04-16-17</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/4c466da" target="_blank" rel="noopener">4c466da</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-16...site/2026-04-16-17" target="_blank" rel="noopener" title="Compare with site/2026-04-16-16">diff</a></td>
               <td data-label="Message">Update site: 2026-04-16 21:49 EDT</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:37</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-16" target="_blank" rel="noopener">site/2026-04-16-16</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/95d5a77" target="_blank" rel="noopener">95d5a77</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-15...site/2026-04-16-16" target="_blank" rel="noopener" title="Compare with site/2026-04-16-15">diff</a></td>
               <td data-label="Message">Rename response levels: matched-&gt;reco, reco-&gt;common cut, selected-&gt;tight iso</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 21:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-15" target="_blank" rel="noopener">site/2026-04-16-15</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/f7bc2a5" target="_blank" rel="noopener">f7bc2a5</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-14...site/2026-04-16-15" target="_blank" rel="noopener" title="Compare with site/2026-04-16-14">diff</a></td>
               <td data-label="Message">resp_summary_4panel: legend on every panel</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 19:41</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-14" target="_blank" rel="noopener">site/2026-04-16-14</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/846f711" target="_blank" rel="noopener">846f711</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-13...site/2026-04-16-14" target="_blank" rel="noopener" title="Compare with site/2026-04-16-13">diff</a></td>
               <td data-label="Message">Photon energy response report: review round (abstract numbers, plot legends, vtxrw diagnostics annotations)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 19:16</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-13" target="_blank" rel="noopener">site/2026-04-16-13</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/53d8266" target="_blank" rel="noopener">53d8266</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-12...site/2026-04-16-13" target="_blank" rel="noopener" title="Compare with site/2026-04-16-12">diff</a></td>
               <td data-label="Message">Photon energy response vs double interaction: single/double/mixed (0mrad, 1.5mrad), with/without vtx reweight</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 17:45</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-12" target="_blank" rel="noopener">site/2026-04-16-12</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/67ef6dc" target="_blank" rel="noopener">67ef6dc</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-11...site/2026-04-16-12" target="_blank" rel="noopener" title="Compare with site/2026-04-16-11">diff</a></td>
               <td data-label="Message">Resolve cross-refs in efficiency_deltaR_comparison (third pdflatex pass)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 17:44</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-11" target="_blank" rel="noopener">site/2026-04-16-11</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9eb1837" target="_blank" rel="noopener">9eb1837</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-10...site/2026-04-16-11" target="_blank" rel="noopener" title="Compare with site/2026-04-16-10">diff</a></td>
               <td data-label="Message">Add photon energy response study (single/double/mixed 0 mrad/mixed 1.5 mrad, with/without vtx reweight)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 17:42</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-10" target="_blank" rel="noopener">site/2026-04-16-10</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/f0061b2" target="_blank" rel="noopener">f0061b2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-9...site/2026-04-16-10" target="_blank" rel="noopener" title="Compare with site/2026-04-16-9">diff</a></td>
               <td data-label="Message">Add photon energy response study (single/double/mixed 0 mrad/mixed 1.5 mrad, with/without vtx reweight)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 15:03</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-9" target="_blank" rel="noopener">site/2026-04-16-9</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/4b66cb8" target="_blank" rel="noopener">4b66cb8</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-8...site/2026-04-16-9" target="_blank" rel="noopener" title="Compare with site/2026-04-16-8">diff</a></td>
               <td data-label="Message">truth-vertex-reweight: remove post-iteration snap; 0 mrad converges in 8 iter to &lt;1% and 1.5 mrad chi2 drops 3100x</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 14:21</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-8" target="_blank" rel="noopener">site/2026-04-16-8</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/434f21f" target="_blank" rel="noopener">434f21f</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-7...site/2026-04-16-8" target="_blank" rel="noopener" title="Compare with site/2026-04-16-7">diff</a></td>
               <td data-label="Message">truth-vertex-reweight report: remove target-Gauss, add seed/parametric overlay, refresh fit numbers</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 14:08</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-7" target="_blank" rel="noopener">site/2026-04-16-7</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/eb296b9" target="_blank" rel="noopener">eb296b9</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-6...site/2026-04-16-7" target="_blank" rel="noopener" title="Compare with site/2026-04-16-6">diff</a></td>
               <td data-label="Message">Update site: 2026-04-16 14:08 EDT</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 12:30</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-6" target="_blank" rel="noopener">site/2026-04-16-6</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/5b513cf" target="_blank" rel="noopener">5b513cf</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-5...site/2026-04-16-6" target="_blank" rel="noopener" title="Compare with site/2026-04-16-5">diff</a></td>
               <td data-label="Message">Add BDT training pipeline audit report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 11:17</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-5" target="_blank" rel="noopener">site/2026-04-16-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/b295e1b" target="_blank" rel="noopener">b295e1b</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-4...site/2026-04-16-5" target="_blank" rel="noopener" title="Compare with site/2026-04-16-4">diff</a></td>
               <td data-label="Message">DI shower shape: final chi2 update from per-iteration normalized refit</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 11:15</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-4" target="_blank" rel="noopener">site/2026-04-16-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/d48660f" target="_blank" rel="noopener">d48660f</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-3...site/2026-04-16-4" target="_blank" rel="noopener" title="Compare with site/2026-04-16-3">diff</a></td>
               <td data-label="Message">DI shower shape: re-fit with per-iteration normalization (&lt;w&gt;=1)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 02:12</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-3" target="_blank" rel="noopener">site/2026-04-16-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c8e523e" target="_blank" rel="noopener">c8e523e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-2...site/2026-04-16-3" target="_blank" rel="noopener" title="Compare with site/2026-04-16-2">diff</a></td>
               <td data-label="Message">DI shower shape report: corrected truth-vertex reweight (normalized w(z)) + old-vtx comparison plots</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 00:29</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-2" target="_blank" rel="noopener">site/2026-04-16-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/fbb017f" target="_blank" rel="noopener">fbb017f</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-16-1...site/2026-04-16-2" target="_blank" rel="noopener" title="Compare with site/2026-04-16-1">diff</a></td>
               <td data-label="Message">Rerun with h_truth_pT_novtx + vtxreweight0 comparison</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-16 00:08</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-16-1" target="_blank" rel="noopener">site/2026-04-16-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/d5c2a64" target="_blank" rel="noopener">d5c2a64</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-9...site/2026-04-16-1" target="_blank" rel="noopener" title="Compare with site/2026-04-15-9">diff</a></td>
               <td data-label="Message">Add truth vertex comparison figure (old vs new reweight)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 22:36</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-9" target="_blank" rel="noopener">site/2026-04-15-9</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/5d8585e" target="_blank" rel="noopener">5d8585e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-8...site/2026-04-15-9" target="_blank" rel="noopener" title="Compare with site/2026-04-15-8">diff</a></td>
               <td data-label="Message">Regenerate DI shower shape report with iterative truth-vertex reweight</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 21:30</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-8" target="_blank" rel="noopener">site/2026-04-15-8</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/baaeb06" target="_blank" rel="noopener">baaeb06</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-7...site/2026-04-15-8" target="_blank" rel="noopener" title="Compare with site/2026-04-15-7">diff</a></td>
               <td data-label="Message">Regenerate nosplit selection plots from fresh result files</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 21:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-7" target="_blank" rel="noopener">site/2026-04-15-7</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/46a28f2" target="_blank" rel="noopener">46a28f2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-6...site/2026-04-15-7" target="_blank" rel="noopener" title="Compare with site/2026-04-15-6">diff</a></td>
               <td data-label="Message">Revert plot_bdt_variations.C, remove plot_nosplit_comparison.C</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 21:23</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-6" target="_blank" rel="noopener">site/2026-04-15-6</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/ebc50e2" target="_blank" rel="noopener">ebc50e2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-5...site/2026-04-15-6" target="_blank" rel="noopener" title="Compare with site/2026-04-15-5">diff</a></td>
               <td data-label="Message">Update truth-vertex-reweight report: sPHENIX label + crossing angle on every panel</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 21:23</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-5" target="_blank" rel="noopener">site/2026-04-15-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/12a8aab" target="_blank" rel="noopener">12a8aab</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-4...site/2026-04-15-5" target="_blank" rel="noopener" title="Compare with site/2026-04-15-4">diff</a></td>
               <td data-label="Message">Add nosplit vs nom pair to comparison_report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 21:10</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-4" target="_blank" rel="noopener">site/2026-04-15-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/08ac99b" target="_blank" rel="noopener">08ac99b</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-3...site/2026-04-15-4" target="_blank" rel="noopener" title="Compare with site/2026-04-15-3">diff</a></td>
               <td data-label="Message">Add nosplit vs split cross-section comparison + plots</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 20:43</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-3" target="_blank" rel="noopener">site/2026-04-15-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/ac8b4e1" target="_blank" rel="noopener">ac8b4e1</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-2...site/2026-04-15-3" target="_blank" rel="noopener" title="Compare with site/2026-04-15-2">diff</a></td>
               <td data-label="Message">Update site: 2026-04-15</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 12:07</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-2" target="_blank" rel="noopener">site/2026-04-15-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/616d81f" target="_blank" rel="noopener">616d81f</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-15-1...site/2026-04-15-2" target="_blank" rel="noopener" title="Compare with site/2026-04-15-1">diff</a></td>
               <td data-label="Message">Update site: 2026-04-15</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-15 01:55</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-15-1" target="_blank" rel="noopener">site/2026-04-15-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/460799a" target="_blank" rel="noopener">460799a</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-14-3...site/2026-04-15-1" target="_blank" rel="noopener" title="Compare with site/2026-04-14-3">diff</a></td>
               <td data-label="Message">Update site: 2026-04-15</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-14 13:26</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-14-3" target="_blank" rel="noopener">site/2026-04-14-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c5ae689" target="_blank" rel="noopener">c5ae689</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-14-2...site/2026-04-14-3" target="_blank" rel="noopener" title="Compare with site/2026-04-14-2">diff</a></td>
               <td data-label="Message">cluster-size reports: fix legend/label overlap</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-14 13:19</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-14-2" target="_blank" rel="noopener">site/2026-04-14-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/8dde0e2" target="_blank" rel="noopener">8dde0e2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-14-1...site/2026-04-14-2" target="_blank" rel="noopener" title="Compare with site/2026-04-14-1">diff</a></td>
               <td data-label="Message">Add short cluster-size report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-14 13:11</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-14-1" target="_blank" rel="noopener">site/2026-04-14-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/7850a7c" target="_blank" rel="noopener">7850a7c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-23...site/2026-04-14-1" target="_blank" rel="noopener" title="Compare with site/2026-04-13-23">diff</a></td>
               <td data-label="Message">New report: cluster size vs ET (split/nosplit, single/double, data/MC)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 22:58</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-23" target="_blank" rel="noopener">site/2026-04-13-23</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/a2d9862" target="_blank" rel="noopener">a2d9862</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-22...site/2026-04-13-23" target="_blank" rel="noopener" title="Compare with site/2026-04-13-22">diff</a></td>
               <td data-label="Message">Vertex reweight plots: header text top-anchored via SetTextAlign(13), fixed ascender clipping above frame</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 22:46</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-22" target="_blank" rel="noopener">site/2026-04-13-22</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/cd68a95" target="_blank" rel="noopener">cd68a95</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-21...site/2026-04-13-22" target="_blank" rel="noopener" title="Compare with site/2026-04-13-21">diff</a></td>
               <td data-label="Message">Vertex reweight plots: full style harmonization with main pipeline sPHENIX style + layout fixes</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 21:36</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-21" target="_blank" rel="noopener">site/2026-04-13-21</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/e589d86" target="_blank" rel="noopener">e589d86</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-20...site/2026-04-13-21" target="_blank" rel="noopener" title="Compare with site/2026-04-13-20">diff</a></td>
               <td data-label="Message">Vertex reweight report: full restructure, emphasize 2D Gaussian reweight proposal and 1.4% impact</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 20:55</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-20" target="_blank" rel="noopener">site/2026-04-13-20</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/051709b" target="_blank" rel="noopener">051709b</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-19...site/2026-04-13-20" target="_blank" rel="noopener" title="Compare with site/2026-04-13-19">diff</a></td>
               <td data-label="Message">Vertex reweight: toy MC 3-way comparison + revised cross-section bias estimate (~1.4% at 1.5 mrad)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 20:39</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-19" target="_blank" rel="noopener">site/2026-04-13-19</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/6747107" target="_blank" rel="noopener">6747107</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-18...site/2026-04-13-19" target="_blank" rel="noopener" title="Compare with site/2026-04-13-18">diff</a></td>
               <td data-label="Message">Vertex reweight: add 2D joint truth-vertex reweight plan, CaloAna24 patch for secondary truth vertex</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 19:59</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-18" target="_blank" rel="noopener">site/2026-04-13-18</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/2526c48" target="_blank" rel="noopener">2526c48</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-17...site/2026-04-13-18" target="_blank" rel="noopener" title="Compare with site/2026-04-13-17">diff</a></td>
               <td data-label="Message">Vertex reweight: double_1p5mrad geometric-bound investigation, cross-section bias ~0.5% at |z|&lt;60 cm</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 19:42</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-17" target="_blank" rel="noopener">site/2026-04-13-17</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/070a1d4" target="_blank" rel="noopener">070a1d4</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-16...site/2026-04-13-17" target="_blank" rel="noopener" title="Compare with site/2026-04-13-16">diff</a></td>
               <td data-label="Message">Vertex reweight: add D&#x27;Agostini iterative unfolding (w_iter) — factor 2-4× better closure on mixed</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 19:17</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-16" target="_blank" rel="noopener">site/2026-04-13-16</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/974bee8" target="_blank" rel="noopener">974bee8</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-15...site/2026-04-13-16" target="_blank" rel="noopener" title="Compare with site/2026-04-13-15">diff</a></td>
               <td data-label="Message">Vertex reweight: photon10 cross-check (sample independence, closure agreement)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 19:03</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-15" target="_blank" rel="noopener">site/2026-04-13-15</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/8dbbe33" target="_blank" rel="noopener">8dbbe33</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-14...site/2026-04-13-15" target="_blank" rel="noopener" title="Compare with site/2026-04-13-14">diff</a></td>
               <td data-label="Message">Truth vertex report: corrected w1/w2 closure analysis + double-only stress test</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 18:48</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-14" target="_blank" rel="noopener">site/2026-04-13-14</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/947b65c" target="_blank" rel="noopener">947b65c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-13...site/2026-04-13-14" target="_blank" rel="noopener" title="Compare with site/2026-04-13-13">diff</a></td>
               <td data-label="Message">Extend truth vertex report: alternative truth-based reweighting (jet12, single/double/mixed, 0+1.5 mrad)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 17:43</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-13" target="_blank" rel="noopener">site/2026-04-13-13</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/a65f542" target="_blank" rel="noopener">a65f542</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-12...site/2026-04-13-13" target="_blank" rel="noopener" title="Compare with site/2026-04-13-12">diff</a></td>
               <td data-label="Message">Add truth vertex reco-check report (photon10/jet12 single+double)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 16:06</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-12" target="_blank" rel="noopener">site/2026-04-13-12</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/bff0c97" target="_blank" rel="noopener">bff0c97</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-11...site/2026-04-13-12" target="_blank" rel="noopener" title="Compare with site/2026-04-13-11">diff</a></td>
               <td data-label="Message">Lumi convention: actual production rerun results</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 15:37</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-11" target="_blank" rel="noopener">site/2026-04-13-11</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/de6a4ae" target="_blank" rel="noopener">de6a4ae</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-10...site/2026-04-13-11" target="_blank" rel="noopener" title="Compare with site/2026-04-13-10">diff</a></td>
               <td data-label="Message">Lumi convention: per-period validation (1.5 mrad and 0 mrad)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 15:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-10" target="_blank" rel="noopener">site/2026-04-13-10</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/bc9cf99" target="_blank" rel="noopener">bc9cf99</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-9...site/2026-04-13-10" target="_blank" rel="noopener" title="Compare with site/2026-04-13-9">diff</a></td>
               <td data-label="Message">Lumi convention report: rename, add post-fix validation with plots</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 14:03</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-9" target="_blank" rel="noopener">site/2026-04-13-9</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/019ca4c" target="_blank" rel="noopener">019ca4c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-8...site/2026-04-13-9" target="_blank" rel="noopener" title="Compare with site/2026-04-13-8">diff</a></td>
               <td data-label="Message">On-the-fly vertex reweight only: remove static fallback path</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:56</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-8" target="_blank" rel="noopener">site/2026-04-13-8</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9eb854c" target="_blank" rel="noopener">9eb854c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-7...site/2026-04-13-8" target="_blank" rel="noopener" title="Compare with site/2026-04-13-7">diff</a></td>
               <td data-label="Message">Vertex reweight fix: rebin/smooth/zero-fallback + diagnose stale static file</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:42</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-7" target="_blank" rel="noopener">site/2026-04-13-7</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/af312a0" target="_blank" rel="noopener">af312a0</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-6...site/2026-04-13-7" target="_blank" rel="noopener" title="Compare with site/2026-04-13-6">diff</a></td>
               <td data-label="Message">Simplify Section 3 to 1-line code change; document MC reweight bug</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:26</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-6" target="_blank" rel="noopener">site/2026-04-13-6</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/fbd5f3f" target="_blank" rel="noopener">fbd5f3f</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-5...site/2026-04-13-6" target="_blank" rel="noopener" title="Compare with site/2026-04-13-5">diff</a></td>
               <td data-label="Message">Add Section 3 luminosity framework: B6 code wiring + B7 report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-5" target="_blank" rel="noopener">site/2026-04-13-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/4c59e37" target="_blank" rel="noopener">4c59e37</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-4...site/2026-04-13-5" target="_blank" rel="noopener" title="Compare with site/2026-04-13-4">diff</a></td>
               <td data-label="Message">Add background MC eta edge migration study (single+double interaction, inflow/outflow, R-factor bias)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-4" target="_blank" rel="noopener">site/2026-04-13-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/ed7a3ef" target="_blank" rel="noopener">ed7a3ef</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-3...site/2026-04-13-4" target="_blank" rel="noopener" title="Compare with site/2026-04-13-3">diff</a></td>
               <td data-label="Message">Add Section 3 luminosity framework: B6 code wiring + B7 report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:23</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-3" target="_blank" rel="noopener">site/2026-04-13-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/1c3f2fb" target="_blank" rel="noopener">1c3f2fb</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-2...site/2026-04-13-3" target="_blank" rel="noopener" title="Compare with site/2026-04-13-2">diff</a></td>
               <td data-label="Message">Section 3 framework</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 13:22</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-2" target="_blank" rel="noopener">site/2026-04-13-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c3adc7e" target="_blank" rel="noopener">c3adc7e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-13-1...site/2026-04-13-2" target="_blank" rel="noopener" title="Compare with site/2026-04-13-1">diff</a></td>
               <td data-label="Message">Add Section 3 luminosity framework report and CalculatePhotonYield.C alternative path</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-13 12:31</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-13-1" target="_blank" rel="noopener">site/2026-04-13-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/7c8489c" target="_blank" rel="noopener">7c8489c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-10-5...site/2026-04-13-1" target="_blank" rel="noopener" title="Compare with site/2026-04-10-5">diff</a></td>
               <td data-label="Message">Shower shape variations report: restore all 10 configs + add 1.5mrad double-interaction panels</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-10 13:18</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-10-5" target="_blank" rel="noopener">site/2026-04-10-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/6ef3bf5" target="_blank" rel="noopener">6ef3bf5</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-10-4...site/2026-04-10-5" target="_blank" rel="noopener" title="Compare with site/2026-04-10-4">diff</a></td>
               <td data-label="Message">Regenerate chi2 summaries with updated DI fractions</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-10 12:55</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-10-4" target="_blank" rel="noopener">site/2026-04-10-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/51e2838" target="_blank" rel="noopener">51e2838</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-10-3...site/2026-04-10-4" target="_blank" rel="noopener" title="Compare with site/2026-04-10-3">diff</a></td>
               <td data-label="Message">Update DI fractions to cluster-weighted values (22.4%/7.9%) from calc_pileup_range.C</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-10 12:36</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-10-3" target="_blank" rel="noopener">site/2026-04-10-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/15e2c03" target="_blank" rel="noopener">15e2c03</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-10-2...site/2026-04-10-3" target="_blank" rel="noopener" title="Compare with site/2026-04-10-2">diff</a></td>
               <td data-label="Message">New report: pileup vertex acceptance (Section 3 correction)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-10 11:18</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-10-2" target="_blank" rel="noopener">site/2026-04-10-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/b1251f4" target="_blank" rel="noopener">b1251f4</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-10-1...site/2026-04-10-2" target="_blank" rel="noopener" title="Compare with site/2026-04-10-1">diff</a></td>
               <td data-label="Message">Fix: logz on all 2D colz plots, fix legend overlap</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-10 11:11</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-10-1" target="_blank" rel="noopener">site/2026-04-10-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c9849b0" target="_blank" rel="noopener">c9849b0</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-18...site/2026-04-10-1" target="_blank" rel="noopener" title="Compare with site/2026-04-09-18">diff</a></td>
               <td data-label="Message">New report: vertex distribution study; updated deltaR matching study with double-interaction deta vs dz</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 22:20</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-18" target="_blank" rel="noopener">site/2026-04-09-18</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/99d1f61" target="_blank" rel="noopener">99d1f61</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-17...site/2026-04-09-18" target="_blank" rel="noopener" title="Compare with site/2026-04-09-17">diff</a></td>
               <td data-label="Message">Fix 1.5 mrad pileup fractions in post_preliminary_updates report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 21:15</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-17" target="_blank" rel="noopener">site/2026-04-09-17</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/03817ab" target="_blank" rel="noopener">03817ab</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-16...site/2026-04-09-17" target="_blank" rel="noopener" title="Compare with site/2026-04-09-16">diff</a></td>
               <td data-label="Message">Update post-preliminary report: add BDT training performance section with ROC, score distributions, feature importance, and isoET correlation figures</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 21:11</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-16" target="_blank" rel="noopener">site/2026-04-09-16</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/a974923" target="_blank" rel="noopener">a974923</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-15...site/2026-04-09-16" target="_blank" rel="noopener" title="Compare with site/2026-04-09-15">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 15:32</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-15" target="_blank" rel="noopener">site/2026-04-09-15</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/98aabdf" target="_blank" rel="noopener">98aabdf</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-14...site/2026-04-09-15" target="_blank" rel="noopener" title="Compare with site/2026-04-09-14">diff</a></td>
               <td data-label="Message">Update DI shower shape report: add p-values, difference panel</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 13:17</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-14" target="_blank" rel="noopener">site/2026-04-09-14</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9c7edf2" target="_blank" rel="noopener">9c7edf2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-13...site/2026-04-09-14" target="_blank" rel="noopener" title="Compare with site/2026-04-09-13">diff</a></td>
               <td data-label="Message">Update: isolation ET comparison report with caveats section</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 13:16</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-13" target="_blank" rel="noopener">site/2026-04-09-13</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/cf476f1" target="_blank" rel="noopener">cf476f1</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-12...site/2026-04-09-13" target="_blank" rel="noopener" title="Compare with site/2026-04-09-12">diff</a></td>
               <td data-label="Message">New report: isolation ET definition comparison (60 MeV vs 120 MeV vs topo R=0.4)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:58</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-12" target="_blank" rel="noopener">site/2026-04-09-12</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/fb122fc" target="_blank" rel="noopener">fb122fc</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-11...site/2026-04-09-12" target="_blank" rel="noopener" title="Compare with site/2026-04-09-11">diff</a></td>
               <td data-label="Message">Fix report title extraction for multi-line titles</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:47</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-11" target="_blank" rel="noopener">site/2026-04-09-11</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/29db684" target="_blank" rel="noopener">29db684</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-10...site/2026-04-09-11" target="_blank" rel="noopener" title="Compare with site/2026-04-09-10">diff</a></td>
               <td data-label="Message">Merged report: 0mrad + 1.5mrad DI shower shape comparison</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:26</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-10" target="_blank" rel="noopener">site/2026-04-09-10</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/8eba4d2" target="_blank" rel="noopener">8eba4d2</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-9...site/2026-04-09-10" target="_blank" rel="noopener" title="Compare with site/2026-04-09-9">diff</a></td>
               <td data-label="Message">New report: 1.5mrad double-interaction shower shape comparison</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:22</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-9" target="_blank" rel="noopener">site/2026-04-09-9</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c397bf5" target="_blank" rel="noopener">c397bf5</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-8...site/2026-04-09-9" target="_blank" rel="noopener" title="Compare with site/2026-04-09-8">diff</a></td>
               <td data-label="Message">Use up-to-date efficiency and purity plots from plotting/</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:13</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-8" target="_blank" rel="noopener">site/2026-04-09-8</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/d1932d3" target="_blank" rel="noopener">d1932d3</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-7...site/2026-04-09-8" target="_blank" rel="noopener" title="Compare with site/2026-04-09-7">diff</a></td>
               <td data-label="Message">Replace BDT/deltaR figs with NPB purity and timing plots</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 12:03</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-7" target="_blank" rel="noopener">site/2026-04-09-7</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/3052b7e" target="_blank" rel="noopener">3052b7e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-6...site/2026-04-09-7" target="_blank" rel="noopener" title="Compare with site/2026-04-09-6">diff</a></td>
               <td data-label="Message">Add leakage fraction plot to eta migration study</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 11:56</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-6" target="_blank" rel="noopener">site/2026-04-09-6</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/84a86a7" target="_blank" rel="noopener">84a86a7</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-5...site/2026-04-09-6" target="_blank" rel="noopener" title="Compare with site/2026-04-09-5">diff</a></td>
               <td data-label="Message">Add plots: BDT score, purity, MC closure, efficiency overlays</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 11:47</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-5" target="_blank" rel="noopener">site/2026-04-09-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/17483b4" target="_blank" rel="noopener">17483b4</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-4...site/2026-04-09-5" target="_blank" rel="noopener" title="Compare with site/2026-04-09-4">diff</a></td>
               <td data-label="Message">Fix: corrected efficiency breakdown with deltaR removed</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 11:32</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-4" target="_blank" rel="noopener">site/2026-04-09-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/dd7af2c" target="_blank" rel="noopener">dd7af2c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-3...site/2026-04-09-4" target="_blank" rel="noopener" title="Compare with site/2026-04-09-3">diff</a></td>
               <td data-label="Message">New report: post-preliminary updates (BDT, NPB, DI, showershape)</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 01:35</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-3" target="_blank" rel="noopener">site/2026-04-09-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9b4699e" target="_blank" rel="noopener">9b4699e</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-2...site/2026-04-09-3" target="_blank" rel="noopener" title="Compare with site/2026-04-09-2">diff</a></td>
               <td data-label="Message">Updated report: DI mixed MC shower shape comparison with multi-panel overlays</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 01:17</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-2" target="_blank" rel="noopener">site/2026-04-09-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9def7a4" target="_blank" rel="noopener">9def7a4</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-09-1...site/2026-04-09-2" target="_blank" rel="noopener" title="Compare with site/2026-04-09-1">diff</a></td>
               <td data-label="Message">New report: double interaction shower shape comparison</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-09 00:11</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-09-1" target="_blank" rel="noopener">site/2026-04-09-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9956886" target="_blank" rel="noopener">9956886</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-15...site/2026-04-09-1" target="_blank" rel="noopener" title="Compare with site/2026-04-08-15">diff</a></td>
               <td data-label="Message">Remove obsolete double interaction efficiency report</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:42</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-15" target="_blank" rel="noopener">site/2026-04-08-15</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/df8a196" target="_blank" rel="noopener">df8a196</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-14...site/2026-04-08-15" target="_blank" rel="noopener" title="Compare with site/2026-04-08-14">diff</a></td>
               <td data-label="Message">Force redeploy with corrected figure 5 caption</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:39</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-14" target="_blank" rel="noopener">site/2026-04-08-14</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/9ed0c02" target="_blank" rel="noopener">9ed0c02</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-13...site/2026-04-08-14" target="_blank" rel="noopener" title="Compare with site/2026-04-08-13">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:35</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-13" target="_blank" rel="noopener">site/2026-04-08-13</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/fdb98bb" target="_blank" rel="noopener">fdb98bb</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-12...site/2026-04-08-13" target="_blank" rel="noopener" title="Compare with site/2026-04-08-12">diff</a></td>
               <td data-label="Message">Update color theme to Columbia University colors</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:31</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-12" target="_blank" rel="noopener">site/2026-04-08-12</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c14c0a6" target="_blank" rel="noopener">c14c0a6</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-11...site/2026-04-08-12" target="_blank" rel="noopener" title="Compare with site/2026-04-08-11">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-11" target="_blank" rel="noopener">site/2026-04-08-11</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/444a7e4" target="_blank" rel="noopener">444a7e4</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-10...site/2026-04-08-11" target="_blank" rel="noopener" title="Compare with site/2026-04-08-10">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:24</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-10" target="_blank" rel="noopener">site/2026-04-08-10</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/e87a472" target="_blank" rel="noopener">e87a472</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-9...site/2026-04-08-10" target="_blank" rel="noopener" title="Compare with site/2026-04-08-9">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:22</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-9" target="_blank" rel="noopener">site/2026-04-08-9</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/8bf2905" target="_blank" rel="noopener">8bf2905</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-8...site/2026-04-08-9" target="_blank" rel="noopener" title="Compare with site/2026-04-08-8">diff</a></td>
               <td data-label="Message">Update eta migration report with fixed double-interaction plots</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:20</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-8" target="_blank" rel="noopener">site/2026-04-08-8</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/96ad64b" target="_blank" rel="noopener">96ad64b</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-7...site/2026-04-08-8" target="_blank" rel="noopener" title="Compare with site/2026-04-08-7">diff</a></td>
               <td data-label="Message">Update site: 2026-04-09</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:14</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-7" target="_blank" rel="noopener">site/2026-04-08-7</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/3ea281d" target="_blank" rel="noopener">3ea281d</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-6...site/2026-04-08-7" target="_blank" rel="noopener" title="Compare with site/2026-04-08-6">diff</a></td>
               <td data-label="Message">Update MC purity report: background-only isoET</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 23:10</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-6" target="_blank" rel="noopener">site/2026-04-08-6</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/c3bb2d1" target="_blank" rel="noopener">c3bb2d1</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-5...site/2026-04-08-6" target="_blank" rel="noopener" title="Compare with site/2026-04-08-5">diff</a></td>
               <td data-label="Message">Update purity report: use background-only isoET</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 22:50</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-5" target="_blank" rel="noopener">site/2026-04-08-5</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/fee0a84" target="_blank" rel="noopener">fee0a84</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-4...site/2026-04-08-5" target="_blank" rel="noopener" title="Compare with site/2026-04-08-4">diff</a></td>
               <td data-label="Message">Deploy all 8 analysis reports</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 22:45</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-4" target="_blank" rel="noopener">site/2026-04-08-4</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/52a7b2d" target="_blank" rel="noopener">52a7b2d</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-3...site/2026-04-08-4" target="_blank" rel="noopener" title="Compare with site/2026-04-08-3">diff</a></td>
               <td data-label="Message">Update all reports</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 22:39</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-3" target="_blank" rel="noopener">site/2026-04-08-3</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/ceaa04c" target="_blank" rel="noopener">ceaa04c</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-2...site/2026-04-08-3" target="_blank" rel="noopener" title="Compare with site/2026-04-08-2">diff</a></td>
               <td data-label="Message">Initial deployment: MC purity correction reports</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 22:39</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-2" target="_blank" rel="noopener">site/2026-04-08-2</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/78bc9e3" target="_blank" rel="noopener">78bc9e3</a></td>
+              <td data-label="&Delta;"><a href="https://github.com/Shuonli/ppg12/compare/site/2026-04-08-1...site/2026-04-08-2" target="_blank" rel="noopener" title="Compare with site/2026-04-08-1">diff</a></td>
               <td data-label="Message">Add site CSS and 404 page</td>
             </tr>
             <tr>
               <td data-label="Date">2026-04-08 22:35</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-08-1" target="_blank" rel="noopener">site/2026-04-08-1</a></td>
               <td data-label="Commit"><a href="https://github.com/Shuonli/ppg12/commit/1e960d3" target="_blank" rel="noopener">1e960d3</a></td>
+              <td data-label="&Delta;"><span class="muted">—</span></td>
               <td data-label="Message">Initialize gh-pages branch with skeleton structure</td>
             </tr>
           </tbody>
         </table>
         <p class="deploys-footnote">
-          Tag links open the full site snapshot on GitHub. See also <a href="https://github.com/Shuonli/ppg12/tags" target="_blank" rel="noopener">all tags</a> and the <a href="https://github.com/Shuonli/ppg12/commits/gh-pages" target="_blank" rel="noopener">gh-pages commit history</a>.
+          Tag links open the full site snapshot; &ldquo;diff&rdquo; shows what changed vs. the previous deploy. See also <a href="https://github.com/Shuonli/ppg12/tags" target="_blank" rel="noopener">all tags</a> and the <a href="https://github.com/Shuonli/ppg12/commits/gh-pages" target="_blank" rel="noopener">gh-pages commit history</a>.
         </p>
       </details>
     </section>

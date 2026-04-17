@@ -73,6 +73,28 @@ a:hover {
   border-bottom: 2px solid #B9D9EB;
 }
 
+/* ── Reports Groups (physics-topic subheadings) ── */
+.reports-group {
+  margin-bottom: 1.75rem;
+}
+
+.group-title {
+  font-size: 1.02rem;
+  color: #002B7F;
+  font-weight: 600;
+  margin: 1.25rem 0 0.55rem;
+  padding: 0.1rem 0 0.1rem 0.15rem;
+  border-left: 3px solid #B9D9EB;
+  padding-left: 0.55rem;
+}
+
+.group-title .group-count {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.85rem;
+  margin-left: 0.35rem;
+}
+
 /* ── Reports Table ── */
 .reports-table {
   width: 100%;
@@ -240,6 +262,10 @@ a:hover {
   margin-top: 0.6rem;
   font-size: 0.82rem;
   color: #666;
+}
+
+.deploys-table td .muted {
+  color: #bbb;
 }
 
 /* ── Footer ── */
