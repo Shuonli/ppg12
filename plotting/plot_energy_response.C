@@ -287,7 +287,8 @@ void plot_energy_response()
         c.Divide(2, 2, 0.002, 0.002);
 
         auto drawPanel = [&](int ipad, const char *hfmt, const char *lvl,
-                             double ylo, double yhi, const char *yt, const char *lvl_label)
+                             double ylo, double yhi, const char *yt,
+                             const char *lvl_label, const char *leg_loc)
         {
             c.cd(ipad);
             gPad->SetLeftMargin(0.17); gPad->SetBottomMargin(0.17);
@@ -308,34 +309,40 @@ void plot_energy_response()
             l.DrawLatex(0.22, 0.85, strleg2.c_str());
             l.DrawLatex(0.22, 0.80, strleg3.c_str());
             l.DrawLatex(0.22, 0.75, lvl_label);
+
+            // Per-panel series legend. Abbreviated 6-entry labels in a 2-column
+            // layout fit into the upper-right strip that is the only region
+            // consistently empty across all 4 panels (sPHENIX header at
+            // upper-left; data on mean panels ends at NDC y=0.69, on sigma
+            // panels the double curve ends at NDC y=0.80).
+            static const char *kShortLabels[6] = {
+                "Single",           "Double",
+                "Mix 0 mrad",       "Mix 0 mrad +vtxrw",
+                "Mix 1.5 mrad",     "Mix 1.5 mrad +vtxrw",
+            };
+            TLegend *leg = new TLegend(0.44, 0.74, 0.93, 0.93);
+            leg->SetFillStyle(0); leg->SetBorderSize(0);
+            leg->SetTextFont(42); leg->SetTextSize(0.026);
+            leg->SetNColumns(2);
+            for (int i = 0; i < kNsets; i++) {
+                TH1 *h = (TH1*)fin->Get(Form(hfmt, kSets[i].name, lvl));
+                if (!h) continue;
+                leg->AddEntry(h, kShortLabels[i], "lp");
+            }
+            leg->Draw();
         };
 
-        // Tightened matched-mean y-range [0.86, 1.02] (was [0.78, 1.05]) so the
-        // data (which lives in [0.88, 0.97]) fills the panel instead of being
-        // compressed into the upper half.
+        // All 4 panels carry the same 6-entry series legend (upper-right,
+        // 2-column) so the figure is readable in isolation without needing
+        // a separate legend key.
         drawPanel(1, "h_respET_mean_%s_%s",  "matched", 0.86, 1.02,
-                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "matched");
+                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "matched", "upper-right");
         drawPanel(2, "h_respET_mean_%s_%s",  "reco",    0.88, 1.05,
-                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "reco");
+                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "reco", "upper-right");
         drawPanel(3, "h_respET_sigma_%s_%s", "matched", 0.02, 0.22,
-                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "matched");
-        // Widened reco sigma yhi to 0.16 (was 0.12) so the full double-interaction
-        // MC curve (sigma ~0.10-0.13) is visible; the previous 0.12 clipped all
-        // but two bins, leaving a single stray-looking red point at pT ~34 GeV.
+                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "matched", "upper-right");
         drawPanel(4, "h_respET_sigma_%s_%s", "reco",    0.02, 0.16,
-                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "reco");
-
-        // Legend on pad 2 (moved to lower-left so it does not cut through the
-        // reco-mean data curves at pT 25-30 GeV, where the series slope down).
-        c.cd(2);
-        TLegend leg(0.22, 0.22, 0.65, 0.22 + 0.04 * kNsets);
-        leg.SetFillStyle(0); leg.SetBorderSize(0); leg.SetTextFont(42); leg.SetTextSize(0.030);
-        for (int i = 0; i < kNsets; i++) {
-            TH1 *h = (TH1*)fin->Get(Form("h_respET_mean_%s_reco", kSets[i].name));
-            if (!h) continue;
-            leg.AddEntry(h, kSets[i].label, "lp");
-        }
-        leg.Draw();
+                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "reco", "upper-right");
 
         c.SaveAs((outDir + "/resp_summary_4panel.pdf").c_str());
     }
