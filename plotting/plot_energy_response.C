@@ -6,17 +6,22 @@
 // Plot photon energy response (ET_reco / pT_truth) across interaction
 // categories and vertex-reweighting variants from energy_response_comparison.root.
 //
+// Level naming convention (producer: compare_energy_response.C):
+//   reco       : trkID match only, no extra cuts
+//   common_cut : reco + common cuts (cluster probability, e11/e33, omega_r,
+//                omega_eta, NPB if enabled); working point that enters ABCD
+//   tight_iso  : common_cut + isolation + ET-dependent tight BDT (signal
+//                region A of ABCD)
+//
 // Output (sPHENIX style, PDF):
 //   plotting/figures/energy_response/
-//     resp_mean_reco.pdf          — mean response vs pT, level=reco
-//     resp_sigma_reco.pdf         — sigma response vs pT, level=reco
-//     resp_mean_matched.pdf       — mean response vs pT, level=matched
-//     resp_sigma_matched.pdf      — sigma response vs pT, level=matched
-//     resp_summary_4panel.pdf     — 2x2 panel of mean/sigma × matched/reco
-//     resp_projection_pt_<low/mid/high>.pdf
-//                                 — 1D projections at 3 representative pT bins
-//     resp_vtxrw_diagnostics.pdf  — h_vtxz per sample + reweighting curves
-//     resp_pileup_only.pdf        — single/double/0mrad/1p5mrad no-reweight
+//     resp_mean_reco.pdf             — mean response vs pT, level=reco
+//     resp_sigma_reco.pdf            — sigma response vs pT, level=reco
+//     resp_mean_common_cut.pdf       — mean response vs pT, level=common_cut
+//     resp_sigma_common_cut.pdf      — sigma response vs pT, level=common_cut
+//     resp_summary_4panel.pdf        — 2x2 panel of mean/sigma × reco/common_cut
+//     resp_projection_*_pt_*.pdf     — 1D projections at representative pT bins
+//     resp_vtxrw_diagnostics.pdf     — h_vtxz per sample + reweighting curves
 // =====================================================================
 
 namespace {
@@ -196,65 +201,65 @@ void plot_energy_response()
     }
 
     // -----------------------------------------------------------------
-    // All-6 overlay — mean and sigma summaries at "reco" level
+    // All-6 overlay — mean and sigma summaries at "common_cut" level
     // -----------------------------------------------------------------
     int kAllIdx[kNsets]; for (int i = 0; i < kNsets; i++) kAllIdx[i] = i;
 
-    overlay_summary(fin, "h_respET_mean_%s_%s",  "reco",
+    overlay_summary(fin, "h_respET_mean_%s_%s",  "common_cut",
         kAllIdx, kNsets, 0.90, 1.05,
         "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT",
-        "post common cuts (reco)",
-        (outDir + "/resp_mean_reco.pdf").c_str());
-    overlay_summary(fin, "h_respET_sigma_%s_%s", "reco",
+        "common cut",
+        (outDir + "/resp_mean_common_cut.pdf").c_str());
+    overlay_summary(fin, "h_respET_sigma_%s_%s", "common_cut",
         kAllIdx, kNsets, 0.02, 0.12,
         "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})",
-        "post common cuts (reco)",
-        (outDir + "/resp_sigma_reco.pdf").c_str());
+        "common cut",
+        (outDir + "/resp_sigma_common_cut.pdf").c_str());
 
-    overlay_summary(fin, "h_respET_mean_%s_%s",  "matched",
+    overlay_summary(fin, "h_respET_mean_%s_%s",  "reco",
         kAllIdx, kNsets, 0.82, 1.05,
         "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT",
-        "trkID-matched only (matched)",
-        (outDir + "/resp_mean_matched.pdf").c_str());
-    overlay_summary(fin, "h_respET_sigma_%s_%s", "matched",
+        "reco (trkID match)",
+        (outDir + "/resp_mean_reco.pdf").c_str());
+    overlay_summary(fin, "h_respET_sigma_%s_%s", "reco",
         kAllIdx, kNsets, 0.02, 0.20,
         "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})",
-        "trkID-matched only (matched)",
-        (outDir + "/resp_sigma_matched.pdf").c_str());
+        "reco (trkID match)",
+        (outDir + "/resp_sigma_reco.pdf").c_str());
 
     // -----------------------------------------------------------------
     // Pileup-only overlay (no vtx reweighting) at reco level
     // -----------------------------------------------------------------
-    overlay_summary(fin, "h_respET_mean_%s_%s",  "reco",
+    overlay_summary(fin, "h_respET_mean_%s_%s",  "common_cut",
         kPileupIdx, kNpileupIdx, 0.92, 1.03,
         "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT",
-        "post common cuts (reco)",
-        (outDir + "/resp_mean_reco_pileup.pdf").c_str());
-    overlay_summary(fin, "h_respET_sigma_%s_%s", "reco",
+        "common cut",
+        (outDir + "/resp_mean_common_cut_pileup.pdf").c_str());
+    overlay_summary(fin, "h_respET_sigma_%s_%s", "common_cut",
         kPileupIdx, kNpileupIdx, 0.02, 0.10,
         "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})",
-        "post common cuts (reco)",
-        (outDir + "/resp_sigma_reco_pileup.pdf").c_str());
+        "common cut",
+        (outDir + "/resp_sigma_common_cut_pileup.pdf").c_str());
 
     // -----------------------------------------------------------------
     // Vertex-reweighting overlay (0 mrad / 1.5 mrad, w/wo rw) at reco level
     // -----------------------------------------------------------------
     // Data slopes down from upper-left to lower-right; move legend to upper-right
     // where the panel is empty (previously lower-left overlapped the data curves).
-    overlay_summary(fin, "h_respET_mean_%s_%s",  "reco",
+    overlay_summary(fin, "h_respET_mean_%s_%s",  "common_cut",
         kVtxRwIdx, kNvtxRwIdx, 0.94, 1.02,
         "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT",
         "effect of z_{vtx} reweighting",
-        (outDir + "/resp_mean_reco_vtxrw.pdf").c_str(),
+        (outDir + "/resp_mean_common_cut_vtxrw.pdf").c_str(),
         "upper-right");
     // Data values for mixed_0mrad variants extend up to ~0.093 at low pT;
     // widen yhi so they are not clipped (previously clipped at 0.09, making
     // the 0 mrad curves disappear for pT < 20 GeV).
-    overlay_summary(fin, "h_respET_sigma_%s_%s", "reco",
+    overlay_summary(fin, "h_respET_sigma_%s_%s", "common_cut",
         kVtxRwIdx, kNvtxRwIdx, 0.03, 0.11,
         "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})",
         "effect of z_{vtx} reweighting",
-        (outDir + "/resp_sigma_reco_vtxrw.pdf").c_str(),
+        (outDir + "/resp_sigma_common_cut_vtxrw.pdf").c_str(),
         "lower-right");
 
     // -----------------------------------------------------------------
@@ -262,22 +267,22 @@ void plot_energy_response()
     //   pT bins (pT_bins_truth from config): 7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45
     //   low = bin 3 (10-12 GeV), mid = bin 9 (22-24), high = bin 12 (28-32)
     // -----------------------------------------------------------------
-    overlay_projection(fin, "respET", "matched", kPileupIdx, kNpileupIdx, 3,
+    overlay_projection(fin, "respET", "reco", kPileupIdx, kNpileupIdx, 3,
         "10 < #it{p}_{T}^{truth} < 12 GeV",
         "E_{T}^{reco} / #it{p}_{T}^{truth}",
-        (outDir + "/resp_projection_matched_pt10_12.pdf").c_str());
-    overlay_projection(fin, "respET", "matched", kPileupIdx, kNpileupIdx, 9,
+        (outDir + "/resp_projection_reco_pt10_12.pdf").c_str());
+    overlay_projection(fin, "respET", "reco", kPileupIdx, kNpileupIdx, 9,
         "22 < #it{p}_{T}^{truth} < 24 GeV",
         "E_{T}^{reco} / #it{p}_{T}^{truth}",
-        (outDir + "/resp_projection_matched_pt22_24.pdf").c_str());
-    overlay_projection(fin, "respET", "matched", kPileupIdx, kNpileupIdx, 12,
+        (outDir + "/resp_projection_reco_pt22_24.pdf").c_str());
+    overlay_projection(fin, "respET", "reco", kPileupIdx, kNpileupIdx, 12,
         "28 < #it{p}_{T}^{truth} < 32 GeV",
         "E_{T}^{reco} / #it{p}_{T}^{truth}",
-        (outDir + "/resp_projection_matched_pt28_32.pdf").c_str());
-    overlay_projection(fin, "respET", "reco",    kPileupIdx, kNpileupIdx, 9,
-        "22 < #it{p}_{T}^{truth} < 24 GeV (post common)",
+        (outDir + "/resp_projection_reco_pt28_32.pdf").c_str());
+    overlay_projection(fin, "respET", "common_cut",    kPileupIdx, kNpileupIdx, 9,
+        "22 < #it{p}_{T}^{truth} < 24 GeV (common cut)",
         "E_{T}^{reco} / #it{p}_{T}^{truth}",
-        (outDir + "/resp_projection_reco_pt22_24.pdf").c_str());
+        (outDir + "/resp_projection_common_cut_pt22_24.pdf").c_str());
 
     // -----------------------------------------------------------------
     // 4-panel summary figure: mean/sigma × matched/reco (all 6 sets)
@@ -335,14 +340,14 @@ void plot_energy_response()
         // All 4 panels carry the same 6-entry series legend (upper-right,
         // 2-column) so the figure is readable in isolation without needing
         // a separate legend key.
-        drawPanel(1, "h_respET_mean_%s_%s",  "matched", 0.86, 1.02,
-                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "matched", "upper-right");
-        drawPanel(2, "h_respET_mean_%s_%s",  "reco",    0.88, 1.05,
-                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "reco", "upper-right");
-        drawPanel(3, "h_respET_sigma_%s_%s", "matched", 0.02, 0.22,
-                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "matched", "upper-right");
-        drawPanel(4, "h_respET_sigma_%s_%s", "reco",    0.02, 0.16,
-                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "reco", "upper-right");
+        drawPanel(1, "h_respET_mean_%s_%s",  "reco",       0.86, 1.02,
+                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "reco",       "upper-right");
+        drawPanel(2, "h_respET_mean_%s_%s",  "common_cut", 0.88, 1.05,
+                  "#LTE_{T}^{reco} / #it{p}_{T}^{truth}#GT", "common cut", "upper-right");
+        drawPanel(3, "h_respET_sigma_%s_%s", "reco",       0.02, 0.22,
+                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "reco",       "upper-right");
+        drawPanel(4, "h_respET_sigma_%s_%s", "common_cut", 0.02, 0.16,
+                  "#sigma(E_{T}^{reco} / #it{p}_{T}^{truth})", "common cut", "upper-right");
 
         c.SaveAs((outDir + "/resp_summary_4panel.pdf").c_str());
     }

@@ -230,11 +230,11 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
     const float respMin   = 0.0f;
     const float respMax   = 2.5f;
 
-    // Selection levels
-    //   matched : trkID-matched only (no ΔR, no common)
-    //   reco    : trkID-matched + common cuts (≈ compare_efficiency_deltaR reco_noDR)
-    //   selected: trkID + common + iso + tight (final analysis selection)
-    const std::vector<TString> levels = {"matched", "reco", "selected"};
+    // Selection levels (renamed 2026-04-16):
+    //   reco       : trkID-matched only (no ΔR, no common)   [was "matched"]
+    //   common_cut : trkID + common cuts                     [was "reco"]
+    //   tight_iso  : trkID + common + iso + tight BDT        [was "selected"]
+    const std::vector<TString> levels = {"reco", "common_cut", "tight_iso"};
 
     // Histogram maps
     std::map<TString, TH2F*> hRespET;   // ET_reco / pT_truth
@@ -540,17 +540,17 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
                         }  // else weight unchanged — out of range, trust alpha
                     }
 
-                    // matched level: no additional cuts
-                    hRespET[Form("h_respET_%s_matched", s.name.Data())]->Fill(truth_pT, rET, w);
-                    hRespE [Form("h_respE_%s_matched",  s.name.Data())]->Fill(truth_pT, rE,  w);
+                    // reco level: trkID match only, no additional cuts
+                    hRespET[Form("h_respET_%s_reco", s.name.Data())]->Fill(truth_pT, rET, w);
+                    hRespE [Form("h_respE_%s_reco",  s.name.Data())]->Fill(truth_pT, rE,  w);
 
                     if (passes_common) {
-                        hRespET[Form("h_respET_%s_reco", s.name.Data())]->Fill(truth_pT, rET, w);
-                        hRespE [Form("h_respE_%s_reco",  s.name.Data())]->Fill(truth_pT, rE,  w);
+                        hRespET[Form("h_respET_%s_common_cut", s.name.Data())]->Fill(truth_pT, rET, w);
+                        hRespE [Form("h_respE_%s_common_cut",  s.name.Data())]->Fill(truth_pT, rE,  w);
 
                         if (passes_iso && passes_tight) {
-                            hRespET[Form("h_respET_%s_selected", s.name.Data())]->Fill(truth_pT, rET, w);
-                            hRespE [Form("h_respE_%s_selected",  s.name.Data())]->Fill(truth_pT, rE,  w);
+                            hRespET[Form("h_respET_%s_tight_iso", s.name.Data())]->Fill(truth_pT, rET, w);
+                            hRespE [Form("h_respE_%s_tight_iso",  s.name.Data())]->Fill(truth_pT, rE,  w);
                         }
                     }
                 }
@@ -647,16 +647,17 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
     std::cout << "\n[done] output: " << outFilename << std::endl;
 
     // -----------------------------------------------------------------
-    // Integrated summary (pT-integrated mean/RMS of rET at 'reco' level)
+    // Integrated summary (pT-integrated mean/RMS of rET at common_cut level,
+    // i.e. post common cuts; the working point that enters ABCD)
     // -----------------------------------------------------------------
-    std::cout << "\nIntegrated response (rET = ET_reco/pT_truth, level=reco):" << std::endl;
+    std::cout << "\nIntegrated response (rET = ET_reco/pT_truth, level=common_cut):" << std::endl;
     std::cout << std::string(78, '-') << std::endl;
     std::cout << Form("%-22s  %8s  %8s  %12s",
                       "set", "<rET>", "sigma", "entries") << std::endl;
     std::cout << std::string(78, '-') << std::endl;
     for (auto &s : sets) {
-        TH2F *h = hRespET[Form("h_respET_%s_reco", s.name.Data())];
-        TH1D *proj = h->ProjectionY("_proj_reco");
+        TH2F *h = hRespET[Form("h_respET_%s_common_cut", s.name.Data())];
+        TH1D *proj = h->ProjectionY("_proj_common_cut");
         double m  = proj->GetMean();
         double sd = proj->GetStdDev();
         double n  = proj->Integral();

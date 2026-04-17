@@ -74,19 +74,22 @@ configurations: single, double, and four mixed variants covering the two RHIC
 crossing-angle running periods (0~mrad with 22.4\% cluster-weighted
 double-interaction fraction and 1.5~mrad with 7.9\%), each with and without
 the data-driven z-vertex reweighting used in the main pipeline.
-The response is examined at the trkID-matched (``matched''), post-common-cuts
-(``reco''), and fully-selected (``selected'') levels.
-At the matched level, the pileup-induced vertex shift produces a direct
+The response is examined at three selection levels: \emph{reco}
+(trkID match only), \emph{common cut} (reco + common cuts, i.e. the working
+point that enters ABCD), and \emph{tight iso} (common cut + isolation +
+tight BDT, i.e. the signal region).
+At the reco level, the pileup-induced vertex shift produces a direct
 kinematic bias ($\sim$3~pp mean shift and $\sim$30\% relative width increase
 comparing double to single); after the common cuts the mean bias is largely
 absorbed by the cut boundaries, leaving a residual $\sim$0.3~pp mean shift
 and $\sim$22\% relative width increase. The 1.5~mrad mixed sample (the
 nominal production period) tracks single-interaction MC to within $\sim$0.1~pp
-in mean at the reco and selected levels. The 0~mrad mixed sample
+in mean at the common cut and tight iso levels. The 0~mrad mixed sample
 exhibits a measurably different response that motivates treating the two
 running periods separately in the pileup systematic. Vertex reweighting
-modifies the response by less than $\sim$0.5~pp at the reco level, confirming
-that it is sub-dominant relative to the interaction-type composition itself.
+modifies the response by less than $\sim$0.5~pp at the common cut level,
+confirming that it is sub-dominant relative to the interaction-type
+composition itself.
 \end{abstract}
 
 \tableofcontents
@@ -519,15 +522,15 @@ The response histograms are filled at three selection levels, each mirroring a
 stage of the factorized efficiency chain:
 
 \begin{description}
-  \item[matched:] \texttt{trkID} match only — no $\DR$ cut and no common
+  \item[reco:] \texttt{trkID} match only — no $\DR$ cut and no common
     cuts. This isolates the raw detector response as seen by the truth
     association.
-  \item[reco:] matched $+$ common cuts (cluster probability, $e_{11}/e_{33}$,
-    $\omega_r$, $\omega_\eta$ bounds, NPB if enabled). This is the working
-    point that enters the ABCD region counting.
-  \item[selected:] reco $+$ isolation $+$ full tight selection (including the
-    \ET-dependent BDT threshold, Eq.~\ref{eq:bdt_threshold}). This is the
-    final analysis selection used for the cross-section.
+  \item[common cut:] reco $+$ common cuts (cluster probability,
+    $e_{11}/e_{33}$, $\omega_r$, $\omega_\eta$ bounds, NPB if enabled).
+    This is the working point that enters the ABCD region counting.
+  \item[tight iso:] common cut $+$ isolation $+$ full tight selection
+    (including the \ET-dependent BDT threshold, Eq.~\ref{eq:bdt_threshold}).
+    This is the final analysis selection used for the cross-section.
 \end{description}
 
 \subsubsection{Vertex reweighting}
@@ -590,14 +593,14 @@ $\lesssim$1\% in the bulk of the response.
 \centering
 \caption{Integrated mean $\langle R_{\ET}\rangle$ and RMS $\sigma(R_{\ET})$
   of the photon energy response, for the six sample sets at the three
-  selection levels. ``matched'': \texttt{trkID} only.
-  ``reco'': + common cuts. ``selected'': + iso + tight.}
+  selection levels. ``reco'': \texttt{trkID} only.
+  ``common cut'': + common cuts. ``tight iso'': + iso + tight BDT.}
 \label{tab:resp_integrated}
 \begin{tabular}{l cc cc cc}
 \toprule
-& \multicolumn{2}{c}{\textbf{matched}}
 & \multicolumn{2}{c}{\textbf{reco}}
-& \multicolumn{2}{c}{\textbf{selected}} \\
+& \multicolumn{2}{c}{\textbf{common cut}}
+& \multicolumn{2}{c}{\textbf{tight iso}} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 \textbf{Set} & $\langle R_{\ET}\rangle$ & $\sigma$
              & $\langle R_{\ET}\rangle$ & $\sigma$
@@ -616,7 +619,7 @@ mixed 1.5~mrad (vtx rw)         & 0.940 & 0.128 & 0.953 & 0.114 & 0.988 & 0.073 
 
 Figure~\ref{fig:resp_4panel} presents the differential mean and Gaussian
 width of $R_{\ET}$ as functions of truth \pT, overlaying all six sets at
-both the matched and reco levels. The truncated-Gaussian fit used for
+both the reco and common-cut levels. The truncated-Gaussian fit used for
 $\langle R_{\ET}\rangle$ and $\sigma(R_{\ET})$ is performed on the
 [0.3, 1.7] window of $R_{\ET}$, the same window used by
 \texttt{RecoEffCalculator\_TTreeReader.C} in the main pipeline, to ensure
@@ -627,9 +630,9 @@ robustness against non-Gaussian tails.
 \includegraphics[width=0.98\textwidth]{resp_summary_4panel.pdf}
 \caption{Mean (top row) and Gaussian width (bottom row) of the photon
   energy response $R_{\ET} = \ET^{\text{reco}} / \pT^{\text{truth}}$ as a
-  function of truth \pT, for all six sample sets. Left column: matched
-  (\texttt{trkID} only); right column: reco (+ common cuts).
-  The matched-level panels expose the raw pileup bias; after the common
+  function of truth \pT, for all six sample sets. Left column: reco
+  (\texttt{trkID} only); right column: common cut (+ common cuts).
+  The reco-level panels expose the raw pileup bias; after the common
   cuts it is largely absorbed by the cut boundaries.}
 \label{fig:resp_4panel}
 \end{figure}
@@ -641,7 +644,7 @@ The comparison between single, double, mixed 0~mrad, and mixed 1.5~mrad
 (all without vertex reweighting) isolates the pileup impact as a function
 of interaction-type composition.
 
-\paragraph{Matched level.}
+\paragraph{Reco level.}
 The raw calorimeter response, evaluated on all \texttt{trkID}-matched
 clusters, shows the largest pileup bias: the integrated mean drops from
 0.939 in single MC to 0.910 in double MC (a $-2.9$~pp shift, or 3.1\%
@@ -676,7 +679,7 @@ response is essentially that of single-interaction MC with $\sim$40\%
 inflated tails. This is the physically relevant sample for the nominal
 production period.
 
-\paragraph{Reco level.}
+\paragraph{Common-cut level.}
 After the common cuts, the mean response converges across all samples to
 $\sim$0.948--0.951 (within $\pm$0.4~pp), indicating that the
 vertex-induced kinematic bias is almost entirely rejected by the
@@ -690,16 +693,16 @@ common cuts shave off the mean-biasing tail faster than the
 symmetric-broadening bulk.
 
 Figure~\ref{fig:resp_projection_pt22_24} shows the $R_{\ET}$ shape at
-$22<\pT^{\text{truth}}<24$~GeV (matched level) — the characteristic
+$22<\pT^{\text{truth}}<24$~GeV (reco level) — the characteristic
 broadening of the double sample is directly visible as wider tails,
 especially to the low-$R_{\ET}$ side (under-reconstruction from shifted
 $\eta^{\text{reco}}$).
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.80\textwidth]{resp_projection_matched_pt22_24.pdf}
+\includegraphics[width=0.80\textwidth]{resp_projection_reco_pt22_24.pdf}
 \caption{Normalized $R_{\ET} = \ET^{\text{reco}}/\pT^{\text{truth}}$
-  distributions at matched level for the pileup comparison (single, double,
+  distributions at reco level for the pileup comparison (single, double,
   mixed 0~mrad, mixed 1.5~mrad), in the bin
   $22 < \pT^{\text{truth}} < 24$~GeV. The vertical dashed line marks
   $R_{\ET} = 1$. Double MC exhibits a markedly broader distribution with a
@@ -708,7 +711,7 @@ $\eta^{\text{reco}}$).
 \label{fig:resp_projection_pt22_24}
 \end{figure}
 
-\paragraph{Selected level.}
+\paragraph{Tight-iso level.}
 Once the full tight selection (including the \ET-dependent BDT threshold)
 is applied, the integrated mean sits at 0.988--0.989 with $\sigma =
 0.071$--0.093. The remaining inter-sample spread is 0.7~pp in mean and
@@ -737,11 +740,11 @@ with truth \pT.
 The two vertex-reweighted mixed sets quantify how much of the residual
 data--MC vertex mismatch contributes to the response systematic.
 Table~\ref{tab:resp_vtxrw} shows the mean and RMS of $R_{\ET}$ at the
-reco level for the two reweighting pairs, together with the differences.
+common-cut level for the two reweighting pairs, together with the differences.
 
 \begin{table}[htbp]
 \centering
-\caption{Integrated $R_{\ET}$ at reco level for the four mixed sets.
+\caption{Integrated $R_{\ET}$ at common-cut level for the four mixed sets.
   The rightmost columns show the change induced by the data-driven vertex
   reweighting.}
 \label{tab:resp_vtxrw}
@@ -773,7 +776,7 @@ the nominal photon10 MC even with the 7.9\% double fraction added. The
 reweighting therefore suppresses large-$|z|$ events, reducing the
 fraction of vertex-shifted clusters and pulling the response up.
 
-Figure~\ref{fig:resp_vtxrw} overlays the reco-level mean and width of
+Figure~\ref{fig:resp_vtxrw} overlays the common-cut-level mean and width of
 $R_{\ET}$ for the four mixed sets. The vertex-reweighting effect is
 visible as a small but systematic upward shift in the mean of the
 1.5~mrad curve across the full \pT{} range; the 0~mrad curves overlay
@@ -781,12 +784,13 @@ within statistical fluctuations.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.49\textwidth]{resp_mean_reco_vtxrw.pdf}
-\includegraphics[width=0.49\textwidth]{resp_sigma_reco_vtxrw.pdf}
-\caption{Mean (left) and Gaussian width (right) of $R_{\ET}$ at the reco
-  level, overlaying the four mixed sets. The vertex reweighting produces
-  a small systematic upward shift in the 1.5~mrad mean and a slight
-  narrowing of the width; the 0~mrad pair is statistically indistinguishable.}
+\includegraphics[width=0.49\textwidth]{resp_mean_common_cut_vtxrw.pdf}
+\includegraphics[width=0.49\textwidth]{resp_sigma_common_cut_vtxrw.pdf}
+\caption{Mean (left) and Gaussian width (right) of $R_{\ET}$ at the
+  common-cut level, overlaying the four mixed sets. The vertex reweighting
+  produces a small systematic upward shift in the 1.5~mrad mean and a
+  slight narrowing of the width; the 0~mrad pair is statistically
+  indistinguishable.}
 \label{fig:resp_vtxrw}
 \end{figure}
 
@@ -807,7 +811,7 @@ Three internal cross-checks were performed.
 
 \begin{enumerate}
   \item \textbf{Linearity of the mixed combination.} The integrated
-    matched-level mean of mixed 0~mrad, computed as $0.776 \times 0.9389 +
+    reco-level mean of mixed 0~mrad, computed as $0.776 \times 0.9389 +
     0.224 \times 0.9100 = 0.9324$, agrees with the directly-simulated
     value 0.9307 within 0.2~pp; the small residual is due to bin-edge
     effects in the per-sample \pT{} spectra (the double sample has a
@@ -816,19 +820,19 @@ Three internal cross-checks were performed.
   \item \textbf{Pure calorimeter response $R_E$.} The same analysis run
     for $R_E = E^{\text{reco}}/E^{\text{truth}}$, which does not depend
     on $\eta^{\text{reco}}$, shows a near-vanishing mean difference
-    between single and double ($<$0.3~pp) at the matched level, with
+    between single and double ($<$0.3~pp) at the reco level, with
     similar \pT{} dependence to $R_{\ET}$. This confirms that the
     mean shift observed in $R_{\ET}$ is driven by the $\eta^{\text{reco}}$
     dependence of $\ET$, not by bias in the calorimeter response itself.
     (Both histograms are written to the output ROOT file under names
     \texttt{h\_respE\_\{set\}\_\{level\}}.)
-  \item \textbf{Entry accounting.} The matched-level entry count scales
+  \item \textbf{Entry accounting.} The reco-level entry count scales
     monotonically with the double-interaction fraction (single: 2.34M;
     mixed 1.5~mrad: 2.41M; mixed 0~mrad: 2.53M; double: 3.20M), where
     the increase reflects a higher cluster multiplicity per event in
     double-interaction sim (more candidates at low \ET{} that still pass
-    the \texttt{trkID} match). The reco-level counts, by contrast, are
-    all within 15\% of single; the tight selection removes the extra
+    the \texttt{trkID} match). The common-cut-level counts, by contrast,
+    are all within 15\% of single; the tight selection removes the extra
     low-quality candidates.
 \end{enumerate}
 
@@ -898,14 +902,14 @@ factorized photon efficiency:
     truth-matching contamination.
 
   \item \textbf{Photon energy response} (Section~\ref{sec:response}):
-    The integrated $\langle R_{\ET}\rangle$ at the matched level shows a
+    The integrated $\langle R_{\ET}\rangle$ at the reco level shows a
     $-2.9$~pp shift in double vs single MC, with $\sigma$ broadening by
     32\% relative. The shift is kinematic, induced by the vertex-shift--driven
     $\eta^{\text{reco}}$ bias through $R_{\ET} = E/\cosh(\eta^{\text{reco}}) /
     \pT^{\text{truth}}$; Jensen-inequality suppression of $\langle 1/\cosh\rangle$
     explains the sign. After the common cuts, the mean bias is absorbed
     (residual $<$0.4~pp) but a 22\% relative width increase survives.
-    After the full tight selection, all six samples agree on mean
+    After the full tight+iso selection, all six samples agree on mean
     within 1~pp in $\langle R_{\ET}\rangle$, with a residual 22\% relative
     spread in $\sigma$. The impact on the final cross-section is at the
     sub-percent level.
@@ -913,18 +917,18 @@ factorized photon efficiency:
   \item \textbf{0 mrad vs 1.5 mrad} (Tables~\ref{tab:resp_integrated},
     \ref{tab:resp_vtxrw}): The 1.5~mrad mixed MC (nominal production
     period, 7.9\% DI) tracks single-interaction MC to better than 0.1~pp
-    in $\langle R_{\ET}\rangle$ at the reco and selected levels (and
-    within $\sim$0.3~pp at the matched level). The 0~mrad mixed MC
+    in $\langle R_{\ET}\rangle$ at the common-cut and tight-iso levels
+    (and within $\sim$0.3~pp at the reco level). The 0~mrad mixed MC
     (22.4\% DI) sits between single and double as expected from linear
     composition. These two periods should be quoted separately in any
     pileup-systematic scan rather than averaged with a single vertex
     reweighting.
 
-  \item \textbf{Vertex reweighting} is sub-dominant: at reco level it
-    shifts $\langle R_{\ET}\rangle$ by $+0.06$~pp (0~mrad) or $+0.45$~pp
-    (1.5~mrad), i.e.\ the interaction-type composition alone accounts for
-    nearly all of the observed pileup response effect. Vertex
-    reweighting enters as a secondary correction, appropriate for
+  \item \textbf{Vertex reweighting} is sub-dominant: at the common-cut
+    level it shifts $\langle R_{\ET}\rangle$ by $+0.06$~pp (0~mrad) or
+    $+0.45$~pp (1.5~mrad), i.e.\ the interaction-type composition alone
+    accounts for nearly all of the observed pileup response effect.
+    Vertex reweighting enters as a secondary correction, appropriate for
     matching detailed data--MC $\zvtx$ profiles but not a physics
     substitute for the double-interaction admixture.
 \end{enumerate}
