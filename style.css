@@ -99,19 +99,6 @@ a:hover {
   cursor: default;
 }
 
-/* Column header accent underline hint (sortable look) */
-.reports-table th::after {
-  content: "";
-  display: block;
-  width: 0;
-  height: 2px;
-  background: #B9D9EB;
-  transition: width 0.2s;
-}
-.reports-table th:hover::after {
-  width: 100%;
-}
-
 .reports-table td {
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
@@ -328,26 +315,31 @@ a:hover {
     grid-template-columns: 1fr;
   }
 
-  /* Stack table on small screens */
-  .reports-table thead {
+  /* Stack tables on small screens */
+  .reports-table thead,
+  .deploys-table thead {
     display: none;
   }
-  .reports-table tbody tr {
+  .reports-table tbody tr,
+  .deploys-table tbody tr {
     display: block;
     margin-bottom: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     background: #fff;
   }
-  .reports-table td {
+  .reports-table td,
+  .deploys-table td {
     display: block;
     text-align: left;
     padding: 0.4rem 0.7rem;
     border-top: none;
     font-size: 0.85rem;
+    white-space: normal;
   }
-  .reports-table td::before {
-    content: attr(data-label);
+  .reports-table td::before,
+  .deploys-table td::before {
+    content: attr(data-label) ": ";
     font-weight: 600;
     color: #002B7F;
     display: inline-block;
