@@ -609,6 +609,54 @@ def collect_figures(repo_root: Path, cfg: dict) -> list[dict]:
 # PDF thumbnails (page 1 preview for each report)
 # ---------------------------------------------------------------------------
 
+def build_search_index(reports: list[dict], out_dir: Path, max_chars: int = 80000) -> int:
+    """Extract plain text from each PDF and dump a JSON search index.
+
+    File: ``<out_dir>/_search_index.json``.  Per-report record:
+      {stem, name, title, tag, text}.  Text is soft-capped at ``max_chars`` to
+    keep the overall payload reasonable for the browser.
+    """
+    try:
+        import fitz
+    except ImportError:
+        return 0
+    import json
+
+    records: list[dict] = []
+    for r in reports:
+        if not r["name"].lower().endswith(".pdf"):
+            continue
+        stem = Path(r["name"]).stem
+        text_parts: list[str] = []
+        try:
+            doc = fitz.open(r["path"])
+            for page in doc:
+                text_parts.append(page.get_text("text"))
+                if sum(len(p) for p in text_parts) >= max_chars:
+                    break
+            doc.close()
+        except Exception as e:  # noqa: BLE001
+            print(f"  WARNING: fulltext failed for {r['name']}: {e}")
+            continue
+        text = " ".join(text_parts)
+        # Collapse whitespace; this also strips newlines that would otherwise
+        # blow up JSON size.
+        text = re.sub(r"\s+", " ", text)[:max_chars].strip()
+        records.append({
+            "stem": stem,
+            "name": r["name"],
+            "title": r["title"],
+            "tag": r.get("tag", "other"),
+            "text": text,
+        })
+    out_path = out_dir / "_search_index.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps({"reports": records}, ensure_ascii=False))
+    total_kb = out_path.stat().st_size / 1024
+    print(f"  search index: {len(records)} reports, {total_kb:.0f} KB")
+    return len(records)
+
+
 def generate_thumbnails(reports: list[dict], out_dir: Path, dpi: int = 72) -> int:
     """Render page 1 of each PDF to a PNG thumbnail in ``out_dir``.
 
@@ -663,6 +711,13 @@ DETAIL_HTML_TEMPLATE = """\
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title} — PPG12</title>
+  <meta name="description" content="{og_desc}">
+  <meta property="og:title" content="{title}">
+  <meta property="og:description" content="{og_desc}">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="{og_image}">
+  <meta property="og:url" content="{og_url}">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -679,6 +734,8 @@ DETAIL_HTML_TEMPLATE = """\
     <div class="detail-meta">
       <span class="detail-date">{date}</span>
       <span class="detail-size">{size}</span>
+      <button class="detail-copy" type="button" data-copy-url="{og_url}">Copy link</button>
+      <button class="detail-fullscreen" type="button">Full screen</button>
       <a class="detail-download pdf-link" href="{pdf_name}" target="_blank" rel="noopener">Download PDF</a>
 {source_link}
     </div>
@@ -696,6 +753,79 @@ DETAIL_HTML_TEMPLATE = """\
       <a href="{repo_url}">sPHENIX Collaboration</a>
     </div>
   </footer>
+
+  <script>
+  (function () {{
+    // Copy-link button.
+    var copy = document.querySelector('.detail-copy');
+    if (copy) {{
+      copy.addEventListener('click', function () {{
+        var url = copy.getAttribute('data-copy-url') || window.location.href;
+        navigator.clipboard.writeText(url).then(function () {{
+          var prev = copy.textContent;
+          copy.textContent = 'Copied!';
+          copy.classList.add('copied');
+          setTimeout(function () {{
+            copy.textContent = prev;
+            copy.classList.remove('copied');
+          }}, 1400);
+        }}).catch(function () {{
+          copy.textContent = 'Press Ctrl+C';
+        }});
+      }});
+    }}
+
+    // Full-screen toggle on the PDF iframe.
+    var fsBtn  = document.querySelector('.detail-fullscreen');
+    var iframe = document.querySelector('.detail-iframe');
+    if (fsBtn && iframe) {{
+      var enterNative = function () {{
+        if (iframe.requestFullscreen)         return iframe.requestFullscreen();
+        if (iframe.webkitRequestFullscreen)   return iframe.webkitRequestFullscreen();
+        return null;
+      }};
+      var exitNative = function () {{
+        if (document.exitFullscreen)          return document.exitFullscreen();
+        if (document.webkitExitFullscreen)    return document.webkitExitFullscreen();
+        return null;
+      }};
+      var fsElement = function () {{
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+      }};
+      var togglePseudo = function (on) {{
+        iframe.classList.toggle('pseudo-fullscreen', !!on);
+        document.body.classList.toggle('no-scroll', !!on);
+      }};
+
+      fsBtn.addEventListener('click', function () {{
+        if (iframe.classList.contains('pseudo-fullscreen')) {{
+          togglePseudo(false);
+          return;
+        }}
+        if (fsElement()) {{
+          exitNative();
+          return;
+        }}
+        var p = enterNative();
+        if (p && typeof p.catch === 'function') {{
+          p.catch(function () {{ togglePseudo(true); }});
+        }} else if (p === null) {{
+          togglePseudo(true);
+        }}
+      }});
+
+      document.addEventListener('keydown', function (e) {{
+        if (e.key === 'Escape' && iframe.classList.contains('pseudo-fullscreen')) {{
+          togglePseudo(false);
+        }}
+      }});
+
+      document.addEventListener('fullscreenchange', function () {{
+        fsBtn.textContent = fsElement() ? 'Exit full screen' : 'Full screen';
+      }});
+    }}
+  }})();
+  </script>
 </body>
 </html>
 """
@@ -750,6 +880,7 @@ def generate_detail_pages(
     wt_path: Path,
     repo_root: Path,
     repo_url: str,
+    site_base: str,
 ) -> int:
     """Write a detail HTML page alongside each PDF in the worktree."""
     reports_dir = wt_path / "reports"
@@ -767,7 +898,6 @@ def generate_detail_pages(
         tag_label = TAG_LABELS.get(tag_id, "Report")
         date_str = r["date"].strftime("%Y-%m-%d")
 
-        # Link back to source .tex on GitHub if we can find it on main HEAD.
         source_link = ""
         source_rel = _find_source_tex(repo_root, stem)
         if source_rel:
@@ -777,6 +907,11 @@ def generate_detail_pages(
 
         present = _deploys_containing_report(repo_root, r["name"], deploys)
         versions_block = _build_versions_block(r["name"], present, repo_url)
+
+        og_image = f"{site_base}/reports/_thumbs/{stem}.png" if r.get("thumb") else ""
+        og_url   = f"{site_base}/reports/{stem}.html"
+        og_desc  = (r["description"][:280] if r.get("description") else
+                    f"PPG12 analysis report — {tag_label}")
 
         out_path.write_text(DETAIL_HTML_TEMPLATE.format(
             title=html.escape(r["title"]),
@@ -788,9 +923,55 @@ def generate_detail_pages(
             abstract=html.escape(r["description"]),
             versions_block=versions_block,
             repo_url=html.escape(repo_url),
+            og_image=html.escape(og_image),
+            og_url=html.escape(og_url),
+            og_desc=html.escape(og_desc),
         ))
         count += 1
     return count
+
+
+def generate_rss_feed(reports: list[dict], wt_path: Path, cfg: dict, site_base: str,
+                      max_items: int = 20) -> Path:
+    """Write a minimal RSS 2.0 feed of the most recent reports to feed.xml."""
+    site = cfg.get("site", {})
+    title = site.get("title", "PPG12 Analysis Results")
+    subtitle = site.get("subtitle", "")
+    items = [r for r in reports if r["name"].lower().endswith(".pdf")][:max_items]
+    now = datetime.now(tz=_EASTERN).strftime("%a, %d %b %Y %H:%M:%S %z")
+
+    def _rfc822(dt: datetime) -> str:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=_EASTERN)
+        return dt.strftime("%a, %d %b %Y %H:%M:%S %z")
+
+    lines: list[str] = []
+    lines.append('<?xml version="1.0" encoding="UTF-8"?>')
+    lines.append('<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">')
+    lines.append('<channel>')
+    lines.append(f'  <title>{html.escape(title)}</title>')
+    lines.append(f'  <link>{html.escape(site_base)}/</link>')
+    lines.append(f'  <description>{html.escape(subtitle)}</description>')
+    lines.append(f'  <language>en</language>')
+    lines.append(f'  <lastBuildDate>{now}</lastBuildDate>')
+    lines.append(f'  <atom:link href="{html.escape(site_base)}/feed.xml" rel="self" type="application/rss+xml" />')
+    for r in items:
+        stem = Path(r["name"]).stem
+        url  = f"{site_base}/reports/{stem}.html"
+        lines.append('  <item>')
+        lines.append(f'    <title>{html.escape(r["title"])}</title>')
+        lines.append(f'    <link>{html.escape(url)}</link>')
+        lines.append(f'    <guid isPermaLink="true">{html.escape(url)}</guid>')
+        lines.append(f'    <pubDate>{_rfc822(r["date"])}</pubDate>')
+        lines.append(f'    <category>{html.escape(TAG_LABELS.get(r.get("tag","other"), "Other"))}</category>')
+        lines.append(f'    <description>{html.escape(r.get("description", ""))}</description>')
+        lines.append('  </item>')
+    lines.append('</channel>')
+    lines.append('</rss>')
+
+    out = wt_path / "feed.xml"
+    out.write_text("\n".join(lines))
+    return out
 
 
 def _find_source_tex(repo_root: Path, stem: str) -> str | None:
@@ -826,6 +1007,13 @@ INDEX_HTML_TEMPLATE = """\
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title}</title>
+  <meta name="description" content="{subtitle}">
+  <meta property="og:title" content="{title}">
+  <meta property="og:description" content="{subtitle}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PPG12 Analysis">
+  <meta name="twitter:card" content="summary">
+  <link rel="alternate" type="application/rss+xml" title="PPG12 reports" href="feed.xml">
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -849,32 +1037,111 @@ INDEX_HTML_TEMPLATE = """\
     <div class="container">
       Auto-generated by <code>deploy_pages.py</code>{build_info} &middot;
       PPG12 &middot;
-      <a href="{repo_url}">sPHENIX Collaboration</a>
+      <a href="{repo_url}">sPHENIX Collaboration</a> &middot;
+      <a href="feed.xml">RSS</a>
     </div>
   </footer>
 
+  <button id="back-to-top" type="button" aria-label="Back to top" hidden>&uarr; Top</button>
+
   <script>
-  // Zero-dependency filter: topic chip + free-text filter compose.
+  // Chip + text filter with PDF full-text search and snippet rendering.
   // Press "/" to focus the filter, "Esc" to clear.
   (function () {{
-    var input  = document.getElementById('reports-filter');
-    var empty  = document.getElementById('reports-empty');
-    var chips  = document.querySelectorAll('.tag-chip');
-    var rows   = document.querySelectorAll('#reports .reports-table tbody tr');
+    var input     = document.getElementById('reports-filter');
+    var empty     = document.getElementById('reports-empty');
+    var chips     = document.querySelectorAll('.tag-chip');
+    var rows      = document.querySelectorAll('#reports .reports-table tbody tr');
+    var topBtn    = document.getElementById('back-to-top');
     if (!input || !rows.length) return;
 
-    var topic = 'all';
-    var text  = '';
+    var topic      = 'all';
+    var text       = '';
+    var fulltext   = {{}};        // stem -> lowercase text
+    var origCase   = {{}};        // stem -> original text (for snippet)
+    var indexReady = false;
+
+    // Fetch the PDF full-text index asynchronously.
+    fetch('reports/_search_index.json').then(function (r) {{
+      if (!r.ok) return null;
+      return r.json();
+    }}).then(function (j) {{
+      if (!j || !j.reports) return;
+      j.reports.forEach(function (rec) {{
+        origCase[rec.stem] = rec.text || '';
+        fulltext[rec.stem] = (rec.text || '').toLowerCase();
+      }});
+      indexReady = true;
+      if (text !== '') apply();     // re-run if query was typed before fetch returned
+    }}).catch(function () {{ /* ignore: feature degrades to row-only search */ }});
+
+    function rowStem(tr) {{
+      var a = tr.querySelector('td[data-label="Title"] a');
+      if (!a) return null;
+      var href = a.getAttribute('href') || '';
+      var m = href.match(/reports\\/([^\\/\\.]+)\\.html$/);
+      return m ? m[1] : null;
+    }}
+
+    function escapeHtml(s) {{
+      return s.replace(/[&<>"']/g, function (c) {{
+        return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c];
+      }});
+    }}
+
+    function snippetFor(stem, q) {{
+      var lower = fulltext[stem];
+      var orig  = origCase[stem];
+      if (!lower || !orig) return '';
+      var pos = lower.indexOf(q);
+      if (pos < 0) return '';
+      var ctx = 90;
+      var start = Math.max(0, pos - ctx);
+      var end   = Math.min(orig.length, pos + q.length + ctx);
+      // Extend backwards to a word boundary when convenient.
+      while (start > 0 && /\\w/.test(orig[start - 1]) && pos - start < ctx + 20) start--;
+      while (end < orig.length && /\\w/.test(orig[end]) && end - (pos + q.length) < ctx + 20) end++;
+      var seg   = orig.slice(start, end);
+      var localPos = pos - start;
+      var before = escapeHtml(seg.slice(0, localPos));
+      var hit    = escapeHtml(seg.slice(localPos, localPos + q.length));
+      var after  = escapeHtml(seg.slice(localPos + q.length));
+      return (start > 0 ? '… ' : '') + before + '<mark>' + hit + '</mark>' + after +
+             (end < orig.length ? ' …' : '');
+    }}
+
+    function clearSnippets() {{
+      document.querySelectorAll('#reports .snippet-row').forEach(function (sn) {{ sn.remove(); }});
+    }}
 
     function apply() {{
+      clearSnippets();
       var visible = 0;
       rows.forEach(function (tr) {{
         var rowTopic = tr.getAttribute('data-topic') || 'other';
         var topicOk  = (topic === 'all') || (rowTopic === topic);
-        var textOk   = (text === '') || tr.textContent.toLowerCase().indexOf(text) !== -1;
-        var hit = topicOk && textOk;
+        var rowText  = tr.textContent.toLowerCase();
+        var inRow    = text !== '' && rowText.indexOf(text) !== -1;
+        var stem     = rowStem(tr);
+        var inBody   = text !== '' && indexReady && stem && fulltext[stem] && fulltext[stem].indexOf(text) !== -1;
+        var textOk   = (text === '') || inRow || inBody;
+        var hit      = topicOk && textOk;
         tr.style.display = hit ? '' : 'none';
-        if (hit) visible += 1;
+        if (hit) {{
+          visible += 1;
+          if (text !== '' && !inRow && inBody) {{
+            // Attach a snippet row right after this one.
+            var ncols = tr.children.length;
+            var snTr  = document.createElement('tr');
+            snTr.className = 'snippet-row';
+            var td   = document.createElement('td');
+            td.colSpan = ncols;
+            td.innerHTML = '<span class="snippet-label">match in full text:</span> ' +
+                           snippetFor(stem, text);
+            snTr.appendChild(td);
+            tr.parentNode.insertBefore(snTr, tr.nextSibling);
+          }}
+        }}
       }});
       if (empty) empty.hidden = (visible !== 0);
     }}
@@ -919,6 +1186,18 @@ INDEX_HTML_TEMPLATE = """\
         input.blur();
       }}
     }});
+
+    // Back-to-top button — reveal after some scroll.
+    if (topBtn) {{
+      var updateTopBtn = function () {{
+        topBtn.hidden = window.scrollY < 400;
+      }};
+      updateTopBtn();
+      window.addEventListener('scroll', updateTopBtn, {{ passive: true }});
+      topBtn.addEventListener('click', function () {{
+        window.scrollTo({{ top: 0, behavior: 'smooth' }});
+      }});
+    }}
   }})();
   </script>
 </body>
@@ -1569,11 +1848,19 @@ def main() -> None:
     thumbs_dir = wt_path / "reports" / "_thumbs"
     generate_thumbnails(reports, thumbs_dir)
 
+    # ----- Build full-text search index from PDFs -------------------------
+    build_search_index(reports, wt_path / "reports")
+
     # ----- Per-report detail pages ----------------------------------------
     site = cfg.get("site", {})
     repo_url = site.get("repo_url", "https://github.com/Shuonli/ppg12")
-    n_details = generate_detail_pages(reports, past_deploys, wt_path, repo_root, repo_url)
+    site_base = site.get("pages_url", "https://shuonli.github.io/ppg12").rstrip("/")
+    n_details = generate_detail_pages(reports, past_deploys, wt_path, repo_root, repo_url, site_base)
     print(f"  detail pages: {n_details} written")
+
+    # ----- RSS feed -------------------------------------------------------
+    feed_path = generate_rss_feed(reports, wt_path, cfg, site_base)
+    print(f"  rss feed: {feed_path.name} ({feed_path.stat().st_size / 1024:.0f} KB)")
 
     # ----- Generate index.html --------------------------------------------
     index_html = generate_index_html(reports, figures, past_deploys, cfg, repo_root)
