@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Investigation: MC Purity Correction Factor in PPG12 — PPG12</title>
+  <meta name="description" content="The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…">
+  <meta property="og:title" content="Investigation: MC Purity Correction Factor in PPG12">
+  <meta property="og:description" content="The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_thumbs/mc_purity_correction_investigation.png">
+  <meta property="og:url" content="https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -20,6 +27,8 @@
     <div class="detail-meta">
       <span class="detail-date">2026-04-18</span>
       <span class="detail-size">0.5 MB</span>
+      <button class="detail-copy" type="button" data-copy-url="https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html">Copy link</button>
+      <button class="detail-fullscreen" type="button">Full screen</button>
       <a class="detail-download pdf-link" href="mc_purity_correction_investigation.pdf" target="_blank" rel="noopener">Download PDF</a>
       <a class="detail-source" href="https://github.com/Shuonli/ppg12/blob/main/reports/mc_purity_correction_investigation.tex" target="_blank" rel="noopener">View .tex on GitHub</a>
     </div>
@@ -57,5 +66,78 @@
       <a href="https://github.com/Shuonli/ppg12">sPHENIX Collaboration</a>
     </div>
   </footer>
+
+  <script>
+  (function () {
+    // Copy-link button.
+    var copy = document.querySelector('.detail-copy');
+    if (copy) {
+      copy.addEventListener('click', function () {
+        var url = copy.getAttribute('data-copy-url') || window.location.href;
+        navigator.clipboard.writeText(url).then(function () {
+          var prev = copy.textContent;
+          copy.textContent = 'Copied!';
+          copy.classList.add('copied');
+          setTimeout(function () {
+            copy.textContent = prev;
+            copy.classList.remove('copied');
+          }, 1400);
+        }).catch(function () {
+          copy.textContent = 'Press Ctrl+C';
+        });
+      });
+    }
+
+    // Full-screen toggle on the PDF iframe.
+    var fsBtn  = document.querySelector('.detail-fullscreen');
+    var iframe = document.querySelector('.detail-iframe');
+    if (fsBtn && iframe) {
+      var enterNative = function () {
+        if (iframe.requestFullscreen)         return iframe.requestFullscreen();
+        if (iframe.webkitRequestFullscreen)   return iframe.webkitRequestFullscreen();
+        return null;
+      };
+      var exitNative = function () {
+        if (document.exitFullscreen)          return document.exitFullscreen();
+        if (document.webkitExitFullscreen)    return document.webkitExitFullscreen();
+        return null;
+      };
+      var fsElement = function () {
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+      };
+      var togglePseudo = function (on) {
+        iframe.classList.toggle('pseudo-fullscreen', !!on);
+        document.body.classList.toggle('no-scroll', !!on);
+      };
+
+      fsBtn.addEventListener('click', function () {
+        if (iframe.classList.contains('pseudo-fullscreen')) {
+          togglePseudo(false);
+          return;
+        }
+        if (fsElement()) {
+          exitNative();
+          return;
+        }
+        var p = enterNative();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () { togglePseudo(true); });
+        } else if (p === null) {
+          togglePseudo(true);
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && iframe.classList.contains('pseudo-fullscreen')) {
+          togglePseudo(false);
+        }
+      });
+
+      document.addEventListener('fullscreenchange', function () {
+        fsBtn.textContent = fsElement() ? 'Exit full screen' : 'Full screen';
+      });
+    }
+  })();
+  </script>
 </body>
 </html>
