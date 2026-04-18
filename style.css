@@ -236,26 +236,119 @@ a:hover {
   border-radius: 2px;
 }
 
-/* ── Reports Groups (physics-topic subheadings) ── */
-.reports-group {
-  margin-bottom: 1.75rem;
+/* ── Tag chips filter row ── */
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.25rem 0 1rem;
 }
 
-.group-title {
-  font-size: 1.02rem;
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: #002B7F;
+  background: #eaf0f8;
+  border: 1px solid #c7d4ea;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.08s;
+  user-select: none;
+}
+.tag-chip:hover {
+  background: #dde7f4;
+  border-color: #a5bbe0;
+}
+.tag-chip.active {
+  background: #002B7F;
+  color: #ffffff;
+  border-color: #002B7F;
+}
+.tag-chip:active { transform: translateY(1px); }
+
+.tag-chip .chip-count {
+  background: rgba(0, 43, 127, 0.08);
+  color: inherit;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
   font-weight: 600;
-  margin: 1.25rem 0 0.55rem;
-  padding: 0.1rem 0 0.1rem 0.15rem;
-  border-left: 3px solid #B9D9EB;
-  padding-left: 0.55rem;
+  opacity: 0.9;
+}
+.tag-chip.active .chip-count {
+  background: rgba(255, 255, 255, 0.18);
 }
 
-.group-title .group-count {
-  color: #888;
-  font-weight: 400;
-  font-size: 0.85rem;
-  margin-left: 0.35rem;
+/* ── Per-row Topic pill (colored lightly by tag id) ── */
+.tag-pill {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #002B7F;
+  background: #eaf0f8;
+  border-radius: 999px;
+  border: 1px solid #c7d4ea;
+  white-space: nowrap;
+}
+
+/* Distinguish a few common topics with mild tint variation (optional). */
+.tag-pill.tag-double-interaction { background: #ffe9d6; border-color: #f5c99a; color: #7b4016; }
+.tag-pill.tag-bdt                { background: #e7f3e0; border-color: #bcdca3; color: #2e5a16; }
+.tag-pill.tag-shower-shape       { background: #e7e5f4; border-color: #b9b4da; color: #3a2f6d; }
+.tag-pill.tag-efficiency         { background: #e1eef4; border-color: #a4c8db; color: #155070; }
+.tag-pill.tag-purity             { background: #f8e5ef; border-color: #e0a9c9; color: #741c51; }
+.tag-pill.tag-vertex             { background: #fff4cf; border-color: #ecd982; color: #715708; }
+
+/* ── "New" badge ── */
+.new-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: #d55f1e;
+  border-radius: 3px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+/* ── Relative vs absolute date dual display ── */
+.date-relative {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  color: #333;
+  white-space: nowrap;
+}
+.date-absolute {
+  display: block;
+  font-size: 0.72rem;
+  color: #999;
+  white-space: nowrap;
+}
+
+/* ── Empty-state ── */
+.empty-state {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  border: 1px dashed #c5cbd8;
+  border-radius: 6px;
+  background: #fafbfd;
+  color: #666;
+  font-size: 0.92rem;
+}
+.empty-state a.reset-filters {
+  font-weight: 600;
+  color: #002B7F;
 }
 
 /* ── Reports Table ── */
@@ -785,4 +878,55 @@ a:hover {
   }
 
   code { color: #dbe2ef; }
+
+  /* Tag chips */
+  .tag-chip {
+    background: #1a2541;
+    color: #a5c6ff;
+    border-color: #253960;
+  }
+  .tag-chip:hover { background: #24305a; border-color: #3a5fa2; }
+  .tag-chip.active {
+    background: #3c5aa3;
+    color: #ffffff;
+    border-color: #3c5aa3;
+  }
+  .tag-chip .chip-count {
+    background: rgba(165, 198, 255, 0.15);
+  }
+  .tag-chip.active .chip-count {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  /* Default topic pill */
+  .tag-pill {
+    background: #1a2541;
+    color: #a5c6ff;
+    border-color: #253960;
+  }
+  /* Tinted per-topic pills — re-cast for dark canvas */
+  .tag-pill.tag-double-interaction { background: #3a2a17; border-color: #624125; color: #f0c28b; }
+  .tag-pill.tag-bdt                { background: #1f3018; border-color: #344f28; color: #a9d58a; }
+  .tag-pill.tag-shower-shape       { background: #272045; border-color: #3b3170; color: #c3b8ee; }
+  .tag-pill.tag-efficiency         { background: #162a3a; border-color: #24455f; color: #97c2e0; }
+  .tag-pill.tag-purity             { background: #35152a; border-color: #5c2548; color: #efb1da; }
+  .tag-pill.tag-vertex             { background: #3a2f10; border-color: #64531c; color: #edd478; }
+
+  /* New badge */
+  .new-badge {
+    background: #e27a36;
+    color: #140d08;
+  }
+
+  /* Dates */
+  .date-relative { color: #d8dce3; }
+  .date-absolute { color: #70798c; }
+
+  /* Empty state */
+  .empty-state {
+    background: #131a2c;
+    border-color: #2a3558;
+    color: #97a0b5;
+  }
+  .empty-state a.reset-filters { color: #a5c6ff; }
 }
