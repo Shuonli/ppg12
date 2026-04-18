@@ -583,6 +583,204 @@ def collect_figures(repo_root: Path, cfg: dict) -> list[dict]:
 # Size check
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# PDF thumbnails (page 1 preview for each report)
+# ---------------------------------------------------------------------------
+
+def generate_thumbnails(reports: list[dict], out_dir: Path, dpi: int = 72) -> int:
+    """Render page 1 of each PDF to a PNG thumbnail in ``out_dir``.
+
+    Uses PyMuPDF (``fitz``).  Skips when the existing thumbnail is newer than
+    the source PDF.  Each report dict gains a ``thumb`` key pointing at the
+    thumbnail filename (relative to out_dir's parent, i.e. ``_thumbs/x.png``)
+    if rendering succeeded; otherwise ``thumb`` stays unset.
+    """
+    try:
+        import fitz
+    except ImportError:
+        return 0
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    zoom = dpi / 72.0
+    matrix = fitz.Matrix(zoom, zoom)
+    generated = 0
+    for r in reports:
+        if not r["name"].lower().endswith(".pdf"):
+            continue
+        thumb_path = out_dir / f"{Path(r['name']).stem}.png"
+        r["thumb"] = f"_thumbs/{thumb_path.name}"
+        # Skip if thumb exists and is newer than the PDF.
+        if thumb_path.exists() and thumb_path.stat().st_mtime >= r["path"].stat().st_mtime:
+            continue
+        try:
+            doc = fitz.open(r["path"])
+            if doc.page_count == 0:
+                doc.close()
+                continue
+            page = doc[0]
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            pix.save(thumb_path)
+            doc.close()
+            generated += 1
+        except Exception as e:  # noqa: BLE001
+            print(f"  WARNING: thumbnail failed for {r['name']}: {e}")
+            r.pop("thumb", None)
+    if generated:
+        print(f"  thumbnails: {generated} regenerated, {sum(1 for r in reports if 'thumb' in r) - generated} reused")
+    return generated
+
+
+# ---------------------------------------------------------------------------
+# Per-report detail pages
+# ---------------------------------------------------------------------------
+
+DETAIL_HTML_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title} — PPG12</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1><a href="../index.html" style="color:#B9D9EB;text-decoration:none">&larr; sPHENIX PPG12</a></h1>
+      <div class="subtitle">{tag_label}</div>
+    </div>
+  </header>
+
+  <main class="container detail-main">
+    <h2 class="detail-title">{title}</h2>
+    <div class="detail-meta">
+      <span class="detail-date">{date}</span>
+      <span class="detail-size">{size}</span>
+      <a class="detail-download pdf-link" href="{pdf_name}" target="_blank" rel="noopener">Download PDF</a>
+{source_link}
+    </div>
+
+    <p class="detail-abstract">{abstract}</p>
+
+    <iframe class="detail-iframe" src="{pdf_name}" title="{title}"></iframe>
+
+{versions_block}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <a href="../index.html">Back to the index</a> &middot; PPG12 &middot;
+      <a href="{repo_url}">sPHENIX Collaboration</a>
+    </div>
+  </footer>
+</body>
+</html>
+"""
+
+
+def _build_versions_block(report_name: str, deploys: list[dict], repo_url: str) -> str:
+    """List the deploys (newest first) that contain this report name."""
+    if not deploys:
+        return ""
+    rows: list[str] = []
+    rows.append('    <section class="detail-versions">')
+    rows.append('      <h3>Past versions of this report</h3>')
+    rows.append('      <ul class="version-list">')
+    for d in deploys[:15]:
+        tag_esc = html.escape(d["tag"])
+        date_esc = html.escape(d["date"][:10])
+        url = f"{repo_url}/raw/{tag_esc}/reports/{report_name}"
+        rows.append(f'        <li><a href="{url}" target="_blank" rel="noopener">'
+                    f'{date_esc} · {tag_esc}</a></li>')
+    if len(deploys) > 15:
+        rows.append(f'        <li class="muted">&hellip; {len(deploys) - 15} older deploys on '
+                    f'<a href="{repo_url}/commits/gh-pages" target="_blank" rel="noopener">GitHub</a></li>')
+    rows.append('      </ul>')
+    rows.append('    </section>')
+    return "\n".join(rows)
+
+
+def _deploys_containing_report(
+    repo_root: Path,
+    report_name: str,
+    deploys: list[dict],
+    limit: int = 30,
+) -> list[dict]:
+    """Check which deploys (tags) actually contain ``reports/<report_name>``.
+
+    Uses ``git cat-file -e`` which is cheap.  Returns deploys sorted newest first.
+    """
+    present: list[dict] = []
+    for d in deploys:
+        ref = f"{d['tag']}:reports/{report_name}"
+        proc = git("cat-file", "-e", ref, cwd=repo_root, check=False)
+        if proc.returncode == 0:
+            present.append(d)
+            if len(present) >= limit:
+                break
+    return present
+
+
+def generate_detail_pages(
+    reports: list[dict],
+    deploys: list[dict],
+    wt_path: Path,
+    repo_root: Path,
+    repo_url: str,
+) -> int:
+    """Write a detail HTML page alongside each PDF in the worktree."""
+    reports_dir = wt_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for r in reports:
+        if not r["name"].lower().endswith(".pdf"):
+            continue
+        stem = Path(r["name"]).stem
+        out_path = reports_dir / f"{stem}.html"
+
+        size_str = (f"{r['size_mb']:.1f} MB" if r["size_mb"] >= 0.1
+                    else f"{r['size_mb'] * 1024:.0f} KB")
+        tag_id = r.get("tag", "other")
+        tag_label = TAG_LABELS.get(tag_id, "Report")
+        date_str = r["date"].strftime("%Y-%m-%d")
+
+        # Link back to source .tex on GitHub if we can find it on main HEAD.
+        source_link = ""
+        source_rel = _find_source_tex(repo_root, stem)
+        if source_rel:
+            source_link = (f'      <a class="detail-source" '
+                           f'href="{repo_url}/blob/main/{source_rel}" '
+                           f'target="_blank" rel="noopener">View .tex on GitHub</a>')
+
+        present = _deploys_containing_report(repo_root, r["name"], deploys)
+        versions_block = _build_versions_block(r["name"], present, repo_url)
+
+        out_path.write_text(DETAIL_HTML_TEMPLATE.format(
+            title=html.escape(r["title"]),
+            tag_label=html.escape(tag_label),
+            date=html.escape(date_str),
+            size=html.escape(size_str),
+            pdf_name=html.escape(r["name"]),
+            source_link=source_link,
+            abstract=html.escape(r["description"]),
+            versions_block=versions_block,
+            repo_url=html.escape(repo_url),
+        ))
+        count += 1
+    return count
+
+
+def _find_source_tex(repo_root: Path, stem: str) -> str | None:
+    """Return the repo-relative path to ``<stem>.tex`` if it exists anywhere."""
+    # git ls-files is fast and scoped to tracked files.
+    proc = git("ls-files", f"*{stem}.tex", cwd=repo_root, check=False)
+    for line in proc.stdout.splitlines():
+        if Path(line).stem == stem:
+            return line
+    return None
+
+
 def check_total_size(reports: list[dict], figures: list[dict], max_mb: float) -> None:
     """Abort if the total deployment size exceeds the limit."""
     all_items = reports + figures
@@ -607,6 +805,7 @@ INDEX_HTML_TEMPLATE = """\
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title}</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="site-header">
@@ -618,6 +817,7 @@ INDEX_HTML_TEMPLATE = """\
   </header>
 
   <main class="container">
+{recent_rail}
 {reports_section}
 {figures_section}
 {deploys_section}
@@ -630,6 +830,32 @@ INDEX_HTML_TEMPLATE = """\
       <a href="{repo_url}">sPHENIX Collaboration</a>
     </div>
   </footer>
+
+  <script>
+  // Zero-dependency filter: as the user types in the reports-filter input,
+  // hide rows whose text content does not match. Empty groups collapse.
+  (function () {{
+    var input = document.getElementById('reports-filter');
+    if (!input) return;
+    input.addEventListener('input', function () {{
+      var q = input.value.trim().toLowerCase();
+      document.querySelectorAll('#reports .reports-group').forEach(function (grp) {{
+        var visibleRows = 0;
+        grp.querySelectorAll('tbody tr').forEach(function (tr) {{
+          var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
+          tr.style.display = hit ? '' : 'none';
+          if (hit) visibleRows += 1;
+        }});
+        grp.style.display = (visibleRows === 0 && q !== '') ? 'none' : '';
+      }});
+      // Ungrouped flat table case.
+      document.querySelectorAll('#reports > table tbody tr').forEach(function (tr) {{
+        var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
+        tr.style.display = hit ? '' : 'none';
+      }});
+    }});
+  }})();
+  </script>
 </body>
 </html>
 """
@@ -640,21 +866,34 @@ def _render_reports_table(reports: list[dict]) -> list[str]:
     rows: list[str] = []
     rows.append('      <table class="reports-table">')
     rows.append("        <thead>")
-    rows.append("          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>")
+    rows.append("          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>")
     rows.append("        </thead>")
     rows.append("        <tbody>")
     for r in reports:
         date_str = r["date"].strftime("%Y-%m-%d")
         title_esc = html.escape(r["title"])
         desc_esc = html.escape(r["description"])
-        link_target = f"reports/{html.escape(r['name'])}"
-        target_attr = ' target="_blank" rel="noopener"' if r["name"].endswith(".pdf") else ""
+        name_esc = html.escape(r["name"])
+        is_pdf = r["name"].endswith(".pdf")
+        stem = Path(r["name"]).stem
+        detail_href = f"reports/{html.escape(stem)}.html" if is_pdf else f"reports/{name_esc}"
+        pdf_href = f"reports/{name_esc}"
         size_str = f"{r['size_mb']:.1f} MB" if r["size_mb"] >= 0.1 else f"{r['size_mb'] * 1024:.0f} KB"
+
+        thumb_rel = r.get("thumb")
+        if thumb_rel:
+            thumb_href = f"reports/{html.escape(thumb_rel)}"
+            preview = (f'<a href="{detail_href}"><img class="report-thumb" '
+                       f'src="{thumb_href}" alt="" loading="lazy"></a>')
+        else:
+            preview = '<span class="report-thumb-placeholder">PDF</span>' if is_pdf else ""
+
         rows.append('          <tr>')
+        rows.append(f'            <td data-label="Preview" class="preview-cell">{preview}</td>')
         rows.append(f'            <td data-label="Date">{date_str}</td>')
-        rows.append(f'            <td data-label="Title"><a href="{link_target}"{target_attr}>{title_esc}</a></td>')
+        rows.append(f'            <td data-label="Title"><a href="{detail_href}">{title_esc}</a></td>')
         rows.append(f'            <td data-label="Description">{desc_esc}</td>')
-        rows.append(f'            <td data-label="Size">{size_str}</td>')
+        rows.append(f'            <td data-label="Size"><a href="{pdf_href}" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;{size_str}</a></td>')
         rows.append('          </tr>')
     rows.append("        </tbody>")
     rows.append("      </table>")
@@ -664,15 +903,18 @@ def _render_reports_table(reports: list[dict]) -> list[str]:
 def _build_reports_section(reports: list[dict]) -> str:
     if not reports:
         return ""
-    # Bucket by primary tag.
     buckets: dict[str, list[dict]] = {}
     for r in reports:
         buckets.setdefault(r.get("tag", "other"), []).append(r)
 
-    rows: list[str] = ['    <section id="reports">',
-                       '      <h2 class="section-title">Reports</h2>']
+    rows: list[str] = ['    <section id="reports">']
+    rows.append('      <div class="reports-header">')
+    rows.append('        <h2 class="section-title">Reports</h2>')
+    rows.append('        <input id="reports-filter" type="search" '
+                'placeholder="Filter by title, description, tag, date…" '
+                'aria-label="Filter reports">')
+    rows.append('      </div>')
 
-    # If every report falls in the same bucket, skip the group subheading.
     if len(buckets) <= 1:
         rows.extend(_render_reports_table(reports))
     else:
@@ -687,6 +929,37 @@ def _build_reports_section(reports: list[dict]) -> str:
             rows.extend(_render_reports_table(group))
             rows.append('      </div>')
     rows.append("    </section>")
+    return "\n".join(rows)
+
+
+def _build_recent_rail(reports: list[dict], n: int = 3) -> str:
+    """Horizontal strip of the ``n`` most recent reports (thumbnail + meta)."""
+    pdfs = [r for r in reports if r["name"].lower().endswith(".pdf")]
+    if not pdfs:
+        return ""
+    recent = pdfs[:n]
+    rows: list[str] = ['    <section id="recent" class="recent-rail">']
+    rows.append('      <h2 class="section-title">Recently updated</h2>')
+    rows.append('      <div class="recent-grid">')
+    for r in recent:
+        stem = Path(r["name"]).stem
+        detail_href = f"reports/{html.escape(stem)}.html"
+        thumb_rel = r.get("thumb")
+        thumb_html = (f'<img class="recent-thumb" src="reports/{html.escape(thumb_rel)}" alt="" loading="lazy">'
+                      if thumb_rel else '<div class="recent-thumb-placeholder">PDF</div>')
+        date_str = r["date"].strftime("%Y-%m-%d")
+        title_esc = html.escape(r["title"])
+        tag_label = html.escape(TAG_LABELS.get(r.get("tag", "other"), ""))
+        rows.append('        <a class="recent-card" href="' + detail_href + '">')
+        rows.append(f'          {thumb_html}')
+        rows.append(f'          <div class="recent-body">')
+        rows.append(f'            <div class="recent-tag">{tag_label}</div>')
+        rows.append(f'            <div class="recent-title">{title_esc}</div>')
+        rows.append(f'            <div class="recent-date">{date_str}</div>')
+        rows.append('          </div>')
+        rows.append('        </a>')
+    rows.append('      </div>')
+    rows.append('    </section>')
     return "\n".join(rows)
 
 
@@ -719,19 +992,22 @@ def _build_figures_section(figures: list[dict]) -> str:
     return "\n".join(cards)
 
 
-def _build_deploys_section(deploys: list[dict], repo_url: str) -> str:
-    if not deploys:
-        return ""
+_MONTH_LABELS = ["", "January", "February", "March", "April", "May", "June",
+                 "July", "August", "September", "October", "November", "December"]
+
+
+def _month_label(ym: str) -> str:
+    """Turn 'YYYY-MM' into 'Month YYYY'."""
+    try:
+        y, m = ym.split("-")
+        return f"{_MONTH_LABELS[int(m)]} {y}"
+    except (ValueError, IndexError):
+        return ym
+
+
+def _render_deploys_rows(deploys: list[dict], repo_url: str) -> list[str]:
+    """Inner <tr> rows for a single month bucket (no wrapping <table>)."""
     rows: list[str] = []
-    rows.append('    <section id="past-deploys">')
-    rows.append('      <h2 class="section-title">Past deploys</h2>')
-    rows.append('      <details class="deploys-details">')
-    rows.append(f'        <summary>Browse {len(deploys)} past deploy(s) on GitHub</summary>')
-    rows.append('        <table class="deploys-table">')
-    rows.append('          <thead>')
-    rows.append('            <tr><th>Date</th><th>Tag</th><th>Commit</th><th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>')
-    rows.append('          </thead>')
-    rows.append('          <tbody>')
     for d in deploys:
         tag_esc = html.escape(d["tag"])
         date_esc = html.escape(d["date"][:16].replace("T", " "))
@@ -753,8 +1029,43 @@ def _build_deploys_section(deploys: list[dict], repo_url: str) -> str:
         rows.append(f'              <td data-label="&Delta;">{diff_cell}</td>')
         rows.append(f'              <td data-label="Message">{msg_esc}</td>')
         rows.append('            </tr>')
-    rows.append('          </tbody>')
-    rows.append('        </table>')
+    return rows
+
+
+def _build_deploys_section(deploys: list[dict], repo_url: str) -> str:
+    if not deploys:
+        return ""
+    # Bucket by YYYY-MM, preserving newest-first order.
+    months: dict[str, list[dict]] = {}
+    for d in deploys:
+        key = d["date"][:7]  # YYYY-MM
+        months.setdefault(key, []).append(d)
+    month_keys = list(months.keys())  # already in newest-first order thanks to caller sort
+
+    rows: list[str] = []
+    rows.append('    <section id="past-deploys">')
+    rows.append('      <h2 class="section-title">Past deploys</h2>')
+    rows.append('      <details class="deploys-details">')
+    rows.append(f'        <summary>Browse {len(deploys)} past deploy(s) across {len(months)} month(s)</summary>')
+
+    for i, key in enumerate(month_keys):
+        bucket = months[key]
+        open_attr = " open" if i == 0 else ""
+        label = _month_label(key)
+        rows.append(f'        <details class="deploys-month"{open_attr}>')
+        rows.append(f'          <summary>{html.escape(label)} '
+                    f'<span class="group-count">({len(bucket)})</span></summary>')
+        rows.append('          <table class="deploys-table">')
+        rows.append('            <thead>')
+        rows.append('              <tr><th>Date</th><th>Tag</th><th>Commit</th>'
+                    '<th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>')
+        rows.append('            </thead>')
+        rows.append('            <tbody>')
+        rows.extend(_render_deploys_rows(bucket, repo_url))
+        rows.append('            </tbody>')
+        rows.append('          </table>')
+        rows.append('        </details>')
+
     rows.append('        <p class="deploys-footnote">')
     rows.append('          Tag links open the full site snapshot; &ldquo;diff&rdquo; shows what changed vs. the previous deploy. '
                 f'See also <a href="{repo_url}/tags" target="_blank" rel="noopener">all tags</a> '
@@ -798,6 +1109,7 @@ def generate_index_html(
         subtitle=html.escape(subtitle),
         timestamp=timestamp,
         repo_url=html.escape(repo_url),
+        recent_rail=_build_recent_rail(reports),
         reports_section=_build_reports_section(reports),
         figures_section=_build_figures_section(figures),
         deploys_section=_build_deploys_section(deploys, repo_url),
@@ -821,15 +1133,25 @@ def _needs_copy(src: Path, dst: Path) -> bool:
 
 def _sync_dir(dst_dir: Path, items: list[dict], label: str) -> tuple[int, int]:
     """Sync items into dst_dir: copy new/changed, remove stale.
-    Returns (copied, removed)."""
+
+    Only prunes top-level files whose extension matches one of the expected
+    items.  Sub-directories (``_thumbs/``) and ``.html`` detail pages are
+    preserved — they're managed by separate passes.
+    """
     dst_dir.mkdir(parents=True, exist_ok=True)
     expected = {item["name"]: item for item in items}
+    expected_exts = {Path(name).suffix.lower() for name in expected}
 
     removed = 0
     for existing in list(dst_dir.iterdir()):
-        if existing.is_file() and existing.name not in expected:
-            existing.unlink()
-            removed += 1
+        if not existing.is_file():
+            continue
+        if existing.name in expected:
+            continue
+        if existing.suffix.lower() not in expected_exts:
+            continue  # leave unrelated artifacts alone (html, thumbs, …)
+        existing.unlink()
+        removed += 1
 
     copied = 0
     for name, item in expected.items():
@@ -1149,9 +1471,20 @@ def main() -> None:
     branch = deploy_cfg.get("branch", "gh-pages")
     wt_path = ensure_worktree(repo_root, wt_dir, branch)
 
-    # ----- Copy files and generate index ----------------------------------
+    # ----- Copy files -----------------------------------------------------
     deployed = copy_to_worktree(wt_path, reports, figures)
 
+    # ----- Render PDF thumbnails (page 1 preview per report) --------------
+    thumbs_dir = wt_path / "reports" / "_thumbs"
+    generate_thumbnails(reports, thumbs_dir)
+
+    # ----- Per-report detail pages ----------------------------------------
+    site = cfg.get("site", {})
+    repo_url = site.get("repo_url", "https://github.com/Shuonli/ppg12")
+    n_details = generate_detail_pages(reports, past_deploys, wt_path, repo_root, repo_url)
+    print(f"  detail pages: {n_details} written")
+
+    # ----- Generate index.html --------------------------------------------
     index_html = generate_index_html(reports, figures, past_deploys, cfg, repo_root)
     (wt_path / "index.html").write_text(index_html)
     deployed.append("index.html")
