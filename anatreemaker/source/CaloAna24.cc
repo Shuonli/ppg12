@@ -148,6 +148,9 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("cent", &m_cent, "cent/F");
   slimtree->Branch("Psi2", &_Psi2, "Psi2/F");
   slimtree->Branch("vertexz_truth", &vertexz_truth, "vertexz_truth/F");
+  slimtree->Branch("vertexz_truth_embed", &vertexz_truth_embed, "vertexz_truth_embed/I");
+  slimtree->Branch("vertexz_truth_mb", &vertexz_truth_mb, "vertexz_truth_mb/F");
+  slimtree->Branch("vertexz_truth_mb_embed", &vertexz_truth_mb_embed, "vertexz_truth_mb_embed/I");
   slimtree->Branch("pythiaid", &m_pythiaid, "pythiaid/I");
   slimtree->Branch("energy_scale", &m_energyscale, "energy_scale/F");
   slimtree->Branch("scaledtrigger", scaledtrigger, "scaledtrigger[64]/O");
@@ -171,6 +174,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
   slimtree->Branch("particle_trkid", particle_trkid, "particle_trkid[nparticles]/I");
   slimtree->Branch("particle_photonclass", particle_photonclass, "particle_photonclass[nparticles]/I");
   slimtree->Branch("particle_photon_mother_pid", particle_photon_mother_pid, "particle_photon_mother_pid[nparticles]/I");
+  slimtree->Branch("particle_truth_iso_005", particle_truth_iso_005, "particle_truth_iso_005[nparticles]/F");
+  slimtree->Branch("particle_truth_iso_0075", particle_truth_iso_0075, "particle_truth_iso_0075[nparticles]/F");
   slimtree->Branch("particle_truth_iso_02", particle_truth_iso_02, "particle_truth_iso_02[nparticles]/F");
   slimtree->Branch("particle_truth_iso_03", particle_truth_iso_03, "particle_truth_iso_03[nparticles]/F");
   slimtree->Branch("particle_truth_iso_04", particle_truth_iso_04, "particle_truth_iso_04[nparticles]/F");
@@ -201,6 +206,8 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_truthtrkID_%s", clusternamelist[i].c_str()), cluster_truthtrkID[i], Form("cluster_truthtrkID_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_pid_%s", clusternamelist[i].c_str()), cluster_pid[i], Form("cluster_pid_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_embed_id_%s", clusternamelist[i].c_str()), cluster_embed_id[i], Form("cluster_embed_id_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_005_%s", clusternamelist[i].c_str()), cluster_iso_005[i], Form("cluster_iso_005_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_0075_%s", clusternamelist[i].c_str()), cluster_iso_0075[i], Form("cluster_iso_0075_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_%s", clusternamelist[i].c_str()), cluster_iso_03[i], Form("cluster_iso_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_%s", clusternamelist[i].c_str()), cluster_iso_04[i], Form("cluster_iso_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -214,6 +221,7 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_iso_03_70_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_03_70_hcalin[i], Form("cluster_iso_03_70_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_70_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_03_70_hcalout[i], Form("cluster_iso_03_70_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_005_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_005_70_emcal[i], Form("cluster_iso_005_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_0075_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_0075_70_emcal[i], Form("cluster_iso_0075_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_01_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_01_70_emcal[i], Form("cluster_iso_01_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_02_70_emcal_%s", clusternamelist[i].c_str()), cluster_iso_02_70_emcal[i], Form("cluster_iso_02_70_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_120_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_120_emcal[i], Form("cluster_iso_03_120_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -228,8 +236,16 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_iso_04_sub1_emcal_%s", clusternamelist[i].c_str()), cluster_iso_04_sub1_emcal[i], Form("cluster_iso_04_sub1_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_sub1_hcalin_%s", clusternamelist[i].c_str()), cluster_iso_04_sub1_hcalin[i], Form("cluster_iso_04_sub1_hcalin_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_sub1_hcalout_%s", clusternamelist[i].c_str()), cluster_iso_04_sub1_hcalout[i], Form("cluster_iso_04_sub1_hcalout_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_005_%s", clusternamelist[i].c_str()), cluster_iso_topo_005[i], Form("cluster_iso_topo_005_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_0075_%s", clusternamelist[i].c_str()), cluster_iso_topo_0075[i], Form("cluster_iso_topo_0075_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_01_%s", clusternamelist[i].c_str()), cluster_iso_topo_01[i], Form("cluster_iso_topo_01_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_02_%s", clusternamelist[i].c_str()), cluster_iso_topo_02[i], Form("cluster_iso_topo_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_topo_03_%s", clusternamelist[i].c_str()), cluster_iso_topo_03[i], Form("cluster_iso_topo_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_topo_04_%s", clusternamelist[i].c_str()), cluster_iso_topo_04[i], Form("cluster_iso_topo_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_soft_005_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_005[i], Form("cluster_iso_topo_soft_005_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_soft_0075_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_0075[i], Form("cluster_iso_topo_soft_0075_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_soft_01_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_01[i], Form("cluster_iso_topo_soft_01_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_topo_soft_02_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_02[i], Form("cluster_iso_topo_soft_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_topo_soft_03_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_03[i], Form("cluster_iso_topo_soft_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_topo_soft_04_%s", clusternamelist[i].c_str()), cluster_iso_topo_soft_04[i], Form("cluster_iso_topo_soft_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_e1_%s", clusternamelist[i].c_str()), cluster_e1[i], Form("cluster_e1_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -687,6 +703,36 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       return Fun4AllReturnCodes::ABORTEVENT;
     }
     vertexz_truth = primaryvtx->get_z();
+    vertexz_truth_embed = truthinfo->isEmbededVtx(primaryvtxid);
+
+    // MB truth vertex (double-interaction MC only).
+    // GetPrimaryVtxRange() returns all truth primary vertices (vtxid > 0).
+    // Single-interaction MC has exactly one entry — the hard scatter —
+    // and this stays at -9999. Double-interaction MC has two primary
+    // vertices: the embedded hard scatter (highest embed flag, returned
+    // by GetPrimaryVertexIndex()) and the MB pile-up collision. We
+    // iterate and pick the first vertex whose id differs from
+    // primaryvtxid. isEmbededVtx() is recorded so downstream analysis
+    // can verify the labeling (expect hard embed == 2, MB embed
+    // typically == 1). Needed for the exact 2D (z_hard, z_mb) reweight
+    // from the raw RHIC beam profile to the 1.5 mrad luminous-region
+    // geometry; see reports/truth_vertex_reco_check.tex.
+    vertexz_truth_mb = -9999.0f;
+    vertexz_truth_mb_embed = -9999;
+    {
+      auto vtx_range = truthinfo->GetPrimaryVtxRange();
+      for (auto vit = vtx_range.first; vit != vtx_range.second; ++vit)
+      {
+        if (vit->first == primaryvtxid) continue;
+        PHG4VtxPoint *vtx2 = vit->second;
+        if (vtx2)
+        {
+          vertexz_truth_mb = vtx2->get_z();
+          vertexz_truth_mb_embed = truthinfo->isEmbededVtx(vit->first);
+          break;
+        }
+      }
+    }
 
     if (isSingleParticle)
     {
@@ -806,12 +852,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
     }
     nparticles = 0;
     float merger = 0.001;
-    float isor[3] = {0.2, 0.3, 0.4};
+    float isor[5] = {0.05, 0.075, 0.2, 0.3, 0.4};
     // calculate truth iso
     for (auto truth : primary_particles)
     {
       // std::cout<<truth<<std::endl;
-      float isoET[3] = {0, 0, 0};
+      float isoET[5] = {0, 0, 0, 0, 0};
       float clusterET = 0;
       int pid = truth->get_pid();
       int trackid = truth->get_track_id();
@@ -877,7 +923,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         }
         */
         float dr = p1.DeltaR(p2);
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 5; i++)
         {
           if (dr < isor[i])
           {
@@ -890,7 +936,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           clusterET += p2.Et();
         }
       }
-      for (int i = 0; i < 3; i++)
+      for (int i = 0; i < 5; i++)
       {
         isoET[i] -= clusterET;
       }
@@ -912,7 +958,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         if (p1.Pt() > particlepTmin)
         {
           if (p1.Pt() > 5)
-            std::cout << "particle E: " << p1.E() << " Pt: " << p1.Pt() << " Eta: " << p1.Eta() << " Phi: " << p1.Phi() << " pid: " << pid << " trackid: " << trackid << " isoET: " << isoET[0] << " " << isoET[1] << " " << isoET[2] << std::endl;
+            std::cout << "particle E: " << p1.E() << " Pt: " << p1.Pt() << " Eta: " << p1.Eta() << " Phi: " << p1.Phi() << " pid: " << pid << " trackid: " << trackid << " isoET (R=0.05,0.075,0.2,0.3,0.4): " << isoET[0] << " " << isoET[1] << " " << isoET[2] << " " << isoET[3] << " " << isoET[4] << std::endl;
           int converted = 0;
           if (badphotons.find(truth) != badphotons.end())
           {
@@ -931,9 +977,11 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
           particle_photonclass[nparticles] = photonclass;
           particle_photon_mother_pid[nparticles] = photonmotherpid;
           particle_converted[nparticles] = converted;
-          particle_truth_iso_02[nparticles] = isoET[0];
-          particle_truth_iso_03[nparticles] = isoET[1];
-          particle_truth_iso_04[nparticles] = isoET[2];
+          particle_truth_iso_005[nparticles] = isoET[0];
+          particle_truth_iso_0075[nparticles] = isoET[1];
+          particle_truth_iso_02[nparticles] = isoET[2];
+          particle_truth_iso_03[nparticles] = isoET[3];
+          particle_truth_iso_04[nparticles] = isoET[4];
           nparticles++;
           if (nparticles > nparticlesmax)
           {
@@ -1149,6 +1197,14 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
         clusteriso[i] = recoCluster->get_et_iso(2 + i, false, true);
       }
 
+      float emcalET_005 = calculateET(eta, phi, 0.05, 0, -10.0);
+      float ihcalET_005 = calculateET(eta, phi, 0.05, 1, -10.0);
+      float ohcalET_005 = calculateET(eta, phi, 0.05, 2, -10.0);
+
+      float emcalET_0075 = calculateET(eta, phi, 0.075, 0, -10.0);
+      float ihcalET_0075 = calculateET(eta, phi, 0.075, 1, -10.0);
+      float ohcalET_0075 = calculateET(eta, phi, 0.075, 2, -10.0);
+
       float emcalET_04 = calculateET(eta, phi, 0.4, 0, -10.0);
       std::cout << "emcalET_04: " << emcalET_04 << std::endl;
       float ihcalET_04 = calculateET(eta, phi, 0.4, 1, -10.0);
@@ -1174,6 +1230,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float ohcalET_03_70 = calculateET(eta, phi, 0.3, 2, 0.07);
 
       float emcalET_005_70 = calculateET(eta, phi, 0.05, 0, 0.07);
+      float emcalET_0075_70 = calculateET(eta, phi, 0.075, 0, 0.07);
       float emcalET_01_70 = calculateET(eta, phi, 0.1, 0, 0.07);
       float emcalET_02_70 = calculateET(eta, phi, 0.2, 0, 0.07);
 
@@ -1181,10 +1238,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float ihcalET_03_120 = calculateET(eta, phi, 0.3, 1, 0.12);
       float ohcalET_03_120 = calculateET(eta, phi, 0.3, 2, 0.12);
 
-      float topoET_03 = calculateET_topo(eta, phi, 0.3, topoClusterContainer);
-      float topoET_04 = calculateET_topo(eta, phi, 0.4, topoClusterContainer);
-      float topoET_soft_03 = calculateET_topo(eta, phi, 0.3, topoClusterContainer_soft);
-      float topoET_soft_04 = calculateET_topo(eta, phi, 0.4, topoClusterContainer_soft);
+      float topoET_005, topoET_0075, topoET_01, topoET_02, topoET_03, topoET_04;
+      calculateET_topo_6cones(eta, phi, topoClusterContainer,
+                              topoET_005, topoET_0075, topoET_01, topoET_02, topoET_03, topoET_04);
+      float topoET_soft_005, topoET_soft_0075, topoET_soft_01, topoET_soft_02, topoET_soft_03, topoET_soft_04;
+      calculateET_topo_6cones(eta, phi, topoClusterContainer_soft,
+                              topoET_soft_005, topoET_soft_0075, topoET_soft_01, topoET_soft_02, topoET_soft_03, topoET_soft_04);
 
       if (ET > maxclusterpt)
       {
@@ -1731,6 +1790,8 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_truthtrkID[i][ncluster[i]] = trackid;
       cluster_pid[i][ncluster[i]] = pid;
       cluster_embed_id[i][ncluster[i]] = embed_id;
+      cluster_iso_005[i][ncluster[i]] = (emcalET_005 + ihcalET_005 + ohcalET_005) - ET;
+      cluster_iso_0075[i][ncluster[i]] = (emcalET_0075 + ihcalET_0075 + ohcalET_0075) - ET;
       cluster_iso_02[i][ncluster[i]] = clusteriso[0];
       cluster_iso_03[i][ncluster[i]] = clusteriso[1];
       cluster_iso_04[i][ncluster[i]] = clusteriso[2];
@@ -1744,6 +1805,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_03_70_hcalin[i][ncluster[i]] = ihcalET_03_70;
       cluster_iso_03_70_hcalout[i][ncluster[i]] = ohcalET_03_70;
       cluster_iso_005_70_emcal[i][ncluster[i]] = emcalET_005_70 - ET;
+      cluster_iso_0075_70_emcal[i][ncluster[i]] = emcalET_0075_70 - ET;
       cluster_iso_01_70_emcal[i][ncluster[i]] = emcalET_01_70 - ET;
       cluster_iso_02_70_emcal[i][ncluster[i]] = emcalET_02_70 - ET;
       cluster_iso_03_120_emcal[i][ncluster[i]] = emcalET_03_120 - ET;
@@ -1758,8 +1820,16 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_iso_04_sub1_emcal[i][ncluster[i]] = emcalET_04_sub1 - ET;
       cluster_iso_04_sub1_hcalin[i][ncluster[i]] = ihcalET_04_sub1;
       cluster_iso_04_sub1_hcalout[i][ncluster[i]] = ohcalET_04_sub1;
+      cluster_iso_topo_005[i][ncluster[i]] = topoET_005 - ET;
+      cluster_iso_topo_0075[i][ncluster[i]] = topoET_0075 - ET;
+      cluster_iso_topo_01[i][ncluster[i]] = topoET_01 - ET;
+      cluster_iso_topo_02[i][ncluster[i]] = topoET_02 - ET;
       cluster_iso_topo_03[i][ncluster[i]] = topoET_03 - ET;
       cluster_iso_topo_04[i][ncluster[i]] = topoET_04 - ET;
+      cluster_iso_topo_soft_005[i][ncluster[i]] = topoET_soft_005 - ET;
+      cluster_iso_topo_soft_0075[i][ncluster[i]] = topoET_soft_0075 - ET;
+      cluster_iso_topo_soft_01[i][ncluster[i]] = topoET_soft_01 - ET;
+      cluster_iso_topo_soft_02[i][ncluster[i]] = topoET_soft_02 - ET;
       cluster_iso_topo_soft_03[i][ncluster[i]] = topoET_soft_03 - ET;
       cluster_iso_topo_soft_04[i][ncluster[i]] = topoET_soft_04 - ET;
       cluster_e1[i][ncluster[i]] = showershape[8];
@@ -2300,10 +2370,11 @@ float CaloAna24::calculateET(float eta, float phi, float dR, int layer, float mi
   return ET;
 }
 
-float CaloAna24::calculateET_topo(float eta, float phi, float dR, RawClusterContainer *clusterContainer)
+void CaloAna24::calculateET_topo_6cones(float eta, float phi, RawClusterContainer *clusterContainer,
+                                        float &ET005, float &ET0075, float &ET01, float &ET02, float &ET03, float &ET04)
 {
-  float ET = 0;
-  if (!clusterContainer) return ET;
+  ET005 = ET0075 = ET01 = ET02 = ET03 = ET04 = 0.0f;
+  if (!clusterContainer) return;
   CLHEP::Hep3Vector vertex(0, 0, vertexz);
   RawClusterContainer::ConstRange clusterRange = clusterContainer->getClusters();
   for (auto clusterIter = clusterRange.first; clusterIter != clusterRange.second; ++clusterIter)
@@ -2312,10 +2383,28 @@ float CaloAna24::calculateET_topo(float eta, float phi, float dR, RawClusterCont
     if (!cluster) continue;
     float clus_phi = RawClusterUtility::GetAzimuthAngle(*cluster, vertex);
     float clus_eta = RawClusterUtility::GetPseudorapidity(*cluster, vertex);
-    float clus_E = cluster->get_energy();
-    float clus_ET = clus_E / cosh(clus_eta);
-    if (deltaR(eta, clus_eta, phi, clus_phi) < dR)
-      ET += clus_ET;
+    float clus_ET = cluster->get_energy() / cosh(clus_eta);
+    float dR = deltaR(eta, clus_eta, phi, clus_phi);
+    if (dR < 0.4f)
+    {
+      ET04 += clus_ET;
+      if (dR < 0.3f)
+      {
+        ET03 += clus_ET;
+        if (dR < 0.2f)
+        {
+          ET02 += clus_ET;
+          if (dR < 0.1f)
+          {
+            ET01 += clus_ET;
+            if (dR < 0.075f)
+            {
+              ET0075 += clus_ET;
+              if (dR < 0.05f) ET005 += clus_ET;
+            }
+          }
+        }
+      }
+    }
   }
-  return ET;
 }

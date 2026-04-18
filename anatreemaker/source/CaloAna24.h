@@ -127,7 +127,24 @@ private:
   float mbdnorthtmean{0};
   float mbdsouthtmean{0};
   float _Psi2{0};
+  // Truth vertex of the "hard" (signal) collision — the primary vertex
+  // returned by PHG4TruthInfoContainer::GetPrimaryVertexIndex(), which
+  // is the one with the highest embedding flag. In single-interaction
+  // MC this is the only primary vertex; in double-interaction MC
+  // (photon10_double / jet12_double) this is the embedded hard scatter
+  // (expected isEmbededVtx() == 2). vertexz_truth_embed records the
+  // embed flag of that vertex for sanity checking.
   float vertexz_truth{-9999};
+  int vertexz_truth_embed{-9999};
+  // Truth vertex of the second "MB" collision — only populated in
+  // double-interaction MC. We iterate GetPrimaryVtxRange() and pick the
+  // first primary vertex whose id differs from the one returned by
+  // GetPrimaryVertexIndex(). Stays at sentinel -9999 for single-
+  // interaction MC. Needed for the exact 2D (z_hard, z_mb) reweight
+  // that converts the current double MC to the 1.5 mrad luminous region
+  // geometry; see reports/truth_vertex_reco_check.tex.
+  float vertexz_truth_mb{-9999};
+  int vertexz_truth_mb_embed{-9999};
   int m_pythiaid{-9999};
   float m_energyscale{-1.0};
   float particlepTmin{1};
@@ -141,6 +158,8 @@ private:
   int particle_trkid[nparticlesmax] = {0};
   int particle_photonclass[nparticlesmax] = {0};
   int particle_photon_mother_pid[nparticlesmax] = {0};
+  float particle_truth_iso_005[nparticlesmax] = {0};
+  float particle_truth_iso_0075[nparticlesmax] = {0};
   float particle_truth_iso_02[nparticlesmax] = {0};
   float particle_truth_iso_03[nparticlesmax] = {0};
   float particle_truth_iso_04[nparticlesmax] = {0};
@@ -176,6 +195,8 @@ private:
   int cluster_truthtrkID[nclustercontainer][nclustermax] = {0};
   int cluster_pid[nclustercontainer][nclustermax] = {0};
   int cluster_embed_id[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_005[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_0075[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
@@ -189,6 +210,7 @@ private:
   float cluster_iso_03_70_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03_70_hcalout[nclustercontainer][nclustermax] = {0};
   float cluster_iso_005_70_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_0075_70_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_01_70_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_02_70_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03_120_emcal[nclustercontainer][nclustermax] = {0};
@@ -204,8 +226,16 @@ private:
   float cluster_iso_04_sub1_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_sub1_hcalout[nclustercontainer][nclustermax] = {0};
 
+  float cluster_iso_topo_005[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_0075[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_01[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_04[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_005[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_0075[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_01[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_topo_soft_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_soft_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_soft_04[nclustercontainer][nclustermax] = {0};
 
@@ -327,7 +357,10 @@ private:
 
   float calculateET(float eta, float phi, float dR, int layer, float min_E, bool use_subtracted = false); // layer: 0 EMCal, 1 IHCal, 2 OHCal
 
-  float calculateET_topo(float eta, float phi, float dR, RawClusterContainer *clusterContainer);
+  // Single pass over the topo container; fills ET inside R = 0.05, 0.075, 0.1, 0.2, 0.3, 0.4
+  // by short-circuiting on dR (smaller cones are subsets of larger ones).
+  void calculateET_topo_6cones(float eta, float phi, RawClusterContainer *clusterContainer,
+                               float &ET005, float &ET0075, float &ET01, float &ET02, float &ET03, float &ET04);
 
   std::vector<int> find_closest_hcal_tower(float eta, float phi, RawTowerGeomContainer *rawtowergeom, TowerInfoContainer *towercontainer, float vertex_z, bool isihcal);
 
