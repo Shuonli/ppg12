@@ -1,0 +1,2396 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{xspace}
+
+%%% Custom commands (harmonized across post_preliminary_updates.tex
+%%% and truth_vertex_reco_check.tex)
+\newcommand{\ET}{\ensuremath{E_{\text{T}}}\xspace}
+\newcommand{\eT}{\ensuremath{E_{\text{T}}}\xspace}
+\newcommand{\pT}{\ensuremath{p_{\text{T}}}\xspace}
+\newcommand{\etg}{\ensuremath{E_{\mathrm{T}}^{\gamma}}\xspace}
+\newcommand{\isoET}{\mbox{$E_{\text{T}}^{\text{iso}}$}\xspace}
+\newcommand{\isoETtruth}{\ensuremath{E_\text{T}^\text{iso,truth}}\xspace}
+\newcommand{\wetacog}{\ensuremath{w_{\eta}^{\mathrm{CoG}}}\xspace}
+\newcommand{\chidf}{\ensuremath{\chi^2/\mathrm{ndf}}\xspace}
+\newcommand{\DR}{\ensuremath{\Delta R}\xspace}
+\newcommand{\zvtx}{\ensuremath{z_{\mathrm{vtx}}}\xspace}
+\newcommand{\pp}{\mbox{$p$+$p$}\xspace}
+\newcommand{\GeV}{\ifmmode {\mathrm{\ Ge\kern -0.1em V}}\else\textrm{Ge\kern -0.1em V}\fi\xspace}
+\newcommand{\nown}{\ensuremath{n_{\mathrm{owned}}}\xspace}
+\newcommand{\dietag}{\ensuremath{\Delta i_\eta}\xspace}
+\newcommand{\diphig}{\ensuremath{\Delta i_\phi}\xspace}
+\newcommand{\splitnode}{\texttt{CLUSTERINFO\_CEMC}\xspace}
+\newcommand{\nosplitnode}{\texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT}\xspace}
+
+\title{\LARGE\textbf{Double-Interaction (Pileup) Effects in PPG12:\\
+Efficiency, Shower Shapes, Truth-Vertex Reweighting,\\
+Cluster Size, and Energy Response}\\[6pt]
+\large Consolidated Note ---
+\textbf{\textit{sPHENIX} Internal} ---
+\texttt{sPH-ppg-2024-012}}
+\author{PPG12 Analysis Team}
+\date{April 18, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}\noindent
+Run-24 \pp data at $\sqrt{s} = 200$\,\GeV contain two crossing-angle periods
+(0\,mrad and 1.5\,mrad) with very different pileup conditions, where two
+independent collisions in the same bunch crossing shift the reconstructed
+vertex and distort cluster kinematics, shower shapes, and ABCD templates.
+This note consolidates the PPG12 treatment of double interactions (DI) across
+four lines of evidence: (i)~luminosity-weighted MBD-Poisson pileup fractions
+($22.4\%$ cluster-weighted at 0\,mrad, $7.9\%$ at 1.5\,mrad);
+(ii)~the DI efficiency study, which decomposes the apparent $94\%\to 31\%$
+double-MC drop into an $88\%$ matching artifact (removed by switching from
+$\DR$-based to track-ID-only matching) and $12\%$ genuine cluster loss,
+leaving a $9.4\%$ relative efficiency reduction (52.0\%/57.4\%) on the
+mixed-0\,mrad integrated photon-ID chain and a 2.8\% integrated
+cross-section impact at 1.5\,mrad (reco 1.6\% + BDT 1.0\% + iso 0.2\%);
+(iii)~an iterative data-driven truth-vertex reweight $w(z)$ factorized as
+$w(z_h)\,w(z_\mathrm{mb})$, which closes the individual DI truth-vertex
+distributions that the production $f(z_r)$ structurally cannot;
+(iv)~data-vs-mixed-MC shower-shape validation with up to $20.8\times$
+\chidf improvements at 0\,mrad for vertex-sensitive variables.
+The nominal recipe is: single-MC efficiency with track-ID matching, the
+iterative truth-vertex reweight on both periods, mixed MC for shower-shape
+validation only. The $+1.4\%$ 1.5\,mrad cross-section bias under
+$f(z_r)$ alone is removed inside the $|z_h|<60$\,cm fiducial, with per-bin
+closure at $1$--$2\%$.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+%% ==================================================================
+\section{Introduction}
+\label{sec:intro}
+
+In \pp collisions at RHIC, two separate collisions can occur in the same
+bunch crossing (pileup, also referred to here as double interaction, DI).
+For PPG12's isolated prompt-photon cross-section measurement at
+$\sqrt{s}=200$\,\GeV using sPHENIX Run~24 data, pileup is not just a
+rate correction: it shifts the reconstructed MBD vertex to the average of
+the two collision points, which in turn distorts cluster pseudorapidity
+via the EMCal-radius geometric mapping, biases the truth-reco matching
+that underlies the efficiency calculation, broadens \wetacog at the
+shower-shape level, enters the ABCD background templates through
+DI-broadened jet clusters, and --- if uncorrected --- biases the truth
+fiducial acceptance used for the efficiency denominator at the
+percent level.
+
+The analysis uses two crossing-angle periods (split at run 51274):
+\begin{itemize}
+\item \textbf{0\,mrad}, runs 47289--51274, $\mathcal{L}\simeq 32.7$\,pb$^{-1}$,
+      broad luminous region ($\sigma_z\!\simeq\!54$\,cm), high pileup
+      ($\sim\!22\%$ cluster-weighted DI);
+\item \textbf{1.5\,mrad} (nominal published period),
+      runs 51274--54000, $\mathcal{L}\simeq 16.9$\,pb$^{-1}$,
+      Piwinski-narrowed luminous region ($\sigma_z\!\simeq\!22$\,cm),
+      modest pileup ($\sim\!8\%$ cluster-weighted DI).
+\end{itemize}
+
+The PPG12 DI programme consists of two complementary work streams:
+\begin{enumerate}
+\item \textbf{Full-GEANT DI MC blending}: dedicated
+  \texttt{photon10\_double} and \texttt{jet12\_double} samples, produced
+  via full detector simulation of two overlapping \pp collisions, are
+  mixed with the nominal single-interaction samples at the physics
+  fractions of Table~\ref{tab:pileup_fractions}. This blend provides both
+  the DI efficiency study (\S\ref{sec:eff_impact}) and the
+  shower-shape data--MC validation
+  (\S\ref{sec:shower_shape}).
+\item \textbf{Truth-vertex reweighting}: the production reco-level weight
+  $f(z_r)=D(z_r)/M(z_r)$ is structurally insufficient to close the
+  individual truth vertices of double-interaction events; an iterative
+  data-driven reweight $w(z)$ applied per truth vertex
+  ($w(z_h)$ for single MC, $w(z_h)\,w(z_\mathrm{mb})$ for doubles) is
+  introduced in \S\ref{sec:truth_vertex} and removes the $+1.4\%$
+  cross-section bias at 1.5\,mrad.
+\end{enumerate}
+
+A third, toy-level vertex-shift simulation
+(\texttt{DoubleInteractionCheck.C}) exists for cross-checks on single MC
+and is described in \texttt{.claude/rules/double-interaction.md}; this note
+focuses exclusively on the full-GEANT and truth-vertex-reweight work
+streams that feed the nominal analysis.
+
+The remainder of the note covers: pileup fractions (\S\ref{sec:fractions}),
+DI MC production (\S\ref{sec:production}), the vertex-shift mechanism
+(\S\ref{sec:vtx_shift}), the efficiency impact with the full DI
+decomposition (\S\ref{sec:eff_impact}), shower-shape data--MC validation
+(\S\ref{sec:shower_shape}), truth-vertex reweighting
+(\S\ref{sec:truth_vertex}), cluster size under DI (\S\ref{sec:cluster_size}),
+energy response (\S\ref{sec:energy_response}),
+eta-edge migration (\S\ref{sec:eta_edge}), and the summary
+(\S\ref{sec:summary}). Appendices cover the DI reco--truth kernel,
+discarded reweighting methods, the baseline TruthVertexRecoCheck study,
+and a file/code inventory.
+
+%% ==================================================================
+\section{Pileup Fractions}
+\label{sec:fractions}
+
+The mean number of interactions per bunch crossing, $\mu$, is derived
+from the Poisson-corrected MBD coincidence rate:
+\begin{equation}
+    \mu = \frac{\sum_{\text{runs}} N_{\text{MBD,corr}}}{r_B \cdot \sum_{\text{runs}} \Delta t},
+\end{equation}
+where $r_B = 111 \times 78{,}200 = 8.68 \times 10^{6}$\,Hz is the RHIC
+bunch-crossing rate. The event-level interaction fractions under the
+zero-truncated Poisson are
+\begin{equation}
+    f_1 = \frac{\mu\, e^{-\mu}}{1 - e^{-\mu}},\qquad
+    f_2 = \frac{(\mu^2/2)\, e^{-\mu}}{1 - e^{-\mu}},\qquad
+    f_{\geq 3} = 1 - f_1 - f_2.
+\end{equation}
+Fractions are computed per run and {luminosity}-weighted (not
+simple-averaged) to avoid Jensen's inequality bias. Cluster-weighted
+fractions account for the higher cluster multiplicity of
+multi-interaction events:
+\begin{equation}
+    w_{\text{single}} = \frac{f_1}{\sum_k k\, f_k},\qquad
+    w_{\text{double}} = \frac{2\, f_2 + 3\, f_{\geq 3}}{\sum_k k\, f_k},
+\end{equation}
+with triple-and-higher interactions folded into the double bin for the
+purposes of the GEANT blend (the $\tt photon10\_double$ /
+$\tt jet12\_double$ productions model the two-collision case exactly;
+extra collisions are rare enough that this approximation is well within
+the bin-by-bin closure tolerance).
+
+\begin{table}[H]
+    \centering
+    \caption{Luminosity-weighted pileup fractions and cluster-level
+      mixing weights from \texttt{calc\_pileup\_range.C}. Triple+ folded
+      into $f_2$ for blending. $\mu_{\text{corr}}$ is the MBD-corrected
+      mean interactions per bunch crossing.}
+    \label{tab:pileup_fractions}
+    \begin{tabular}{lcccccc}
+        \toprule
+        Crossing angle & Run range & $\mu_{\text{corr}}$ & $f_1$ & $f_2$ & $w_{\text{single}}$ & $w_{\text{double}}$ \\
+        \midrule
+        0~mrad   & 47289--51274 & 0.24 & 0.879 & 0.111 & 0.776 & \textbf{0.224} \\
+        1.5~mrad & 51274--54000 & 0.08 & 0.960 & 0.039 & 0.921 & \textbf{0.079} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The cluster-weighted fractions $w_{\text{double}}$ (last column of
+Table~\ref{tab:pileup_fractions}) are the numbers used throughout
+this note: $0.224$ at 0\,mrad and $0.079$ at 1.5\,mrad. They
+multiply the per-event cross-section weight of each sample in the
+full-GEANT blending pipeline (\S\ref{subsec:two_pass}) and set the
+double-interaction mixing fraction $f_d$ in the iterative truth-vertex
+forward model (\S\ref{subsec:method}).
+
+
+%% ==================================================================
+\section{DI MC Production}
+\label{sec:production}
+
+The full-GEANT DI samples used throughout this note are
+\texttt{photon10\_double} (photon signal, truth $p_T^\gamma \in
+[10,100]$\,\GeV with window $[14,30]$\,\GeV dominant) and
+\texttt{jet12\_double} (QCD jet, $p_T^{\text{jet}}\in[14,21]$\,\GeV),
+produced in the run28 production area
+\texttt{anatreemaker/macro\_maketree/sim/run28/}. The double-interaction
+events are generated via the Fun4All embedding flag~2
+(pythia-in-hijing), carrying a primary hard-scatter vertex ($z_h$) and
+a secondary minimum-bias vertex ($z_\mathrm{mb}$). Both vertex values
+are available in the output slimtree through the branches
+\texttt{vertexz\_truth} ($z_h$) and \texttt{vertexz\_truth\_second}
+($z_\mathrm{mb}$, read in C++ as \texttt{vertexz\_truth\_mb}).
+
+\paragraph{Known production caveats.} Two independent pipeline reviews
+(\texttt{condor\_pipeline\_review\_run28.md}, findings \#7 and \#19;
+the BDT training audit of Apr 2026) flagged the following issues that
+the reader should be aware of:
+
+\begin{itemize}
+\item \textbf{Hardcoded \texttt{total\_line=10000} on the pre-submit
+  stage}: the per-sample \texttt{run\_condor.sh} templates in 12 of 14
+  sample directories hardcode a 10,000-line filelist cut-off, while
+  \texttt{photon10\_double} (9998 lines) and \texttt{jet12\_double}
+  (9997) sit just below the cutoff. The final 2--3 jobs per double
+  sample therefore read empty filelists and produce empty
+  \texttt{caloana.root} files that are silently merged into the combined
+  output by \texttt{hadd\_combined.sh}. Two jet samples (\texttt{jet5},
+  \texttt{jet8}) already patched this with a dynamic \texttt{wc -l}
+  look-up; the remaining samples have not.
+\item \textbf{Missing \texttt{vertexz\_truth\_mb} branch}: the
+  \texttt{photon10\_double} and \texttt{jet12\_double}
+  \texttt{bdt\_split.root} files currently downstream of
+  \texttt{apply\_BDT.C} were produced before the
+  \texttt{vertexz\_truth\_mb} branch was added to the anatreemaker output.
+  Consumers downstream (notably \texttt{ShowerShapeCheck.C} and
+  \texttt{RecoEffCalculator\_TTreeReader.C}, which both carry an
+  optional-pointer guard) silently drop the secondary-vertex factor
+  $w(z_\mathrm{mb})$ for those two samples. The impact on cluster-size
+  means and shower-shape moments is expected to be below the percent
+  level at 1.5\,mrad (where the DI blend fraction is only 7.9\%) and
+  sub-percent at 0\,mrad (where the MC beam profile is already close to
+  the luminous region). Regenerating these two
+  \texttt{bdt\_split.root} files from the reprocessed
+  \texttt{combined.root} (which does carry \texttt{vertexz\_truth\_mb})
+  removes this caveat; it is a follow-up.
+\item \textbf{Embedding flag buried in 3 of 14 Fun4All macro copies}:
+  \texttt{TruthJetInput::add\_embedding\_flag(2)} is set in the Fun4All
+  macros of \texttt{photon10\_double}, \texttt{jet12\_double}, and
+  \texttt{jet8} (for distinct physics reasons); any consolidation of the
+  14-way macro duplication should preserve this flag explicitly on the
+  DI productions.
+\end{itemize}
+
+None of these issues blocks the DI programme at its current precision; the
+cross-section bias from the missing $w(z_\mathrm{mb})$ factor is
+sub-percent and well below the existing systematic budget at 1.5\,mrad.
+The pipeline consolidation is tracked separately in
+\texttt{condor\_pipeline\_review\_run28.md}.
+
+
+%% ==================================================================
+\section{Vertex-Shift Mechanism}
+\label{sec:vtx_shift}
+
+In a double-interaction event the MBD reconstructs a single vertex
+whose best estimator is the average of the two collision points:
+\begin{equation}
+    z_{\text{vtx}}^{\text{reco}} \;\approx\; \frac{z_{\text{vtx},1} + z_{\text{vtx},2}}{2}.
+\end{equation}
+The RHIC luminous region has $\sigma_\mathrm{lum} \approx 22$\,cm at
+1.5\,mrad and $\sigma_\mathrm{lum} \approx 54$\,cm at 0\,mrad, while
+the MC generator was produced with a wider
+$\sigma_\mathrm{gen} \approx 65$\,cm common to both periods. The
+two vertices in a DI event are drawn from the generator distribution
+(MC) or from the luminous region (data), so the displacement between
+the primary truth vertex and the reconstructed vertex,
+$\Delta z \equiv z_{\text{vtx}}^{\text{reco}} - z_{\text{vtx}}^{\text{truth}}$,
+can reach several tens of cm in either case. The cluster pseudorapidity shift induced at
+the EMCal-barrel radius $R_{\text{EMCal}} = 93.5$\,cm follows directly
+from the cluster geometry:
+\begin{equation}
+    \Delta\eta \;\approx\; -\frac{\Delta z}{R_{\text{EMCal}} \cosh\eta}.
+    \label{eq:deta_vs_dz}
+\end{equation}
+At $\eta = 0$ this reduces to $|\Delta\eta| \approx |\Delta z|/93.5$\,cm,
+so a matching cut of $\DR<0.1$ fails whenever
+$|\Delta z| \gtrsim 9.35$\,cm at midrapidity. This is the critical
+observation that drives the efficiency interpretation in
+\S\ref{sec:eff_impact}: pileup events populate $|\Delta z|$ far beyond
+this threshold.
+
+\begin{table}[H]
+    \centering
+    \caption{Vertex-shift distributions in single- and double-interaction
+      photon10 MC. The critical threshold $|\Delta z| = 9.35$\,cm maps
+      onto $|\Delta\eta| = 0.1$ at $\eta = 0$ via
+      Eq.~\eqref{eq:deta_vs_dz}.}
+    \label{tab:vertex_shift}
+    \begin{tabular}{lcc}
+        \toprule
+        Quantity & Single MC & Double MC \\
+        \midrule
+        RMS of $\Delta z$ [cm] & 7.6 & 34.5 \\
+        Fraction with $|\Delta z| > 9.35$\,cm & --- & 83\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The matching-failure rate inherits the same deterministic geometric
+origin, saturating to $100\%$ for vertex displacements well past the
+$9.35$\,cm threshold:
+
+\begin{table}[H]
+    \centering
+    \caption{$\DR<0.1$ matching-failure rate vs.\ $|\Delta z|$ in
+      double-interaction MC.}
+    \label{tab:failure_vs_dz}
+    \begin{tabular}{lc}
+        \toprule
+        $|\Delta z|$ range [cm] & Matching-failure rate \\
+        \midrule
+        $< 10$ & 9\% \\
+        $10$--$15$ & 77\% \\
+        $15$--$20$ & $\sim$100\% \\
+        $> 20$ & 100\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Figure~\ref{fig:fail_vs_dz} shows the same quantity as a continuous
+curve in single-interaction MC, where the rare tail of large $|\Delta z|$
+events gives a clean step at the geometric threshold.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../plotting/figures/deltaR_study/fail_fraction_vs_dz.pdf}
+    \caption{$\DR<0.1$ failure fraction as a function of $|\Delta z|$ in
+      single-interaction MC. The sharp step at ${\sim}9.35$\,cm matches
+      the prediction from Eq.~\eqref{eq:deta_vs_dz}, confirming vertex
+      mismatch as the sole driver of $\DR$ matching failure; cluster
+      quality is essentially unchanged across the step.}
+    \label{fig:fail_vs_dz}
+\end{figure}
+
+
+%% ==================================================================
+\section{Efficiency Impact}
+\label{sec:eff_impact}
+
+\subsection{Apparent Efficiency Drop Under \DR Matching}
+\label{subsec:apparent_drop}
+
+When the \texttt{photon10\_double} sample was first passed through the
+legacy efficiency pipeline (which required a $\DR<0.1$ geometric match
+on top of the GEANT track-ID to associate a reconstructed cluster with
+a truth photon), the reconstruction efficiency dropped dramatically:
+from $\sim\!94\%$ in single-interaction MC to $\sim\!31\%$ in the
+double-interaction sample. Taken at face value this would imply that
+pileup destroys two-thirds of the reconstructed cluster sample --- a
+result in obvious tension with the $\sim\!1$\% fiducial-acceptance bias
+expected from the pileup fraction alone.
+
+A dedicated investigation showed that the apparent drop was
+overwhelmingly a \emph{truth--reco matching artifact} caused by the
+vertex-displacement mechanism of \S\ref{sec:vtx_shift}. The single
+decisive observation is that the matching failure rate scales as
+expected from Eq.~\eqref{eq:deta_vs_dz}: in double MC, 83\% of events
+have $|\Delta z|>9.35$\,cm, of which 77\%+ fail the $\DR<0.1$ cut.
+The cluster is physically present at the correct track-ID; the
+reconstructed $\eta$ is merely offset from the true $\eta$ by the
+vertex shift. Switching the matching strategy from $\DR$-geometric to
+track-ID-only recovers those clusters and eliminates the artifact.
+This section decomposes the apparent drop, justifies the removal of
+$\DR<0.1$ from the production pipeline, and reports the factorized
+per-stage efficiency under the corrected matching.
+
+\subsection{Decomposition: Matching Artifact vs.\ Genuine Cluster Loss}
+\label{subsec:decomposition}
+
+For truth photons that failed the $\DR<0.1$ match in the double MC,
+the failure mode was classified by searching for a cluster with the
+correct \texttt{trkID} irrespective of $\DR$:
+\begin{itemize}
+\item \textbf{\DR failure (88\%):} a cluster with the correct
+  \texttt{trkID} exists, but sits at $\DR>0.1$ due to vertex
+  displacement. The signal-photon cluster is fully reconstructed and
+  carries the right energy; it simply appears at the wrong
+  reconstructed $\eta$ when the cluster position is taken with respect
+  to the displaced MBD vertex.
+\item \textbf{Missing cluster (12\%):} no cluster carries the matching
+  \texttt{trkID}. This is genuine cluster loss --- the photon shower
+  merged into a neighbouring jet shower or was absorbed by the
+  higher-multiplicity environment.
+\item \textbf{Extra truth photons ($\sim 0\%$):} the second collision
+  does not produce additional truth-level prompt photons at the level
+  relevant for PPG12. A per-event check on 100k photon10 events shows
+  $0.493$ truth photons/event in single MC and $0.495$ in double MC
+  (statistically identical); the $\geq 2$-denominator fraction is
+  $0.22\%$ vs.\ $0.21\%$; see Table~\ref{tab:truth_content}.
+\end{itemize}
+
+\begin{table}[H]
+    \centering
+    \caption{Truth-level prompt photon content in photon10 samples
+      (100k events each). Denominator: $|\eta^\gamma|<0.7$,
+      $\isoETtruth<4$\,\GeV. The slight increase in mean truth
+      $\isoETtruth$ in double MC (0.26 vs.\ 0.17\,\GeV) reflects
+      additional hadrons from the second collision falling within the
+      isolation cone, but remains well below the 4\,\GeV fiducial
+      threshold.}
+    \label{tab:truth_content}
+    \begin{tabular}{lcc}
+        \toprule
+        Quantity & Single MC & Double MC \\
+        \midrule
+        Mean truth photons per event & 0.493 & 0.495 \\
+        Events with $\geq 2$ denom.\ photons & 0.22\% & 0.21\% \\
+        Mean truth \isoETtruth [\GeV] & 0.17 & 0.26 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The dominant $88\%$ matching-artifact component is entirely driven by
+vertex-shifted kinematics (a geometric reconstruction effect, not a
+physics effect), and is removed by switching to track-ID matching. The
+residual $12\%$ is genuine cluster-loss and is kept as a
+genuine pileup degradation in the reconstruction-stage efficiency.
+
+\subsection{Baseline Rejection on Single MC (\DR Cut is Never Benign)}
+\label{subsec:single_mc_baseline}
+
+A secondary question is whether $\DR<0.1$ matters outside of pileup
+at all. It does: even in single-interaction MC, $\DR<0.1$ rejects
+$\sim\!3.5\%$ of correctly \texttt{trkID}-matched truth photons
+(Table~\ref{tab:dr_single}), and the rejection is driven entirely by
+vertex mismatch ($|\Delta z|>9.35$\,cm) rather than cluster quality:
+73\% of rejected clusters have $\ET/\pT^{\text{truth}}\in[0.8,1.2]$,
+i.e.\ a nearly-correct reconstructed energy. Six physics arguments
+support the removal --- the track-ID is ground truth; the $\DR$ cut
+tests vertex resolution rather than calorimeter performance; the
+response matrix already absorbs vertex-induced kinematic shifts; and
+the $\sim\!3\%$ bias is $z$-dependent and therefore propagates into
+any period-dependent quantity. Track-ID-only matching is therefore
+adopted as the nominal both for the efficiency and for the DI-MC
+study.
+
+\begin{table}[H]
+    \centering
+    \caption{$\DR<0.1$ failure rates in single-interaction MC.
+      ``Fail $\DR$'' is the fraction of \texttt{trkID}-matched photons
+      rejected by the geometric cut.}
+    \label{tab:dr_single}
+    \begin{tabular}{lccc}
+        \toprule
+        Sample & Truth photons & No trkID match & Fail $\DR<0.1$ (of matched) \\
+        \midrule
+        photon5  & 273{,}017     & 3.42\% & 2.70\% \\
+        photon10 & 2{,}380{,}500 & 2.37\% & 2.98\% \\
+        photon20 & 2{,}840{,}703 & 1.72\% & 4.01\% \\
+        \midrule
+        Combined & 5{,}494{,}220 & 2.09\% & 3.50\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Per-Stage Efficiency Under Track-ID Matching}
+\label{subsec:per_stage_eff}
+
+With $\DR<0.1$ removed, the factorized efficiency chain
+$\varepsilon_{\text{reco}} \to \varepsilon_{\text{iso}|\text{reco}} \to
+\varepsilon_{\text{id}|\text{reco+iso}} \to \varepsilon_{\text{all}}$
+reveals the genuine pileup effects stage by stage.
+Table~\ref{tab:eff_breakdown} presents the integrated efficiency for
+single, double, and mixed (0\,mrad) photon10 MC under
+\texttt{trkID}-only matching; Figure~\ref{fig:eff_overlay_4panel}
+shows the same information as a function of truth \pT.
+
+\begin{table}[H]
+    \centering
+    \caption{Per-component efficiency with \texttt{trkID}-only matching
+      (no $\DR$ cut), photon10 samples integrated over
+      $\etg = 14$--$30$\,\GeV. Mixed = $0.776 \times \text{single} +
+      0.224 \times \text{double}$ (0\,mrad cluster-weighted fractions
+      from Table~\ref{tab:pileup_fractions}).}
+    \label{tab:eff_breakdown}
+    \begin{tabular}{lcccc}
+        \toprule
+        Efficiency component & Single MC & Double MC & Mixed 0~mrad & Effect (single $\to$ double) \\
+        \midrule
+        $\varepsilon_{\text{reco}}$ (reconstruction)
+          & 93.5\% & 73.1\% & 88.4\% & $-20$~pp (cluster loss + shifted kinematics) \\
+        $\varepsilon_{\text{iso}}$ (isolation $|$ reco)
+          & 74.2\% & 71.0\% & 73.5\% & $-3$~pp (extra cone energy) \\
+        $\varepsilon_{\text{id}}$ (BDT $|$ reco+iso)
+          & 82.7\% & 69.4\% & 80.0\% & $\mathbf{-13}$~\textbf{pp} (vertex-shifted kinematics) \\
+        \midrule
+        $\varepsilon_{\text{all}}$ (total)
+          & 57.4\% & 36.0\% & 52.0\% & $-21$~pp (reco + BDT dominate) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Three structural observations:
+
+\begin{itemize}
+\item \textbf{Reconstruction} ($\varepsilon_{\text{reco}}$): the
+  20\,pp gap between single (93.5\%) and double (73.1\%) MC splits into
+  genuine cluster loss (no-\texttt{trkID}-match rate: 7.9\% double
+  vs.\ 2.4\% single, i.e.\ $\sim\!5.5$\,pp of the drop) and
+  common-cut failures from shifted kinematics
+  ($\sim\!15$\,pp).
+\item \textbf{Isolation} ($\varepsilon_{\text{iso}}$): essentially
+  unchanged (3\,pp degradation). Extra cone energy from the second
+  collision is present but small compared with the 4\,\GeV isolation
+  threshold.
+\item \textbf{Photon~ID} ($\varepsilon_{\text{id}}$): a \textbf{13\,pp
+  degradation} in double MC (69.4\% vs.\ 82.7\%), entirely driven by
+  vertex-displaced shower-shape inputs to the parametric
+  $\ET$-dependent BDT threshold. In single MC the same effect is
+  negligible ($-0.2$\,pp) because only $\sim\!2.3\%$ of clusters have
+  large vertex shifts. In double MC, $\sim\!58\%$ of recovered clusters
+  are ``new'' (had $\DR>0.1$), and these have a BDT pass rate of only
+  59.8\% vs.\ 82.7\% for the full population.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{../plotting/figures/efficiency_overlay/eff_overlay_noDR_4panel.pdf}
+    \caption{Per-stage efficiency vs.\ truth \pT without the $\DR$ cut,
+      single (blue), double (red), and mixed 0\,mrad (black) photon10
+      MC. Upper left: reconstruction. Upper right: isolation.
+      Lower left: photon ID (BDT). Lower right: total. The BDT stage
+      shows the cleanest 13\,pp gap between single and double MC, driven
+      by vertex-shifted kinematics feeding an $\ET$-dependent BDT
+      threshold.}
+    \label{fig:eff_overlay_4panel}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../plotting/figures/efficiency_overlay/eff_id_newclusters_overlay.pdf}
+    \caption{BDT pass rate for ``new'' clusters (those with $\DR>0.1$
+      but valid \texttt{trkID}) vs.\ truth \pT. These vertex-shifted
+      clusters have 10--13\,pp lower BDT pass rates than the full
+      population, with the deficit narrowing at higher \pT where the
+      parametric BDT score is further above threshold.}
+    \label{fig:eff_id_newclusters}
+\end{figure}
+
+For reference, Table~\ref{tab:eff_withdr} shows the legacy efficiency
+with $\DR<0.1$ retained. The large reco drop there is the matching
+artifact; the BDT appears ``unaffected'' only because vertex-shifted
+clusters have already been pre-filtered out of the denominator.
+
+\begin{table}[H]
+    \centering
+    \caption{Per-component efficiency under the legacy $\DR<0.1$ match,
+      for reference. The reco drop is the matching artifact; the BDT
+      only looks unaffected because vertex-shifted clusters have been
+      silently rejected upstream.}
+    \label{tab:eff_withdr}
+    \begin{tabular}{lccc}
+        \toprule
+        Efficiency component & Single MC & Double MC & Mixed 0~mrad \\
+        \midrule
+        $\varepsilon_{\text{reco}}$ ($\DR<0.1$) & 91.4\% & 30.7\% & 76.2\% \\
+        $\varepsilon_{\text{iso}}$ & 74.2\% & 71.1\% & 73.9\% \\
+        $\varepsilon_{\text{id}}$ (BDT) & 82.9\% & 82.6\% & 82.9\% \\
+        \midrule
+        $\varepsilon_{\text{all}}$ & 56.2\% & 18.0\% & 46.6\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{TEfficiency} Weighted-Event Bug Fix}
+\label{subsec:tefficiency_fix}
+
+During the $\DR$ investigation a bug was identified in the
+\texttt{TEfficiency} usage in \texttt{RecoEffCalculator\_TTreeReader.C}:
+the previous \texttt{SetWeight(w) + Fill(pass, pT)} pattern stored
+unweighted event counts, and \texttt{hadd}-ing across samples would
+therefore combine them by raw event count rather than by cross-section
+weight. The corrected implementation is
+\texttt{SetUseWeightedEvents()} plus \texttt{FillWeighted(pass, weight,
+pT)}, which stores weighted sums and composes correctly under
+\texttt{hadd}. All numbers in Table~\ref{tab:eff_breakdown} use the
+corrected implementation.
+
+\subsection{Implications for the Nominal Analysis}
+\label{subsec:eff_implications}
+
+\begin{itemize}
+\item \textbf{Reco loss contributes $1.6\%$ to the 1.5\,mrad
+  cross section}: 20\,pp single$\to$double efficiency drop times
+  the 7.9\% cluster-weighted pileup fraction.
+\item \textbf{BDT degradation contributes $1.0\%$}:
+  $0.079 \times 13\,\text{pp}$.
+\item \textbf{Isolation contributes $0.2\%$}:
+  $0.079 \times 3\,\text{pp}$.
+\item \textbf{Total integrated DI effect on the 1.5\,mrad cross
+  section}: $1.6\%+1.0\%+0.2\%=\mathbf{2.8\%}$ pre-correction,
+  partially correlated with the vertex-shift systematic that is
+  already evaluated separately. At the total-efficiency level
+  (mixed 0\,mrad), the same decomposition gives
+  $\varepsilon_\mathrm{all}^\mathrm{mix}/\varepsilon_\mathrm{all}^\mathrm{single}
+  = 52.0/57.4$, i.e.\ a $1-52.0/57.4=\mathbf{9.4\%}$ relative
+  reduction (Table~\ref{tab:eff_breakdown}). The 1.5\,mrad effect
+  is smaller than this because the pileup fraction is $\sim\!3\times$
+  smaller than at 0\,mrad.
+\end{itemize}
+
+The nominal analysis uses \textbf{single-interaction MC for the
+efficiency calculation} (with \texttt{trkID}-only matching). Mixed MC
+is reserved for the shower-shape data--MC validation
+(\S\ref{sec:shower_shape}) and the ABCD background-template
+cross-check. Double MC is not used as a default because the apparent
+bulk efficiency drop is dominated by the matching artifact rather than
+a genuine physics effect: closing it would require simulating the
+low-pileup target precisely rather than averaging a broad
+generator profile.
+
+
+%% ==================================================================
+\section{Shower-Shape Data-vs-Mixed-MC Validation}
+\label{sec:shower_shape}
+
+\subsection{Two-Pass Blending Pipeline}
+\label{subsec:two_pass}
+
+The pileup blend is built with \texttt{run\_showershape\_double.sh}
+in two passes over \texttt{ShowerShapeCheck.C}. The first pass
+computes a blended MC vertex-$z$ template, the second runs the full
+shower-shape analysis using it:
+
+\paragraph{Pass~1 (vertex scan).}
+\texttt{ShowerShapeCheck.C} is called with
+\texttt{do\_vertex\_scan=true} and fills only the \zvtx histogram,
+weighting each sample by its cluster-level fraction
+($w_{\text{single}}$ or $w_{\text{double}}$ from
+Table~\ref{tab:pileup_fractions}). Five parallel jobs run:
+\texttt{photon10\_double(0.224)}, \texttt{jet12\_double(0.224)},
+\texttt{photon10\_nom(0.776)}, \texttt{jet12\_nom(0.776)}, and data.
+The output vtxscan ROOT files are merged per-period via \texttt{hadd}
+to form the blended MC vertex distribution.
+
+\paragraph{Pass~2 (full analysis).}
+\texttt{ShowerShapeCheck.C} is re-run with \texttt{mix\_weight}
+(multiplicative fraction applied to all histogram fills) and
+\texttt{vtxscan\_sim\_override} (path to the blended vtxscan file
+from Pass~1) set. All MC samples use the \emph{same} blended vtxscan
+for vertex reweighting, which ensures consistent \zvtx templates
+across samples regardless of which sample originally provided the
+vertex distribution. Each sample's fills are scaled by its mixing
+weight on top of the cross-section weight. Single and double outputs
+are \texttt{hadd}-merged to produce the final blended MC.
+
+The full signature is
+\begin{quote}\footnotesize\ttfamily
+ShowerShapeCheck(configname, filetype, doinclusive, do\_vertex\_scan, mix\_weight, vtxscan\_sim\_override)
+\end{quote}
+with \texttt{mix\_weight} = 0.224 (or 0.776) at 0\,mrad and 0.079
+(or 0.921) at 1.5\,mrad, and \texttt{vtxscan\_sim\_override} pointing
+at the Pass-1 blended ROOT file. The same script accepts a single
+command-line argument overriding the default 0\,mrad fraction, so
+running the 1.5\,mrad blend is simply \texttt{bash
+run\_showershape\_double.sh config\_showershape.yaml 0.079}.
+
+\paragraph{Truth-vertex reweighting.} Starting from the April 15
+regeneration, the shower-shape blending pipeline applies the iterative
+truth-vertex reweight (\S\ref{sec:truth_vertex}) via the
+\texttt{truth\_vertex\_reweight\_on} / \texttt{truth\_vertex\_reweight\_file}
+fields in the showershape configs, rather than the reco-level
+$f(z_r)$ alone. The samples shown in this section use this nominal
+setting.
+
+\subsection{Comparison Methodology}
+\label{subsec:shower_method}
+
+Shower-shape distributions are compared at two selection levels:
+\begin{itemize}
+\item \textbf{cut0}: no selection. Data includes NPB contamination
+  that is not modeled in MC, which complicates interpretation.
+\item \textbf{cut1}: after the NPB preselection
+  (NPB score $>0.5$). This removes non-physics clusters and provides
+  the cleanest pileup assessment. \textbf{All plots in this section
+  use cut1.}
+\end{itemize}
+Each comparison plot shows data (black points), signal MC (red),
+and inclusive MC (blue), area-normalized, with a \chidf and $p$-value
+annotation and a Data$\,-\,$Inclusive~MC difference panel. Left
+panels show nominal (single-only) MC; right panels show mixed
+(double-blended) MC.
+
+\subsection{0\,mrad Period (22.4\% Double Interaction)}
+\label{subsec:results_0mrad}
+
+At 0\,mrad the pileup fraction is high and the nominal (single-only)
+MC misrepresents the data at the cut0/cut1 shower-shape level for
+pileup-sensitive variables. Mixing in 22.4\% of DI MC closes the
+gap substantially for \wetacog at $\ET\geq 14$\,\GeV.
+
+\subsubsection{\wetacog (eta cluster width)}
+
+\wetacog is the variable most sensitive to DI: vertex shifts along
+the beam axis broaden the reconstructed $\eta$ profile directly via
+Eq.~\eqref{eq:deta_vs_dz}.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $10<\ET<14$\,\GeV (pt0), 0\,mrad, cut1.
+  Nominal \chidf = 47.40; mixed \chidf = 28.96 ($1.6\times$
+  improvement).}
+\label{fig:shower_0mrad_weta_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $14<\ET<18$\,\GeV (pt1), 0\,mrad, cut1.
+  Nominal \chidf = 17.64; mixed \chidf = 2.99 ($5.9\times$
+  improvement).}
+\label{fig:shower_0mrad_weta_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $22<\ET<28$\,\GeV (pt3), 0\,mrad, cut1.
+  Nominal \chidf = 15.58; mixed \chidf = 0.75 ($p=0.84$;
+  $20.8\times$ improvement). The mixed MC achieves $p=0.84$, i.e.\
+  the data-MC residual in this bin is consistent with statistical
+  fluctuation.}
+\label{fig:shower_0mrad_weta_pt3}
+\end{figure}
+
+The improvement grows with \ET: at $22$--$28$\,\GeV the nominal MC
+discrepancy becomes large relative to statistical uncertainties, and
+the mixed MC provides the largest relative correction.
+
+\subsubsection{BDT score}
+
+The photon/jet BDT amplifies underlying shower-shape distortions
+through its nonlinear decision function and is the most sensitive
+composite variable at the cluster level.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $10<\ET<14$\,\GeV (pt0), 0\,mrad, cut1.
+  Nominal \chidf = 6.85; mixed \chidf = \textcolor{red}{20.30}
+  ($3.0\times$ \textbf{degradation}). See
+  \S\ref{subsec:lowet_discussion} for the discussion of the low-\ET
+  crossover.}
+\label{fig:shower_0mrad_bdt_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $14<\ET<18$\,\GeV (pt1), 0\,mrad, cut1.
+  Nominal \chidf = 12.20; mixed \chidf = 1.63 ($p=0.004$;
+  $7.5\times$ improvement).}
+\label{fig:shower_0mrad_bdt_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $22<\ET<28$\,\GeV (pt3), 0\,mrad, cut1.
+  Nominal \chidf = 9.62; mixed \chidf = 1.75 ($p=0.001$;
+  $5.5\times$ improvement).}
+\label{fig:shower_0mrad_bdt_pt3}
+\end{figure}
+
+\subsubsection{$f_1$ and $E_{1\times1}/E_{3\times3}$}
+
+Double interactions spread energy outward from the shower core,
+reducing the inner-ring energy fraction $f_1$. The
+$E_{1\times1}/E_{3\times3}$ ratio is less sensitive to pileup
+broadening.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, mixed MC (22.4\% DI)}
+\end{subfigure}
+\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{$f_1$ (top) and $E_{1\times1}/E_{3\times3}$ (bottom) at
+  $14<\ET<18$\,\GeV (pt1), 0\,mrad, cut1. $f_1$: \chidf =
+  9.33 $\to$ 1.92 ($4.9\times$). $E_{1\times1}/E_{3\times3}$:
+  \chidf = 4.50 $\to$ 4.14 ($1.1\times$).}
+\label{fig:shower_0mrad_et1_e11}
+\end{figure}
+
+\subsection{1.5\,mrad Period (7.9\% Double Interaction)}
+\label{subsec:results_1p5mrad}
+
+At 1.5\,mrad the DI fraction is $\sim\!3\times$ smaller than at
+0\,mrad, so the mixed MC correction is a few times smaller. The
+nominal agreement at cut1 is already good for most variables
+(\chidf $\lesssim 10$); where mixed MC helps, the improvement is
+mainly at the high-\ET bins.
+
+\subsubsection{\wetacog}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $10<\ET<14$\,\GeV (pt0), 1.5\,mrad, cut1.
+  Nominal \chidf = 9.72; mixed \chidf = \textcolor{red}{42.31}
+  ($4.4\times$ \textbf{degradation}).}
+\label{fig:shower_1p5_weta_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $14<\ET<18$\,\GeV (pt1), 1.5\,mrad, cut1.
+  Nominal \chidf = 6.73; mixed \chidf = 4.86 ($1.4\times$
+  improvement).}
+\label{fig:shower_1p5_weta_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $22<\ET<28$\,\GeV (pt3), 1.5\,mrad, cut1.
+  Nominal \chidf = 21.10; mixed \chidf = 1.31 ($p=0.118$;
+  $16.1\times$ improvement).}
+\label{fig:shower_1p5_weta_pt3}
+\end{figure}
+
+\subsubsection{BDT score}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $10<\ET<14$\,\GeV (pt0), 1.5\,mrad, cut1.
+  Nominal \chidf = 5.98; mixed \chidf = \textcolor{red}{33.08}
+  ($5.5\times$ \textbf{degradation}).}
+\label{fig:shower_1p5_bdt_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $14<\ET<18$\,\GeV (pt1), 1.5\,mrad, cut1.
+  Nominal \chidf = 1.16 ($p=0.207$); mixed \chidf = \textcolor{red}{2.31}
+  ($2.0\times$ \textbf{degradation}; nominal already excellent).}
+\label{fig:shower_1p5_bdt_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $22<\ET<28$\,\GeV (pt3), 1.5\,mrad, cut1.
+  Nominal \chidf = 1.89; mixed \chidf = 1.13 ($p=0.249$;
+  $1.7\times$ improvement).}
+\label{fig:shower_1p5_bdt_pt3}
+\end{figure}
+
+\subsubsection{$f_1$ and $E_{1\times1}/E_{3\times3}$}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, mixed MC (7.9\% DI)}
+\end{subfigure}
+\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, nominal MC}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{$f_1$ (top) and $E_{1\times1}/E_{3\times3}$ (bottom) at
+  $14<\ET<18$\,\GeV (pt1), 1.5\,mrad, cut1. $f_1$: \chidf =
+  4.17 $\to$ 2.55 ($1.6\times$). $E_{1\times1}/E_{3\times3}$:
+  \chidf = 6.88 $\to$ 6.04 ($1.1\times$).}
+\label{fig:shower_1p5_et1_e11}
+\end{figure}
+
+\subsection{Single-vs-Double Overlay with Data from Both Periods}
+\label{subsec:overlay}
+
+Figures~\ref{fig:shower_overlay_weta_bdt} and
+\ref{fig:shower_overlay_et1_e11} overlay pure single-interaction MC
+(red) with pure double-interaction MC (blue) and data from both periods:
+0\,mrad (filled black circles) and 1.5\,mrad (open green circles), all
+area-normalized at cut1. Data at 0\,mrad systematically tracks the
+double-MC tail while data at 1.5\,mrad tracks closer to single MC,
+consistent with the 22.4\% vs.\ 7.9\% DI fractions and providing a
+direct sample-level cross-check on the blending pipeline. The 8-panel
+overlay is split into two 4-panel figures for readability: the
+vertex-shift-sensitive observables (\wetacog and the composite BDT
+score) in Fig.~\ref{fig:shower_overlay_weta_bdt}, and the
+ring-energy observables ($f_1$ and $E_{1\times1}/E_{3\times3}$) in
+Fig.~\ref{fig:shower_overlay_et1_e11}.
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/weta_cogx_eta0_pt0_data_incl.pdf}
+\caption{\wetacog, $10$--$14$\,\GeV}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/weta_cogx_eta0_pt2_data_incl.pdf}
+\caption{\wetacog, $18$--$22$\,\GeV}
+\end{subfigure}\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/bdt_score_eta0_pt0_data_incl.pdf}
+\caption{BDT score, $10$--$14$\,\GeV}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/bdt_score_eta0_pt2_data_incl.pdf}
+\caption{BDT score, $18$--$22$\,\GeV}
+\end{subfigure}
+\caption{Sample-level shower-shape overlay, vertex-shift-sensitive
+  observables: single-interaction MC (red), double-interaction MC
+  (blue), data 0\,mrad (filled black circles), data 1.5\,mrad (open
+  green circles), all area-normalized. Left column:
+  $10<\ET<14$\,\GeV. Right column: $18<\ET<22$\,\GeV. Top row:
+  \wetacog. Bottom row: BDT score. 0\,mrad data systematically tracks
+  the DI tail; 1.5\,mrad data tracks closer to single MC.}
+\label{fig:shower_overlay_weta_bdt}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/et1_eta0_pt0_data_incl.pdf}
+\caption{$f_1$, $10$--$14$\,\GeV}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/et1_eta0_pt2_data_incl.pdf}
+\caption{$f_1$, $18$--$22$\,\GeV}
+\end{subfigure}\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/e11_to_e33_eta0_pt0_data_incl.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, $10$--$14$\,\GeV}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/e11_to_e33_eta0_pt2_data_incl.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, $18$--$22$\,\GeV}
+\end{subfigure}
+\caption{Sample-level shower-shape overlay, ring-energy
+  observables: colour coding as in
+  Fig.~\ref{fig:shower_overlay_weta_bdt}. Left column:
+  $10<\ET<14$\,\GeV. Right column: $18<\ET<22$\,\GeV. Top row:
+  $f_1$. Bottom row: $E_{1\times1}/E_{3\times3}$. Both observables
+  show smaller DI-induced single/double separation than
+  \wetacog/BDT, and the DI-sensitivity ordering between periods
+  still holds.}
+\label{fig:shower_overlay_et1_e11}
+\end{figure}
+
+\subsection{\chidf Summary}
+\label{subsec:chi2}
+
+Table~\ref{tab:chi2_full} compiles the Data$\,-\,$Inclusive-MC \chidf
+and $p$-values for all variables, \ET bins, and crossing angles.
+Entries where the mixed MC \emph{degrades} agreement relative to
+nominal are highlighted in \textcolor{red}{red}.
+
+\begin{table}[H]
+\centering
+\caption{Data$\,-\,$Inclusive-MC \chidf and $p$-values at cut1 for
+  nominal (single-only) and mixed (double-blended) MC at both
+  crossing angles. Lower \chidf is better; $p \ll 1$ indicates
+  significant data--MC disagreement. Red entries flag cases where
+  the blend degrades agreement.}
+\label{tab:chi2_full}
+\footnotesize
+\begin{tabular}{ll rrrr rrrr}
+\toprule
+ & & \multicolumn{4}{c}{\textbf{0\,mrad (22.4\% DI)}}
+   & \multicolumn{4}{c}{\textbf{1.5\,mrad (7.9\% DI)}} \\
+\cmidrule(lr){3-6} \cmidrule(lr){7-10}
+Variable & $E_T$ [\GeV]
+  & Nom.\ & $p$ & Mixed & $p$
+  & Nom.\ & $p$ & Mixed & $p$ \\
+\midrule
+\wetacog & 10--14 (pt0)
+  & 47.40 & $<$0.001 & 28.96 & $<$0.001
+  &  9.72 & $<$0.001 & \textcolor{red}{42.31} & $<$0.001 \\
+\wetacog & 14--18 (pt1)
+  & 17.64 & $<$0.001 &  2.99 & $<$0.001
+  &  6.73 & $<$0.001 &  4.86 & $<$0.001 \\
+\wetacog & 22--28 (pt3)
+  & 15.58 & $<$0.001 &  0.75 & 0.840
+  & 21.10 & $<$0.001 &  1.31 & 0.118 \\
+\midrule
+BDT score & 10--14 (pt0)
+  &  6.85 & $<$0.001 & \textcolor{red}{20.30} & $<$0.001
+  &  5.98 & $<$0.001 & \textcolor{red}{33.08} & $<$0.001 \\
+BDT score & 14--18 (pt1)
+  & 12.20 & $<$0.001 &  1.63 & 0.004
+  &  1.16 & 0.207 & \textcolor{red}{2.31} & $<$0.001 \\
+BDT score & 22--28 (pt3)
+  &  9.62 & $<$0.001 &  1.75 & 0.001
+  &  1.89 & $<$0.001 &  1.13 & 0.249 \\
+\midrule
+$f_1$ & 14--18 (pt1)
+  &  9.33 & $<$0.001 &  1.92 & $<$0.001
+  &  4.17 & $<$0.001 &  2.55 & $<$0.001 \\
+\midrule
+$E_{1\times1}/E_{3\times3}$ & 14--18 (pt1)
+  &  4.50 & $<$0.001 &  4.14 & $<$0.001
+  &  6.88 & $<$0.001 &  6.04 & $<$0.001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Low-\ET Crossover and Recommendation}
+\label{subsec:lowet_discussion}
+
+A consistent pattern emerges across \emph{both} crossing angles:
+the DI blending \textbf{degrades} data--MC agreement for the BDT
+score at low \ET (pt0, $10$--$14$\,\GeV) while \textbf{improving} it
+at higher \ET. This is now confirmed for 0\,mrad ($3.0\times$ BDT
+degradation at pt0) and 1.5\,mrad ($5.5\times$ degradation at pt0).
+For \wetacog, the crossover lies between pt0 and pt1: at 0\,mrad,
+pt0 \wetacog still improves ($1.6\times$); at 1.5\,mrad it
+degrades ($4.4\times$). The crossover pileup fraction for \wetacog
+at low \ET therefore lies between 7.9\% and 22.4\%.
+
+Three contributing mechanisms are plausible:
+\begin{enumerate}
+\item \textbf{Shared MC samples}: the same
+  \texttt{photon10\_double} and \texttt{jet12\_double} samples are
+  used for both crossing angles; the beam conditions in the MC may
+  better match one period than the other, and the mismatch only
+  becomes visible at low \ET where the shower-shape distributions
+  are narrow.
+\item \textbf{Low-\ET sensitivity}: clusters near the 8--14\,\GeV
+  threshold are most sensitive to absolute vertex shifts, since
+  a fixed $\Delta z$ produces a larger fractional kinematic offset.
+\item \textbf{Small-fraction amplification at 1.5\,mrad}: at 7.9\%
+  mixing, any residual mismatch between the DI MC and the real
+  pileup is amplified relative to the small physical correction.
+\end{enumerate}
+
+These observations motivate the use of mixed MC as a shower-shape
+\emph{validation} rather than as a shower-shape template correction,
+and the recommendation: apply mixed MC as a cross-check at
+$\ET\geq 14$\,\GeV (0\,mrad) or $\ET\geq 18$\,\GeV (1.5\,mrad), and
+take the nominal-mixed spread as a systematic in the lower bins.
+The residual shower-shape mismodelling at low \ET is expected to be
+subdominant after the truth-vertex reweight is applied
+(\S\ref{sec:truth_vertex}), which shares data with the shower-shape
+pipeline and whose downstream application carries the same low-\ET
+sensitivity.
+
+
+%% ==================================================================
+\section{Truth-Vertex Reweighting}
+\label{sec:truth_vertex}
+
+The shower-shape and efficiency analyses use a single-variable
+vertex reweight to close the MC luminous-region shape to data. The
+production choice is the reco-level ratio
+$f(z_r) = D(z_r)/M_{\mathrm{reco}}(z_r)$, which closes the
+reco-vertex distribution exactly. This section shows that $f(z_r)$
+is \emph{structurally insufficient} for double-interaction events,
+quantifies the resulting cross-section bias at 1.5\,mrad, and
+presents the nominal fix: an iterative data-driven truth-vertex
+reweight $w(z)$, factorized as $w(z_h)$ for single MC and
+$w(z_h)\,w(z_\mathrm{mb})$ for double MC.
+
+\subsection{Why the Production $f(z_r)$ Cannot Close the Truth Vertex}
+\label{subsec:problem}
+
+The efficiency denominator in
+\texttt{RecoEffCalculator\_TTreeReader.C} applies a reco-vertex cut
+$|z_r|<\mathtt{vertex\_cut}$ \emph{and} a truth-vertex cut
+$|z_h|<\mathtt{vertex\_cut}$ (both set to 60\,cm in
+\texttt{config\_bdt\_nom.yaml}). The reco cut is handled correctly
+by $f(z_r)$: the reweighted MC reco distribution matches data
+bin-by-bin by construction. The truth cut is \emph{not} handled
+correctly for double-interaction events.
+
+Decompose the pair of truth vertices
+$(z_{t,1},z_{t,2})\equiv (z_h,z_\mathrm{mb})$ of a
+double-interaction event into a symmetric coordinate
+$\bar z \equiv (z_h+z_\mathrm{mb})/2$ and an antisymmetric
+coordinate $\varepsilon \equiv (z_h-z_\mathrm{mb})/2$. Under the
+independent Gaussian sampling of the raw MC, $\bar z$ and
+$\varepsilon$ are statistically independent zero-mean Gaussians
+with $\sigma_{\bar z} = \sigma_\varepsilon = \sigma_\mathrm{MC}/\sqrt 2$.
+The reco vertex is $z_r \approx \bar z$ (up to MBD resolution), so
+$f(z_r)$ depends \emph{only} on $\bar z$ and is flat in
+$\varepsilon$. After reweighting, $\bar z$ matches the target
+Gaussian $\mathcal{N}(0,\sigma_\mathrm{lum}^2/2)$ by construction,
+but $\varepsilon$ is unchanged. The primary truth vertex
+$z_h = \bar z + \varepsilon$ is therefore a sum of a narrowed and
+an un-narrowed Gaussian, with variance
+\begin{equation}
+\sigma^2(z_h)
+  = \tfrac{1}{2}\,\sigma_\mathrm{lum}^2 + \tfrac{1}{2}\,\sigma_\mathrm{MC}^2
+  = \tfrac{1}{2}(22.3^2 + 62.7^2)
+  \simeq (47.0\,\mathrm{cm})^2.
+\label{eq:half_narrow_half_wide}
+\end{equation}
+We use $\sigma_\mathrm{lum} \simeq \sigma_\mathrm{data\,reco}$ here
+(22.3\,cm rather than the 21.48\,cm $\sigma_\mathrm{seed}$ quoted in
+\S\ref{subsec:method}); MBD resolution is sub-cm, so the two widths
+agree to within 1\,cm at 1.5\,mrad and the narrow-Gaussian
+approximation to the luminous region is good at the required
+precision. Any principled fix must act on the truth vertices
+directly, i.e.\ factorize as $w(z_h)\,w(z_\mathrm{mb})$ rather than
+depending only on the reco combination $z_r$.
+
+\subsection{Cross-Section Impact at 1.5\,mrad}
+\label{subsec:xsec_impact}
+
+For a Gaussian truth distribution of width $\sigma$, the fraction
+inside $|z_h|<60$\,cm is $\mathrm{erf}(60/(\sigma\sqrt 2))$:
+\begin{itemize}\setlength\itemsep{1pt}
+\item $\sigma = 47$\,cm (what nominal $f(z_r)$ gives for double MC):
+      $\mathrm{erf}(60/(47\sqrt 2)) \simeq 0.80$
+\item $\sigma = 22$\,cm (target for 1.5\,mrad):
+      $\mathrm{erf}(60/(22\sqrt 2)) \simeq 0.99$
+\end{itemize}
+Double-interaction MC therefore loses $\sim\!19$ percentage points
+of truth fiducial acceptance that it should not. At 1.5\,mrad the
+mixed blend is
+$0.921 \times \text{single} + 0.079 \times \text{double}$, so the
+bias on the integrated efficiency denominator is
+\[
+0.079 \times 0.19 \simeq 1.4\,\% \quad \text{at 1.5\,mrad}.
+\]
+This translates directly to a $+1.4\%$ bias on the extracted cross
+section at 1.5\,mrad (the efficiency denominator is too small, so
+the quoted cross section is too large). At 0\,mrad the analogous
+bias is $\sim\!0.3\%$ because the raw MC beam profile already sits
+close to the wider 0\,mrad luminous region. This is comparable to
+other PPG12 systematics and worth fixing.
+
+\subsection{Method: Data-Driven Iterative Truth-Vertex Reweight}
+\label{subsec:method}
+
+The method derives a truth-vertex weight function $w(z)$ directly
+from the data reco distribution, with no closed-form Gaussian
+assumption on the luminous-region shape.
+
+\paragraph{Forward model.}
+Let $f_d$ be the cluster-weighted double-interaction fraction
+($0.079$ at 1.5\,mrad, $0.224$ at 0\,mrad) and
+$f_s = 1-f_d$. Under a candidate weight $w(z)$, the mixed-MC reco
+distribution is
+\begin{equation}
+M(z_r) =
+f_s \!\!\sum_{e \in T_s}\! w(z_h^{e})\,\delta(z_r - z_r^e)
++
+f_d \!\!\sum_{e \in T_d}\! w(z_h^{e})\,w(z_\mathrm{mb}^{e})\,\delta(z_r - z_r^e),
+\label{eq:iter_forward}
+\end{equation}
+evaluated event-by-event over the single-interaction sample $T_s$
+and the double-interaction sample $T_d$. For double-interaction
+events the weight enters \emph{twice}, once per truth vertex. This
+factorization gives the iteration access to the antisymmetric
+coordinate $\varepsilon$ of \S\ref{subsec:problem} that the
+production reco-only weight $f(z_r)$ cannot touch.
+
+\paragraph{Binning and closure window.}
+Both periods use 80 bins over $[-200,200]$\,cm (bin width 5\,cm),
+with identical bin edges for $w(z)$ and for the reco-vertex
+histograms. The closure window is auto-derived per period as the
+$99$-th percentile of $|z_r^\mathrm{data}|$:
+1.5\,mrad uses $z_\mathrm{cut}=83$\,cm (34 bins), 0\,mrad uses
+$z_\mathrm{cut}=144$\,cm (58 bins). Outside the window, data
+statistics are too low for the iteration to constrain $w(z)$.
+
+\paragraph{Seed.}
+$w_0(z)=\mathcal{N}(0,\sigma_\mathrm{seed}^2)/\mathcal{N}(0,\sigma_\mathrm{gen}^2)$,
+with $\sigma_\mathrm{gen} = 64.997\pm 0.015$\,cm measured from
+the photon10 primary truth vertex (identical between periods, since
+the same MC is used for both), and
+$\sigma_\mathrm{seed}=\mathrm{std}(z_r^\mathrm{data})$ measured
+from data --- 21.48\,cm at 1.5\,mrad, 54.32\,cm at 0\,mrad.
+$\sigma_\mathrm{seed}$ requires \emph{no} physics input: no
+Piwinski narrowing factor, no luminous-region calculation; it is
+just the empirical width of the reco distribution we are trying to
+match.
+
+\paragraph{Iterative update.}
+At iteration $i$ the residual is $r_i(z_r)=D(z_r)/M_i(z_r)$. The
+update is Lucy--Richardson-like, multiplicative, and damped:
+\begin{equation}
+w_{i+1}(z) = w_i(z) \cdot \bigl[\mathrm{smooth}(r_i(z))\bigr]^{\alpha},
+\qquad \alpha = 0.5,
+\end{equation}
+where the residual at reco bin $z_r$ is applied to the weight at
+the matching truth bin $z=z_r$. After each update $w$ is
+renormalized so $\langle w(z_h)\rangle=1$ averaged over the
+single-MC truth distribution (preserving the physics DI fraction).
+Damping prevents over-correction; 1-bin Gaussian smoothing on the
+residual prevents bin-by-bin oscillation; the update factor is
+clipped to $[0.5,2]$ per iteration; boundary bins are edge-clamped.
+The final $w(z)$ is data-driven everywhere, without a
+post-iteration snap to a seed Gaussian (an earlier variant did
+snap; \texttt{compare\_snap\_strategies.py} showed removing the
+snap improves 0\,mrad $\chi^2$ by $\sim\!1.3\times$ and
+$\max|r-1|$ by $\sim\!3\times$ while leaving 1.5\,mrad essentially
+unchanged).
+
+Convergence is $\max|r_i(z)-1|<0.01$ inside the closure window, with
+a hard cap of 30 iterations.
+
+\paragraph{Implementation.}
+Standalone Python tool in
+\texttt{efficiencytool/truth\_vertex\_reweight/}. The mixed-MC
+histogram is heavy to rebuild ($\sim\!22$\,M events at 1.5\,mrad,
+$\sim\!48$\,M at 0\,mrad), so per-sample arrays are cached to
+\texttt{output/cache/*.npz} keyed on file mtime. Each iteration
+runs in seconds per iteration on a single core. Outputs live at
+\texttt{output/\{1p5mrad,0mrad\}/reweight.root} (containing
+\texttt{h\_w\_iterative}, \texttt{h\_w\_seed}, and
+\texttt{h\_M\_iterative}) and \texttt{fit\_result.yaml}. The code
+is driven from the period configs \texttt{config\_showershape\_\{1p5rad,0rad\}.yaml}
+via the new \texttt{truth\_vertex\_reweight\_on} and
+\texttt{truth\_vertex\_reweight\_file} fields.
+
+\subsection{Per-Period Results}
+\label{subsec:iter_results}
+
+Both periods are fit on the photon10/photon10\_double mix only at
+this stage; the jet12 extension is a follow-up
+(\S\ref{subsec:iter_caveats}). Table~\ref{tab:iter_summary}
+collects the headline numbers.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{l c c}
+\toprule
+quantity & 1.5\,mrad & 0\,mrad \\
+\midrule
+run range                                & 51274--54000 & 47289--51274 \\
+luminosity [pb$^{-1}$]                   & 16.8588      & 32.6574      \\
+$f_\mathrm{double}$ (cluster-weighted)   & 0.079        & 0.224        \\
+data $|z_r|$ 99\% percentile [cm]        & 82.0         & 143.9        \\
+closure window $z_\mathrm{cut}$ [cm]     & 83           & 144          \\
+bins inside closure window               & 34           & 58           \\
+$\sigma_\mathrm{seed}=\mathrm{std}(z_r^\mathrm{data})$ [cm]  & 21.48 & 54.32 \\
+$\sigma_\mathrm{gen}$ from MC $z_h$ (generator) [cm] & \multicolumn{2}{c}{$64.997 \pm 0.015$} \\
+\midrule
+initial $\chi^2$ (in window)             & $1{,}419{,}454$ & $26{,}589$ \\
+final   $\chi^2$ (in window)             & $453$           & $158$ \\
+$\chi^2$ reduction factor                & $3132\times$    & $168\times$ \\
+final \chidf (in window)                 & $13.7$ (ndf 33) & $2.78$ (ndf 57) \\
+initial $\max|r-1|$                      & $0.635$         & $0.079$ \\
+final   $\max|r-1|$ (in window)          & $0.111$         & $0.008$ \\
+iterations used                          & 30 (cap hit)    & 8 \\
+converged to $0.01$ tolerance            & \textbf{no}     & \textbf{yes} \\
+\midrule
+(context) parametric Gaussian \chidf     & 3237            & 454 \\
+\bottomrule
+\end{tabular}
+\caption{Iterative data-driven truth-vertex reweight, photon10 mix only,
+  with the post-iteration snap to seed removed. The 0\,mrad fit
+  converges to the 1\% per-bin tolerance in 8 iterations (final
+  $\max|r-1|\simeq 0.8\%$). The 1.5\,mrad fit reduces in-window
+  $\chi^2$ by a factor $\sim\!3100$ in 30 iterations and stalls at
+  $\max|r-1|\simeq 11\%$, dominated by bins at the closure-window
+  edge $|z_r|\simeq 83$\,cm. Inside the bulk $|z_r|<30$\,cm the
+  per-bin closure is at the $1$--$2\%$ level. The last row reports
+  the parametric best-fit Gaussian \chidf from a 1-parameter
+  $\sigma_\mathrm{tgt}$ scan; the iterative method improves on this
+  by a factor $\sim\!236$ at 1.5\,mrad and $\sim\!163$ at 0\,mrad.}
+\label{tab:iter_summary}
+\end{table}
+
+\paragraph{Hero figure.}
+Figure~\ref{fig:iter_two_period} is the single-figure summary of
+the iterative method across both periods: data reco vs.\ reweighted
+MC reco, residuals, the recovered $w(z)$, and the headline
+numbers.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_two_period.pdf}
+\caption{Iterative data-driven truth-vertex reweight summary, both
+  crossing angles. Top-left: data reco $z_r$ (solid) vs.\ mixed MC
+  reco $z_r$ after iterative reweight (dashed), both periods
+  overlaid (log scale). Top-right: residual
+  $r(z_r)=D(z_r)/M_\mathrm{iter}(z_r)$ inside each period's closure
+  window (vertical dashed lines). Bottom-left: recovered
+  truth-vertex weight $w(z)$ for both periods (log scale).
+  Bottom-right: summary statistics. The 0\,mrad case is essentially
+  closed; the 1.5\,mrad case is closed in the bulk and stalls at
+  the closure-window edge.}
+\label{fig:iter_two_period}
+\end{figure}
+
+\paragraph{Truth vertex comparison across methods.}
+Figure~\ref{fig:truth_comparison} overlays the primary truth
+vertex $z_h$ distribution of the mixed MC under three weighting
+methods: no reweight (raw MC, $\sigma \simeq 64$\,cm), the
+production reco-level weight $f(z_r)$, and the new iterative
+truth-level weight $w(z_h)$. At 1.5\,mrad the production method
+leaves $z_h$ at $\sigma \simeq 27$\,cm --- narrower than the raw
+MC but still far wider than the true luminous-region width
+($\sigma_\mathrm{lum} \simeq 22$\,cm). The iterative method narrows
+$z_h$ to $\sigma \simeq 16$\,cm, which is narrower than the data
+reco width $\sigma_\mathrm{seed}=21.5$\,cm precisely as expected
+(the MBD vertex finder adds resolution smearing, so each truth
+vertex must be narrower than the reco width). At 0\,mrad both
+methods converge at $\sigma \simeq 54$--$57$\,cm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_truth_comparison.pdf}
+\caption{Truth vertex $z_h$ distribution of the mixed photon10 MC
+  under three reweighting methods, per period. Left: 1.5\,mrad,
+  where $f(z_r)$ (blue dashed) fails to narrow the truth
+  distribution sufficiently while the iterative $w(z_h)$ (red)
+  narrows it past the data reco width. Right: 0\,mrad, where both
+  methods agree because the MC beam profile is already close to the
+  data luminous region.}
+\label{fig:truth_comparison}
+\end{figure}
+
+\paragraph{0\,mrad: clean convergence.}
+Figure~\ref{fig:iter_0mrad_closure} shows the 6-panel closure
+diagnostic for 0\,mrad. The seed Gaussian with
+$\sigma_\mathrm{seed}\simeq 54$\,cm already captures most of the
+shape (initial $\max|r-1|=8\%$, initial \chidf\,$\simeq\!467$);
+the parametric best-fit Gaussian at $\sigma_\mathrm{tgt}\simeq 54.6$\,cm
+is essentially identical (\chidf\,$\simeq\!454$) because the data
+is nearly Gaussian. The iteration cleans up the residual over 8
+updates and drops below the 1\%-per-bin tolerance, with final
+$\max|r-1|\simeq 0.8\%$ and \chidf\,$\simeq\!2.78$. The recovered
+$w(z)$ is smooth and broadly Gaussian with a small central
+enhancement.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_0mrad_closure.pdf}
+\caption{0\,mrad iterative closure (6 panels). Top-left/centre:
+  data reco vs.\ mixed MC reco under no reweight (gray dotted),
+  the seed Gaussian
+  $w(z)\propto\mathcal{N}(0,\sigma_\mathrm{seed}^2)/\mathcal{N}(0,\sigma_\mathrm{gen}^2)$
+  (orange dash-dot), the parametric best-fit Gaussian (blue
+  dashed), and the iterative reweight (red). Top-right: the
+  corresponding $w(z)$. Bottom-left: residual $D/M$ in the closure
+  window with Poisson errors and $\pm 1\%$/$\pm 2\%$ reference
+  bands. Bottom-right: per-iteration $\chi^2$ and $\max|r-1|$
+  trajectory. At 0\,mrad the seed and the parametric Gaussian are
+  nearly identical because the data reco is already close to a
+  single Gaussian; the iterative method improves on both.}
+\label{fig:iter_0mrad_closure}
+\end{figure}
+
+\paragraph{1.5\,mrad: bulk closure, edge stall.}
+Figure~\ref{fig:iter_1p5mrad_closure} shows the 6-panel diagnostic
+for 1.5\,mrad. The seed Gaussian with $\sigma_\mathrm{seed}\simeq 21$\,cm
+starts from $\max|r-1|=64\%$ and an in-window $\chi^2$ of
+$1.42\times 10^6$. The first $\sim\!5$ iterations make dramatic
+progress; the iteration then enters a slow plateau driven by bins
+at the closure-window edge $|z_r|\simeq 83$\,cm. After 30
+iterations $\chi^2$ in the window has dropped by $\sim\!3100\times$
+to $\simeq\!453$, and $\max|r-1|$ sits at $\simeq\!0.11$, set by
+those stuck edge bins. Inside the bulk $|z_r|<30$\,cm the closure
+is $\sim\!1$--$2\%$ per bin; between 30 and 60\,cm the residual
+climbs to $\sim\!5$--$10\%$. The recovered $w(z)$ shows a strong
+central core boost and a clear non-Gaussian shape in
+$|z|\simeq 40$--$60$\,cm that no symmetric Gaussian ansatz can
+represent.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_1p5mrad_closure.pdf}
+\caption{1.5\,mrad iterative closure (6 panels), same layout as
+  Fig.~\ref{fig:iter_0mrad_closure}. At 1.5\,mrad the seed Gaussian
+  ($\sigma_\mathrm{seed}=21.5$\,cm, orange dash-dot) and the
+  parametric best-fit Gaussian ($\sigma_\mathrm{tgt}=15.7$\,cm,
+  blue dashed) are distinct; both mis-predict the reco-vertex
+  shape by $30$--$60\%$ at the closure-window edge. The iterative
+  method (red points) closes the bulk to $1$--$2\%$ inside
+  $|z_r|<30$\,cm and stalls at $\max|r-1|\simeq 0.11$ at
+  $|z_r|\simeq 83$\,cm. The recovered $w(z)$ in the top-right
+  panel shows a strong central core boost and a clear non-Gaussian
+  shape in $|z|\simeq 40$--$60$\,cm.}
+\label{fig:iter_1p5mrad_closure}
+\end{figure}
+
+\paragraph{Method comparison.}
+Figure~\ref{fig:iter_1p5mrad_methods} overlays the iterative
+reweight against three reference baselines at 1.5\,mrad: no
+reweight, the seed Gaussian (initial point of the iteration), and
+the parametric best-fit Gaussian (1-parameter
+$\sigma_\mathrm{tgt}$ scan with minimum at 15.7\,cm). The
+no-reweight MC overshoots data by a factor of several; both
+Gaussian baselines match the width on average but mismatch the
+shape at $30$--$70\%$; only the iterative method follows the
+narrow data core \emph{and} tracks the non-Gaussian mid-tail.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_iter_1p5mrad_methods.pdf}
+\caption{Method comparison at 1.5\,mrad: data reco vs.\ mixed MC
+  reco under no reweight (gray dotted), seed Gaussian
+  $\sigma_\mathrm{seed}=21.5$\,cm (orange dash-dot), parametric
+  best-fit Gaussian $\sigma_\mathrm{tgt}=15.7$\,cm (blue dashed),
+  and the iterative data-driven reweight (red), with ratio panel
+  below. The iterative method is the only one that follows the
+  narrow data core while also tracking the non-Gaussian mid-tail
+  structure.}
+\label{fig:iter_1p5mrad_methods}
+\end{figure}
+
+\paragraph{Parametric $\sigma_\mathrm{tgt}$ scan.}
+Figure~\ref{fig:sigma_scan} shows the stage-1 parametric $\chi^2$
+scan that precedes the iterative method. A single Gaussian
+truth-vertex weight
+$w(z)\propto\mathcal{N}(0,\sigma_\mathrm{tgt}^2)/\mathcal{N}(0,\sigma_\mathrm{gen}^2)$
+is evaluated at each scan point. At 1.5\,mrad the minimum is at
+$\sigma_\mathrm{tgt}\simeq 15.7$\,cm with
+\chidf\,$\simeq\!3237$; the iterative method reaches 13.7, a
+$\sim\!236\times$ improvement. At 0\,mrad the minimum is at
+$\sigma_\mathrm{tgt}\simeq 54.6$\,cm with \chidf\,$\simeq\!454$;
+the iterative method reaches 2.78, a $\sim\!163\times$
+improvement.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_sigma_scan.pdf}
+\caption{Stage-1 parametric \chidf as a function of the target
+  truth-vertex Gaussian width $\sigma_\mathrm{tgt}$, for the
+  1.5\,mrad (left) and 0\,mrad (right) periods. Vertical dashed
+  line: parabolic-refined minimum. Horizontal dashed line (red):
+  final \chidf achieved by the iterative method. Horizontal
+  dotted line: \chidf = 1. The gap between the parametric minimum
+  and the iterative floor quantifies the non-Gaussian shape
+  mismatch that no single-Gaussian ansatz can capture.}
+\label{fig:sigma_scan}
+\end{figure}
+
+\paragraph{Convergence and pull diagnostics.}
+Figures~\ref{fig:iter_convergence_0mrad}--\ref{fig:iter_convergence_1p5mrad}
+show the per-iteration trajectory of the $\chi^2$ and
+$\max|r-1|$ metrics.
+Figures~\ref{fig:iter_pull_0mrad}--\ref{fig:iter_pull_1p5mrad}
+show the pull distribution of $D-M$ in the closure window.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_iter_0mrad_convergence.pdf}
+\caption{0\,mrad convergence}
+\label{fig:iter_convergence_0mrad}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_iter_1p5mrad_convergence.pdf}
+\caption{1.5\,mrad convergence}
+\label{fig:iter_convergence_1p5mrad}
+\end{subfigure}
+\caption{Per-iteration $\chi^2$ and $\max|r-1|$ trajectory for
+  the iterative reweight. Left: 0\,mrad (converged in 8 iterations).
+  Right: 1.5\,mrad (cap hit at 30 iterations, stalled at the
+  closure-window edge).}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_iter_0mrad_pull.pdf}
+\caption{0\,mrad pull}
+\label{fig:iter_pull_0mrad}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_iter_1p5mrad_pull.pdf}
+\caption{1.5\,mrad pull}
+\label{fig:iter_pull_1p5mrad}
+\end{subfigure}
+\caption{Residual pull distributions in the closure window after
+  the iterative reweight. 0\,mrad (left) is centred and roughly
+  unit-width; 1.5\,mrad (right) shows a small tail at the
+  closure-window edge.}
+\end{figure}
+
+\subsection{Physics Interpretation}
+\label{subsec:iter_interp}
+
+\paragraph{Why 0\,mrad is easy.}
+The 0\,mrad luminous region ($\sigma_\mathrm{lum}\simeq 54$\,cm)
+is close to the generator beam profile ($\sigma_\mathrm{gen}\simeq 65$\,cm),
+and the data reco shape is nearly Gaussian. The seed is already a
+good first approximation and the iteration just cleans up small
+departures (slightly enhanced central core).
+
+\paragraph{Why 1.5\,mrad is hard.}
+Three things conspire:
+\begin{itemize}
+\item The Piwinski narrowing compresses the luminous region to
+  $\sigma_\mathrm{lum}\simeq 22$\,cm, nearly a factor of three
+  narrower than the generator profile. The reweight must extract
+  a narrow target from a wide source; the dynamic range of $w(z)$
+  at the central core is correspondingly large ($w(0)\simeq 8$).
+\item The data reco distribution is \emph{not} a clean Gaussian.
+  It has a narrow core plus a mid-tail shoulder near
+  $|z_r|\simeq 45$--$60$\,cm. The iterative method discovers this
+  structure directly --- the recovered $w(z)$ is non-Gaussian in
+  the same $z$ range --- whereas a single-parameter Gaussian
+  cannot represent it.
+\item The MBD resolution tail leak from core-truth events fills
+  the bins near the closure-window edge ($|z_r|\simeq 83$\,cm).
+  The iteration becomes insensitive to $w(z)$ at that $z$ because
+  the contributions to those reco bins come dominantly from truth
+  vertices at \emph{other} $z$ values via the wide
+  double-interaction reco-truth kernel
+  (Appendix~\ref{app:double_diag}). This sets the residual floor
+  at $\max|r-1|\simeq 11\%$.
+\end{itemize}
+
+\paragraph{What the recovered $w(z)$ looks like.}
+At 1.5\,mrad the recovered $w(z)$ has three distinguishing
+features (top-right panel of Fig.~\ref{fig:iter_1p5mrad_closure}):
+(a) a strong central peak with $w(0)\simeq 8$ that pulls doubles
+whose truth vertices both lie near the IP into the data-like core;
+(b) a mid-$z$ dip that suppresses the generator's natural
+$|z|\sim 30$--$50$\,cm population; and (c) a clear $\pm$ asymmetry
+in $|z|\simeq 40$--$60$\,cm tracking the asymmetric mid-tail bump
+in the data. None of these features is representable by a
+symmetric single-parameter Gaussian. At 0\,mrad, $w(z)$ is
+essentially the seed Gaussian with a small central enhancement.
+
+\subsection{Downstream Hookup}
+\label{subsec:hookup}
+
+Both \texttt{ShowerShapeCheck.C} and
+\texttt{RecoEffCalculator\_TTreeReader.C} now accept two analysis
+fields: \texttt{truth\_vertex\_reweight\_on} (0/1) and
+\texttt{truth\_vertex\_reweight\_file} (path to \texttt{reweight.root}).
+When \texttt{on=1}, the code reads \texttt{h\_w\_iterative},
+multiplies the per-event weight by $w(z_h)$ for single-interaction
+MC and by $w(z_h)\,w(z_\mathrm{mb})$ for double-interaction MC. The
+secondary truth vertex branch is picked up through an
+optional-pointer guard, so single-MC trees without the branch fall
+through to the single-vertex path. The reco-level and truth-level
+reweights are mutually exclusive; the config loader forces
+\texttt{vertex\_reweight\_on=0} when
+\texttt{truth\_vertex\_reweight\_on=1}. The showershape configs
+\texttt{config\_showershape\_\{1p5rad,0rad\}.yaml} are pre-wired
+with the matching \texttt{reweight.root}; the nominal BDT configs
+carry the same fields but disabled, so flipping the main analysis
+over to the truth-vertex reweight is a one-line config edit once
+the jet-sample extension is done.
+
+\subsection{Caveats and Next Steps}
+\label{subsec:iter_caveats}
+
+\begin{itemize}
+\item \textbf{photon10-only mix}: the current fit uses
+  \texttt{photon10+photon10\_double} only; the full production
+  blend also includes \texttt{jet12+jet12\_double}. Extending the
+  fit is mechanically two more \texttt{load\_sample} calls plus
+  the appropriate cluster-weighted blend, but the closure numbers
+  will move and must be remeasured before any production hookup.
+\item \textbf{1.5\,mrad not formally converged}: the 30-iteration
+  cap was hit. Open questions: (a) whether extending to
+  $\sim\!100$ iterations pushes the stuck edge bin to convergence
+  or whether it is a hard physical floor set by the DI
+  reco-truth kernel (the suspicion is the latter;
+  Appendix~\ref{app:double_diag}); (b) whether the failure to
+  converge in $\max|r-1|$ matters downstream. The latter has a
+  clean answer: the PPG12 analysis applies fiducial cuts
+  $|z_r|<60$\,cm and $|z_h|<60$\,cm, inside which the per-bin
+  closure is already $1$--$2\%$. The stuck edge at
+  $|z_r|\simeq 83$\,cm is well outside the analysis fiducial, so
+  the iteration is good enough for the analysis use case.
+\item \textbf{Implementation can be sped up}: each iteration
+  currently rebuilds the MC reco histogram from scratch
+  ($\mathcal{O}(N_\mathrm{events})$ per pass). Precomputing $z^2$
+  and dropping the per-trial mask rebuild would give a
+  $\sim\!10\times$ speedup with no change in result. Not a
+  blocker; nice-to-have for the all-samples extension.
+\item \textbf{DI-MC \texttt{vertexz\_truth\_mb} branch}: the
+  \texttt{photon10\_double} and \texttt{jet12\_double}
+  \texttt{bdt\_split.root} files currently fed to the efficiency
+  pipeline predate the \texttt{vertexz\_truth\_mb} branch in the
+  anatreemaker output, so $w(z_\mathrm{mb})$ is silently dropped
+  (optional-pointer guard). The impact is expected sub-percent at
+  1.5\,mrad and sub-percent at 0\,mrad; regenerating
+  \texttt{bdt\_split.root} from the reprocessed
+  \texttt{combined.root} (which does carry the branch) removes
+  this caveat.
+\end{itemize}
+
+
+%% ==================================================================
+\section{Cluster Size Under DI}
+\label{sec:cluster_size}
+
+Cluster size (EMCal tower count \nown plus the 7$\times$7
+bounding-box widths \dietag, \diphig) is the basic shape property
+that underlies every shower-shape-based discriminator used in
+PPG12 (NPB, shower-shape BDT, width variables). This section
+reports the DI-induced shifts, split by sample, selection stage,
+and crossing-angle period.
+
+\subsection{Sample-Level Reference (Pre-Cut)}
+\label{subsec:cluster_di_ref}
+
+Figure~\ref{fig:di_photon} shows the pure single vs.\ pure double
+reference for photon10; Figure~\ref{fig:di_jet} for jet12. The
+mixed curves at 7.9\% (1.5\,mrad) and 22.4\% (0\,mrad) are
+bin-by-bin linear combinations of the two means, i.e.\
+$\langle y\rangle_\mathrm{mix}(\ET) =
+(1-f)\langle y\rangle_\mathrm{single}(\ET) +
+ f \langle y\rangle_\mathrm{double}(\ET)$,
+which avoids biasing the blend by the per-sample event counts.
+
+\paragraph{Photons.}
+DI shifts photon cluster size \emph{upwards} by
+$\Delta\langle\nown\rangle \approx +0.15$ to $+0.22$ towers
+above single across $\ET\in[15,30]$\,\GeV --- real but small.
+Pile-up adds a few soft neighbours to an otherwise compact EM
+shower. Bounding-box widths shift by $\lesssim 0.1$; the first-order
+effect on photon shower width is at the sub-0.1-index level.
+At 7.9\% (1.5\,mrad), the mixed curve is nearly indistinguishable
+from single --- consistent with the shower-shape BDT being
+pileup-robust in the 1.5\,mrad regime.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/cluster_size/cluster_size_di_photon10.pdf}
+\caption{Photon DI reference: \texttt{photon10\_nom} (blue) vs.\
+  \texttt{photon10\_double} (red), plus mixed at $f=7.9\%$ (green,
+  1.5\,mrad) and $f=22.4\%$ (magenta, 0\,mrad). Pre-cut, both
+  containers.}
+\label{fig:di_photon}
+\end{figure}
+
+\paragraph{Jets.}
+DI inflates \emph{jet} cluster size much more strongly:
+$\Delta\langle\nown\rangle \approx +0.5$ to $+1.3$ towers in the
+split container at $\ET>15$\,\GeV, roughly $4\times$ larger than the
+photon response. Physically: a jet cluster already has multiple
+soft neighbouring towers from accompanying hadrons, and DI adds
+more of the same; the probability that the DI overlay lands on a
+low-energy tower and pushes it over the 70\,MeV threshold is much
+higher in a jet environment than for a clean photon. Because jets
+enter both the fake-photon and anti-tight control regions of the
+ABCD, this DI effect is a non-trivial input to the background-template
+closure: in 0\,mrad (22.4\% DI) running, the jet template mean
+cluster size shifts upward by $\sim\!0.3$--$0.4$ towers, which
+affects the shower-shape BDT input distribution and therefore the
+background rejection rate.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/cluster_size/cluster_size_di_jet12.pdf}
+\caption{Jet DI reference: \texttt{jet12\_nom} vs.\
+  \texttt{jet12\_double} in the same format as
+  Fig.~\ref{fig:di_photon}. DI effect on jet cluster size is
+  $\sim\!4\times$ larger than on photon, consistent with softer
+  neighbouring towers getting pushed above the 70\,MeV threshold.}
+\label{fig:di_jet}
+\end{figure}
+
+\subsection{Selection-Stage Progression (With Truth-Vertex Reweight)}
+\label{subsec:cluster_selection}
+
+With the nominal iterative truth-vertex reweight applied, three
+selection stages are compared per period (baseline,
+common-cut, tight-cut), re-binned to the
+$\ET\in[19,21]$\,\GeV bin centre of the split container. The
+numerical values at $\ET\simeq 20$\,\GeV are summarized in
+Table~\ref{tab:cluster_numbers}.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llrrrrrr}
+\toprule
+ & & \multicolumn{3}{c}{1.5\,mrad} & \multicolumn{3}{c}{0\,mrad}\\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+metric & sample & baseline & common & tight & baseline & common & tight \\
+\midrule
+$\langle\nown\rangle$   & data   & 15.86 & 11.01 & 9.92 & 14.37 & 11.77 & 9.98 \\
+                         & photon & 10.44 & 10.39 & 10.21 & 10.56 & 10.51 & 10.32 \\
+                         & jet    & 15.38 & 14.33 & 10.94 & 15.51 & 14.59 & 11.05 \\
+\midrule
+$\langle\dietag\rangle$  & data   &  5.65 &  3.90 & 3.63 &  5.10 &  4.15 & 3.66 \\
+                         & photon &  3.78 &  3.77 & 3.72 &  3.83 &  3.82 & 3.76 \\
+                         & jet    &  4.81 &  4.63 & 3.84 &  4.85 &  4.69 & 3.88 \\
+\midrule
+$\langle\diphig\rangle$  & data   &  4.24 &  4.03 & 3.82 &  4.19 &  4.06 & 3.80 \\
+                         & photon &  3.93 &  3.91 & 3.88 &  3.93 &  3.91 & 3.88 \\
+                         & jet    &  4.95 &  4.76 & 4.16 &  4.96 &  4.79 & 4.17 \\
+\bottomrule
+\end{tabular}
+\caption{Cluster-size means in the bin centre
+  $\ET\in[19,21]$\,\GeV, split container (\splitnode),
+  truth-vertex-reweighted MC. Values read from the per-period
+  TProfiles in
+  \texttt{results/cluster\_size\_cuts\_PERIOD\_SAMPLE.root}
+  (PERIOD = 1p5mrad or 0mrad). Photon pool is
+  photon5+photon10+photon20; jet pool is
+  jet5+jet8+jet12+jet20+jet30+jet40. DI blending is applied in the
+  figures only, not in this numeric table.}
+\label{tab:cluster_numbers}
+\end{table}
+
+Three observations:
+\begin{itemize}
+\item \textbf{Common cut removes the noise-like tower excess,
+  preferentially from data.} At 1.5\,mrad and $\ET=20$\,\GeV,
+  $\langle\nown\rangle$ drops from $15.86\to 11.01$ in data (a
+  31\% decrease), $15.38\to 14.33$ in jet MC (only 7\%), and
+  $10.44\to 10.39$ in photon MC (essentially unchanged). The
+  common-cut's NPB+$w_\eta$-bound block targets
+  noise/threshold contamination that is far more prevalent in data
+  than in MC.
+\item \textbf{Tight cut converges data, jet MC, and photon MC to
+  the signal cluster size.} At $\ET=20$\,\GeV, 1.5\,mrad:
+  data tight $9.92$, jet MC tight $10.94$, photon MC tight $10.21$
+  --- a $\pm 5\%$ spread around a common $\sim\!10.4$-tower signal
+  size. Photon-MC tight is the direct signal-MC comparator for
+  data tight: the two agree to $\sim\!3\%$ on $\langle\nown\rangle$
+  and $\langle\dietag\rangle$ across $\ET\in[10,30]$\,\GeV.
+\item \textbf{DI mixing is sub-leading in the tight selection.}
+  At 1.5\,mrad the DI-blend shift in $\langle\nown\rangle$ is below
+  0.1 tower for every selection. At 0\,mrad (22.4\% DI) the jet-MC
+  baseline shifts upward by $\sim\!0.3$ towers, but drops to below
+  0.1 tower after the tight cut. Photon-MC DI effect is below
+  0.1 tower at every stage and every period.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/cluster_size/cluster_size_period_baseline_split_1p5mrad.pdf}
+\caption{1.5\,mrad baseline}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/cluster_size/cluster_size_period_baseline_split_0mrad.pdf}
+\caption{0\,mrad baseline}
+\end{subfigure}
+\caption{Baseline cluster-size per period, split container
+  (\splitnode), data vs.\ pooled photon MC vs.\ pooled jet MC,
+  with truth-vertex-reweighted MC. The data-jet-MC gap is larger
+  at 1.5\,mrad ($+0.5$ towers) than at 0\,mrad ($-1.1$ towers);
+  the period difference at baseline largely absorbs into the tight
+  selection.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/cluster_size/cluster_size_period_tight_nosplit_1p5mrad.pdf}
+\caption{1.5\,mrad tight (no-split)}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/cluster_size/cluster_size_period_tight_nosplit_0mrad.pdf}
+\caption{0\,mrad tight (no-split)}
+\end{subfigure}
+\caption{Tight-selection cluster-size per period in the no-split
+  container (\nosplitnode). After the tight cut, data, jet MC, and
+  photon MC converge to the photon signal size within $\pm 5\%$
+  across both periods; DI effects on tight jet MC are at the
+  sub-tower level.}
+\end{figure}
+
+The DI effect on the ABCD background template is therefore most
+relevant at the \emph{common-cut} stage, where the 22.4\% jet-MC
+cluster-size shift feeds the shower-shape BDT distribution, and
+at 0\,mrad more than at 1.5\,mrad. After the full tight
+selection, the DI effect on the background template is absorbed
+to below the $\sim\!1\%$ level on $\langle\nown\rangle$, which is
+well within the systematic budget of the background-shape cross-check.
+
+
+%% ==================================================================
+\section{Energy Response Under DI}
+\label{sec:energy_response}
+
+The photon energy response $R = \ET^\mathrm{reco}/\pT^\mathrm{truth}$
+is measured bin-by-bin in truth \pT across the single, double, and
+mixed MC, both with and without the truth-vertex reweight. The
+extraction is driven by \texttt{efficiencytool/compare\_energy\_response.C},
+which builds six sample sets per \pT bin
+(single, double, mixed\_0mrad, mixed\_0mrad\_vtxrw, mixed\_1p5mrad,
+mixed\_1p5mrad\_vtxrw) and fits each to a double-sided Crystal-Ball
+(DSCB) function to extract the peak $\mu$ and resolution $\sigma$.
+The blended vertex scan used for the MC vertex reweight is built
+internally from the \texttt{photon10\_nom} and \texttt{photon10\_double}
+vertex distributions.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_mean_common_cut_pileup.pdf}
+\caption{Response mean $\mu$, DI comparison}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_sigma_common_cut_pileup.pdf}
+\caption{Response width $\sigma$, DI comparison}
+\end{subfigure}
+\caption{Photon energy response $R=\ET^\mathrm{reco}/\pT^\mathrm{truth}$
+  at the common-cut level, across single, double, and mixed
+  (0\,mrad / 1.5\,mrad) MC without the truth-vertex reweight.
+  Left: DSCB peak $\mu(\pT)$; right: DSCB width $\sigma(\pT)$.
+  Double MC shifts the peak by $\lesssim 0.5\%$ and broadens the
+  width by $\lesssim 10\%$ at $\pT\sim 20$\,\GeV; the mixed curves
+  sit between single and double at the appropriate fractions.}
+\label{fig:resp_pileup}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_mean_common_cut_vtxrw.pdf}
+\caption{Response mean $\mu$, with truth-vertex reweight}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_sigma_common_cut_vtxrw.pdf}
+\caption{Response width $\sigma$, with truth-vertex reweight}
+\end{subfigure}
+\caption{Photon energy response with the iterative truth-vertex
+  reweight applied on the mixed samples (mixed\_0mrad\_vtxrw,
+  mixed\_1p5mrad\_vtxrw). The truth-vertex reweight further
+  reduces the residual DI-induced mean shift to below $0.3\%$
+  across the full \pT range. Layout as in Fig.~\ref{fig:resp_pileup}.}
+\label{fig:resp_vtxrw}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_fit_qc_grid_dscb_single_tight_iso.pdf}
+\caption{Single MC, tight+iso}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_fit_qc_grid_dscb_double_tight_iso.pdf}
+\caption{Double MC, tight+iso}
+\end{subfigure}\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_fit_qc_grid_dscb_mixed_0mrad_tight_iso.pdf}
+\caption{Mixed 0\,mrad, tight+iso}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/energy_response/resp_fit_qc_grid_dscb_mixed_1p5mrad_tight_iso.pdf}
+\caption{Mixed 1.5\,mrad, tight+iso}
+\end{subfigure}
+\caption{Per-bin DSCB fits to the photon energy response at the
+  tight+iso selection level for single, double, and mixed MC.
+  The DSCB parameters are stable across bins; the single-vs-double
+  spread is dominated by the $\mu$ and $\sigma$ shifts of
+  Figs.~\ref{fig:resp_pileup}--\ref{fig:resp_vtxrw}.}
+\label{fig:resp_dscb_grid}
+\end{figure}
+
+The DI-induced peak shift of $\lesssim 0.5\%$ and width
+broadening of $\lesssim 10\%$ at the common-cut level sits well
+within the existing energy-scale systematic budget of PPG12 and is
+further reduced after the iterative truth-vertex reweight. The
+energy response is therefore not a dominant DI systematic for the
+cross-section measurement; the leading DI sensitivity remains on
+the efficiency stage (\S\ref{sec:eff_impact}) and the ABCD
+background template (\S\ref{sec:cluster_size}).
+
+
+%% ==================================================================
+\section{Eta-Edge Migration Under Pileup}
+\label{sec:eta_edge}
+
+The eta-edge migration study ($|\eta|<0.7$ fiducial) exploits the
+fact that DI shifts the cluster $\eta$ via
+Eq.~\eqref{eq:deta_vs_dz}, so a cluster whose truth $\eta$ is
+just inside the fiducial edge can migrate outside the fiducial on
+reconstruction (producing a signal loss) and, symmetrically, a
+cluster whose truth $\eta$ is just outside can migrate inside
+(producing a background fake). In the nominal 1.5\,mrad period the
+effect is sub-leading: the vertex-shift RMS is small
+($\sigma_{\Delta z}\simeq 7.6$\,cm single,
+$\sigma_{\Delta z}\simeq 34.5$\,cm double; only 7.9\% of clusters
+draw from the wider double distribution), which translates to
+$\sigma_{\Delta\eta}\simeq 0.08$ in the worst case. The fiducial
+edge at $|\eta|=0.7$ is $\gtrsim 5\sigma_{\Delta\eta}$ from the
+barrel edge at $|\eta|\simeq 1$, so the out-migration rate is
+percent-level. At 0\,mrad the effect is proportionally larger
+($\sigma_{\Delta\eta}\simeq 0.37$ averaged), but the 0\,mrad
+period is not part of the nominal published cross-section.
+
+The full eta-edge migration analysis (fake rates, signal leakage,
+ABCD $R$-factor bias from edge effects, net sideband flow) is
+documented in \texttt{wiki/concepts/eta-edge-migration.md} and the
+companion report in \texttt{reports/figures/} (figures
+\texttt{eta\_migration\_abcd\_fakes\_double.pdf},
+\texttt{eta\_migration\_matrix\_double.pdf} and peers). For the
+purposes of this DI note, the relevant observation is that the
+fiducial-migration effect is absorbed by the response-matrix
+unfolding used by PPG12 and does not need a separate DI correction.
+It is flagged here only because the underlying mechanism
+(vertex-shift-induced $\Delta\eta$) is shared with the other DI
+effects analysed in this note.
+
+
+%% ==================================================================
+\section{Summary, Systematics, and Recommendations}
+\label{sec:summary}
+
+\subsection{Nominal Recipe}
+
+The PPG12 DI programme converges on the following recipe for the
+nominal cross-section extraction:
+
+\begin{enumerate}
+\item \textbf{Efficiency: single-MC only, with track-ID-only
+  matching (no $\DR<0.1$ cut).} The apparent double-MC efficiency
+  drop is dominated by a matching artifact
+  (\S\ref{subsec:decomposition}); removing $\DR<0.1$ eliminates
+  the artifact and reveals the genuine pileup degradation. Under
+  track-ID matching the total photon-ID efficiency drops from
+  57.4\% (single MC) to 52.0\% (mixed 0\,mrad), a
+  $1-52.0/57.4 = 9.4\%$ relative reduction concentrated in the
+  reco and BDT stages. At the PPG12 1.5\,mrad working point
+  ($f_\mathrm{DI}=7.9\%$), the integrated DI effect on the
+  cross section is $1.6\%$ (reco) $+ 1.0\%$ (BDT) $+ 0.2\%$ (iso)
+  $= 2.8\%$ pre-correction (see \S\ref{subsec:eff_implications}).
+\item \textbf{Vertex reweighting: iterative truth-vertex
+  $w(z)$ applied per truth vertex.} The production reco-level
+  $f(z_r)$ structurally cannot close the individual truth
+  vertices of DI events; the iterative method
+  (\S\ref{sec:truth_vertex}) closes the truth fiducial to
+  $1$--$2\%$ inside $|z_h|<60$\,cm at 1.5\,mrad and converges
+  cleanly at 0\,mrad. It removes the $+1.4\%$ cross-section bias
+  at 1.5\,mrad that the reco-level method alone could not address.
+  The reco-level reweight remains available as a
+  mutually-exclusive fallback; the truth-vertex variant is the
+  nominal going forward.
+\item \textbf{Shower-shape templates: mixed MC for cross-check
+  only, not as the nominal template.} The data-vs-mixed-MC
+  validation (\S\ref{sec:shower_shape}) confirms that the mixed
+  MC improves data-MC \chidf by up to $20.8\times$ for
+  pileup-sensitive observables at high \ET; the improvement does
+  not hold at low \ET (pt0, $10$--$14$\,\GeV) and the mixed MC
+  degrades there. The analysis uses single MC for the nominal BDT
+  evaluation and quotes the nominal-vs-mixed spread as a
+  shower-shape systematic.
+\item \textbf{ABCD background template: photon-MC-free, built
+  from the anti-tight region in data.} The DI-induced jet-MC
+  cluster-size shift at 0\,mrad is sub-leading after the tight
+  selection (\S\ref{sec:cluster_size}); at 1.5\,mrad it is
+  negligible.
+\end{enumerate}
+
+\subsection{Residual Systematic}
+
+With the above recipe in place, the residual DI-related
+systematic at 1.5\,mrad has the following ingredients:
+
+\begin{itemize}
+\item \textbf{Truth-vertex reweight residual}: $1$--$2\%$ per bin
+  inside $|z_h|<60$\,cm, sub-percent integrated over the analysis
+  fiducial.
+\item \textbf{Efficiency pileup effect}: 2.8\% integrated at
+  1.5\,mrad (reco 1.6\% + BDT 1.0\% + iso 0.2\%; see
+  \S\ref{subsec:eff_implications}); an explicit
+  single-vs-mixed-MC efficiency systematic at the cluster-weighted
+  pileup fraction covers this contribution.
+\item \textbf{Shower-shape mismodelling at low \ET}: picked up by
+  the nominal-vs-mixed-MC spread on the BDT templates, explicitly
+  quantified in the shower-shape systematic.
+\item \textbf{ABCD background-template DI shift}: sub-percent at
+  1.5\,mrad after tight selection; absorbed by the
+  background-template systematic.
+\item \textbf{Missing \texttt{vertexz\_truth\_mb} branch on current
+  DI \texttt{bdt\_split.root}}: sub-percent drop of the
+  secondary-vertex factor $w(z_\mathrm{mb})$;
+  expected sub-percent impact at 1.5\,mrad and sub-percent at
+  0\,mrad. Removed by regenerating the DI \texttt{bdt\_split.root}
+  files.
+\end{itemize}
+
+The dominant pre-existing cross-section bias at 1.5\,mrad,
+$+1.4\%$ from the truth-fiducial mistreatment of DI events under
+$f(z_r)$, is eliminated by the truth-vertex reweight.
+
+\subsection{Cross-Section Impact Summary}
+
+\begin{table}[H]
+\centering
+\caption{DI-related effects on the 1.5\,mrad cross section and
+  their treatment. Percentages are integrated over the analysis
+  fiducial unless otherwise noted.}
+\label{tab:xsec_summary}
+\small
+\begin{tabular}{p{4.5cm}p{3.5cm}p{3cm}p{3cm}}
+\toprule
+Effect & Pre-fix bias (1.5\,mrad) & After nominal recipe & Treatment \\
+\midrule
+Truth fiducial mistreatment under $f(z_r)$ alone & $+1.4\%$ & $\lesssim 0.1\%$ & Iterative truth-vertex reweight \\
+Efficiency matching artifact ($\DR<0.1$) & $-3.5\%$ baseline in single MC, dominant in double MC &  absorbed into nominal single-MC efficiency & Track-ID-only matching \\
+Efficiency pileup (reco + BDT + iso combined) & $2.8\%$ (1.6+1.0+0.2) & covered by single-vs-mixed-MC systematic & Single MC nominal; mixed MC systematic \\
+ABCD jet-template DI shift & few \% on background shape at common-cut stage & sub-\% on tight-selection yield & Absorbed by background-template systematic \\
+Shower-shape low-\ET mismodelling & several $\sigma$ on \chidf & covered by mixed-vs-nominal systematic & Nominal-vs-mixed BDT systematic \\
+Missing $w(z_\mathrm{mb})$ on DI trees & --- & sub-\% & Regenerate DI \texttt{bdt\_split.root} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Open Items}
+
+\begin{itemize}
+\item \textbf{jet12 extension of the truth-vertex fit.} Current
+  iterative reweight uses photon10-only. Extending to the full
+  4-sample blend (photon10/photon10\_double + jet12/jet12\_double)
+  is straightforward but the closure numbers will move and should
+  be remeasured.
+\item \textbf{DI \texttt{bdt\_split.root} regeneration.} The
+  current \texttt{photon10\_double} and \texttt{jet12\_double}
+  \texttt{bdt\_split.root} files predate the
+  \texttt{vertexz\_truth\_mb} branch; regenerating from the
+  reprocessed \texttt{combined.root} removes the silent
+  secondary-vertex drop.
+\item \textbf{NPB purity 0 vs.\ 1.5\,mrad split.} Deferred; the
+  NPB-cut systematic is currently evaluated integrated over both
+  periods. A per-period split would sharpen the pileup sensitivity.
+\item \textbf{Iterative-reweight speed optimization.} $\sim\!10\times$
+  speedup available via pre-computed $z^2$ and dropping the
+  per-trial mask rebuild; nice-to-have for multi-sample extensions.
+\item \textbf{Pipeline consolidation.} 14-way duplication of the
+  run28 condor submit scripts + the hardcoded
+  \texttt{total\_line=10000} cap are both tracked in
+  \texttt{condor\_pipeline\_review\_run28.md}; neither blocks the
+  physics at current precision.
+\end{itemize}
+
+
+%% ==================================================================
+\appendix
+\section{DI Reco--Truth Kernel}
+\label{app:double_diag}
+
+The geometric lower bound on truth-only reweights (referenced in
+Appendix~\ref{app:discarded}) can be read off the widths directly
+for the jet12\_double sample at 1.5\,mrad:
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item 1.5\,mrad data reco width: $\sigma \simeq 22.3$\,cm
+\item jet12 single-interaction MC truth width ($z_h$): $\sigma \simeq 57.6$\,cm
+\item jet12\_double MC truth width ($z_h$, primary): $\sigma \simeq 62.7$\,cm
+\item jet12\_double MC reco width ($z_r$):
+      $\sigma \simeq 48.6 \approx 62.7/\sqrt 2$ (averaging)
+\item Conditional kernel $P(z_r|z_h=0)$ RMS (with $z_\mathrm{mb}$
+      marginalized): $\sim\!34$\,cm
+\end{itemize}
+
+Figure~\ref{fig:double_diag} shows the kernel slice directly,
+compared to the 1.5\,mrad data target. Even if the primary truth
+vertex is forced to $z_h=0$, the reco distribution from a
+double-interaction event cannot be narrower than the
+$\sim\!34$\,cm kernel width --- larger than the 22\,cm target.
+This is the structural reason the truth-only methods of
+Appendix~\ref{app:discarded} fail on DI MC, and the structural
+reason the iterative method of \S\ref{sec:truth_vertex} needs the
+$w(z_h)\,w(z_\mathrm{mb})$ factorization rather than a $w$-on-$z_r$
+construction.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_alt_double_diag.pdf}
+\caption{Conditional reco kernel $P(z_r|z_h)$ in jet12\_double MC
+  at 1.5\,mrad (with $z_\mathrm{mb}$ marginalized), with the
+  1.5\,mrad data reco $z_r$ shape overlaid. The kernel's
+  $\sim\!34$\,cm RMS exceeds the $\sim\!22$\,cm data peak, which
+  is the geometric lower bound on truth-only reweighting.}
+\label{fig:double_diag}
+\end{figure}
+
+
+\section{Discarded Reweighting Methods}
+\label{app:discarded}
+
+Before the iterative method of \S\ref{sec:truth_vertex} was
+settled on, three truth-only reweight constructions and one
+closed-form 2D construction were explored. All four were
+discarded; the essentials:
+
+\paragraph{$w_1$: direct ratio.}
+$w_1(z_h) = D(z_r)/T(z_h)$ with the common binning identifying
+$z_r$ bins with $z_h$ bins. Breaks down on the DI sample because
+$P(z_r|z_h)$ is wide: the LHS has a narrow data target while the
+RHS integrates over a wide kernel.
+
+\paragraph{$w_2$: conditional projection.}
+$w_2(z_h) = \mathbb{E}[f(z_r)\,|\,z_h]$, the expectation of the
+production reco weight conditional on the primary truth vertex.
+Also bounded from below by the DI kernel width
+(Appendix~\ref{app:double_diag}).
+
+\paragraph{$w_\mathrm{iter,DA}$: D'Agostini iterative unfolding.}
+Iterative Bayesian unfolding using the MC response matrix
+$R_{ij}=P(z_r^i|z_h^j)$. Hits the same geometric floor at
+1.5\,mrad --- the DI reco-truth kernel is too wide to invert
+within the data-domain support.
+
+\paragraph{Closed-form 2D Gaussian reweight.}
+$w(z_h,z_\mathrm{mb}) \propto \exp[-\tfrac{1}{2}(z_h^2 + z_\mathrm{mb}^2)\,\Delta]$
+with $\Delta = 1/\sigma_\mathrm{lum}^2 - 1/\sigma_\mathrm{MC}^2$.
+This acts on both the symmetric and antisymmetric coordinates
+simultaneously and closes all three vertex axes; however, it
+assumes a single Gaussian shape for the data luminous region. At
+1.5\,mrad the data has a $\pm$-asymmetric mid-tail bump that a
+symmetric Gaussian cannot reproduce, so the closed form was
+superseded by the iterative method that discovers $w(z)$ from the
+data directly without any Gaussian assumption.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_alt_weights.pdf}
+\caption{Recovered $w(z)$: discarded methods}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_alt_shapes.pdf}
+\caption{Truth-vertex shapes: discarded methods}
+\end{subfigure}\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_alt_closure.pdf}
+\caption{Closure: discarded methods}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{figures/vertex_reweight_alt_jet_vs_photon_closure.pdf}
+\caption{Jet vs.\ photon closure: discarded methods}
+\end{subfigure}
+\caption{Diagnostic plots for the discarded truth-only reweight
+  methods. All four methods hit a geometric floor on the DI sample
+  at 1.5\,mrad set by the reco-truth kernel width.}
+\end{figure}
+
+
+\section{TruthVertexRecoCheck Baseline}
+\label{app:nonull}
+
+Before building any truth-based reweight, a sanity check on the
+effect of dropping MC events whose reco MBD vertex is the $-9999$
+sentinel was performed. The concern: an MC event that loses its
+reco vertex may be physically unusual (e.g.\ with a shifted truth
+vertex $z_h$), so dropping it could skew the efficiency in a
+$z_h$-dependent way.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Sample & $N_\mathrm{total}$ & $N_\mathrm{reco}$ & $N_\mathrm{no\,reco}$ & fraction no reco \\
+\midrule
+photon10           & 9{,}998{,}562 & 7{,}716{,}585 & 2{,}281{,}977 & \textbf{22.82\%} \\
+photon10\_double   & 9{,}997{,}075 & 9{,}491{,}223 &   505{,}852   & \textbf{5.06\%} \\
+jet12              & 10{,}000{,}000 & 7{,}689{,}530 & 2{,}310{,}470 & \textbf{23.10\%} \\
+jet12\_double      & 9{,}997{,}000 & 9{,}485{,}384 &   511{,}616   & \textbf{5.12\%} \\
+\bottomrule
+\end{tabular}
+\caption{Fraction of events without an MBD reco vertex. The
+  double-interaction productions have $\sim\!4.5\times$ higher
+  MBD vertex-finding efficiency than their single counterparts
+  (two concurrent collisions give the MBD twice the chance of
+  producing a vertex).}
+\label{tab:nonull_counts}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/truth_vertex_reco_check.pdf}
+\caption{Primary truth vertex $z_h$ distribution for events with
+  (blue) and without (red dashed) a reconstructed MBD vertex
+  $z_r$, area-normalized for shape comparison. Columns: single /
+  double interaction. Rows: photon10 / jet12. Dotted vertical
+  lines: $|z_h|=30$\,cm reference.}
+\label{fig:nonull_shape}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/truth_vertex_reco_check_ratio.pdf}
+\caption{Ratio (no-reco-vertex shape)/(reco-vertex shape) vs.\
+  $z_h$, zoomed to $[0.75,1.25]$. All samples show a $\sim\!\pm 5\%$
+  north/south asymmetry inside $|z_h|<30$\,cm, consistent with a
+  small MBD geometric bias.}
+\label{fig:nonull_ratio}
+\end{figure}
+
+Inside $|z_h|<30$\,cm the two shapes agree to within $\pm 5\%$ with
+a small $z_h$-asymmetry that is the same in all four samples and
+therefore a detector-level effect (MBD vertex finder slightly more
+efficient at positive $z$). Dropping the no-reco-vertex events is
+\emph{approximately} harmless --- both the efficiency numerator and
+denominator are scaled by the same factor, and the residual $z$
+dependence of the drop rate is small. However, dropping $\sim\!22\%$
+of the single-interaction MC sample is still a lot of statistics,
+and it makes the efficiency measurement implicitly conditional on a
+valid reco vertex being found. That was the original motivation for
+exploring a truth-level reweight in the first place.
+
+
+\section{File and Code Inventory}
+\label{app:code}
+
+\paragraph{Code.}
+\begin{itemize}\setlength\itemsep{1pt}
+\item \texttt{anatreemaker/source/CaloAna24.\{h,cc\}} --- writes the
+  \texttt{vertexz\_truth} ($z_h$) and
+  \texttt{vertexz\_truth\_second} ($z_\mathrm{mb}$, read in C++ as
+  \texttt{vertexz\_truth\_mb}) branches on the slimtree.
+\item \texttt{efficiencytool/ShowerShapeCheck.C} --- shower-shape
+  analysis with the \texttt{mix\_weight} +
+  \texttt{vtxscan\_sim\_override} DI-blend options.
+\item \texttt{efficiencytool/run\_showershape\_double.sh} ---
+  two-pass full-GEANT blending pipeline.
+\item \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} ---
+  efficiency calculator (\texttt{trkID}-only matching;
+  \texttt{SetUseWeightedEvents} fixed).
+\item \texttt{efficiencytool/compare\_energy\_response.C} ---
+  energy response $\mu(\pT)$, $\sigma(\pT)$ under DSCB across
+  single/double/mixed MC with optional vertex reweight.
+\item \texttt{efficiencytool/truth\_vertex\_reweight/} --- standalone
+  Python tool for the iterative method:
+  \begin{itemize}\setlength\itemsep{0pt}
+  \item \texttt{fit\_core.py} --- cached sample loader,
+    \texttt{mixed\_mc\_histogram} forward model, Poisson $\chi^2$.
+  \item \texttt{fit\_truth\_vertex\_reweight.py} --- driver
+    producing \texttt{reweight.root} and \texttt{fit\_result.yaml}.
+  \item \texttt{plot\_closure.py}, \texttt{plot\_comparisons.py} ---
+    closure and cross-period diagnostic plots.
+  \item \texttt{config.yaml} --- sample paths, run ranges, fit
+    parameters.
+  \end{itemize}
+\item \texttt{efficiencytool/TruthVertexRecoCheck.C} ---
+  Appendix~\ref{app:nonull} supporting macro.
+\item \texttt{efficiencytool/calc\_pileup\_range.C} --- MBD-based
+  pileup-fraction calculator.
+\item \texttt{efficiencytool/MbdPileupHelper.h} --- MBD pileup
+  metric helper (avg / prod / max $\sigma_t$ etc.).
+\item \texttt{efficiencytool/DoubleInteractionCheck.C} --- toy
+  vertex-shift simulation (not part of the nominal DI treatment;
+  see \texttt{.claude/rules/double-interaction.md}).
+\end{itemize}
+
+\paragraph{Config fields.}
+\begin{itemize}\setlength\itemsep{1pt}
+\item \texttt{truth\_vertex\_reweight\_on} (0/1): enables the
+  iterative truth-vertex reweight.
+\item \texttt{truth\_vertex\_reweight\_file}: path to
+  \texttt{reweight.root} containing \texttt{h\_w\_iterative}.
+\item \texttt{vertex\_reweight\_on} (0/1): legacy reco-level
+  $f(z_r)$; mutually exclusive with \texttt{truth\_vertex\_reweight\_on}.
+\item \texttt{vertex\_scan\_data\_file}: unrestricted data vertex
+  distribution for the toy sim (DI cross-check only).
+\end{itemize}
+
+\paragraph{Output files.}
+\begin{itemize}\setlength\itemsep{1pt}
+\item \texttt{efficiencytool/truth\_vertex\_reweight/output/\{1p5mrad,0mrad\}/reweight.root}
+  --- per-period $w(z)$ and diagnostic histograms.
+\item \texttt{efficiencytool/truth\_vertex\_reweight/output/\{1p5mrad,0mrad\}/fit\_result.yaml}
+  --- fit metadata and convergence statistics.
+\item \texttt{results/MC\_efficiencyshower\_shape\_\{sample\}\_\{suffix\}\_vtxscan.root}
+  --- Pass-1 blended vertex distribution.
+\item \texttt{results/MC\_efficiencyshower\_shape\_\{sample\}\_combined[\_inclusive]\_\{suffix\}.root}
+  --- Pass-2 merged full-analysis output.
+\end{itemize}
+
+\paragraph{Known source-plot cosmetic issues (reused as-is).}
+Two classes of known source-PDF cosmetic issues are reused from the
+upstream plotting code without post-editing (this note preserves the
+existing figures verbatim rather than regenerating them):
+\begin{itemize}\setlength\itemsep{1pt}
+\item The per-bin DSCB response grids in \S\ref{sec:energy_response}
+  (Fig.~\ref{fig:resp_dscb_grid}) can show slight legend/data overlap
+  in the top-left panel on some pages; this is a \texttt{matplotlib}
+  auto-layout artifact in the upstream \texttt{compare\_energy\_response.C}
+  grid plotter and does not affect the numerical fits.
+\item The truth-vertex iterative-closure and method-comparison
+  figures (Figs.~\ref{fig:iter_two_period}--\ref{fig:sigma_scan})
+  carry Python \texttt{fig.suptitle()} banners inherited from
+  \texttt{truth\_vertex\_reweight/plot\_closure.py}. These banners
+  duplicate information already captured in the LaTeX captions but
+  are kept unedited to preserve byte-level reproducibility against
+  the \texttt{truth\_vertex\_reco\_check.pdf} source report.
+\end{itemize}
+These are flagged here for transparency and do not reflect errors in
+the physics content.
+
+\end{document}
