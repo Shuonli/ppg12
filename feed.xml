@@ -5,13 +5,13 @@
   <link>https://shuonli.github.io/ppg12/</link>
   <description>Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</description>
   <language>en</language>
-  <lastBuildDate>Sat, 18 Apr 2026 15:37:48 -0400</lastBuildDate>
+  <lastBuildDate>Sat, 18 Apr 2026 15:42:33 -0400</lastBuildDate>
   <atom:link href="https://shuonli.github.io/ppg12/feed.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</title>
     <link>https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:36:32 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:47 -0400</pubDate>
     <category>Isolation</category>
     <description>The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</description>
   </item>
@@ -19,7 +19,7 @@
     <title>Comparison Report</title>
     <link>https://shuonli.github.io/ppg12/reports/comparison_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/comparison_report.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Selection &amp; Config Comparisons</category>
     <description>From plotting/comparison_report</description>
   </item>
@@ -27,7 +27,7 @@
     <title>Selection Report</title>
     <link>https://shuonli.github.io/ppg12/reports/selection_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/selection_report.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Selection &amp; Config Comparisons</category>
     <description>From plotting/selection_report</description>
   </item>
@@ -35,23 +35,23 @@
     <title>Showershape Report</title>
     <link>https://shuonli.github.io/ppg12/reports/showershape_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/showershape_report.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Shower Shape</category>
     <description>From plotting/showershape_report</description>
   </item>
   <item>
-    <title>Vertex Distribution and Δ z in Single vs. Double-Interaction MC</title>
+    <title>Vertex Distribution Study</title>
     <link>https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Vertex</category>
-    <description>This note characterizes the vertex distributions and vertex displacement (Δ z = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHE…</description>
+    <description>From efficiencytool/reports</description>
   </item>
   <item>
     <title>Truth Vertex Reco Check</title>
     <link>https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Vertex</category>
     <description>From reports</description>
   </item>
@@ -59,7 +59,7 @@
     <title>Post Preliminary Updates</title>
     <link>https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Status Updates &amp; Summaries</category>
     <description>From reports</description>
   </item>
@@ -67,7 +67,7 @@
     <title>Double Interaction Shower Shape Comparison</title>
     <link>https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Double Interaction / Pileup</category>
     <description>From reports</description>
   </item>
@@ -75,7 +75,7 @@
     <title>Converted Photon Study</title>
     <link>https://shuonli.github.io/ppg12/reports/converted_photon_study.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/converted_photon_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Shower Shape</category>
     <description>From reports</description>
   </item>
@@ -83,7 +83,7 @@
     <title>Cluster Size Vs Et</title>
     <link>https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Shower Shape</category>
     <description>From reports</description>
   </item>
@@ -91,7 +91,7 @@
     <title>Cluster Size Short</title>
     <link>https://shuonli.github.io/ppg12/reports/cluster_size_short.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_short.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>Shower Shape</category>
     <description>From reports</description>
   </item>
@@ -99,7 +99,7 @@
     <title>Bdt Training Audit</title>
     <link>https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</guid>
-    <pubDate>Sat, 18 Apr 2026 15:35:53 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 15:38:42 -0400</pubDate>
     <category>BDT Training &amp; Systematics</category>
     <description>From reports</description>
   </item>
