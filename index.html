@@ -5,31 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PPG12 Analysis Results</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-17 19:02 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-17 22:13 EDT</div>
     </div>
   </header>
 
   <main class="container">
+    <section id="recent" class="recent-rail">
+      <h2 class="section-title">Recently updated</h2>
+      <div class="recent-grid">
+        <a class="recent-card" href="reports/vertex_distribution_study.html">
+          <img class="recent-thumb" src="reports/_thumbs/vertex_distribution_study.png" alt="" loading="lazy">
+          <div class="recent-body">
+            <div class="recent-tag">Vertex</div>
+            <div class="recent-title">Vertex Distribution and Δz in Single vs. Double-Interaction MC</div>
+            <div class="recent-date">2026-04-17</div>
+          </div>
+        </a>
+        <a class="recent-card" href="reports/eta_migration_study.html">
+          <img class="recent-thumb" src="reports/_thumbs/eta_migration_study.png" alt="" loading="lazy">
+          <div class="recent-body">
+            <div class="recent-tag">Efficiency &amp; Energy Response</div>
+            <div class="recent-title">Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</div>
+            <div class="recent-date">2026-04-17</div>
+          </div>
+        </a>
+        <a class="recent-card" href="reports/efficiency_deltaR_comparison.html">
+          <img class="recent-thumb" src="reports/_thumbs/efficiency_deltaR_comparison.png" alt="" loading="lazy">
+          <div class="recent-body">
+            <div class="recent-tag">Efficiency &amp; Energy Response</div>
+            <div class="recent-title">Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</div>
+            <div class="recent-date">2026-04-17</div>
+          </div>
+        </a>
+      </div>
+    </section>
     <section id="reports">
-      <h2 class="section-title">Reports</h2>
+      <div class="reports-header">
+        <h2 class="section-title">Reports</h2>
+        <input id="reports-filter" type="search" placeholder="Filter by title, description, tag, date…" aria-label="Filter reports">
+      </div>
       <div class="reports-group" id="group-double-interaction">
         <h3 class="group-title">Double Interaction / Pileup <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/double_interaction_shower_shape_comparison.html"><img class="report-thumb" src="reports/_thumbs/double_interaction_shower_shape_comparison.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/double_interaction_shower_shape_comparison.pdf" target="_blank" rel="noopener">Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</a></td>
+            <td data-label="Title"><a href="reports/double_interaction_shower_shape_comparison.html">Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</a></td>
             <td data-label="Description">In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</td>
-            <td data-label="Size">1.2 MB</td>
+            <td data-label="Size"><a href="reports/double_interaction_shower_shape_comparison.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.2 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -38,14 +72,15 @@
         <h3 class="group-title">BDT Training &amp; Systematics <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/bdt_training_audit.html"><img class="report-thumb" src="reports/_thumbs/bdt_training_audit.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/bdt_training_audit.pdf" target="_blank" rel="noopener">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a></td>
+            <td data-label="Title"><a href="reports/bdt_training_audit.html">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a></td>
             <td data-label="Description">A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γreweighting actually produces flat E_T^γspectra for signal and background, (b…</td>
-            <td data-label="Size">0.8 MB</td>
+            <td data-label="Size"><a href="reports/bdt_training_audit.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.8 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -54,32 +89,36 @@
         <h3 class="group-title">Shower Shape <span class="group-count">(4)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/converted_photon_study.html"><img class="report-thumb" src="reports/_thumbs/converted_photon_study.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/converted_photon_study.pdf" target="_blank" rel="noopener">Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</a></td>
+            <td data-label="Title"><a href="reports/converted_photon_study.html">Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</a></td>
             <td data-label="Description">We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</td>
-            <td data-label="Size">0.9 MB</td>
+            <td data-label="Size"><a href="reports/converted_photon_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.9 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/cluster_size_vs_et.html"><img class="report-thumb" src="reports/_thumbs/cluster_size_vs_et.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/cluster_size_vs_et.pdf" target="_blank" rel="noopener">Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</a></td>
+            <td data-label="Title"><a href="reports/cluster_size_vs_et.html">Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</a></td>
             <td data-label="Description">Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</td>
-            <td data-label="Size">0.6 MB</td>
+            <td data-label="Size"><a href="reports/cluster_size_vs_et.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.6 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/cluster_size_short.html"><img class="report-thumb" src="reports/_thumbs/cluster_size_short.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/cluster_size_short.pdf" target="_blank" rel="noopener">Cluster Size vs E_T — Per-Period, Per-Selection: Data vs MC with truth-vertex reweighting and DI mixing</a></td>
+            <td data-label="Title"><a href="reports/cluster_size_short.html">Cluster Size vs E_T — Per-Period, Per-Selection: Data vs MC with truth-vertex reweighting and DI mixing</a></td>
             <td data-label="Description">[H] [width=0.9]figures/cluster_size/cluster_size_period_overlay_split_1p5mrad.pdf 1.5 mrad, split container. Overlay of data and MC at three selections: baseline (open markers), common-pass (half-emp…</td>
-            <td data-label="Size">0.7 MB</td>
+            <td data-label="Size"><a href="reports/cluster_size_short.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.7 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/showershape_report.html"><img class="report-thumb" src="reports/_thumbs/showershape_report.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-13</td>
-            <td data-label="Title"><a href="reports/showershape_report.pdf" target="_blank" rel="noopener">Shower Shape Distributions: Configuration Variations</a></td>
+            <td data-label="Title"><a href="reports/showershape_report.html">Shower Shape Distributions: Configuration Variations</a></td>
             <td data-label="Description">Shower Shape Distributions: Configuration Variations</td>
-            <td data-label="Size">8.8 MB</td>
+            <td data-label="Size"><a href="reports/showershape_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;8.8 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -88,26 +127,29 @@
         <h3 class="group-title">Efficiency &amp; Energy Response <span class="group-count">(3)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/eta_migration_study.html"><img class="report-thumb" src="reports/_thumbs/eta_migration_study.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/eta_migration_study.pdf" target="_blank" rel="noopener">Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</a></td>
+            <td data-label="Title"><a href="reports/eta_migration_study.html">Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</a></td>
             <td data-label="Description">This note documents a study of pseudorapidity edge migration effects in the sPHENIX isolated photon cross-section measurement (PPG12). Both the truth and reconstructed fiducial cuts are set at &lt; 0.7,…</td>
-            <td data-label="Size">1.0 MB</td>
+            <td data-label="Size"><a href="reports/eta_migration_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.0 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/efficiency_deltaR_comparison.html"><img class="report-thumb" src="reports/_thumbs/efficiency_deltaR_comparison.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/efficiency_deltaR_comparison.pdf" target="_blank" rel="noopener">Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</a></td>
+            <td data-label="Title"><a href="reports/efficiency_deltaR_comparison.html">Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</a></td>
             <td data-label="Description">Building on the companion study~dr_study that demonstrated the ΔR &lt; 0.1 truth-matching cut rejects 3.5% of correctly track-ID-matched truth photons in single-interaction MC, this note quantifies the…</td>
-            <td data-label="Size">1.5 MB</td>
+            <td data-label="Size"><a href="reports/efficiency_deltaR_comparison.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.5 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/deltaR_matching_study.html"><img class="report-thumb" src="reports/_thumbs/deltaR_matching_study.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/deltaR_matching_study.pdf" target="_blank" rel="noopener">Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</a></td>
+            <td data-label="Title"><a href="reports/deltaR_matching_study.html">Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</a></td>
             <td data-label="Description">This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</td>
-            <td data-label="Size">0.3 MB</td>
+            <td data-label="Size"><a href="reports/deltaR_matching_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.3 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -116,14 +158,15 @@
         <h3 class="group-title">Isolation <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/isolation_ET_comparison.html"><img class="report-thumb" src="reports/_thumbs/isolation_ET_comparison.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/isolation_ET_comparison.pdf" target="_blank" rel="noopener">Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</a></td>
+            <td data-label="Title"><a href="reports/isolation_ET_comparison.html">Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</a></td>
             <td data-label="Description">The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</td>
-            <td data-label="Size">0.6 MB</td>
+            <td data-label="Size"><a href="reports/isolation_ET_comparison.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.6 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -132,14 +175,15 @@
         <h3 class="group-title">Purity <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/mc_purity_correction_investigation.html"><img class="report-thumb" src="reports/_thumbs/mc_purity_correction_investigation.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/mc_purity_correction_investigation.pdf" target="_blank" rel="noopener">Investigation: MC Purity Correction Factor in PPG12</a></td>
+            <td data-label="Title"><a href="reports/mc_purity_correction_investigation.html">Investigation: MC Purity Correction Factor in PPG12</a></td>
             <td data-label="Description">The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</td>
-            <td data-label="Size">0.5 MB</td>
+            <td data-label="Size"><a href="reports/mc_purity_correction_investigation.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.5 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -148,20 +192,22 @@
         <h3 class="group-title">Vertex <span class="group-count">(2)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/vertex_distribution_study.html"><img class="report-thumb" src="reports/_thumbs/vertex_distribution_study.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/vertex_distribution_study.pdf" target="_blank" rel="noopener">Vertex Distribution and Δz in Single vs. Double-Interaction MC</a></td>
+            <td data-label="Title"><a href="reports/vertex_distribution_study.html">Vertex Distribution and Δz in Single vs. Double-Interaction MC</a></td>
             <td data-label="Description">This note characterizes the vertex distributions and vertex displacement (Δz = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHEN…</td>
-            <td data-label="Size">0.5 MB</td>
+            <td data-label="Size"><a href="reports/vertex_distribution_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.5 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/truth_vertex_reco_check.html"><img class="report-thumb" src="reports/_thumbs/truth_vertex_reco_check.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</a></td>
+            <td data-label="Title"><a href="reports/truth_vertex_reco_check.html">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</a></td>
             <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
-            <td data-label="Size">0.7 MB</td>
+            <td data-label="Size"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.7 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -170,20 +216,22 @@
         <h3 class="group-title">Selection &amp; Config Comparisons <span class="group-count">(2)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/comparison_report.html"><img class="report-thumb" src="reports/_thumbs/comparison_report.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/comparison_report.pdf" target="_blank" rel="noopener">Selection Plots: Config Comparisons</a></td>
+            <td data-label="Title"><a href="reports/comparison_report.html">Selection Plots: Config Comparisons</a></td>
             <td data-label="Description">difffile— config\_bdt\_nom.yaml difffile+++ config\_bdt\_tightbdt50.yaml diffhunk@@ -20,5 +20,5 @@ response\_outfile: &quot;/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response&quot; data\_outfile…</td>
-            <td data-label="Size">3.2 MB</td>
+            <td data-label="Size"><a href="reports/comparison_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;3.2 MB</a></td>
           </tr>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/selection_report.html"><img class="report-thumb" src="reports/_thumbs/selection_report.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-08</td>
-            <td data-label="Title"><a href="reports/selection_report.pdf" target="_blank" rel="noopener">Selection Plots: BDT Variations</a></td>
+            <td data-label="Title"><a href="reports/selection_report.html">Selection Plots: BDT Variations</a></td>
             <td data-label="Description">\#config.yaml \#bdt nominal input: photon\_jet\_file\_root\_dir: &quot;/sphenix/user/shuhangli/ppg12/FunWithxgboost/&quot; photon\_jet\_file\_branch\_dir: &quot;/bdt\_split.root&quot; \#photon\_jet\_file\_branch\_dir: &quot;…</td>
-            <td data-label="Size">21.6 MB</td>
+            <td data-label="Size"><a href="reports/selection_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;21.6 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -192,14 +240,15 @@
         <h3 class="group-title">Status Updates &amp; Summaries <span class="group-count">(1)</span></h3>
       <table class="reports-table">
         <thead>
-          <tr><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
+          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
           <tr>
+            <td data-label="Preview" class="preview-cell"><a href="reports/post_preliminary_updates.html"><img class="report-thumb" src="reports/_thumbs/post_preliminary_updates.png" alt="" loading="lazy"></a></td>
             <td data-label="Date">2026-04-17</td>
-            <td data-label="Title"><a href="reports/post_preliminary_updates.pdf" target="_blank" rel="noopener">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a></td>
+            <td data-label="Title"><a href="reports/post_preliminary_updates.html">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a></td>
             <td data-label="Description">This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</td>
-            <td data-label="Size">1.4 MB</td>
+            <td data-label="Size"><a href="reports/post_preliminary_updates.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.4 MB</a></td>
           </tr>
         </tbody>
       </table>
@@ -209,12 +258,14 @@
     <section id="past-deploys">
       <h2 class="section-title">Past deploys</h2>
       <details class="deploys-details">
-        <summary>Browse 95 past deploy(s) on GitHub</summary>
-        <table class="deploys-table">
-          <thead>
-            <tr><th>Date</th><th>Tag</th><th>Commit</th><th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>
-          </thead>
-          <tbody>
+        <summary>Browse 95 past deploy(s) across 1 month(s)</summary>
+        <details class="deploys-month" open>
+          <summary>April 2026 <span class="group-count">(95)</span></summary>
+          <table class="deploys-table">
+            <thead>
+              <tr><th>Date</th><th>Tag</th><th>Commit</th><th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>
+            </thead>
+            <tbody>
             <tr>
               <td data-label="Date">2026-04-17 02:00</td>
               <td data-label="Tag"><a href="https://github.com/Shuonli/ppg12/tree/site/2026-04-17" target="_blank" rel="noopener">site/2026-04-17</a></td>
@@ -880,8 +931,9 @@
               <td data-label="&Delta;"><span class="muted">—</span></td>
               <td data-label="Message">Initialize gh-pages branch with skeleton structure</td>
             </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </details>
         <p class="deploys-footnote">
           Tag links open the full site snapshot; &ldquo;diff&rdquo; shows what changed vs. the previous deploy. See also <a href="https://github.com/Shuonli/ppg12/tags" target="_blank" rel="noopener">all tags</a> and the <a href="https://github.com/Shuonli/ppg12/commits/gh-pages" target="_blank" rel="noopener">gh-pages commit history</a>.
         </p>
@@ -891,10 +943,36 @@
 
   <footer class="site-footer">
     <div class="container">
-      Auto-generated by <code>deploy_pages.py</code> &middot; Built from <code>main@<a href="https://github.com/Shuonli/ppg12/commit/fad3fb8" target="_blank" rel="noopener">fad3fb8</a></code> &middot;
+      Auto-generated by <code>deploy_pages.py</code> &middot; Built from <code>main@<a href="https://github.com/Shuonli/ppg12/commit/87be296" target="_blank" rel="noopener">87be296</a></code> &middot;
       PPG12 &middot;
       <a href="https://github.com/Shuonli/ppg12">sPHENIX Collaboration</a>
     </div>
   </footer>
+
+  <script>
+  // Zero-dependency filter: as the user types in the reports-filter input,
+  // hide rows whose text content does not match. Empty groups collapse.
+  (function () {
+    var input = document.getElementById('reports-filter');
+    if (!input) return;
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      document.querySelectorAll('#reports .reports-group').forEach(function (grp) {
+        var visibleRows = 0;
+        grp.querySelectorAll('tbody tr').forEach(function (tr) {
+          var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
+          tr.style.display = hit ? '' : 'none';
+          if (hit) visibleRows += 1;
+        });
+        grp.style.display = (visibleRows === 0 && q !== '') ? 'none' : '';
+      });
+      // Ungrouped flat table case.
+      document.querySelectorAll('#reports > table tbody tr').forEach(function (tr) {
+        var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
+        tr.style.display = hit ? '' : 'none';
+      });
+    });
+  })();
+  </script>
 </body>
 </html>

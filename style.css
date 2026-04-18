@@ -1,6 +1,25 @@
 /* PPG12 GitHub Pages — sPHENIX Isolated Photon Analysis Results
    Colors: Columbia Navy #002B7F, Columbia Blue #B9D9EB, white */
 
+/* Design tokens — overridden in the dark-mode block at the bottom. */
+:root {
+  --navy:          #002B7F;
+  --navy-hover:    #001a4d;
+  --columbia-blue: #B9D9EB;
+  --bg-body:       #f8f8fa;
+  --bg-card:       #ffffff;
+  --bg-zebra:      #f5f5f8;
+  --bg-hover:      #eef1f7;
+  --text-primary:  #2c2c2c;
+  --text-muted:    #666;
+  --text-faint:    #999;
+  --border:        #ddd;
+  --border-soft:   #e8e8e8;
+  --accent:        var(--columbia-blue);
+  --accent-text:   var(--navy);
+  --thumb-bg:      #f0f0f3;
+}
+
 /* ── Reset & Base ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -9,10 +28,11 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #2c2c2c;
-  background: #f8f8fa;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-body);
   line-height: 1.6;
+  font-feature-settings: "cv11", "ss01";  /* subtle Inter tuning for alternate 1/l */
 }
 
 a {
@@ -71,6 +91,149 @@ a:hover {
   margin: 2rem 0 0.75rem;
   padding-bottom: 0.35rem;
   border-bottom: 2px solid #B9D9EB;
+}
+
+/* ── Recently-updated rail ── */
+.recent-rail {
+  margin-bottom: 2rem;
+}
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.recent-card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  transition: box-shadow 0.15s, transform 0.15s;
+  color: inherit;
+}
+.recent-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 43, 127, 0.12);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.recent-thumb,
+.recent-thumb-placeholder {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 94px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #f0f0f3;
+  border: 1px solid #eee;
+}
+.recent-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.recent-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-tag {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #002B7F;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.recent-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111;
+  margin-top: 0.15rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recent-date {
+  margin-top: auto;
+  font-size: 0.78rem;
+  color: #888;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── Reports Header (title + filter input) ── */
+.reports-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 2rem 0 0.5rem;
+}
+.reports-header .section-title {
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+  flex: 1 0 auto;
+}
+#reports-filter {
+  flex: 1 1 260px;
+  max-width: 380px;
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.92rem;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#reports-filter:focus {
+  outline: none;
+  border-color: #002B7F;
+  box-shadow: 0 0 0 3px rgba(0, 43, 127, 0.12);
+}
+
+/* ── Report thumbnail column ── */
+.preview-cell {
+  width: 58px;
+  padding: 0.35rem 0.5rem !important;
+}
+.report-thumb {
+  display: block;
+  width: 48px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 2px;
+  border: 1px solid #e5e5e5;
+  background: #f0f0f3;
+}
+.report-thumb-placeholder {
+  display: inline-block;
+  width: 48px;
+  height: 62px;
+  line-height: 62px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #888;
+  background: #f0f0f3;
+  border: 1px dashed #bbb;
+  border-radius: 2px;
 }
 
 /* ── Reports Groups (physics-topic subheadings) ── */
@@ -268,6 +431,122 @@ a:hover {
   color: #bbb;
 }
 
+/* Nested month buckets inside the Past-deploys <details>. */
+.deploys-month {
+  margin-top: 0.6rem;
+  border-top: 1px dashed #e5e5e5;
+  padding-top: 0.35rem;
+}
+.deploys-month:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.deploys-month > summary {
+  cursor: pointer;
+  color: #002B7F;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.1rem;
+  list-style: none;
+}
+.deploys-month > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform 0.15s;
+  color: #8aa;
+}
+.deploys-month[open] > summary::before {
+  transform: rotate(90deg);
+  transform-origin: 0.35em 0.55em;
+}
+.deploys-month > summary .group-count {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.82rem;
+  margin-left: 0.3rem;
+}
+.deploys-month > table {
+  margin-top: 0.35rem;
+}
+
+/* ── Detail page (reports/<stem>.html) ── */
+.detail-main {
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+}
+.detail-title {
+  font-size: 1.5rem;
+  color: #002B7F;
+  margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: center;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.88rem;
+  color: #555;
+}
+.detail-meta .detail-date,
+.detail-meta .detail-size {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+.detail-source {
+  font-size: 0.82rem;
+}
+.detail-download {
+  margin-left: auto;
+}
+.detail-abstract {
+  background: #f5f8fc;
+  border-left: 3px solid #B9D9EB;
+  padding: 0.8rem 1rem;
+  font-size: 0.94rem;
+  color: #333;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+  border-radius: 2px;
+}
+.detail-iframe {
+  width: 100%;
+  height: 80vh;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #eee;
+}
+.detail-versions {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e5e5;
+}
+.detail-versions h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #002B7F;
+  margin-bottom: 0.5rem;
+}
+.version-list {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.version-list li {
+  font-size: 0.86rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.version-list li.muted {
+  color: #888;
+  font-family: inherit;
+  font-size: 0.82rem;
+  margin-top: 0.3rem;
+}
+
 /* ── Footer ── */
 .site-footer {
   text-align: center;
@@ -371,4 +650,139 @@ a:hover {
     display: inline-block;
     width: 5.5rem;
   }
+
+  .recent-grid {
+    grid-template-columns: 1fr;
+  }
+  .reports-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #reports-filter {
+    max-width: none;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Dark mode — activated by OS preference.  Overrides are deliberately
+   narrow: we only re-skin the pieces that read poorly on a dark canvas,
+   so anything not listed here falls back to its light-mode value.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0f1420;
+    color: #d8dce3;
+  }
+
+  a { color: #7ab5f5; }
+  a:hover { color: #a8ccfc; }
+
+  .site-header {
+    background: linear-gradient(180deg, #0c1933 0%, #14234a 100%);
+    border-bottom-color: #1f3866;
+  }
+
+  .section-title {
+    color: #a5c6ff;
+    border-bottom-color: #223257;
+  }
+
+  .group-title {
+    color: #a5c6ff;
+    border-left-color: #3a5fa2;
+  }
+  .group-title .group-count { color: #7c8597; }
+
+  /* Cards / panels */
+  .recent-card,
+  .reports-table,
+  .figure-card,
+  .deploys-details,
+  #reports-filter,
+  .detail-iframe {
+    background: #161d2f;
+    border-color: #253050;
+    color: #d8dce3;
+  }
+
+  .recent-thumb,
+  .recent-thumb-placeholder,
+  .report-thumb,
+  .report-thumb-placeholder {
+    background: #202840;
+    border-color: #2a3558;
+    color: #8b94a7;
+  }
+
+  .recent-title { color: #ecf0f8; }
+  .recent-tag   { color: #7ab5f5; opacity: 0.85; }
+  .recent-date  { color: #8b94a7; }
+
+  /* Reports table */
+  .reports-table thead,
+  .deploys-table thead {
+    background: #14223f;
+    color: #cfd8ec;
+  }
+  .reports-table tbody tr { border-top-color: #1e2a47; }
+  .reports-table tbody tr:nth-child(even),
+  .deploys-table tbody tr:nth-child(even) { background: #1a2136; }
+  .reports-table tbody tr:hover,
+  .deploys-table tbody tr:hover { background: #24305a; }
+  .reports-table td { border-top-color: #1e2a47; }
+
+  /* PDF pill button */
+  .pdf-link {
+    background: #2a3e72;
+    color: #e3ebff;
+  }
+  .pdf-link:hover {
+    background: #3c5aa3;
+    color: #fff;
+  }
+
+  /* Filter input */
+  #reports-filter::placeholder { color: #6d7690; }
+  #reports-filter:focus {
+    border-color: #7ab5f5;
+    box-shadow: 0 0 0 3px rgba(122, 181, 245, 0.18);
+  }
+
+  /* Past-deploys month */
+  .deploys-month {
+    border-top-color: #253050;
+  }
+  .deploys-month > summary,
+  .deploys-details > summary {
+    color: #a5c6ff;
+  }
+  .deploys-month > summary::before { color: #6d85b5; }
+  .deploys-footnote { color: #8a92a6; }
+
+  /* Detail page */
+  .detail-title { color: #a5c6ff; }
+  .detail-meta { color: #97a0b5; }
+  .detail-abstract {
+    background: #17223d;
+    border-left-color: #3a5fa2;
+    color: #d2d8e5;
+  }
+  .detail-versions { border-top-color: #253050; }
+  .detail-versions h3 { color: #a5c6ff; }
+  .version-list li.muted { color: #8a92a6; }
+
+  .site-footer {
+    color: #7c8597;
+    border-top-color: #1e2a47;
+  }
+  .site-footer a { color: #9aa7c0; }
+  .site-footer a:hover { color: #e3ebff; }
+
+  /* Stacked-mobile ::before labels */
+  .reports-table td::before,
+  .deploys-table td::before {
+    color: #a5c6ff;
+  }
+
+  code { color: #dbe2ef; }
 }
