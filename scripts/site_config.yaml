@@ -2,6 +2,7 @@ site:
   title: "PPG12 Analysis Results"
   subtitle: "Isolated Photon Cross-Section, pp \u221As = 200 GeV \u2014 sPHENIX"
   repo_url: "https://github.com/Shuonli/ppg12"
+  pages_url: "https://shuonli.github.io/ppg12"
 
 reports:
   source_dirs:
