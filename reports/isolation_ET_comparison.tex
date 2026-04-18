@@ -1,0 +1,300 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\title{Isolation $E_T$ Definition Comparison:\\
+60\,MeV Tower Threshold vs.\ 120\,MeV vs.\ Topo-Cluster $R=0.4$}
+\author{PPG12 Automated Investigation}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Motivation}
+
+The isolated photon cross-section measurement relies on a reconstruction-level
+isolation energy cut to define the signal region in the ABCD method.  Three
+isolation definitions are available in the slimtree:
+\begin{itemize}
+  \item \textbf{60\,MeV tower threshold}: Sum tower $E_T$ in $\Delta R < 0.3$
+        cone (EMCal + IHCal + OHCal), including only towers above 60\,MeV.
+        Branches: \texttt{cluster\_iso\_03\_60\_\{emcal,hcalin,hcalout\}}.
+  \item \textbf{120\,MeV tower threshold}: Same cone and calorimeters, but
+        with a 120\,MeV tower threshold. Branches:
+        \texttt{cluster\_iso\_03\_120\_\{emcal,hcalin,hcalout\}}.
+  \item \textbf{Topo-cluster $R=0.4$}: Sum $E_T$ of topological clusters in
+        $\Delta R < 0.4$ cone.  Branch: \texttt{cluster\_iso\_topo\_04}.
+        This is the \textbf{current nominal} definition
+        (\texttt{use\_topo\_iso:~2} in the config).
+\end{itemize}
+
+This note quantifies the differences in run-by-run stability, ABCD yield,
+and signal/background discrimination power.
+
+\section{Signal/Background Discrimination (ROC Curves)}
+
+Using truth-matched signal (direct + fragmentation photons with truth
+$E_T^{\mathrm{iso}} < 4$\,GeV in $R=0.3$) and background (jet-sample
+clusters) from the full MC simulation chain, we compute ROC curves for all
+seven available isolation definitions.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.55\textwidth]{../figures/isoET_comparison/roc_curves_15_20GeV.pdf}
+  \caption{ROC curves for the 15--20\,GeV $E_T$ bin.  The topo $R=0.4$
+    definitions (blue/cyan) are clearly separated from the tower-threshold
+    methods.  AUC values are shown in the legend.}
+  \label{fig:roc_curves}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.65\textwidth]{../figures/isoET_comparison/roc_auc_comparison.pdf}
+  \caption{ROC AUC comparison across $E_T$ bins for the three definitions
+    of interest.  Topo $R=0.4$ consistently outperforms both tower-threshold
+    methods by $\approx$\,2\% in AUC.}
+  \label{fig:roc_auc}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/isoET_comparison/roc_auc_all_definitions.pdf}
+  \caption{ROC AUC for all 7 isolation definitions.  The hierarchy is
+    dominated by cone size: all $R=0.3$ methods cluster together, while
+    $R=0.4$ methods stand above.}
+  \label{fig:roc_all7}
+\end{figure}
+
+Table~\ref{tab:auc} summarizes the AUC values for the three primary definitions
+and all seven available.
+
+\begin{table}[htb]
+  \centering
+  \caption{ROC AUC values by isolation definition and $E_T$ bin.}
+  \label{tab:auc}
+  \begin{tabular}{lcccc}
+    \toprule
+    Definition & 10--15\,GeV & 15--20\,GeV & 20--25\,GeV & 25--30\,GeV \\
+    \midrule
+    70\,MeV tower       & 0.820 & 0.849 & 0.857 & 0.861 \\
+    \textbf{60\,MeV tower}  & \textbf{0.806} & \textbf{0.847} & \textbf{0.855} & \textbf{0.859} \\
+    \textbf{120\,MeV tower} & \textbf{0.805} & \textbf{0.847} & \textbf{0.857} & \textbf{0.857} \\
+    topo $R=0.3$        & 0.804 & 0.842 & 0.853 & 0.858 \\
+    \textbf{topo $R=0.4$}   & \textbf{0.823} & \textbf{0.871} & \textbf{0.875} & \textbf{0.878} \\
+    topo soft $R=0.3$   & 0.805 & 0.844 & 0.857 & 0.862 \\
+    topo soft $R=0.4$   & 0.827 & 0.873 & 0.881 & 0.883 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Key findings:}
+\begin{itemize}
+  \item Topo $R=0.4$ outperforms tower-threshold methods by $\sim$2\% in AUC
+        across all $E_T$ bins.  The advantage is largest at low $E_T$
+        (10--15\,GeV: 0.823 vs.\ 0.806).
+  \item 60\,MeV and 120\,MeV tower thresholds are essentially identical
+        ($<$0.3\% AUC difference).  The choice of tower threshold is
+        negligible for discrimination.
+  \item \textbf{The dominant factor is cone size, not method.}  All $R=0.3$
+        methods (tower 60/70/120\,MeV, topo $R=0.3$, topo soft $R=0.3$)
+        cluster together at AUC $\approx 0.80$--$0.86$, while both $R=0.4$
+        methods stand $\approx$\,2\% above (Figure~\ref{fig:roc_all7}).
+        The topo clustering algorithm itself provides minimal gain at fixed
+        cone size; the larger cone captures more jet activity around
+        background clusters, driving the improved rejection.
+  \item Topo soft $R=0.4$ is marginally better than standard topo $R=0.4$
+        ($+$0.2--0.5\% AUC).
+  \item Among tower-threshold methods at $R=0.3$, the 70\,MeV threshold
+        slightly outperforms 60\,MeV at low $E_T$ (0.82 vs.\ 0.81) but
+        they converge at high $E_T$.  120\,MeV is indistinguishable from
+        60\,MeV.
+\end{itemize}
+
+\section{Isolation $E_T$ Distributions}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/isoET_comparison/isoET_distributions_15_20GeV.pdf}
+  \caption{Normalized isolation $E_T$ distributions for signal (left) and
+    background (right) in the 15--20\,GeV bin.  Topo $R=0.4$ produces a
+    sharper signal peak near zero and a more spread-out background tail.}
+  \label{fig:isoET_dist}
+\end{figure}
+
+The distribution shapes (Figure~\ref{fig:isoET_dist}) explain the
+discrimination difference:
+\begin{itemize}
+  \item \textbf{Signal}: Topo $R=0.4$ has the sharpest peak near $E_T^{\mathrm{iso}} = 0$,
+        concentrating more signal at low isolation values.
+  \item \textbf{Background}: Tower-threshold methods produce smooth, broad
+        distributions. Topo $R=0.4$ has a distinctive spike near zero
+        followed by a broader tail, yielding better separation.
+  \item 120\,MeV shifts both signal and background to lower $E_T^{\mathrm{iso}}$
+        compared to 60\,MeV (fewer towers contribute), but the shift is similar
+        for both categories, so discrimination is unchanged.
+\end{itemize}
+
+\section{Run-by-Run Stability}
+
+Using the existing run-by-run QA infrastructure (\texttt{Cluster\_rbr.C}), we
+compare the mean isolation $E_T$ and ABCD region yields per run for all three
+definitions across all 1428 analyzed runs.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/isoET_comparison/mean_isoET_vs_run.pdf}
+  \caption{Mean isolation $E_T$ vs.\ run number.  Topo $R=0.4$ (blue) runs
+    $\sim$0.1\,GeV lower than 60\,MeV (red) with visibly less scatter.
+    The dashed line marks the 0/1.5\,mrad crossing angle boundary.}
+  \label{fig:mean_isoET}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/isoET_comparison/tight_iso_yield_vs_run.pdf}
+  \caption{Region A (tight + isolated) cluster yield per lumi vs.\ run number.
+    Topo $R=0.4$ yields $\approx$24\% more signal-region clusters, consistent
+    with the narrower isolation distribution.}
+  \label{fig:yield_A}
+\end{figure}
+
+\begin{table}[htb]
+  \centering
+  \caption{Run-by-run stability summary (1428 runs).}
+  \label{tab:stability}
+  \begin{tabular}{lccccc}
+    \toprule
+    Definition & $\langle E_T^{\mathrm{iso}} \rangle$ [GeV]
+      & RMS/Mean & Yield $A$ [mb$^{-1}$] & RMS/Mean $A$ & Yield $C$ [mb$^{-1}$] \\
+    \midrule
+    60\,MeV tower  & 2.088 & 6.5\% & 6963  & 19.4\% & 10455 \\
+    120\,MeV tower & 1.375 & 6.4\% & 10702 & 17.0\% & 17990 \\
+    topo $R=0.4$   & 1.993 & 4.6\% & 8606  & 17.4\% & 12148 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Stability findings:}
+\begin{itemize}
+  \item Topo $R=0.4$ has \textbf{30\% less run-by-run variation} in mean
+        $E_T^{\mathrm{iso}}$ (RMS/Mean 4.6\% vs.\ 6.4--6.5\% for tower methods).
+  \item 120\,MeV has a much lower mean isoET (1.38 vs.\ 2.09\,GeV for 60\,MeV)
+        because the higher threshold removes towers between 60--120\,MeV from
+        the isolation sum.
+  \item 120\,MeV yields are \textbf{artificially inflated} (Yield $A$ = 10702
+        vs.\ 6963 for 60\,MeV) because the same parametric cut
+        $E_T^{\mathrm{iso}} < b + s \cdot E_T$ was optimized for topo $R=0.4$,
+        not re-tuned for the lower isoET scale.  This does not reflect better
+        physics performance.
+  \item All three definitions show the same crossing-angle structure and
+        outlier runs.
+\end{itemize}
+
+\subsection{ABCD Ratio Stability}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/isoET_comparison/ratio_CA_vs_run.pdf}
+  \caption{Ratio $C/A$ (nontight-iso / tight-iso) vs.\ run number.  All
+    three definitions produce similar ratios, confirming that the ABCD closure
+    is robust against the isolation definition choice.}
+  \label{fig:ratio_CA}
+\end{figure}
+
+The $C/A$ ratio (Figure~\ref{fig:ratio_CA}) is the key ABCD closure metric.
+All three definitions produce consistent ratios ($\sim$1.5 in 0\,mrad,
+$\sim$1.2 in 1.5\,mrad), with the same outlier runs.  This means the
+\textbf{ABCD background subtraction is insensitive to the isolation definition
+choice}.
+
+\section{Summary and Recommendation}
+
+\begin{table}[htb]
+  \centering
+  \caption{Overall comparison of the three isolation definitions.}
+  \label{tab:summary}
+  \begin{tabular}{lccc}
+    \toprule
+    Metric & 60\,MeV & 120\,MeV & topo $R=0.4$ \\
+    \midrule
+    ROC AUC (15--20\,GeV) & 0.847 & 0.847 & \textbf{0.871} \\
+    Mean isoET RMS/Mean   & 6.5\% & 6.4\% & \textbf{4.6\%} \\
+    Region A yield$^{*}$  & 6963  & 10702 & \textbf{8606} \\
+    C/A ratio stability   & OK    & OK & \textbf{OK} \\
+    Available in sim?     & Yes   & Yes & Partial \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent
+$^{*}$Region A yields are not directly comparable across definitions because
+the same parametric cut was applied without re-optimization.  The 120\,MeV
+yield is inflated by the lower isoET scale.
+
+\textbf{Bottom line:}
+\begin{enumerate}
+  \item \textbf{Topo $R=0.4$ is the best choice} for the nominal analysis:
+        best discrimination (+2\% AUC), best run-by-run stability
+        (30\% less variation), and a favorable yield/purity balance.
+  \item \textbf{60\,MeV vs.\ 120\,MeV is a wash}: $<$0.3\% difference in
+        discrimination, essentially identical performance.  The tower threshold
+        choice has negligible physics impact.
+  \item \textbf{Cone size $R=0.4$ is the key driver}, not the topo algorithm
+        itself.  All $R=0.3$ methods (tower and topo) cluster together in AUC.
+  \item The current nominal config (\texttt{use\_topo\_iso:~2}) is
+        \textbf{well justified}.
+  \item The 60\,MeV tower threshold remains a valid cross-check definition
+        for systematic studies (available in both data and sim).
+\end{enumerate}
+
+\section{Caveats (from Physics Review)}
+
+\begin{enumerate}
+  \item \textbf{Cone size conflation (WARN):} The topo $R=0.4$ comparison
+    mixes two effects: topo-cluster algorithm and larger cone size.  The
+    ROC analysis includes all 7 definitions (including topo $R=0.3$) and
+    shows the dominant factor is $R=0.4$ vs.\ $R=0.3$, not tower vs.\ topo.
+    The run-by-run QA only compares three definitions and conflates these.
+  \item \textbf{Parametric cut not re-optimized (WARN):} The same
+    $E_T^{\mathrm{iso}} < b + s \cdot E_T$ cut (optimized for topo $R=0.4$)
+    is applied to all three definitions in the run-by-run ABCD.  This
+    makes yield comparisons unfair (especially 120\,MeV, whose lower
+    isoET scale inflates yields).  The ROC comparison is unaffected
+    (no cut applied).
+  \item \textbf{Missing intermediate jet samples (WARN):} The
+    \texttt{IsoROC\_calculator.C} uses jet5/12/20/30/40 but not jet8/10/15.
+    The jet5 window (7--14\,GeV) overextends into the jet8 domain, causing
+    slight background misweighting at low $E_T$.  Effect on ROC AUC is
+    modest since curves are normalized.
+  \item \textbf{Config file (WARN):} \texttt{config\_bdt\_isoroc.yaml} does
+    not exist; IsoROC was run with a manually provided config.
+\end{enumerate}
+
+\section{Code Changes}
+
+\begin{itemize}
+  \item \texttt{efficiencytool/Cluster\_rbr.C}: Removed hardcoded
+        \texttt{use\_topo\_iso = 0} override; added \texttt{iso\_threshold == 2}
+        for 120\,MeV support; output filename now includes \texttt{var\_type}.
+  \item \texttt{efficiencytool/config\_bdt\_rbr\_120MeV.yaml}: New config for
+        120\,MeV run-by-run QA.
+  \item \texttt{plotting/plot\_isoET\_comparison.py}: New comparison plotting
+        script (reads rbrQA files + ROC merged file, produces overlay plots
+        and summary table).
+\end{itemize}
+
+\section{Files Produced}
+
+\begin{itemize}
+  \item \texttt{figures/isoET\_comparison/*.pdf} --- comparison plots
+  \item \texttt{efficiencytool/roc\_plots/*.pdf} --- per-$E_T$-bin ROC curves
+  \item \texttt{reports/isolation\_ET\_comparison.pdf} --- this report
+\end{itemize}
+
+\end{document}
