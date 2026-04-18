@@ -10,9 +10,9 @@ In pp collisions at RHIC, two separate collisions can occur in the same bunch cr
 
 Uses actual double-interaction MC samples produced through full detector simulation, blended with single-interaction MC at proper physics fractions.
 
-**Double interaction fractions** (from RHIC beam parameters):
-- **0 mrad crossing angle**: 18.7% double-interaction (`DOUBLE_FRAC=0.187`)
-- **1.5 mrad crossing angle**: 7.2% double-interaction (`DOUBLE_FRAC=0.072`)
+**Double interaction fractions** (cluster-weighted, from `calc_pileup_range.C`; triple+ folded into double):
+- **0 mrad crossing angle**: 22.4% cluster-weighted (`DOUBLE_FRAC=0.224`, event-level `f_double`=11.1%)
+- **1.5 mrad crossing angle**: 7.9% cluster-weighted (`DOUBLE_FRAC=0.079`, event-level `f_double`=3.9%)
 
 **MC samples** (in `anatreemaker/macro_maketree/sim/run28/`):
 - `photon10_double/` — double-interaction photon (14-30 GeV truth pT)
@@ -24,7 +24,7 @@ Uses actual double-interaction MC samples produced through full detector simulat
 ```
 Pass 1 (vertex scan): ShowerShapeCheck(config, sample, ..., do_vertex_scan=true, mix_weight=frac)
   → Fills only h_vertexz weighted by physics fraction
-  → 5 parallel jobs: photon10_double(0.187), jet12_double(0.187), photon10_nom(0.813), jet12_nom(0.813), data
+  → 5 parallel jobs: photon10_double(0.224), jet12_double(0.224), photon10_nom(0.776), jet12_nom(0.776), data
 
 hadd: nom_vtxscan + double_vtxscan → combined_vtxscan (blended MC vertex distribution)
 
@@ -40,15 +40,15 @@ hadd: nom + double → combined outputs
 ```cpp
 void ShowerShapeCheck(configname, filetype, doinclusive, do_vertex_scan, mix_weight, vtxscan_sim_override)
 ```
-- `mix_weight` — multiplicative fraction for all histogram fills (0.187 or 0.813); `cross_weight *= mix_weight`
+- `mix_weight` — multiplicative fraction for all histogram fills (0.224 or 0.776 for 0 mrad); `cross_weight *= mix_weight`
 - `vtxscan_sim_override` — path to blended vtxscan ROOT file for consistent vertex reweighting
 - `do_vertex_scan` — if true, only fills `h_vertexz` (fast Pass 1)
 
 **How to run**:
 ```bash
 cd efficiencytool
-bash run_showershape_double.sh config_showershape.yaml        # 0 mrad (18.7%)
-bash run_showershape_double.sh config_showershape.yaml 0.072  # 1.5 mrad (7.2%)
+bash run_showershape_double.sh config_showershape.yaml        # 0 mrad (22.4%)
+bash run_showershape_double.sh config_showershape.yaml 0.079  # 1.5 mrad (7.9%)
 ```
 
 ### 2. Toy Double-Interaction Simulation (`DoubleInteractionCheck.C`)
