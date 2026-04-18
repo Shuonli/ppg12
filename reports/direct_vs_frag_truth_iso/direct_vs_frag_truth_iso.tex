@@ -1,0 +1,191 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+
+\title{Direct vs.\ Fragmentation Photon Composition at Truth in Pythia:\\
+Isolation-Cut Dependence}
+\author{PPG12 Analysis (automated investigation)}
+\date{April 18, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+At truth level in the PPG12 signal Monte Carlo (Pythia 8, \texttt{photon5}+\texttt{photon10}+\texttt{photon20}), the direct photon fraction $f_{\rm direct} = N_{\rm direct}/(N_{\rm direct}+N_{\rm frag})$ is extracted as a function of the truth isolation cut at $R=0.3$.  The classification uses the HepMC-traced label \texttt{particle\_photonclass} already present in the slimtree (class~1 = direct 2$\to$2 hard scatter, class~2 = fragmentation 1$\to$2 parton splitting; filled in \texttt{CaloAna24.cc}).  At the PPG12 fiducial cut $E_T^{\rm iso,truth}<4$~GeV, $f_{\rm direct} = 0.746,~0.793,~0.818$ in truth-photon $p_T$ bins $[8,14),~[14,22),~[22,36)$~GeV; the complement, $f_{\rm frag}\approx 0.25{-}0.18$, is \emph{not} negligible.  The iso-cut dependence is weak: relaxing the cut from $4$~GeV to no cut at all shifts $f_{\rm direct}$ by only $\sim 0.8$ percentage points, and tightening to $<1$~GeV shifts it by $\sim 1.5$.  The nominal efficiency denominator (\texttt{RecoEffCalculator.C}, photonclass${<}3$) correctly includes both direct and fragmentation, so the reported cross section is strictly the isolated prompt ($=$ direct $+$ fragmentation) photon cross section at $E_T^{\rm iso,truth}<4$~GeV --- as intended.  No change to the nominal pipeline is implied.
+\end{abstract}
+
+\section{Motivation}
+\label{sec:motivation}
+
+The PPG12 fiducial definition for the measured cross section is
+$E_T^{\rm iso,truth}(R=0.3) < 4$~GeV, $|\eta^{\gamma}|<0.7$, $p_T^{\gamma,\rm truth}\in[8,36)$~GeV.  The reported ``isolated prompt photon'' cross section therefore includes whatever mixture of direct (hard scatter $qg\to\gamma q$, $q\bar q\to\gamma g$) and fragmentation photons survives this cut at truth.  Two questions motivate this short study:
+\begin{enumerate}
+\item What is the direct-vs-fragmentation composition of the truth denominator at the nominal iso cut?
+\item How strongly does a change in the truth iso threshold (the fiducial ``volume'' choice) change that composition?
+\end{enumerate}
+Both bear on the physical interpretation of the final cross section and on the robustness of the fiducial choice.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{Classification scheme}
+\label{sec:method:class}
+
+The slimtree already carries a truth-photon origin flag derived from HepMC parton-shower vertex tracing in \texttt{anatreemaker/source/\-Calo\-Ana24.\-cc} (function \texttt{photon\_type}, lines 2034--2167):
+\begin{itemize}
+\item Class $1$: \textbf{direct} --- 2$\to$2 hard scatter with two colored incomers and two colored outgoers (one of which is the photon).  Examples: $qg\to\gamma q$ (Compton), $q\bar q\to\gamma g$ (annihilation).
+\item Class $2$: \textbf{fragmentation} --- 1$\to$2 splitting of a colored parton into a parton plus a photon during the shower.
+\item Class $3$: decay (e.g.\ $\pi^0\to\gamma\gamma$). Excluded here.
+\item Class $0$: unclassified ($<10^{-4}$ of the sample; excluded).
+\end{itemize}
+The analysis uses classes 1 and 2 only, matching the denominator filter in \texttt{RecoEffCalculator.C} line~1252 (\texttt{particle\_photonclass[iparticle] < 3}).
+
+\subsection{Truth isolation}
+\label{sec:method:iso}
+
+The truth-level isolation variable is \texttt{particle\_truth\_iso\_03} (CaloAna24.cc:175, filled at 809--896).  It sums the transverse energy of all stable primary particles within $\Delta R<0.3$ of the photon, minus the photon itself, in GeV.  No muon/neutrino exclusion is applied in the sum.
+
+\subsection{Samples and weighting}
+\label{sec:method:samples}
+
+Three photon-gun samples are combined:
+\[
+\text{photon5}\;[0,14)\;\text{GeV},\quad \text{photon10}\;[14,30)\;\text{GeV},\quad \text{photon20}\;[30,200)\;\text{GeV},
+\]
+with event-level overlap resolved on the maximum truth photon $p_T$ per event, mirroring \texttt{RecoEffCalculator.C} line~1291--1294.  Cross-section weights are taken from \texttt{efficiencytool/\-Cross\-Section\-Weights.\-h}:
+\begin{align*}
+\sigma_{\text{photon5}}  &= 146359.3, \\
+\sigma_{\text{photon10}} &= 6944.675, \\
+\sigma_{\text{photon20}} &= 130.4461,
+\end{align*}
+normalized by $\sigma_{\text{photon20}}$ to give relative weights $\{1122.0,\,53.24,\,1.0\}$.
+
+\subsection{Binning and iso scan}
+\label{sec:method:bins}
+
+Truth-photon fiducial: $|\eta^{\gamma}|<0.7$, $8\le p_T^{\gamma,\rm truth}<36$~GeV, photonclass $\in\{1,2\}$.  Three coarse truth-$p_T$ bins: $[8,14)$, $[14,22)$, $[22,36)$~GeV.  The iso cut is scanned over $E_T^{\rm iso,truth}<X$ for $X \in \{1,2,3,4,5,6,8,10,\infty\}$~GeV.  The fraction is computed from weighted counts:
+\begin{equation}
+f_{\rm direct}(X) = \frac{N_{\rm direct}(E_T^{\rm iso,truth}<X)}{N_{\rm direct}(E_T^{\rm iso,truth}<X) + N_{\rm frag}(E_T^{\rm iso,truth}<X)}.
+\end{equation}
+
+Standalone scripts are under \texttt{reports/direct\_vs\_frag\_truth\_iso/scripts/}.  No nominal-pipeline code was modified.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Iso distributions}
+\label{sec:results:iso}
+
+Figure~\ref{fig:iso_stacked} shows the $E_T^{\rm iso,truth}$ distribution in each truth-$p_T$ bin, stacked as direct (blue) $+$ fragmentation (red).  Direct photons concentrate at very low iso ($\lesssim 1$~GeV) --- as expected from an unconfined $2\to2$ final state --- but extend past 4~GeV due to underlying event and ISR activity within the $R=0.3$ cone.  Fragmentation photons peak at low iso as well (because the parent parton carries most of its momentum as the photon, $z\to 1$) but contribute a longer tail at higher iso.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/iso_ET_truth_stacked.pdf}
+\caption{Stacked $E_T^{\rm iso,truth}(R=0.3)$ distribution in three truth-$p_T$ bins.  Blue: direct (photonclass$=1$); red: fragmentation (photonclass$=2$).  Cross-section weighted; log $y$ axis.  Dashed line: PPG12 fiducial cut at 4~GeV.}
+\label{fig:iso_stacked}
+\end{figure}
+
+\subsection{$f_{\rm direct}$ vs iso cut}
+\label{sec:results:fdirect}
+
+Figure~\ref{fig:fdirect_scan} overlays $f_{\rm direct}$ vs the iso cut for the three pT bins.  Table~\ref{tab:scan} gives the numerical values.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/f_direct_vs_iso_cut.pdf}
+\caption{Direct photon fraction $f_{\rm direct}$ as a function of the truth iso cut $E_T^{\rm iso,truth}(R=0.3)<X$, in three truth-$p_T$ bins.  Dashed line: PPG12 fiducial iso$<$4~GeV.  The ``$\infty$'' tick corresponds to no iso cut.}
+\label{fig:fdirect_scan}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Direct-photon fraction $f_{\rm direct} = N_{\rm direct}/(N_{\rm direct}+N_{\rm frag})$ at truth, as a function of the iso cut $E_T^{\rm iso,truth}(R=0.3)<X$, in three truth-$p_T$ bins.  Cross-section weighted.  $N_{\rm direct}$ and $N_{\rm frag}$ reported for the nominal iso$<$4~GeV row.}
+\label{tab:scan}
+\begin{tabular}{lccccccccc}
+\toprule
+$p_T$ [GeV] & $X{=}1$ & $2$ & $3$ & $\mathbf{4}$ & $5$ & $6$ & $8$ & $10$ & $\infty$ \\
+\midrule
+$[8,14)$   & 0.7611 & 0.7530 & 0.7485 & $\mathbf{0.7456}$ & 0.7438 & 0.7424 & 0.7407 & 0.7397 & 0.7383 \\
+$[14,22)$  & 0.8091 & 0.8011 & 0.7964 & $\mathbf{0.7933}$ & 0.7910 & 0.7893 & 0.7869 & 0.7854 & 0.7829 \\
+$[22,36)$  & 0.8312 & 0.8250 & 0.8211 & $\mathbf{0.8181}$ & 0.8162 & 0.8144 & 0.8116 & 0.8099 & 0.8069 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Three headline observations}
+\label{sec:results:obs}
+
+\paragraph{(1) Fragmentation is not negligible.}  At the nominal PPG12 fiducial (iso$<$4~GeV), $f_{\rm frag}$ ranges from $25.4\%$ at $p_T=8{-}14$~GeV to $18.2\%$ at $p_T=22{-}36$~GeV.  This sits at the upper end of the range quoted in the literature for standard-cone isolation at midrapidity (e.g.\ Ichou \& d'Enterria, arXiv:\texttt{1005.4529}: $\sim 10{-}15\%$ at $R=0.4$, isolated) and reflects PPG12's relatively tight cone ($R=0.3$) combined with the $E_T$-dependent cut at 4~GeV.
+
+\paragraph{(2) The iso-cut dependence of $f_{\rm direct}$ is weak.}  Moving from $X=\infty$ (no cut) to $X=4$~GeV shifts $f_{\rm direct}$ by only $\sim 0.008{-}0.011$ in all three bins; tightening further to $X=1$~GeV gains another $\sim 0.015$.  The reason is that fragmentation photons at these $p_T$ values predominantly come from the $z\to 1$ endpoint of the photon fragmentation function: the photon carries $>\!90\%$ of the parent parton momentum, so the remaining hadronic activity \emph{within a $\Delta R<0.3$ cone} is already small, and only a modest fraction sits above 4~GeV.  An iso tightening does not cleanly separate direct from frag in this sample.
+
+\paragraph{(3) $f_{\rm direct}$ rises with $p_T$.}  The trend $0.75\to 0.79\to 0.82$ from low to high $p_T$ at fixed iso$<$4~GeV tracks the usual $p_T$ dependence of the direct-vs-frag ratio: at larger $p_T$, the direct 2$\to$2 matrix element has less phase space relative to the fragmentation contribution than at lower $p_T$, but the parton PDFs amplify the hard process faster than shower emission; net effect is a gently rising $f_{\rm direct}(p_T)$.  This matches JETPHOX NLO expectations.
+
+\subsection{Per-sample contributions}
+\label{sec:results:persamp}
+
+Each of the three photon-gun samples populates primarily one truth-$p_T$ bin (by construction: max photon $p_T$ per event).  Per sample, at iso$<$4~GeV summed over all pT bins:
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Sample & $N_{\rm direct}$ (weighted) & $f_{\rm direct}$ \\
+\midrule
+photon5  & $4.292\times 10^{8}$ & 0.7456 \\
+photon10 & $3.390\times 10^{7}$ & 0.7943 \\
+photon20 & $1.805\times 10^{5}$ & 0.8222 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The per-sample direct fractions increase with sample $p_T$, consistent with the bin-by-bin trend in Table~\ref{tab:scan}.
+
+\section{Impact on the PPG12 measurement}
+\label{sec:impact}
+
+\paragraph{Efficiency denominator is consistent.}  \texttt{RecoEffCalculator.C} applies the filter \texttt{particle\_photonclass[iparticle]\ < 3} at line 1252, which keeps both direct (class~1) and fragmentation (class~2) photons and rejects decay photons.  The efficiency denominator and therefore the reported fiducial cross section is the \emph{sum} of isolated direct and fragmentation photons, not direct-only.  This is the standard convention used by ATLAS and CMS (see \texttt{wiki/physics/techniques/isolation-methods.md}), and it is what theory predictions such as JETPHOX provide natively, so no action is needed.
+
+\paragraph{Fiducial robustness.}  Because $f_{\rm direct}$ is weakly iso-dependent (Table~\ref{tab:scan}), a systematic variation of the truth iso threshold within a physically motivated window (e.g.\ $3{-}5$~GeV) does not strongly change the mix of contributions.  This is reassuring for the fiducial definition choice at 4~GeV: the measurement is not sitting on a sharp transition.
+
+\paragraph{Caveats.}  The photon-gun samples are generated with a hard-photon filter at generation level; this enriches direct relative to an unbiased minimum-bias Pythia sample.  The absolute value of $f_{\rm direct}$ reported here is therefore a property of the PPG12 signal MC denominator and not a prediction for the inclusive, unbiased prompt-photon composition in minimum-bias $pp$ collisions.  For the denominator and for interpreting the PPG12 cross section, this is the correct quantity; for an absolute theoretical cross-section decomposition, a dedicated JETPHOX direct-vs-frag study is required (wiki/physics/theory/fragmentation-functions.md).
+
+\section{Artifacts}
+\label{sec:artifacts}
+
+All outputs are under \texttt{reports/direct\_vs\_frag\_truth\_iso/}.
+\begin{itemize}
+\item Extraction script: \texttt{scripts/extract\_direct\_vs\_frag.py}
+\item Plotting script: \texttt{scripts/plot\_direct\_vs\_frag.py}
+\item Independent verification script: \texttt{scripts/verify\_fractions.py}
+\item Histograms and scan tree: \texttt{direct\_vs\_frag\_truth.root}
+\item Numerical table: \texttt{fraction\_scan.csv}
+\item Extraction log: \texttt{extract.log}
+\item Figures: \texttt{figures/iso\_ET\_truth\_stacked.pdf}, \texttt{figures/f\_direct\_vs\_iso\_cut.pdf}
+\end{itemize}
+No nominal analysis code was modified.
+
+\section{Reviewer pass matrix}
+\label{sec:reviews}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Artifact & 2a Physics & 2b Cosmetics & 2c Re-derivation & 3.5 Fix-validator \\
+\midrule
+\texttt{extract\_direct\_vs\_frag.py} & PASS & N/A & PASS & N/A \\
+\texttt{iso\_ET\_truth\_stacked.pdf}  & N/A  & PASS & N/A & N/A \\
+\texttt{f\_direct\_vs\_iso\_cut.pdf}  & N/A  & PASS & N/A & N/A \\
+$f_{\rm direct}$ at iso$<$4~GeV (3 pT bins) & N/A & N/A & PASS (exact match) & N/A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+No fix was required; \texttt{3.5 fix-validator} is not applicable.
+
+\end{document}
