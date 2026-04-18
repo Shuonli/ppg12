@@ -239,7 +239,6 @@ def _clean_latex(raw: str) -> str:
     t = t.replace("$", "").replace("{", "").replace("}", "")
     t = re.sub(r"\s+", " ", t)
     t = re.sub(r"\s+([,.;:])", r"\1", t)
-    t = re.sub(r"([\u0394\u03b3])\s+([a-zA-Z])", r"\1\2", t)
     return t.strip()
 
 
@@ -289,6 +288,24 @@ def _extract_tex_title(tex_path: Path) -> str | None:
         return m.group(1).strip()
 
     return None
+
+
+def _relative_date(when: datetime, now: datetime) -> str:
+    """Human-friendly short relative time: '3h ago', '2d ago', '3mo ago'."""
+    secs = (now - when).total_seconds()
+    if secs < 0:
+        return "just now"
+    if secs < 60:
+        return "just now"
+    if secs < 3600:
+        return f"{int(secs // 60)}m ago"
+    if secs < 86400:
+        return f"{int(secs // 3600)}h ago"
+    if secs < 86400 * 30:
+        return f"{int(secs // 86400)}d ago"
+    if secs < 86400 * 365:
+        return f"{int(secs // (86400 * 30))}mo ago"
+    return f"{int(secs // (86400 * 365))}y ago"
 
 
 def _extract_tex_tags(tex_path: Path) -> list[str]:
@@ -517,6 +534,11 @@ def collect_reports(repo_root: Path, cfg: dict) -> list[dict]:
 
     # Sort newest first.
     reports.sort(key=lambda r: r["date"], reverse=True)
+    # Compute is_new (< 7 days) and a short relative_date string.
+    now = datetime.now(tz=_EASTERN)
+    for r in reports:
+        r["relative_date"] = _relative_date(r["date"], now)
+        r["is_new"] = (now - r["date"]).total_seconds() < 7 * 86400
     return reports
 
 
@@ -832,27 +854,70 @@ INDEX_HTML_TEMPLATE = """\
   </footer>
 
   <script>
-  // Zero-dependency filter: as the user types in the reports-filter input,
-  // hide rows whose text content does not match. Empty groups collapse.
+  // Zero-dependency filter: topic chip + free-text filter compose.
+  // Press "/" to focus the filter, "Esc" to clear.
   (function () {{
-    var input = document.getElementById('reports-filter');
-    if (!input) return;
-    input.addEventListener('input', function () {{
-      var q = input.value.trim().toLowerCase();
-      document.querySelectorAll('#reports .reports-group').forEach(function (grp) {{
-        var visibleRows = 0;
-        grp.querySelectorAll('tbody tr').forEach(function (tr) {{
-          var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
-          tr.style.display = hit ? '' : 'none';
-          if (hit) visibleRows += 1;
-        }});
-        grp.style.display = (visibleRows === 0 && q !== '') ? 'none' : '';
-      }});
-      // Ungrouped flat table case.
-      document.querySelectorAll('#reports > table tbody tr').forEach(function (tr) {{
-        var hit = q === '' || tr.textContent.toLowerCase().indexOf(q) !== -1;
+    var input  = document.getElementById('reports-filter');
+    var empty  = document.getElementById('reports-empty');
+    var chips  = document.querySelectorAll('.tag-chip');
+    var rows   = document.querySelectorAll('#reports .reports-table tbody tr');
+    if (!input || !rows.length) return;
+
+    var topic = 'all';
+    var text  = '';
+
+    function apply() {{
+      var visible = 0;
+      rows.forEach(function (tr) {{
+        var rowTopic = tr.getAttribute('data-topic') || 'other';
+        var topicOk  = (topic === 'all') || (rowTopic === topic);
+        var textOk   = (text === '') || tr.textContent.toLowerCase().indexOf(text) !== -1;
+        var hit = topicOk && textOk;
         tr.style.display = hit ? '' : 'none';
+        if (hit) visible += 1;
       }});
+      if (empty) empty.hidden = (visible !== 0);
+    }}
+
+    input.addEventListener('input', function () {{
+      text = input.value.trim().toLowerCase();
+      apply();
+    }});
+
+    chips.forEach(function (btn) {{
+      btn.addEventListener('click', function () {{
+        chips.forEach(function (b) {{ b.classList.remove('active'); }});
+        btn.classList.add('active');
+        topic = btn.getAttribute('data-topic') || 'all';
+        apply();
+      }});
+    }});
+
+    var reset = document.querySelector('#reports-empty .reset-filters');
+    if (reset) {{
+      reset.addEventListener('click', function (e) {{
+        e.preventDefault();
+        input.value = ''; text = '';
+        topic = 'all';
+        chips.forEach(function (b) {{ b.classList.toggle('active', b.getAttribute('data-topic') === 'all'); }});
+        apply();
+        input.focus();
+      }});
+    }}
+
+    // Keyboard shortcuts.
+    document.addEventListener('keydown', function (e) {{
+      var tag = (document.activeElement && document.activeElement.tagName) || '';
+      var typingInForm = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+      if (e.key === '/' && !typingInForm) {{
+        e.preventDefault();
+        input.focus();
+        input.select();
+      }} else if (e.key === 'Escape' && document.activeElement === input) {{
+        input.value = ''; text = '';
+        apply();
+        input.blur();
+      }}
     }});
   }})();
   </script>
@@ -862,15 +927,16 @@ INDEX_HTML_TEMPLATE = """\
 
 
 def _render_reports_table(reports: list[dict]) -> list[str]:
-    """Inner table body for a single group of reports (no wrapping section)."""
+    """Single flat reports table with a Topic column and per-row tag pill."""
     rows: list[str] = []
     rows.append('      <table class="reports-table">')
     rows.append("        <thead>")
-    rows.append("          <tr><th>Preview</th><th>Date</th><th>Title</th><th>Description</th><th>Download</th></tr>")
+    rows.append("          <tr><th>Preview</th><th>Date</th><th>Topic</th><th>Title</th><th>Description</th><th>Download</th></tr>")
     rows.append("        </thead>")
     rows.append("        <tbody>")
     for r in reports:
         date_str = r["date"].strftime("%Y-%m-%d")
+        rel_str = r.get("relative_date", "")
         title_esc = html.escape(r["title"])
         desc_esc = html.escape(r["description"])
         name_esc = html.escape(r["name"])
@@ -879,6 +945,9 @@ def _render_reports_table(reports: list[dict]) -> list[str]:
         detail_href = f"reports/{html.escape(stem)}.html" if is_pdf else f"reports/{name_esc}"
         pdf_href = f"reports/{name_esc}"
         size_str = f"{r['size_mb']:.1f} MB" if r["size_mb"] >= 0.1 else f"{r['size_mb'] * 1024:.0f} KB"
+        tag_id = r.get("tag", "other")
+        tag_label = TAG_LABELS.get(tag_id, "Other")
+        tag_id_esc = html.escape(tag_id)
 
         thumb_rel = r.get("thumb")
         if thumb_rel:
@@ -888,46 +957,61 @@ def _render_reports_table(reports: list[dict]) -> list[str]:
         else:
             preview = '<span class="report-thumb-placeholder">PDF</span>' if is_pdf else ""
 
-        rows.append('          <tr>')
+        new_badge = '<span class="new-badge" title="Added within the last 7 days">NEW</span>' if r.get("is_new") else ""
+
+        rows.append(f'          <tr data-topic="{tag_id_esc}">')
         rows.append(f'            <td data-label="Preview" class="preview-cell">{preview}</td>')
-        rows.append(f'            <td data-label="Date">{date_str}</td>')
-        rows.append(f'            <td data-label="Title"><a href="{detail_href}">{title_esc}</a></td>')
+        rows.append(f'            <td data-label="Date" title="{date_str}">'
+                    f'<span class="date-relative">{html.escape(rel_str)}</span>'
+                    f'<span class="date-absolute">{date_str}</span></td>')
+        rows.append(f'            <td data-label="Topic"><span class="tag-pill tag-{tag_id_esc}">'
+                    f'{html.escape(tag_label)}</span></td>')
+        rows.append(f'            <td data-label="Title">'
+                    f'<a href="{detail_href}">{title_esc}</a>{new_badge}</td>')
         rows.append(f'            <td data-label="Description">{desc_esc}</td>')
-        rows.append(f'            <td data-label="Size"><a href="{pdf_href}" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;{size_str}</a></td>')
+        rows.append(f'            <td data-label="Size">'
+                    f'<a href="{pdf_href}" target="_blank" rel="noopener" class="pdf-link">'
+                    f'PDF&nbsp;·&nbsp;{size_str}</a></td>')
         rows.append('          </tr>')
     rows.append("        </tbody>")
     rows.append("      </table>")
     return rows
 
 
+def _build_tag_chips(reports: list[dict]) -> list[str]:
+    """Chip row: 'All · tag1 · tag2 · …' for topics present in the reports."""
+    present: set[str] = {r.get("tag", "other") for r in reports}
+    chips: list[str] = ['      <div class="tag-chips" role="tablist" aria-label="Filter by topic">']
+    chips.append('        <button class="tag-chip active" data-topic="all" type="button">'
+                 'All <span class="chip-count">' + str(len(reports)) + '</span></button>')
+    for tid in TAG_ORDER:
+        if tid not in present:
+            continue
+        count = sum(1 for r in reports if r.get("tag", "other") == tid)
+        label = TAG_LABELS.get(tid, tid.title())
+        chips.append(f'        <button class="tag-chip tag-{html.escape(tid)}" '
+                     f'data-topic="{html.escape(tid)}" type="button">'
+                     f'{html.escape(label)} <span class="chip-count">{count}</span></button>')
+    chips.append('      </div>')
+    return chips
+
+
 def _build_reports_section(reports: list[dict]) -> str:
     if not reports:
         return ""
-    buckets: dict[str, list[dict]] = {}
-    for r in reports:
-        buckets.setdefault(r.get("tag", "other"), []).append(r)
-
     rows: list[str] = ['    <section id="reports">']
     rows.append('      <div class="reports-header">')
     rows.append('        <h2 class="section-title">Reports</h2>')
     rows.append('        <input id="reports-filter" type="search" '
-                'placeholder="Filter by title, description, tag, date…" '
+                'placeholder="Filter by title, description, topic, date…   (press / to focus)" '
                 'aria-label="Filter reports">')
     rows.append('      </div>')
-
-    if len(buckets) <= 1:
-        rows.extend(_render_reports_table(reports))
-    else:
-        for tag_id in TAG_ORDER:
-            group = buckets.get(tag_id)
-            if not group:
-                continue
-            label = TAG_LABELS.get(tag_id, tag_id.title())
-            rows.append(f'      <div class="reports-group" id="group-{html.escape(tag_id)}">')
-            rows.append(f'        <h3 class="group-title">{html.escape(label)}'
-                        f' <span class="group-count">({len(group)})</span></h3>')
-            rows.extend(_render_reports_table(group))
-            rows.append('      </div>')
+    rows.extend(_build_tag_chips(reports))
+    rows.extend(_render_reports_table(reports))
+    rows.append('      <div id="reports-empty" class="empty-state" hidden>')
+    rows.append('        No reports match the current filters. '
+                '<a href="#" class="reset-filters">Clear filters</a>')
+    rows.append('      </div>')
     rows.append("    </section>")
     return "\n".join(rows)
 
@@ -950,12 +1034,14 @@ def _build_recent_rail(reports: list[dict], n: int = 3) -> str:
         date_str = r["date"].strftime("%Y-%m-%d")
         title_esc = html.escape(r["title"])
         tag_label = html.escape(TAG_LABELS.get(r.get("tag", "other"), ""))
+        rel_str = html.escape(r.get("relative_date", ""))
+        new_badge = '<span class="new-badge" title="Added within the last 7 days">NEW</span>' if r.get("is_new") else ""
         rows.append('        <a class="recent-card" href="' + detail_href + '">')
         rows.append(f'          {thumb_html}')
         rows.append(f'          <div class="recent-body">')
-        rows.append(f'            <div class="recent-tag">{tag_label}</div>')
+        rows.append(f'            <div class="recent-tag">{tag_label}{new_badge}</div>')
         rows.append(f'            <div class="recent-title">{title_esc}</div>')
-        rows.append(f'            <div class="recent-date">{date_str}</div>')
+        rows.append(f'            <div class="recent-date" title="{date_str}">{rel_str}</div>')
         rows.append('          </div>')
         rows.append('        </a>')
     rows.append('      </div>')
