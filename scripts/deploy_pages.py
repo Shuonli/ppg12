@@ -189,6 +189,60 @@ def _extract_md_metadata(path: Path) -> tuple[str, str]:
     return title, description
 
 
+def _clean_latex(raw: str) -> str:
+    """Strip LaTeX markup from a snippet so it renders cleanly as plain HTML."""
+    t = raw.replace("\n", " ")
+
+    # \\ followed (after optional [Npt] dim) by \large/\Large acts as a
+    # subtitle separator.
+    def _sep(m: "re.Match[str]") -> str:
+        prev = t[m.start() - 1] if m.start() > 0 else ""
+        return " " if prev in ":-" else ": "
+    t = re.sub(r"\\\\\s*(?:\[-?[\d.]+pt\])?\s*\\(?:large|Large|LARGE)\b\s*",
+               _sep, t)
+    t = t.replace("\\\\", " ")
+    t = re.sub(r"\[-?[\d.]+pt\]", "", t)
+
+    t = t.replace("\\ ", " ").replace("\\,", " ")
+    # Thin-space / negative-space / kern shortcuts: \!  \;  \:  \>  \<  \@.
+    t = re.sub(r"\\[!;:<>@]", "", t)
+    t = t.replace("\\%", "%").replace("\\&", "&")
+    t = t.replace("---", "\u2014").replace("--", "\u2013")
+
+    # PPG12 macros — expand BEFORE the generic command strip.
+    macro_map = {
+        r"\\etg(?![a-zA-Z])":       "E_T^\u03b3",
+        r"\\etgtruth(?![a-zA-Z])":  "E_T^(\u03b3,truth)",
+        r"\\isoET(?![a-zA-Z])":     "E_T^iso",
+        r"\\isoETtruth(?![a-zA-Z])":"E_T^(iso,truth)",
+        r"\\DR(?![a-zA-Z])":        "\u0394R",
+        r"\\Delta(?![a-zA-Z])":     "\u0394",
+        r"\\gamma(?![a-zA-Z])":     "\u03b3",
+        r"\\pp(?![a-zA-Z])":        "pp",
+        r"\\sqs(?![a-zA-Z])":       "\u221As",
+        r"\\purity(?![a-zA-Z])":    "P",
+        r"\\eff(?![a-zA-Z])":       "E",
+        r"\\lumi(?![a-zA-Z])":      "L",
+        r"\\ET(?![a-zA-Z])":        "E_T",
+    }
+    for pat, rep in macro_map.items():
+        t = re.sub(pat, rep, t)
+
+    t = re.sub(r"\\text(?:bf|it|rm|sf|tt|sc|md|up|sl)\s*\{([^{}]*)\}", r"\1", t)
+    t = re.sub(r"\\(?:large|Large|LARGE|small|Huge|huge|normalsize|bf|it|rm|sf)\b",
+               "", t)
+
+    # Strip environment begin/end wrappers (e.g. \begin{abstract}, \end{abstract}).
+    t = re.sub(r"\\(?:begin|end)\{[^}]*\}", "", t)
+
+    t = re.sub(r"\\[a-zA-Z]+\*?\{?", "", t)
+    t = t.replace("$", "").replace("{", "").replace("}", "")
+    t = re.sub(r"\s+", " ", t)
+    t = re.sub(r"\s+([,.;:])", r"\1", t)
+    t = re.sub(r"([\u0394\u03b3])\s+([a-zA-Z])", r"\1\2", t)
+    return t.strip()
+
+
 def _extract_tex_title(tex_path: Path) -> str | None:
     """Try to find a meaningful title in a .tex file.
 
@@ -200,16 +254,6 @@ def _extract_tex_title(tex_path: Path) -> str | None:
         text = tex_path.read_text(errors="replace")
     except OSError:
         return None
-
-    def _clean_latex(raw: str) -> str:
-        """Strip LaTeX markup from a title string."""
-        t = raw.replace("\\\\", " ").replace("\n", " ")
-        t = re.sub(r"\[[\d.]+pt\]", "", t)        # dimension specs like [4pt]
-        t = t.replace("\\,", " ").replace("\\%", "%").replace("\\&", "&")
-        t = re.sub(r"\\[a-zA-Z]+\*?\{?", "", t)
-        t = t.replace("$", "").replace("{", "").replace("}", "")
-        t = re.sub(r"\s+", " ", t)
-        return t.strip()
 
     # First try: find the \LARGE \textbf{...} inside a \title block (sPHENIX style).
     m = re.search(r"\\LARGE\s*\\textbf\{([^}]+)\}", text)
@@ -244,6 +288,90 @@ def _extract_tex_title(tex_path: Path) -> str | None:
     if m:
         return m.group(1).strip()
 
+    return None
+
+
+def _extract_tex_tags(tex_path: Path) -> list[str]:
+    """Return explicit tags declared via a `%% tags: a, b, c` line at the top
+    of a .tex file.  Empty list if no such directive."""
+    try:
+        text = tex_path.read_text(errors="replace")
+    except OSError:
+        return []
+    m = re.search(r"^\s*%%\s*tags\s*:\s*(.+)$", text, re.MULTILINE | re.IGNORECASE)
+    if not m:
+        return []
+    return [t.strip().lower() for t in m.group(1).split(",") if t.strip()]
+
+
+# Display order + keyword inference for grouping reports.
+# Each entry: (tag_id, human_label, filename/title substrings that trigger it).
+TAG_DEFINITIONS: list[tuple[str, str, list[str]]] = [
+    ("cross-section",      "Final Cross-Section",          ["final_cross", "cross_section", "cross-section"]),
+    ("double-interaction", "Double Interaction / Pileup",  ["double_interaction", "double-interaction", "pileup"]),
+    ("bdt",                "BDT Training & Systematics",   ["bdt"]),
+    ("shower-shape",       "Shower Shape",                 ["showershape", "shower_shape", "shower-shape", "cluster_size", "converted_photon"]),
+    ("efficiency",         "Efficiency & Energy Response", ["efficiency", "eta_migration", "deltar", "delta_r", "energy_response"]),
+    ("isolation",          "Isolation",                    ["isolation", "iso_et"]),
+    ("purity",             "Purity",                       ["purity"]),
+    ("vertex",             "Vertex",                       ["vertex"]),
+    ("selection",          "Selection & Config Comparisons", ["selection", "comparison"]),
+    ("updates",            "Status Updates & Summaries",   ["post_preliminary", "updates"]),
+]
+TAG_LABELS: dict[str, str] = {tid: lbl for tid, lbl, _ in TAG_DEFINITIONS}
+TAG_ORDER: list[str] = [tid for tid, _, _ in TAG_DEFINITIONS] + ["other"]
+TAG_LABELS["other"] = "Other"
+
+
+def _infer_tag(filename: str, title: str) -> str:
+    """Guess a report's primary tag from filename/title substrings."""
+    key = filename.lower()
+    for tid, _lbl, substrings in TAG_DEFINITIONS:
+        for s in substrings:
+            if s in key:
+                return tid
+    # Fall back to checking the title (looser match on a space-separated form).
+    tlower = title.lower()
+    for tid, _lbl, substrings in TAG_DEFINITIONS:
+        for s in substrings:
+            if s.replace("_", " ").replace("-", " ") in tlower:
+                return tid
+    return "other"
+
+
+def _extract_tex_description(tex_path: Path, max_len: int = 200) -> str | None:
+    """Extract a short description from a .tex report.
+
+    Preference: \\begin{abstract}...\\end{abstract}. Falls back to the first
+    substantive paragraph after \\begin{document}, skipping \\maketitle,
+    \\tableofcontents, comments, and lone macro invocations.
+    """
+    try:
+        text = tex_path.read_text(errors="replace")
+    except OSError:
+        return None
+
+    m = re.search(r"\\begin\{abstract\}(.+?)\\end\{abstract\}", text, re.DOTALL)
+    if m:
+        cleaned = _clean_latex(m.group(1))
+        if cleaned:
+            return (cleaned[: max_len - 1].rstrip() + "\u2026") if len(cleaned) > max_len else cleaned
+
+    doc_start = re.search(r"\\begin\{document\}", text)
+    if doc_start:
+        body = text[doc_start.end() :]
+        # Drop comment-only lines, then split into paragraphs.
+        body = "\n".join(ln for ln in body.splitlines() if not ln.lstrip().startswith("%"))
+        for para in re.split(r"\n\s*\n", body):
+            para = para.strip()
+            if not para:
+                continue
+            if re.match(r"^\\(?:maketitle|tableofcontents|clearpage|newpage|thispagestyle|pagestyle|noindent|vspace|hspace)\b",
+                        para):
+                continue
+            cleaned = _clean_latex(para)
+            if len(cleaned) >= 40:
+                return (cleaned[: max_len - 1].rstrip() + "\u2026") if len(cleaned) > max_len else cleaned
     return None
 
 
@@ -357,14 +485,25 @@ def collect_reports(repo_root: Path, cfg: dict) -> list[dict]:
             title = _prettify_filename(f.name)
             description = f"From {rel_source}"
 
+            explicit_tags: list[str] = []
             if f.suffix == ".pdf":
                 # Check for a companion .tex with the same stem.
                 tex = f.with_suffix(".tex")
-                tex_title = _extract_tex_title(tex) if tex.exists() else None
-                if tex_title:
-                    title = tex_title
+                if tex.exists():
+                    tex_title = _extract_tex_title(tex)
+                    if tex_title:
+                        title = tex_title
+                    tex_desc = _extract_tex_description(tex)
+                    if tex_desc:
+                        description = tex_desc
+                    explicit_tags = _extract_tex_tags(tex)
             elif f.suffix == ".md":
                 title, description = _extract_md_metadata(f)
+
+            # Primary tag: first explicit tag, else infer from name/title.
+            primary_tag = explicit_tags[0] if explicit_tags else _infer_tag(f.name, title)
+            if primary_tag not in TAG_LABELS:
+                primary_tag = "other"
 
             reports.append({
                 "path": f,
@@ -373,11 +512,45 @@ def collect_reports(repo_root: Path, cfg: dict) -> list[dict]:
                 "description": description,
                 "date": mtime,
                 "size_mb": size_mb,
+                "tag": primary_tag,
             })
 
     # Sort newest first.
     reports.sort(key=lambda r: r["date"], reverse=True)
     return reports
+
+
+def collect_past_deploys(repo_root: Path) -> list[dict]:
+    """List every site/* tag with its commit date, short hash, and subject.
+
+    Lightweight tags delegate to the pointed-to commit, so committerdate and
+    contents:subject resolve correctly for backfilled tags.
+    """
+    proc = git(
+        "for-each-ref",
+        "--format=%(refname:short)%09%(objectname:short)%09%(committerdate:iso-strict)%09%(contents:subject)",
+        "refs/tags/site/*",
+        cwd=repo_root,
+        check=False,
+    )
+    entries: list[dict] = []
+    for line in proc.stdout.splitlines():
+        parts = line.split("\t", 3)
+        if len(parts) != 4:
+            continue
+        tag, sha, iso_date, subject = parts
+        entries.append({
+            "tag": tag,
+            "sha": sha,
+            "date": iso_date,
+            "message": subject.strip(),
+        })
+    entries.sort(key=lambda e: e["date"], reverse=True)
+    # Annotate each entry with the tag of the chronologically prior deploy
+    # so the UI can render a GitHub compare link.
+    for i, e in enumerate(entries):
+        e["prev_tag"] = entries[i + 1]["tag"] if i + 1 < len(entries) else None
+    return entries
 
 
 def collect_figures(repo_root: Path, cfg: dict) -> list[dict]:
@@ -445,20 +618,14 @@ INDEX_HTML_TEMPLATE = """\
   </header>
 
   <main class="container">
-    <section id="reports">
-      <h2 class="section-title">Reports</h2>
-{reports_block}
-    </section>
-
-    <section id="figures">
-      <h2 class="section-title">Figures</h2>
-{figures_block}
-    </section>
+{reports_section}
+{figures_section}
+{deploys_section}
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      Auto-generated by <code>deploy_pages.py</code> &middot;
+      Auto-generated by <code>deploy_pages.py</code>{build_info} &middot;
       PPG12 &middot;
       <a href="{repo_url}">sPHENIX Collaboration</a>
     </div>
@@ -468,9 +635,8 @@ INDEX_HTML_TEMPLATE = """\
 """
 
 
-def _build_reports_table(reports: list[dict]) -> str:
-    if not reports:
-        return "      <p>No reports available.</p>"
+def _render_reports_table(reports: list[dict]) -> list[str]:
+    """Inner table body for a single group of reports (no wrapping section)."""
     rows: list[str] = []
     rows.append('      <table class="reports-table">')
     rows.append("        <thead>")
@@ -484,26 +650,56 @@ def _build_reports_table(reports: list[dict]) -> str:
         link_target = f"reports/{html.escape(r['name'])}"
         target_attr = ' target="_blank" rel="noopener"' if r["name"].endswith(".pdf") else ""
         size_str = f"{r['size_mb']:.1f} MB" if r["size_mb"] >= 0.1 else f"{r['size_mb'] * 1024:.0f} KB"
-        rows.append(f'          <tr>')
-        rows.append(f'            <td>{date_str}</td>')
-        rows.append(f'            <td><a href="{link_target}"{target_attr}>{title_esc}</a></td>')
-        rows.append(f'            <td>{desc_esc}</td>')
-        rows.append(f'            <td>{size_str}</td>')
-        rows.append(f'          </tr>')
+        rows.append('          <tr>')
+        rows.append(f'            <td data-label="Date">{date_str}</td>')
+        rows.append(f'            <td data-label="Title"><a href="{link_target}"{target_attr}>{title_esc}</a></td>')
+        rows.append(f'            <td data-label="Description">{desc_esc}</td>')
+        rows.append(f'            <td data-label="Size">{size_str}</td>')
+        rows.append('          </tr>')
     rows.append("        </tbody>")
     rows.append("      </table>")
+    return rows
+
+
+def _build_reports_section(reports: list[dict]) -> str:
+    if not reports:
+        return ""
+    # Bucket by primary tag.
+    buckets: dict[str, list[dict]] = {}
+    for r in reports:
+        buckets.setdefault(r.get("tag", "other"), []).append(r)
+
+    rows: list[str] = ['    <section id="reports">',
+                       '      <h2 class="section-title">Reports</h2>']
+
+    # If every report falls in the same bucket, skip the group subheading.
+    if len(buckets) <= 1:
+        rows.extend(_render_reports_table(reports))
+    else:
+        for tag_id in TAG_ORDER:
+            group = buckets.get(tag_id)
+            if not group:
+                continue
+            label = TAG_LABELS.get(tag_id, tag_id.title())
+            rows.append(f'      <div class="reports-group" id="group-{html.escape(tag_id)}">')
+            rows.append(f'        <h3 class="group-title">{html.escape(label)}'
+                        f' <span class="group-count">({len(group)})</span></h3>')
+            rows.extend(_render_reports_table(group))
+            rows.append('      </div>')
+    rows.append("    </section>")
     return "\n".join(rows)
 
 
-def _build_figures_grid(figures: list[dict]) -> str:
+def _build_figures_section(figures: list[dict]) -> str:
     if not figures:
-        return "      <p>No figures selected for publication. Edit <code>site_config.yaml</code> to add figures.</p>"
+        return ""
     cards: list[str] = []
+    cards.append('    <section id="figures">')
+    cards.append('      <h2 class="section-title">Figures</h2>')
     cards.append('      <div class="figures-grid">')
     for fig in figures:
         name_esc = html.escape(fig["name"])
         link = f"figures/{html.escape(fig['name'])}"
-        # For PDF figures, link opens in new tab; for images, show inline.
         if fig["name"].lower().endswith(".pdf"):
             cards.append(f'        <div class="figure-card">')
             cards.append(f'          <a href="{link}" target="_blank" rel="noopener">')
@@ -519,10 +715,77 @@ def _build_figures_grid(figures: list[dict]) -> str:
             cards.append(f'          <p class="caption">{name_esc}</p>')
             cards.append(f'        </div>')
     cards.append('      </div>')
+    cards.append('    </section>')
     return "\n".join(cards)
 
 
-def generate_index_html(reports: list[dict], figures: list[dict], cfg: dict) -> str:
+def _build_deploys_section(deploys: list[dict], repo_url: str) -> str:
+    if not deploys:
+        return ""
+    rows: list[str] = []
+    rows.append('    <section id="past-deploys">')
+    rows.append('      <h2 class="section-title">Past deploys</h2>')
+    rows.append('      <details class="deploys-details">')
+    rows.append(f'        <summary>Browse {len(deploys)} past deploy(s) on GitHub</summary>')
+    rows.append('        <table class="deploys-table">')
+    rows.append('          <thead>')
+    rows.append('            <tr><th>Date</th><th>Tag</th><th>Commit</th><th title="Compare with previous deploy">&Delta;</th><th>Message</th></tr>')
+    rows.append('          </thead>')
+    rows.append('          <tbody>')
+    for d in deploys:
+        tag_esc = html.escape(d["tag"])
+        date_esc = html.escape(d["date"][:16].replace("T", " "))
+        sha_esc = html.escape(d["sha"])
+        msg_esc = html.escape(d["message"])
+        tree_url = f"{repo_url}/tree/{tag_esc}"
+        commit_url = f"{repo_url}/commit/{sha_esc}"
+        prev = d.get("prev_tag")
+        if prev:
+            cmp_url = f"{repo_url}/compare/{html.escape(prev)}...{tag_esc}"
+            diff_cell = (f'<a href="{cmp_url}" target="_blank" rel="noopener" '
+                         f'title="Compare with {html.escape(prev)}">diff</a>')
+        else:
+            diff_cell = '<span class="muted">\u2014</span>'
+        rows.append('            <tr>')
+        rows.append(f'              <td data-label="Date">{date_esc}</td>')
+        rows.append(f'              <td data-label="Tag"><a href="{tree_url}" target="_blank" rel="noopener">{tag_esc}</a></td>')
+        rows.append(f'              <td data-label="Commit"><a href="{commit_url}" target="_blank" rel="noopener">{sha_esc}</a></td>')
+        rows.append(f'              <td data-label="&Delta;">{diff_cell}</td>')
+        rows.append(f'              <td data-label="Message">{msg_esc}</td>')
+        rows.append('            </tr>')
+    rows.append('          </tbody>')
+    rows.append('        </table>')
+    rows.append('        <p class="deploys-footnote">')
+    rows.append('          Tag links open the full site snapshot; &ldquo;diff&rdquo; shows what changed vs. the previous deploy. '
+                f'See also <a href="{repo_url}/tags" target="_blank" rel="noopener">all tags</a> '
+                f'and the <a href="{repo_url}/commits/gh-pages" target="_blank" rel="noopener">gh-pages commit history</a>.')
+    rows.append('        </p>')
+    rows.append('      </details>')
+    rows.append('    </section>')
+    return "\n".join(rows)
+
+
+def _build_build_info(repo_root: Path, repo_url: str) -> str:
+    """Return a " · Built from main@<sha>" snippet for the footer, or ""."""
+    proc = git("rev-parse", "--short", "HEAD", cwd=repo_root, check=False)
+    sha = proc.stdout.strip()
+    if not sha or proc.returncode != 0:
+        return ""
+    branch_proc = git("rev-parse", "--abbrev-ref", "HEAD", cwd=repo_root, check=False)
+    branch = branch_proc.stdout.strip() or "main"
+    commit_url = f"{repo_url}/commit/{sha}"
+    return (f' &middot; Built from <code>{html.escape(branch)}@'
+            f'<a href="{html.escape(commit_url)}" target="_blank" rel="noopener">'
+            f'{html.escape(sha)}</a></code>')
+
+
+def generate_index_html(
+    reports: list[dict],
+    figures: list[dict],
+    deploys: list[dict],
+    cfg: dict,
+    repo_root: Path,
+) -> str:
     """Render the index.html from collected metadata."""
     site = cfg.get("site", {})
     title = site.get("title", "PPG12 Analysis Results")
@@ -535,8 +798,10 @@ def generate_index_html(reports: list[dict], figures: list[dict], cfg: dict) -> 
         subtitle=html.escape(subtitle),
         timestamp=timestamp,
         repo_url=html.escape(repo_url),
-        reports_block=_build_reports_table(reports),
-        figures_block=_build_figures_grid(figures),
+        reports_section=_build_reports_section(reports),
+        figures_section=_build_figures_section(figures),
+        deploys_section=_build_deploys_section(deploys, repo_url),
+        build_info=_build_build_info(repo_root, repo_url),
     )
 
 
@@ -851,6 +1116,7 @@ def main() -> None:
     # ----- Collect files --------------------------------------------------
     reports = collect_reports(repo_root, cfg)
     figures = collect_figures(repo_root, cfg)
+    past_deploys = collect_past_deploys(repo_root)
 
     max_mb = cfg.get("figures", {}).get("max_total_mb", 50)
     check_total_size(reports, figures, max_mb)
@@ -869,9 +1135,10 @@ def main() -> None:
         for fig in figures:
             print(f"  {fig['size_mb']:6.2f} MB  {fig['name']}")
         print(f"\nTotal: {total_mb:.2f} MB / {max_mb:.0f} MB limit")
+        print(f"\nPast deploys found: {len(past_deploys)} site/* tag(s)")
 
         # Generate and show the index path that would be written.
-        index_html = generate_index_html(reports, figures, cfg)
+        index_html = generate_index_html(reports, figures, past_deploys, cfg, repo_root)
         preview_path = repo_root / "_dry_run_index.html"
         preview_path.write_text(index_html)
         print(f"\nGenerated index.html preview: {preview_path}")
@@ -885,7 +1152,7 @@ def main() -> None:
     # ----- Copy files and generate index ----------------------------------
     deployed = copy_to_worktree(wt_path, reports, figures)
 
-    index_html = generate_index_html(reports, figures, cfg)
+    index_html = generate_index_html(reports, figures, past_deploys, cfg, repo_root)
     (wt_path / "index.html").write_text(index_html)
     deployed.append("index.html")
 
