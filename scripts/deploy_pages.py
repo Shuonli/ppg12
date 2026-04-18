@@ -1474,6 +1474,11 @@ def main() -> None:
     # ----- Copy files -----------------------------------------------------
     deployed = copy_to_worktree(wt_path, reports, figures)
 
+    # Ensure the .nojekyll marker is present so GitHub Pages skips Jekyll
+    # processing (which otherwise drops any directory starting with "_",
+    # including our reports/_thumbs/).
+    (wt_path / ".nojekyll").touch()
+
     # ----- Render PDF thumbnails (page 1 preview per report) --------------
     thumbs_dir = wt_path / "reports" / "_thumbs"
     generate_thumbnails(reports, thumbs_dir)
