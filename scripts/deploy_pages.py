@@ -609,6 +609,205 @@ def collect_figures(repo_root: Path, cfg: dict) -> list[dict]:
 # PDF thumbnails (page 1 preview for each report)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Social-share cards (1200x630 PNG, one per report)
+# ---------------------------------------------------------------------------
+
+_CARD_FONTS = [
+    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",
+]
+
+# Pill colours — roughly matches the topic pill CSS on the site.  Each tuple
+# is (bg_rgb, text_rgb).  Picked to read on a navy card, too.
+_PILL_COLORS: dict[str, tuple[tuple[int, int, int], tuple[int, int, int]]] = {
+    "double-interaction": ((255, 233, 214), (123,  64,  22)),
+    "bdt":                ((231, 243, 224), ( 46,  90,  22)),
+    "shower-shape":       ((231, 229, 244), ( 58,  47, 109)),
+    "efficiency":         ((225, 238, 244), ( 21,  80, 112)),
+    "purity":             ((248, 229, 239), (116,  28,  81)),
+    "vertex":             ((255, 244, 207), (113,  87,   8)),
+    "_default":           ((234, 240, 248), (  0,  43, 127)),
+}
+
+
+def _load_card_fonts():
+    """Return (title_bold_large, title_bold_med, label_bold, body_reg, tiny_reg)."""
+    from PIL import ImageFont
+    bold_path = _CARD_FONTS[0]
+    reg_path  = _CARD_FONTS[1]
+    try:
+        return (
+            ImageFont.truetype(bold_path, 56),
+            ImageFont.truetype(bold_path, 40),
+            ImageFont.truetype(bold_path, 20),
+            ImageFont.truetype(reg_path, 24),
+            ImageFont.truetype(reg_path, 20),
+        )
+    except OSError:
+        f = ImageFont.load_default()
+        return (f, f, f, f, f)
+
+
+def _wrap_text(draw, text: str, font, max_width: int, max_lines: int) -> list[str]:
+    """Greedy word-wrap, truncating the final line with an ellipsis on overflow."""
+    words = text.split()
+    lines: list[str] = []
+    cur = ""
+    for i, word in enumerate(words):
+        test = (cur + " " + word).strip()
+        if draw.textlength(test, font=font) <= max_width:
+            cur = test
+            continue
+        if cur:
+            lines.append(cur)
+        if len(lines) >= max_lines - 1:
+            rem = " ".join(words[i:])
+            # Backtrack until it fits with an ellipsis.
+            while rem and draw.textlength(rem + "\u2026", font=font) > max_width:
+                rem = rem.rsplit(" ", 1)[0] if " " in rem else rem[:-1]
+            lines.append((rem + "\u2026") if rem else "\u2026")
+            return lines
+        cur = word
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def _render_pdf_thumb(pdf_path: Path, target_w: int, target_h: int):
+    """Return a PIL Image of PDF page 1, scaled to fit (target_w × target_h),
+    or None if rendering fails."""
+    try:
+        import fitz
+        from PIL import Image
+    except ImportError:
+        return None
+    try:
+        doc = fitz.open(pdf_path)
+        if doc.page_count == 0:
+            doc.close()
+            return None
+        page = doc[0]
+        # Render at ~144 DPI, resize with LANCZOS for crisp downscaling.
+        pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0), alpha=False)
+        im = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+        doc.close()
+        im.thumbnail((target_w, target_h), Image.LANCZOS)
+        return im
+    except Exception as e:  # noqa: BLE001
+        print(f"  WARNING: card thumb failed for {pdf_path.name}: {e}")
+        return None
+
+
+def generate_social_cards(reports: list[dict], out_dir: Path) -> int:
+    """Render a 1200×630 OpenGraph card per PDF into ``out_dir``.
+
+    Cached by mtime (skips when the card is newer than both the PDF and this
+    script).  Each report dict gains ``card`` → relative path for the index
+    to use in og:image.
+    """
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return 0
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    fonts = _load_card_fonts()
+    f_title_xl, f_title_l, f_label, f_body, f_tiny = fonts
+
+    W, H = 1200, 630
+    PAD = 56
+
+    # Script mtime — regenerate cards if the code changes.
+    this_file_mtime = Path(__file__).stat().st_mtime
+
+    generated = 0
+    for r in reports:
+        if not r["name"].lower().endswith(".pdf"):
+            continue
+        stem = Path(r["name"]).stem
+        out_path = out_dir / f"{stem}.png"
+        r["card"] = f"_cards/{out_path.name}"
+        if (out_path.exists()
+            and out_path.stat().st_mtime >= r["path"].stat().st_mtime
+            and out_path.stat().st_mtime >= this_file_mtime):
+            continue
+
+        img = Image.new("RGB", (W, H), (0, 43, 127))
+        draw = ImageDraw.Draw(img)
+
+        # Vertical navy gradient (deep at bottom).
+        for y in range(H):
+            t = y / H
+            rr = int(round(0   * (1 - t) +  8 * t))
+            gg = int(round(43  * (1 - t) + 22 * t))
+            bb = int(round(127 * (1 - t) + 74 * t))
+            draw.line([(0, y), (W, y)], fill=(rr, gg, bb))
+
+        # Right-side PDF page-1 thumbnail with a thin white frame.
+        thumb_area_w, thumb_area_h = 332, 430
+        thumb = _render_pdf_thumb(r["path"], thumb_area_w, thumb_area_h)
+        if thumb is not None:
+            frame_pad = 4
+            frame = Image.new("RGB", (thumb.width + 2 * frame_pad,
+                                     thumb.height + 2 * frame_pad), (255, 255, 255))
+            frame.paste(thumb, (frame_pad, frame_pad))
+            tx = W - PAD - frame.width
+            ty = (H - frame.height) // 2
+            img.paste(frame, (tx, ty))
+
+        # --- Left column text ------------------------------------------
+        left_max = W - PAD - (thumb_area_w + 2 * 4) - PAD - 16  # room minus thumb + margins
+
+        # Wordmark (top).
+        wm = "sPHENIX \u00b7 PPG12"
+        draw.text((PAD, PAD), wm, fill=(185, 217, 235), font=f_label)
+        wm_w = draw.textlength(wm, font=f_label)
+        draw.rectangle([(PAD, PAD + 30), (PAD + wm_w, PAD + 32)], fill=(185, 217, 235))
+
+        # Topic pill.
+        tag_id = r.get("tag", "other")
+        tag_label = TAG_LABELS.get(tag_id, "Other").upper()
+        pbg, ptxt = _PILL_COLORS.get(tag_id, _PILL_COLORS["_default"])
+        pill_tw = draw.textlength(tag_label, font=f_tiny)
+        pill_w = int(pill_tw + 28)
+        pill_h = 34
+        px, py = PAD, PAD + 58
+        draw.rounded_rectangle([(px, py), (px + pill_w, py + pill_h)], radius=17, fill=pbg)
+        draw.text((px + 14, py + 6), tag_label, fill=ptxt, font=f_tiny)
+
+        # Title — pick the bigger font if it fits in ≤3 lines, else step down.
+        title = r["title"]
+        title_font = f_title_xl
+        lines = _wrap_text(draw, title, title_font, left_max, 3)
+        if len(lines) > 3 - 1 and draw.textlength(lines[0], font=title_font) > left_max * 0.85:
+            title_font = f_title_l
+            lines = _wrap_text(draw, title, title_font, left_max, 4)
+        # Vertical position: below pill, with breathing room.
+        ty_title = py + pill_h + 28
+        line_h = int(title_font.size * 1.18)
+        for ln in lines:
+            draw.text((PAD, ty_title), ln, fill=(255, 255, 255), font=title_font)
+            ty_title += line_h
+
+        # Footer: date (left) + URL (right).
+        date_str = r["date"].strftime("%B %d, %Y").replace(" 0", " ")
+        draw.text((PAD, H - PAD - 28), date_str, fill=(185, 217, 235), font=f_body)
+        url = "shuonli.github.io/ppg12"
+        url_w = draw.textlength(url, font=f_body)
+        draw.text((W - PAD - url_w, H - PAD - 28), url, fill=(185, 217, 235), font=f_body)
+
+        img.save(out_path, "PNG", optimize=True)
+        generated += 1
+
+    if generated:
+        print(f"  social cards: {generated} regenerated, "
+              f"{len(reports) - generated} cached")
+    else:
+        print(f"  social cards: all {sum(1 for r in reports if r.get('card')) } cached")
+    return generated
+
+
 def build_search_index(reports: list[dict], out_dir: Path, max_chars: int = 80000) -> int:
     """Extract plain text from each PDF and dump a JSON search index.
 
@@ -908,7 +1107,13 @@ def generate_detail_pages(
         present = _deploys_containing_report(repo_root, r["name"], deploys)
         versions_block = _build_versions_block(r["name"], present, repo_url)
 
-        og_image = f"{site_base}/reports/_thumbs/{stem}.png" if r.get("thumb") else ""
+        # Prefer the 1200x630 pre-rendered social card for og:image.
+        if r.get("card"):
+            og_image = f"{site_base}/reports/{r['card']}"
+        elif r.get("thumb"):
+            og_image = f"{site_base}/reports/{r['thumb']}"
+        else:
+            og_image = ""
         og_url   = f"{site_base}/reports/{stem}.html"
         og_desc  = (r["description"][:280] if r.get("description") else
                     f"PPG12 analysis report — {tag_label}")
@@ -1012,7 +1217,9 @@ INDEX_HTML_TEMPLATE = """\
   <meta property="og:description" content="{subtitle}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PPG12 Analysis">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:url" content="{og_url}">
+  {og_image_meta}
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="alternate" type="application/rss+xml" title="PPG12 reports" href="feed.xml">
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1469,11 +1676,21 @@ def generate_index_html(
     repo_url = site.get("repo_url", "https://github.com/Shuonli/ppg12")
     timestamp = datetime.now(_EASTERN).strftime("%Y-%m-%d %H:%M %Z")
 
+    # Site-level OG image: the newest report's pre-rendered card.
+    site_base = site.get("pages_url", "https://shuonli.github.io/ppg12").rstrip("/")
+    og_image_meta = ""
+    newest = next((r for r in reports if r.get("card")), None)
+    if newest:
+        og_image_url = f"{site_base}/reports/{newest['card']}"
+        og_image_meta = f'<meta property="og:image" content="{html.escape(og_image_url)}">'
+
     return INDEX_HTML_TEMPLATE.format(
         title=html.escape(title),
         subtitle=html.escape(subtitle),
         timestamp=timestamp,
         repo_url=html.escape(repo_url),
+        og_url=html.escape(site_base + "/"),
+        og_image_meta=og_image_meta,
         recent_rail=_build_recent_rail(reports),
         reports_section=_build_reports_section(reports),
         figures_section=_build_figures_section(figures),
@@ -1847,6 +2064,10 @@ def main() -> None:
     # ----- Render PDF thumbnails (page 1 preview per report) --------------
     thumbs_dir = wt_path / "reports" / "_thumbs"
     generate_thumbnails(reports, thumbs_dir)
+
+    # ----- Render 1200x630 OpenGraph cards (one per PDF) ------------------
+    cards_dir = wt_path / "reports" / "_cards"
+    generate_social_cards(reports, cards_dir)
 
     # ----- Build full-text search index from PDFs -------------------------
     build_search_index(reports, wt_path / "reports")
