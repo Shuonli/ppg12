@@ -325,11 +325,67 @@ suppressed.}
 
 \section{\etg-BDT correlation (ABCD independence)}
 
+Figure~\ref{fig:isoet-profile-v3e} swaps the axes of the original
+isoET-vs-BDT scatter so that BDT score is on the horizontal axis and
+\texttt{recoisoET} on the vertical, and overlays a binned profile
+(mean $\pm$ SEM of \texttt{recoisoET} per BDT-score bin) separately
+for signal (truth-matched photon MC) and background (jet MC).  The
+profile view makes the physics clear: high-BDT signal clusters pile
+up near zero \texttt{recoisoET}, while the background profile remains
+around $\sim 10$~GeV across the full BDT range, with only a shallow
+dependence on the score.  Statistics are $\sim 380$\,k signal and
+$\sim 210$\,k background clusters drawn from
+\texttt{photon5/10/20} and \texttt{jet20/30} MC samples
+(\texttt{bdt\_split.root} per sample) after the training fiducial cuts
+$6 < E_T < 40$~GeV, $|\eta| < 0.7$.
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{figures/bdt_audit/model_base_v3E_split_isoet_bdt_correlation_global.pdf}
-\caption{Global \texttt{iso}\etg-vs-BDT scatter (split, \texttt{base\_v3E}).
-Pearson $r \approx -0.7$ across most \etg\ bins.}
+\includegraphics[width=0.70\textwidth]{figures/bdt_audit/profile_isoET_vs_BDT_base_v3E_split.pdf}
+\caption{\texttt{recoisoET} vs.\ BDT score for \texttt{base\_v3E} on
+the \splitnode\ node.  Points are a 4000-cluster random subsample of
+each class (background red, signal blue); connected markers show the
+binned profile mean $\pm$ SEM (navy: signal, dark red: background).
+Pearson $r$ of the combined pool is quoted in the inset.  The signal
+profile drops from $\approx 5$~GeV at the low-BDT tail to $< 2$~GeV
+above BDT~$\approx 0.6$; the background profile stays near
+$\sim 10$~GeV across the full range.}
+\label{fig:isoet-profile-v3e}
+\end{figure}
+
+The same plot for all 11 variants on each cluster node is shown in
+Figures~\ref{fig:isoet-profile-grid-split}
+and~\ref{fig:isoet-profile-grid-nosplit}.  Every variant shows the
+same qualitative pattern.  As expected from the audit's WARN-1
+finding, the \texttt{base\_vr} panel is numerically identical to the
+\texttt{base} panel (the vertex-reweight variant is dead because
+\texttt{vertex\_reweight: true} is never injected into its config).
+The overall Pearson $r$ per variant, on the combined signal+background
+pool used here, sits between $-0.39$ and $-0.53$; the
+per-\etg-bin numbers (next paragraph) are larger in magnitude
+because they remove the cross-bin \etg\ dependence.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/bdt_audit/profile_isoET_vs_BDT_grid_split.pdf}
+\caption{Profile of \texttt{recoisoET} vs.\ BDT score for all 11
+photon-ID variants on the \splitnode\ node.  Same construction as
+Figure~\ref{fig:isoet-profile-v3e}; only the BDT branch changes
+panel-to-panel.  \texttt{base\_vr} is bit-identical to \texttt{base}
+(WARN-1).  The \texttt{v0}/\texttt{v0E} variants show the weakest
+correlation, consistent with their lower AUCs in Table~\ref{tab:auc}.}
+\label{fig:isoet-profile-grid-split}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/bdt_audit/profile_isoET_vs_BDT_grid_nosplit.pdf}
+\caption{As Figure~\ref{fig:isoet-profile-grid-split} but for
+\nosplitnode.  The background profile sits slightly lower and the
+signal profile drops more steeply with BDT, consistent with the
+$\sim 5$ percentage-point higher AUCs of the nosplit models
+(Table~\ref{tab:auc}).}
+\label{fig:isoet-profile-grid-nosplit}
 \end{figure}
 
 Per-bin values from \texttt{training\_metadata.json} (variant
@@ -454,6 +510,12 @@ divergence.}
   Python verification)
 \item \texttt{reports/bdt\_audit/reweight\_qa\_split.pdf} (independent
   9-panel QA)
+\item \texttt{reports/bdt\_audit/plot\_isoet\_vs\_bdt\_profile.py}
+  (profile plot generator for all 22 variants)
+\item \texttt{reports/figures/bdt\_audit/profile\_isoET\_vs\_BDT\_\{variant\}\_\{split,nosplit\}.pdf}
+  (22 per-variant profile plots)
+\item \texttt{reports/figures/bdt\_audit/profile\_isoET\_vs\_BDT\_grid\_\{split,nosplit\}.pdf}
+  (2 per-node 11-panel summaries)
 \item Staged copies in \texttt{reports/figures/bdt\_audit/}
 \end{itemize}
 
