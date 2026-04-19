@@ -5,151 +5,143 @@
   <link>https://shuonli.github.io/ppg12/</link>
   <description>Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</description>
   <language>en</language>
-  <lastBuildDate>Sat, 18 Apr 2026 20:17:33 -0400</lastBuildDate>
+  <lastBuildDate>Sat, 18 Apr 2026 21:07:48 -0400</lastBuildDate>
   <atom:link href="https://shuonli.github.io/ppg12/feed.xml" rel="self" type="application/rss+xml" />
-  <item>
-    <title>Vertex Distribution and Δ z in Single vs. Double-Interaction MC</title>
-    <link>https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:17:14 -0400</pubDate>
-    <category>Vertex</category>
-    <description>This note characterizes the vertex distributions and vertex displacement (Δ z = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHE…</description>
-  </item>
-  <item>
-    <title>Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</title>
-    <link>https://shuonli.github.io/ppg12/reports/eta_migration_study.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/eta_migration_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:17:09 -0400</pubDate>
-    <category>Efficiency &amp; Energy Response</category>
-    <description>This note documents a study of pseudorapidity edge migration effects in the sPHENIX isolated photon cross-section measurement (PPG12). Both the truth and reconstructed fiducial cuts are set at &lt; 0.7,…</description>
-  </item>
-  <item>
-    <title>Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</title>
-    <link>https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:17:04 -0400</pubDate>
-    <category>Efficiency &amp; Energy Response</category>
-    <description>Building on the companion study~dr_study that demonstrated the ΔR &lt; 0.1 truth-matching cut rejects 3.5% of correctly track-ID-matched truth photons in single-interaction MC, this note quantifies the…</description>
-  </item>
-  <item>
-    <title>Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</title>
-    <link>https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:57 -0400</pubDate>
-    <category>Efficiency &amp; Energy Response</category>
-    <description>This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</description>
-  </item>
-  <item>
-    <title>MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</title>
-    <link>https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:50 -0400</pubDate>
-    <category>Vertex</category>
-    <description>The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</description>
-  </item>
-  <item>
-    <title>ABCD Purity Non-Closure Scan vs Non-Tight BDT Lower Bound</title>
-    <link>https://shuonli.github.io/ppg12/reports/purity_nonclosure_ntbdt.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/purity_nonclosure_ntbdt.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:45 -0400</pubDate>
-    <category>BDT Training &amp; Systematics</category>
-    <description>We scan the non-tight BDT lower bound (analysis.non\_tight.bdt\_min) from its nominal value of 0.02 to 0.05 and 0.10 and quantify the ABCD purity non-closure against the MC truth purity in each of th…</description>
-  </item>
-  <item>
-    <title>Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</title>
-    <link>https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:40 -0400</pubDate>
-    <category>Status Updates &amp; Summaries</category>
-    <description>This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</description>
-  </item>
-  <item>
-    <title>Investigation: MC Purity Correction Factor in PPG12</title>
-    <link>https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:33 -0400</pubDate>
-    <category>Purity</category>
-    <description>The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</description>
-  </item>
   <item>
     <title>Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</title>
     <link>https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:27 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 21:07:32 -0400</pubDate>
     <category>Isolation</category>
     <description>The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</description>
-  </item>
-  <item>
-    <title>Topo-cluster isolation distributions and photon-energy containment vs inner-R</title>
-    <link>https://shuonli.github.io/ppg12/reports/iso_topo_containment_study.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/iso_topo_containment_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:22 -0400</pubDate>
-    <category>Isolation</category>
-    <description>The nominal PPG12 isolation variable is the R = 0.4 topo-cluster energy around the seed cluster: recoiso_ET^nom = cluster\_iso\_topo\_04, which by construction in CaloAna24 equals _R&lt;0.4 E_T^topo - E…</description>
-  </item>
-  <item>
-    <title>Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</title>
-    <link>https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:17 -0400</pubDate>
-    <category>Double Interaction / Pileup</category>
-    <description>In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</description>
-  </item>
-  <item>
-    <title>Double-Interaction (Pileup) Effects in PPG12: Efficiency, Shower Shapes, Truth-Vertex Reweighting, Cluster Size, and Energy Response</title>
-    <link>https://shuonli.github.io/ppg12/reports/double_interaction_note.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_note.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:11 -0400</pubDate>
-    <category>Double Interaction / Pileup</category>
-    <description>Run-24 pp data at s = 200 contain two crossing-angle periods (0 mrad and 1.5 mrad) with very different pileup conditions, where two independent collisions in the same bunch crossing shift the reconst…</description>
-  </item>
-  <item>
-    <title>Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</title>
-    <link>https://shuonli.github.io/ppg12/reports/converted_photon_study.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/converted_photon_study.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:16:03 -0400</pubDate>
-    <category>Shower Shape</category>
-    <description>We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</description>
-  </item>
-  <item>
-    <title>Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</title>
-    <link>https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:15:57 -0400</pubDate>
-    <category>Shower Shape</category>
-    <description>Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</description>
   </item>
   <item>
     <title>BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</title>
     <link>https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</guid>
-    <pubDate>Sat, 18 Apr 2026 20:15:49 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 21:07:28 -0400</pubDate>
     <category>BDT Training &amp; Systematics</category>
     <description>A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γ reweighting actually produces flat E_T^γ spectra for signal and background,…</description>
   </item>
   <item>
-    <title>Selection Plots: Config Comparisons</title>
-    <link>https://shuonli.github.io/ppg12/reports/comparison_report.html</link>
-    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/comparison_report.html</guid>
-    <pubDate>Fri, 17 Apr 2026 01:53:06 -0400</pubDate>
-    <category>Selection &amp; Config Comparisons</category>
-    <description>difffile— config\_bdt\_nom.yaml difffile+++ config\_bdt\_tightbdt50.yaml diffhunk@@ -20,5 +20,5 @@ response\_outfile: &quot;/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response&quot; data\_outfile…</description>
+    <title>Direct vs. Fragmentation Photon Composition at Truth in Pythia: Isolation-Cut Dependence</title>
+    <link>https://shuonli.github.io/ppg12/reports/direct_vs_frag_truth_iso.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/direct_vs_frag_truth_iso.html</guid>
+    <pubDate>Sat, 18 Apr 2026 18:37:38 -0400</pubDate>
+    <category>Isolation</category>
+    <description>At truth level in the PPG12 signal Monte Carlo (Pythia 8, photon5+photon10+photon20), the direct photon fraction f_ direct = N_ direct/(N_ direct+N_ frag) is extracted as a function of the truth isol…</description>
   </item>
   <item>
-    <title>Shower Shape Distributions: Configuration Variations</title>
+    <title>Cluster Size Short</title>
+    <link>https://shuonli.github.io/ppg12/reports/cluster_size_short.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_short.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Shower Shape</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Cluster Size Vs Et</title>
+    <link>https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Shower Shape</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Converted Photon Study</title>
+    <link>https://shuonli.github.io/ppg12/reports/converted_photon_study.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/converted_photon_study.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Shower Shape</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Double Interaction Shower Shape Comparison</title>
+    <link>https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Double Interaction / Pileup</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Post Preliminary Updates</title>
+    <link>https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Status Updates &amp; Summaries</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Truth Vertex Reco Check</title>
+    <link>https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Vertex</category>
+    <description>From reports</description>
+  </item>
+  <item>
+    <title>Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</title>
+    <link>https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Efficiency &amp; Energy Response</category>
+    <description>This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</description>
+  </item>
+  <item>
+    <title>Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</title>
+    <link>https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Efficiency &amp; Energy Response</category>
+    <description>Building on the companion study~dr_study that demonstrated the ΔR &lt; 0.1 truth-matching cut rejects 3.5% of correctly track-ID-matched truth photons in single-interaction MC, this note quantifies the…</description>
+  </item>
+  <item>
+    <title>Eta Edge Migration Study: Fake Rate from Fiducial Boundary Effects</title>
+    <link>https://shuonli.github.io/ppg12/reports/eta_migration_study.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/eta_migration_study.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Efficiency &amp; Energy Response</category>
+    <description>This note documents a study of pseudorapidity edge migration effects in the sPHENIX isolated photon cross-section measurement (PPG12). Both the truth and reconstructed fiducial cuts are set at &lt; 0.7,…</description>
+  </item>
+  <item>
+    <title>Pileup Correction to Vertex + MBD Acceptance (Luminosity Note Section~3)</title>
+    <link>https://shuonli.github.io/ppg12/reports/pileup_vertex_acceptance.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/pileup_vertex_acceptance.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Double Interaction / Pileup</category>
+    <description>This note quantifies the pileup correction to the vertex + MBD coincidence acceptance in the sPHENIX isolated photon cross-section measurement (PPG12). In double-interaction events, the overlay colli…</description>
+  </item>
+  <item>
+    <title>Vertex Distribution and Δ z in Single vs. Double-Interaction MC</title>
+    <link>https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/vertex_distribution_study.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Vertex</category>
+    <description>This note characterizes the vertex distributions and vertex displacement (Δ z = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHE…</description>
+  </item>
+  <item>
+    <title>Showershape Report</title>
     <link>https://shuonli.github.io/ppg12/reports/showershape_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/showershape_report.html</guid>
-    <pubDate>Mon, 13 Apr 2026 12:29:49 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
     <category>Shower Shape</category>
-    <description>Shower Shape Distributions: Configuration Variations</description>
+    <description>From plotting/showershape_report</description>
   </item>
   <item>
-    <title>Selection Plots: BDT Variations</title>
+    <title>Selection Report</title>
     <link>https://shuonli.github.io/ppg12/reports/selection_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/selection_report.html</guid>
-    <pubDate>Wed, 08 Apr 2026 22:48:58 -0400</pubDate>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
     <category>Selection &amp; Config Comparisons</category>
-    <description>\#config.yaml \#bdt nominal input: photon\_jet\_file\_root\_dir: &quot;/sphenix/user/shuhangli/ppg12/FunWithxgboost/&quot; photon\_jet\_file\_branch\_dir: &quot;/bdt\_split.root&quot; \#photon\_jet\_file\_branch\_dir: &quot;…</description>
+    <description>From plotting/selection_report</description>
+  </item>
+  <item>
+    <title>Comparison Report</title>
+    <link>https://shuonli.github.io/ppg12/reports/comparison_report.html</link>
+    <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/comparison_report.html</guid>
+    <pubDate>Sat, 18 Apr 2026 16:40:00 -0400</pubDate>
+    <category>Selection &amp; Config Comparisons</category>
+    <description>From plotting/comparison_report</description>
   </item>
 </channel>
 </rss>
