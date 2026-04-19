@@ -15,6 +15,7 @@
 #include <TTree.h>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <string>
 #include <TLorentzVector.h>
 
@@ -226,6 +227,17 @@ private:
   float cluster_iso_04_sub1_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04_sub1_hcalout[nclustercontainer][nclustermax] = {0};
 
+  // Ownership-excluded tower iso: sum of (EMCal towers NOT owned by the cluster)
+  // + IHCal + OHCal within R of the CoG-tower axis. No cluster-ET scalar
+  // subtraction — the cluster's own EMCal towers are removed by identity, so
+  // the remaining sum is already a pure "other-energy" isolation measure.
+  float cluster_iso_excl_005[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_excl_0075[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_excl_01[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_excl_02[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_excl_03[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_excl_04[nclustercontainer][nclustermax] = {0};
+
   float cluster_iso_topo_005[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_0075[nclustercontainer][nclustermax] = {0};
   float cluster_iso_topo_01[nclustercontainer][nclustermax] = {0};
@@ -356,6 +368,16 @@ private:
   double getTowerEta(RawTowerGeom *tower_geom, double vx, double vy, double vz);
 
   float calculateET(float eta, float phi, float dR, int layer, float min_E, bool use_subtracted = false); // layer: 0 EMCal, 1 IHCal, 2 OHCal
+
+  // Same as calculateET, but skips towers whose TowerInfoDefs::encode_emcal key
+  // is in skip_towerinfo_keys. Intended for ownership-based self-exclusion:
+  // pass the set of EMCal keys owned by the current cluster; the returned
+  // sum is already the "other-energy" iso contribution for that layer
+  // (no cluster-ET subtraction required at the caller).
+  // For HCal layers the skip-set is a no-op, so pass an empty set.
+  float calculateET_excl(float eta, float phi, float dR, int layer, float min_E,
+                         const std::set<unsigned int> &skip_towerinfo_keys,
+                         bool use_subtracted = false);
 
   // Single pass over the topo container; fills ET inside R = 0.05, 0.075, 0.1, 0.2, 0.3, 0.4
   // by short-circuiting on dR (smaller cones are subsets of larger ones).
