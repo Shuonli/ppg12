@@ -208,7 +208,18 @@ int CaloAna24::Init(PHCompositeNode *topNode)
     slimtree->Branch(Form("cluster_embed_id_%s", clusternamelist[i].c_str()), cluster_embed_id[i], Form("cluster_embed_id_%s[ncluster_%s]/I", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_005_%s", clusternamelist[i].c_str()), cluster_iso_005[i], Form("cluster_iso_005_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_0075_%s", clusternamelist[i].c_str()), cluster_iso_0075[i], Form("cluster_iso_0075_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_01_%s", clusternamelist[i].c_str()), cluster_iso_01[i], Form("cluster_iso_01_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_02_%s", clusternamelist[i].c_str()), cluster_iso_02[i], Form("cluster_iso_02_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    // Pure-EMCal inner rings (no-threshold)
+    slimtree->Branch(Form("cluster_iso_005_emcal_%s",  clusternamelist[i].c_str()), cluster_iso_005_emcal[i],  Form("cluster_iso_005_emcal_%s[ncluster_%s]/F",  clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_0075_emcal_%s", clusternamelist[i].c_str()), cluster_iso_0075_emcal[i], Form("cluster_iso_0075_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_01_emcal_%s",   clusternamelist[i].c_str()), cluster_iso_01_emcal[i],   Form("cluster_iso_01_emcal_%s[ncluster_%s]/F",   clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_02_emcal_%s",   clusternamelist[i].c_str()), cluster_iso_02_emcal[i],   Form("cluster_iso_02_emcal_%s[ncluster_%s]/F",   clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    // Pure-EMCal inner rings at 120 MeV threshold
+    slimtree->Branch(Form("cluster_iso_005_120_emcal_%s",  clusternamelist[i].c_str()), cluster_iso_005_120_emcal[i],  Form("cluster_iso_005_120_emcal_%s[ncluster_%s]/F",  clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_0075_120_emcal_%s", clusternamelist[i].c_str()), cluster_iso_0075_120_emcal[i], Form("cluster_iso_0075_120_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_01_120_emcal_%s",   clusternamelist[i].c_str()), cluster_iso_01_120_emcal[i],   Form("cluster_iso_01_120_emcal_%s[ncluster_%s]/F",   clusternamelist[i].c_str(), clusternamelist[i].c_str()));
+    slimtree->Branch(Form("cluster_iso_02_120_emcal_%s",   clusternamelist[i].c_str()), cluster_iso_02_120_emcal[i],   Form("cluster_iso_02_120_emcal_%s[ncluster_%s]/F",   clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_%s", clusternamelist[i].c_str()), cluster_iso_03[i], Form("cluster_iso_03_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_04_%s", clusternamelist[i].c_str()), cluster_iso_04[i], Form("cluster_iso_04_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
     slimtree->Branch(Form("cluster_iso_03_emcal_%s", clusternamelist[i].c_str()), cluster_iso_03_emcal[i], Form("cluster_iso_03_emcal_%s[ncluster_%s]/F", clusternamelist[i].c_str(), clusternamelist[i].c_str()));
@@ -1288,6 +1299,7 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
 
       // Per-layer sums at 120 MeV for R=0.1, 0.2, 0.4 — feed cluster_iso_02,
       // cluster_iso_04, and the full-calo _excl_* family on a common threshold.
+      float emcalET_01_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.1, 0, 0.12);
       float ihcalET_01_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.1, 1, 0.12);
       float ohcalET_01_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.1, 2, 0.12);
 
@@ -1298,6 +1310,12 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       float emcalET_04_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.4, 0, 0.12);
       float ihcalET_04_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.4, 1, 0.12);
       float ohcalET_04_120 = calculateET(iso_axis_eta, iso_axis_phi, 0.4, 2, 0.12);
+
+      // Pure-EMCal inner rings at NO threshold (mirrors emcalET_04 at -10 used by cluster_iso_04_emcal).
+      float emcalET_005_nothr  = calculateET(iso_axis_eta, iso_axis_phi, 0.05,  0, -10.0);
+      float emcalET_0075_nothr = calculateET(iso_axis_eta, iso_axis_phi, 0.075, 0, -10.0);
+      float emcalET_01_nothr   = calculateET(iso_axis_eta, iso_axis_phi, 0.1,   0, -10.0);
+      float emcalET_02_nothr   = calculateET(iso_axis_eta, iso_axis_phi, 0.2,   0, -10.0);
 
       float topoET_005, topoET_0075, topoET_01, topoET_02, topoET_03, topoET_04;
       calculateET_topo_6cones(iso_axis_eta, iso_axis_phi, topoClusterContainer,
@@ -1866,9 +1884,20 @@ int CaloAna24::process_event(PHCompositeNode *topNode)
       cluster_embed_id[i][ncluster[i]] = embed_id;
       cluster_iso_005[i][ncluster[i]]  = (emcalET_005     + ihcalET_005     + ohcalET_005)     - ET;
       cluster_iso_0075[i][ncluster[i]] = (emcalET_0075    + ihcalET_0075    + ohcalET_0075)    - ET;
+      cluster_iso_01[i][ncluster[i]]   = (emcalET_01_120  + ihcalET_01_120  + ohcalET_01_120)  - ET;
       cluster_iso_02[i][ncluster[i]]   = (emcalET_02_120  + ihcalET_02_120  + ohcalET_02_120)  - ET;
       cluster_iso_03[i][ncluster[i]]   = (emcalET_03_120  + ihcalET_03_120  + ohcalET_03_120)  - ET;
       cluster_iso_04[i][ncluster[i]]   = (emcalET_04_120  + ihcalET_04_120  + ohcalET_04_120)  - ET;
+      // Pure-EMCal inner rings (no threshold)
+      cluster_iso_005_emcal[i][ncluster[i]]   = emcalET_005_nothr  - ET;
+      cluster_iso_0075_emcal[i][ncluster[i]]  = emcalET_0075_nothr - ET;
+      cluster_iso_01_emcal[i][ncluster[i]]    = emcalET_01_nothr   - ET;
+      cluster_iso_02_emcal[i][ncluster[i]]    = emcalET_02_nothr   - ET;
+      // Pure-EMCal inner rings at 120 MeV threshold
+      cluster_iso_005_120_emcal[i][ncluster[i]]   = emcalET_005    - ET;
+      cluster_iso_0075_120_emcal[i][ncluster[i]]  = emcalET_0075   - ET;
+      cluster_iso_01_120_emcal[i][ncluster[i]]    = emcalET_01_120 - ET;
+      cluster_iso_02_120_emcal[i][ncluster[i]]    = emcalET_02_120 - ET;
       cluster_iso_03_emcal[i][ncluster[i]] = emcalET_03 - ET;
       cluster_iso_03_hcalin[i][ncluster[i]] = ihcalET_03;
       cluster_iso_03_hcalout[i][ncluster[i]] = ohcalET_03;

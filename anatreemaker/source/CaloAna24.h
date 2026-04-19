@@ -198,9 +198,20 @@ private:
   int cluster_embed_id[nclustercontainer][nclustermax] = {0};
   float cluster_iso_005[nclustercontainer][nclustermax] = {0};
   float cluster_iso_0075[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_01[nclustercontainer][nclustermax] = {0};   // all-calo sum at R<0.1, 120 MeV, minus cluster ET
   float cluster_iso_02[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03[nclustercontainer][nclustermax] = {0};
   float cluster_iso_04[nclustercontainer][nclustermax] = {0};
+  // Pure-EMCal inner rings (no-threshold, mirror cluster_iso_04_emcal convention)
+  float cluster_iso_005_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_0075_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_01_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_02_emcal[nclustercontainer][nclustermax] = {0};
+  // Pure-EMCal inner rings at 120 MeV tower threshold (mirror cluster_iso_03_120_emcal convention)
+  float cluster_iso_005_120_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_0075_120_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_01_120_emcal[nclustercontainer][nclustermax] = {0};
+  float cluster_iso_02_120_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03_emcal[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03_hcalin[nclustercontainer][nclustermax] = {0};
   float cluster_iso_03_hcalout[nclustercontainer][nclustermax] = {0};
