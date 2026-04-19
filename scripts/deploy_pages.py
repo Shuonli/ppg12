@@ -419,8 +419,9 @@ def compile_tex_reports(repo_root: Path, cfg: dict) -> list[str]:
             # Skip excluded files (e.g., main.tex, helper .tex).
             if _matches_any(tex.name, exclude):
                 continue
-            # Skip empty files.
-            if tex.stat().st_size == 0:
+            # Skip empty files. (Re-check existence: glob result can race
+            # against an external delete.)
+            if not tex.exists() or tex.stat().st_size == 0:
                 continue
             pdf = tex.with_suffix(".pdf")
             # Compile if PDF missing or older than .tex source or any
@@ -1080,6 +1081,7 @@ def generate_detail_pages(
     repo_root: Path,
     repo_url: str,
     site_base: str,
+    source_branch: str = "main",
 ) -> int:
     """Write a detail HTML page alongside each PDF in the worktree."""
     reports_dir = wt_path / "reports"
@@ -1097,12 +1099,31 @@ def generate_detail_pages(
         tag_label = TAG_LABELS.get(tag_id, "Report")
         date_str = r["date"].strftime("%Y-%m-%d")
 
-        source_link = ""
+        source_links: list[str] = []
         source_rel = _find_source_tex(repo_root, stem)
         if source_rel:
-            source_link = (f'      <a class="detail-source" '
-                           f'href="{repo_url}/blob/main/{source_rel}" '
-                           f'target="_blank" rel="noopener">View .tex on GitHub</a>')
+            source_links.append(
+                f'      <a class="detail-source" '
+                f'href="{repo_url}/blob/{source_branch}/{source_rel}" '
+                f'target="_blank" rel="noopener">View .tex on GitHub</a>'
+            )
+            tex_parent_rel, fig_dirs = _collect_report_source_dirs(repo_root, source_rel)
+            # Link the .tex's parent dir (skip if it's the repo-top reports/ dir,
+            # which would just dump the entire reports listing — not useful).
+            if tex_parent_rel is not None and tex_parent_rel != Path("reports"):
+                source_links.append(
+                    f'      <a class="detail-source" '
+                    f'href="{repo_url}/tree/{source_branch}/{tex_parent_rel.as_posix()}" '
+                    f'target="_blank" rel="noopener">Browse source folder on GitHub</a>'
+                )
+            for fig_dir in fig_dirs:
+                source_links.append(
+                    f'      <a class="detail-source" '
+                    f'href="{repo_url}/tree/{source_branch}/{fig_dir.as_posix()}" '
+                    f'target="_blank" rel="noopener">'
+                    f'Figures: {html.escape(fig_dir.as_posix())}</a>'
+                )
+        source_link = "\n".join(source_links)
 
         present = _deploys_containing_report(repo_root, r["name"], deploys)
         versions_block = _build_versions_block(r["name"], present, repo_url)
@@ -1187,6 +1208,126 @@ def _find_source_tex(repo_root: Path, stem: str) -> str | None:
         if Path(line).stem == stem:
             return line
     return None
+
+
+_INCLUDEGRAPHICS_RE = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
+
+
+def _parse_tex_figure_paths(tex_abs: Path) -> list[Path]:
+    """Return the list of absolute figure paths referenced by ``\\includegraphics``
+    in ``tex_abs``. Resolves paths relative to the .tex's directory, and tries
+    appending ``.pdf`` / ``.png`` when no extension is given (pdflatex behaviour).
+    Skips paths that do not resolve to a file on disk."""
+    try:
+        text = tex_abs.read_text(errors="ignore")
+    except OSError:
+        return []
+
+    base = tex_abs.parent
+    out: list[Path] = []
+    seen: set[Path] = set()
+    for raw in _INCLUDEGRAPHICS_RE.findall(text):
+        candidate = (base / raw).resolve()
+        if candidate.suffix == "":
+            for ext in (".pdf", ".png", ".jpg", ".jpeg"):
+                trial = candidate.with_suffix(ext)
+                if trial.exists():
+                    candidate = trial
+                    break
+        if not candidate.exists():
+            continue
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        out.append(candidate)
+    return out
+
+
+def _collect_report_source_dirs(
+    repo_root: Path, tex_rel: str
+) -> tuple[Path | None, list[Path]]:
+    """Return (tex_parent_rel, sorted unique figure-folder rels) for a report.
+
+    All paths are returned relative to ``repo_root``. Figure folders that are
+    identical to the tex's parent directory are dropped (no need to link the
+    same dir twice). Folders outside the repo are skipped."""
+    tex_abs = (repo_root / tex_rel).resolve()
+    tex_parent_rel = Path(tex_rel).parent if tex_rel else None
+
+    fig_dirs: set[Path] = set()
+    for fig_abs in _parse_tex_figure_paths(tex_abs):
+        try:
+            fig_rel = fig_abs.parent.relative_to(repo_root)
+        except ValueError:
+            continue
+        if tex_parent_rel and fig_rel == tex_parent_rel:
+            continue
+        fig_dirs.add(fig_rel)
+
+    return tex_parent_rel, sorted(fig_dirs)
+
+
+def _find_referenced_figures(repo_root: Path, tex_rel: str) -> list[Path]:
+    """Return all figure files referenced by a tex, as repo-relative Paths."""
+    tex_abs = (repo_root / tex_rel).resolve()
+    out: list[Path] = []
+    for fig_abs in _parse_tex_figure_paths(tex_abs):
+        try:
+            out.append(fig_abs.relative_to(repo_root))
+        except ValueError:
+            continue
+    return out
+
+
+def _is_tracked(repo_root: Path, path_rel: Path) -> bool:
+    """True if ``path_rel`` (relative to repo_root) is tracked in git."""
+    proc = git(
+        "ls-files", "--error-unmatch", path_rel.as_posix(),
+        cwd=repo_root, check=False,
+    )
+    return proc.returncode == 0
+
+
+def audit_referenced_sources(repo_root: Path, reports: list[dict]) -> dict[str, list[Path]]:
+    """For each report PDF, return any \\includegraphics-referenced files that
+    exist on disk but are not tracked in git. Maps report name -> list of
+    untracked repo-relative paths."""
+    missing: dict[str, list[Path]] = {}
+    for r in reports:
+        if not r["name"].lower().endswith(".pdf"):
+            continue
+        stem = Path(r["name"]).stem
+        tex_rel = _find_source_tex(repo_root, stem)
+        if not tex_rel:
+            continue
+        untracked = [
+            p for p in _find_referenced_figures(repo_root, tex_rel)
+            if not _is_tracked(repo_root, p)
+        ]
+        if untracked:
+            missing[r["name"]] = untracked
+    return missing
+
+
+def commit_referenced_sources(repo_root: Path, missing: dict[str, list[Path]]) -> bool:
+    """Force-stage all referenced-but-untracked figures and create a commit on
+    the current branch. Returns True if a commit was made."""
+    all_paths: list[str] = sorted({p.as_posix() for paths in missing.values() for p in paths})
+    if not all_paths:
+        return False
+    print(f"\nForce-staging {len(all_paths)} referenced figure(s) "
+          f"across {len(missing)} report(s):")
+    for path in all_paths:
+        print(f"  + {path}")
+    git("add", "-f", *all_paths, cwd=repo_root)
+    msg = (f"deploy_pages: track {len(all_paths)} report figure(s) "
+           f"({', '.join(sorted(missing))})")
+    proc = git("commit", "-m", msg, cwd=repo_root, check=False)
+    if proc.returncode != 0:
+        print("  (nothing to commit — figures already staged or no changes)")
+        return False
+    print(f"  committed: {msg}")
+    return True
 
 
 def check_total_size(reports: list[dict], figures: list[dict], max_mb: float) -> None:
@@ -1986,6 +2127,14 @@ def main() -> None:
         action="store_true",
         help="Create site/YYYY-MM-DD[-N] tags for every existing gh-pages commit, push, and exit.",
     )
+    parser.add_argument(
+        "--commit-sources",
+        action="store_true",
+        help="Force-stage and commit any \\includegraphics-referenced figures "
+             "that exist on disk but are not tracked in git (e.g., under "
+             "reports/figures/ which is gitignored). Runs on the current branch "
+             "before deploy.",
+    )
     args = parser.parse_args()
 
     # ----- Locate repo and config -----------------------------------------
@@ -2024,6 +2173,28 @@ def main() -> None:
 
     max_mb = cfg.get("figures", {}).get("max_total_mb", 50)
     check_total_size(reports, figures, max_mb)
+
+    # ----- Audit referenced source figures --------------------------------
+    # Flag (or commit) any \includegraphics-referenced figures that are on disk
+    # but untracked, so the per-report "Browse source folder" link on the site
+    # actually shows them.
+    missing_sources = audit_referenced_sources(repo_root, reports)
+    if missing_sources:
+        total = sum(len(v) for v in missing_sources.values())
+        if args.commit_sources and not args.dry_run:
+            commit_referenced_sources(repo_root, missing_sources)
+        else:
+            print(f"\nWARNING: {total} \\includegraphics-referenced figure(s) "
+                  f"across {len(missing_sources)} report(s) are not tracked in git.")
+            print("         The site will link to a folder, but these files "
+                  "won't show up there until committed.")
+            print("         Run with --commit-sources to force-stage and commit them.")
+            for name in sorted(missing_sources):
+                print(f"  {name}:")
+                for p in missing_sources[name][:5]:
+                    print(f"    - {p}")
+                if len(missing_sources[name]) > 5:
+                    print(f"    - ... and {len(missing_sources[name]) - 5} more")
 
     total_mb = sum(r["size_mb"] for r in reports) + sum(f["size_mb"] for f in figures)
 
@@ -2076,7 +2247,10 @@ def main() -> None:
     site = cfg.get("site", {})
     repo_url = site.get("repo_url", "https://github.com/Shuonli/ppg12")
     site_base = site.get("pages_url", "https://shuonli.github.io/ppg12").rstrip("/")
-    n_details = generate_detail_pages(reports, past_deploys, wt_path, repo_root, repo_url, site_base)
+    source_branch = site.get("source_branch", "main")
+    n_details = generate_detail_pages(
+        reports, past_deploys, wt_path, repo_root, repo_url, site_base, source_branch
+    )
     print(f"  detail pages: {n_details} written")
 
     # ----- RSS feed -------------------------------------------------------
