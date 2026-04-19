@@ -3,6 +3,8 @@ site:
   subtitle: "Isolated Photon Cross-Section, pp \u221As = 200 GeV \u2014 sPHENIX"
   repo_url: "https://github.com/Shuonli/ppg12"
   pages_url: "https://shuonli.github.io/ppg12"
+  # Branch the per-report "View .tex" / "Browse source folder" links point at.
+  source_branch: "main"
 
 reports:
   source_dirs:
@@ -25,8 +27,15 @@ reports:
 
 figures:
   source_dir: "plotting/figures"
-  include: []  # empty = no figures deployed by default; add specific filenames to publish
-  max_total_mb: 50
+  include:
+    - "iso_topo_containment_vs_R.pdf"
+    - "iso_topo_dist_data_vs_mc.pdf"
+    - "iso_topo_dist_overlay.pdf"
+    - "iso_topo_dist_overlay_per_clEt.pdf"
+    - "iso_tower_dist_overlay_per_clEt.pdf"
+    - "mc_purity_innerR_scan.pdf"
+    - "mc_purity_innerR_tower_scan.pdf"
+  max_total_mb: 70
 
 deploy:
   worktree_dir: "_gh-pages-worktree"
