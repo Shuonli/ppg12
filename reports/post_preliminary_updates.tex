@@ -224,53 +224,73 @@ fragmentation photons broaden the signal shower profiles.
     \end{tabular}
 \end{table}
 
-Figure~\ref{fig:bdt_roc} shows the ROC curves for all five \ET bins.
-The curves are well separated from the diagonal chance line across the
-full false-positive-rate range, confirming that the BDT provides strong
-photon--jet discrimination even in the lowest \ET bin where the
-preliminary cut-based approach had limited rejection power.
+Figures~\ref{fig:bdt_roc_split} and~\ref{fig:bdt_roc_nosplit} show the ROC
+curves for all 11 photon-ID variants on the \texttt{CLUSTERINFO\_CEMC}
+(split) and \texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT} (nosplit) cluster nodes
+respectively, with each panel showing the five \ET training bins as separate
+curves.  The curves are well separated from the diagonal chance line across
+the full false-positive-rate range, confirming that every variant provides
+strong photon--jet discrimination in the high-\ET bins; the $6 < \ET <
+10$~\GeV bin trails because signal photons at low \ET have poorer shower
+resolution and the jet background is not yet kinematically suppressed.
+The \texttt{base\_vr} panel is bit-identical to \texttt{base} (consistent with
+the BDT-training audit's WARN-1: the ``vertex reweight'' variant config
+accidentally does not enable \texttt{vertex\_reweight}, so the trained model
+is a duplicate of \texttt{base}).  The \texttt{v0} and \texttt{v0E} variants,
+which drop the dominant $e_{t1}$ feature, show the weakest discrimination.
+AUCs in these plots are evaluated on a $\sim 590$\,k signal + bkg MC subset
+drawn from \texttt{photon5/10/20} and \texttt{jet20/30} with $6 < \ET <
+40$~\GeV and $|\eta| < 0.7$; absolute values therefore differ slightly from
+the per-bin test-set AUCs quoted in Table~\ref{tab:bdt_auc} (which use the
+training-time 20\% hold-out and class-balance-reweighted events), but the
+ranking and shape of the curves are preserved.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.65\textwidth]{../FunWithxgboost/binned_models/model_base_v1E_combined_roc.pdf}
-    \caption{ROC curves for the nominal \texttt{base\_v1E} photon identification
-      BDT in five \ET training bins.  The legend shows the test-set AUC for each
-      bin.  The dashed line indicates chance-level discrimination.}
-    \label{fig:bdt_roc}
+    \includegraphics[width=\textwidth]{figures/bdt_audit/roc_grid_split.pdf}
+    \caption{ROC curves for all 11 photon-ID variants on the split cluster
+      node.  Each panel shows the five \ET training bins (colored curves,
+      legend in the \texttt{base} panel).  The dashed line indicates
+      chance-level discrimination.}
+    \label{fig:bdt_roc_split}
 \end{figure}
 
-The BDT score distributions for signal (photon MC, truth pid $\in \{1,2\}$) and
-background (jet MC, pid $\notin \{1,2\}$) are shown in
-Figure~\ref{fig:bdt_score} for four representative \ET bins.
-Background clusters peak sharply near zero, while signal photons accumulate
-at high scores ($>0.7$).  The overlap region in the $6 < \ET < 10$~\GeV bin
-is broader, consistent with the lower AUC, and motivates the \ET-dependent
-parametric threshold described in \S\ref{subsec:bdt_threshold}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/bdt_audit/roc_grid_nosplit.pdf}
+    \caption{As Figure~\ref{fig:bdt_roc_split} but for the nosplit cluster
+      node.  AUCs are systematically higher than the split case (consistent
+      with the $\approx 5$ percentage-point advantage of the nosplit cluster
+      node in Table~\ref{tab:bdt_auc}).}
+    \label{fig:bdt_roc_nosplit}
+\end{figure}
+
+The BDT score distributions for signal (photon MC) and background (jet MC)
+are shown in Figures~\ref{fig:bdt_score_split} and~\ref{fig:bdt_score_nosplit}
+for all 11 variants, in the representative $15 < \ET < 20$~\GeV bin.
+Background clusters peak sharply near zero in all variants with the expected
+shower-shape discrimination; signal photons accumulate at high scores
+$> 0.7$.  The \texttt{base\_v0} and \texttt{base\_v0E} panels show much
+broader signal distributions extending down to BDT~$\approx 0.3$, reflecting
+the weaker discrimination power of dropping $e_{t1}$.  \texttt{base\_vr} is
+once again identical to \texttt{base}.
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{../FunWithxgboost/binned_models/model_base_v1E_bdt_score_6_10.pdf}
-        \caption{$6 < \ET < 10$~\GeV}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{../FunWithxgboost/binned_models/model_base_v1E_bdt_score_10_15.pdf}
-        \caption{$10 < \ET < 15$~\GeV}
-    \end{subfigure}
-    \vskip6pt
-    \begin{subfigure}[t]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{../FunWithxgboost/binned_models/model_base_v1E_bdt_score_20_25.pdf}
-        \caption{$20 < \ET < 25$~\GeV}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.48\textwidth}
-        \includegraphics[width=\textwidth]{../FunWithxgboost/binned_models/model_base_v1E_bdt_score_25_35.pdf}
-        \caption{$25 < \ET < 35$~\GeV}
-    \end{subfigure}
-    \caption{BDT score distributions for signal (open orange histogram) and
-      background (filled blue histogram) in four \ET bins, normalized to unit
-      area.  The signal peak shifts to higher scores at larger \ET, reflecting
-      the cleaner shower profiles of high-energy photons.}
-    \label{fig:bdt_score}
+    \includegraphics[width=\textwidth]{figures/bdt_audit/bdt_score_grid_split.pdf}
+    \caption{BDT score distributions for signal (orange outline) and
+      background (blue filled) in the $15 < \ET < 20$~\GeV bin, for all 11
+      variants on the split cluster node.  Histograms are unit-normalized;
+      log scale on the vertical axis.}
+    \label{fig:bdt_score_split}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/bdt_audit/bdt_score_grid_nosplit.pdf}
+    \caption{As Figure~\ref{fig:bdt_score_split} but for the nosplit cluster
+      node.}
+    \label{fig:bdt_score_nosplit}
 \end{figure}
 
 Figure~\ref{fig:bdt_importance} shows the XGBoost feature importance
