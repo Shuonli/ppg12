@@ -10,9 +10,9 @@
 namespace PPG12 {
 
 // Photon-jet samples
-constexpr float photon5cross  = 146359.3f;   // 0-14 GeV truth photon pT window
-constexpr float photon10cross = 6944.675f;    // 14-30 GeV
-constexpr float photon20cross = 130.4461f;    // 30+ GeV
+constexpr float photon5cross  = 146359.3f;   // canonical window 0-14 GeV (truth max photon pT)
+constexpr float photon10cross = 6944.675f;    // canonical window 14-22 GeV
+constexpr float photon20cross = 130.4461f;    // canonical window 22+ GeV (photon20 sample is fully on by pT=22)
 
 // QCD jet samples
 constexpr float jet5cross  = 1.3878e+08f;
@@ -56,15 +56,23 @@ inline SampleConfig GetSampleConfig(const std::string &filetype)
         c.weight = photon5cross / photon20cross;
     }
     else if (filetype == "photon10") {
-        c.photon_pt_lower = 14;  c.photon_pt_upper = 30;
+        c.photon_pt_lower = 14;  c.photon_pt_upper = 22;
         c.weight = photon10cross / photon20cross;
     }
     else if (filetype == "photon10_double" || filetype == "photon10_nom") {
-        c.photon_pt_lower = 10;  c.photon_pt_upper = 100;
+        c.photon_pt_lower = 14;  c.photon_pt_upper = 22;
         c.weight = photon10cross / photon20cross;
     }
     else if (filetype == "photon20") {
-        c.photon_pt_lower = 30;  c.photon_pt_upper = 200;
+        c.photon_pt_lower = 22;  c.photon_pt_upper = 200;
+        c.weight = 1.0f;
+    }
+    else if (filetype == "photon5_double" || filetype == "photon5_nom") {
+        c.photon_pt_lower = 0;   c.photon_pt_upper = 14;
+        c.weight = photon5cross / photon20cross;
+    }
+    else if (filetype == "photon20_double" || filetype == "photon20_nom") {
+        c.photon_pt_lower = 22;  c.photon_pt_upper = 200;
         c.weight = 1.0f;
     }
     // --- Jet samples ---
@@ -73,6 +81,10 @@ inline SampleConfig GetSampleConfig(const std::string &filetype)
         c.weight = jet5cross / jet50cross;   c.isbackground = true;
     }
     else if (filetype == "jet8") {
+        c.jet_pt_lower = 9;   c.jet_pt_upper = 14;  c.cluster_ET_upper = 15;
+        c.weight = jet8cross / jet50cross;   c.isbackground = true;
+    }
+    else if (filetype == "jet8_double" || filetype == "jet8_nom") {
         c.jet_pt_lower = 9;   c.jet_pt_upper = 14;  c.cluster_ET_upper = 15;
         c.weight = jet8cross / jet50cross;   c.isbackground = true;
     }
@@ -85,7 +97,7 @@ inline SampleConfig GetSampleConfig(const std::string &filetype)
         c.weight = jet12cross / jet50cross;  c.isbackground = true;
     }
     else if (filetype == "jet12_double" || filetype == "jet12_nom") {
-        c.jet_pt_lower = 10;  c.jet_pt_upper = 100; c.cluster_ET_upper = 100;
+        c.jet_pt_lower = 14;  c.jet_pt_upper = 21;  c.cluster_ET_upper = 23;
         c.weight = jet12cross / jet50cross;  c.isbackground = true;
     }
     else if (filetype == "jet15") {
@@ -96,11 +108,23 @@ inline SampleConfig GetSampleConfig(const std::string &filetype)
         c.jet_pt_lower = 21;  c.jet_pt_upper = 32;  c.cluster_ET_upper = 35;
         c.weight = jet20cross / jet50cross;  c.isbackground = true;
     }
+    else if (filetype == "jet20_double" || filetype == "jet20_nom") {
+        c.jet_pt_lower = 21;  c.jet_pt_upper = 32;  c.cluster_ET_upper = 35;
+        c.weight = jet20cross / jet50cross;  c.isbackground = true;
+    }
     else if (filetype == "jet30") {
         c.jet_pt_lower = 32;  c.jet_pt_upper = 42;  c.cluster_ET_upper = 45;
         c.weight = jet30cross / jet50cross;  c.isbackground = true;
     }
+    else if (filetype == "jet30_double" || filetype == "jet30_nom") {
+        c.jet_pt_lower = 32;  c.jet_pt_upper = 42;  c.cluster_ET_upper = 45;
+        c.weight = jet30cross / jet50cross;  c.isbackground = true;
+    }
     else if (filetype == "jet40") {
+        c.jet_pt_lower = 42;  c.jet_pt_upper = 100; c.cluster_ET_upper = 100;
+        c.weight = jet40cross / jet50cross;  c.isbackground = true;
+    }
+    else if (filetype == "jet40_double" || filetype == "jet40_nom") {
         c.jet_pt_lower = 42;  c.jet_pt_upper = 100; c.cluster_ET_upper = 100;
         c.weight = jet40cross / jet50cross;  c.isbackground = true;
     }

@@ -5,8 +5,10 @@
 | Sample | Truth pT Window | Cross-section (pb) | Weight (/ photon20) | Path |
 |--------|-----------------|--------------------|--------------------|------|
 | photon5 | 0--14 GeV | 146,359.3 | 1122.0 | `sim/run28/photon5/` |
-| photon10 | 14--30 GeV | 6,944.675 | 53.24 | `sim/run28/photon10/` |
-| photon20 | 30+ GeV | 130.4461 | 1.0 (ref) | `sim/run28/photon20/` |
+| photon10 | 14--22 GeV | 6,944.675 | 53.24 | `sim/run28/photon10/` |
+| photon20 | 22+ GeV | 130.4461 | 1.0 (ref) | `sim/run28/photon20/` |
+
+Note: before 2026-04-20 the photon10/photon20 boundary was at 30 GeV. Lowered to 22 GeV after empirically verifying (a) photon20 is fully populated above its pT-hat turn-on by pT ≥ 22 GeV, (b) photon10/photon20 weighted spectra agree to within 2-5% over [22, 30] GeV, and (c) photon20 has ~7× more events/bin than photon10 in that range — so using photon20 for pT ≥ 22 delivers ~7× better MC template statistics. The 22 GeV edge also aligns with an existing `plotcommon.h:ptRanges` bin edge (old 30 GeV cut split bin [28, 32] across two samples).
 
 All signal samples combined via MergeSim.C (photon5 + photon10 + photon20).
 
@@ -47,12 +49,30 @@ BDTinput.C uses jet10/15/20/30/50. MergeSim uses jet5/8/12/20/30/40. The overlap
 
 ## Double-Interaction Samples
 
-| Sample | Purpose | Mixing Fraction |
-|--------|---------|-----------------|
-| photon10_double | Full GEANT double-interaction signal | 18.7% (0 mrad), 7.2% (1.5 mrad) |
-| jet12_double | Full GEANT double-interaction background | Same fractions |
+Eight SI/DI pairs are now produced (Apr 2026 reprocess). DI samples inherit their SI partner's cross-section and truth pT window; `efficiencytool/CrossSectionWeights.h:62-134` treats each `{sample}_double` / `{sample}_nom` alias as identical to the base SI sample (with two exceptions noted below).
 
-Used in the two-pass blending pipeline (`run_showershape_double.sh`).
+| DI sample | Truth pT / jet pT window | Cross-section (pb) | Path |
+|-----------|--------------------------|--------------------|------|
+| photon5_double | 0--14 GeV photon | 146,359.3 | `sim/run28/photon5_double/` |
+| photon10_double | 14--22 GeV photon | 6,944.675 | `sim/run28/photon10_double/` |
+| photon20_double | 22+ GeV photon | 130.4461 | `sim/run28/photon20_double/` |
+| jet8_double | 9--14 GeV jet | 1.15e+07 | `sim/run28/jet8_double/` |
+| jet12_double | 14--21 GeV jet | 1.4903e+06 | `sim/run28/jet12_double/` |
+| jet20_double | 21--32 GeV jet | 6.2623e+04 | `sim/run28/jet20_double/` |
+| jet30_double | 32--42 GeV jet | 2.5298e+03 | `sim/run28/jet30_double/` |
+| jet40_double | 42--100 GeV jet | 1.3553e+02 | `sim/run28/jet40_double/` |
+
+All DI aliases now inherit their SI partner's exact truth-pT window. Prior to 2026-04-20, `photon10_double`/`photon10_nom` carried `[10, 100]` and `jet12_double`/`jet12_nom` carried `[10, 100]` (legacy behaviour from before the DI expansion), causing double-counting against adjacent samples in the DI-blended truth spectrum; fixed in `CrossSectionWeights.h:62-65, 99-102` (see `reports/xsec_weight_audit.md`).
+
+Naming convention: `{sample}_double` = DI variant; `{sample}_nom` = alias for the SI variant used in DI blending contexts (equivalent to `{sample}` in `GetSampleConfig`).
+
+Cluster-weighted DI mixing fractions (applied as `mix_weight` in `ShowerShapeCheck.C` and `RecoEffCalculator_TTreeReader.C`): 22.4% at 0 mrad, 7.9% at 1.5 mrad. See [Pileup Fractions](pileup-fractions.md) for the calculation.
+
+**Skipped samples:**
+- `jet5_double` — not produced. `jet5` is kept in the SI pipeline without a DI partner.
+- `jet50_double` — produced but unused: `jet50` is a BDT-training-only sample, not in `FunWithxgboost/mc_samples.list` or `MergeSim.C`, so there is no SI partner in the main pipeline.
+
+Used in the single-pass truth-vertex-reweight showershape DI pipeline (`submit_showershape_di.sub`; see [Double-Interaction Efficiency](../concepts/double-interaction-efficiency.md)).
 
 ## File Locations
 
