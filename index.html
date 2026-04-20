@@ -10,7 +10,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PPG12 Analysis">
   <meta property="og:url" content="https://shuonli.github.io/ppg12/">
-  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_cards/efficiency_deltaR_comparison.png">
+  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_cards/purity_nonclosure_ntbdt.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="alternate" type="application/rss+xml" title="PPG12 reports" href="feed.xml">
   <link rel="stylesheet" href="style.css">
@@ -21,7 +21,7 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-19 22:38 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-19 22:42 EDT</div>
     </div>
   </header>
 
@@ -29,6 +29,14 @@
     <section id="recent" class="recent-rail">
       <h2 class="section-title">Recently updated</h2>
       <div class="recent-grid">
+        <a class="recent-card" href="reports/purity_nonclosure_ntbdt.html">
+          <img class="recent-thumb" src="reports/_thumbs/purity_nonclosure_ntbdt.png" alt="" loading="lazy">
+          <div class="recent-body">
+            <div class="recent-tag">BDT Training &amp; Systematics<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
+            <div class="recent-title">ABCD Purity Non-Closure: Non-Tight BDT Lower Bound and Flat Threshold Partitions</div>
+            <div class="recent-date" title="2026-04-20">just now</div>
+          </div>
+        </a>
         <a class="recent-card" href="reports/efficiency_deltaR_comparison.html">
           <img class="recent-thumb" src="reports/_thumbs/efficiency_deltaR_comparison.png" alt="" loading="lazy">
           <div class="recent-body">
@@ -45,14 +53,6 @@
             <div class="recent-date" title="2026-04-19">just now</div>
           </div>
         </a>
-        <a class="recent-card" href="reports/vtxreweight_method_comparison.html">
-          <img class="recent-thumb" src="reports/_thumbs/vtxreweight_method_comparison.png" alt="" loading="lazy">
-          <div class="recent-body">
-            <div class="recent-tag">Selection &amp; Config Comparisons<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
-            <div class="recent-title">Vertex Reweighting Method Comparison: Reco-vertex vs. No-reweight vs. Truth-vertex: Correcting the MBDvertex efficiency for raw-beam luminosity</div>
-            <div class="recent-date" title="2026-04-19">just now</div>
-          </div>
-        </a>
       </div>
     </section>
     <section id="reports">
@@ -61,9 +61,10 @@
         <input id="reports-filter" type="search" placeholder="Filter by title, description, topic, date…   (press / to focus)" aria-label="Filter reports">
       </div>
       <div class="tag-chips" role="tablist" aria-label="Filter by topic">
-        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">17</span></button>
+        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">18</span></button>
         <button class="tag-chip tag-cross-section" data-topic="cross-section" type="button">Final Cross-Section <span class="chip-count">1</span></button>
         <button class="tag-chip tag-double-interaction" data-topic="double-interaction" type="button">Double Interaction / Pileup <span class="chip-count">1</span></button>
+        <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">1</span></button>
         <button class="tag-chip tag-shower-shape" data-topic="shower-shape" type="button">Shower Shape <span class="chip-count">3</span></button>
         <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">2</span></button>
         <button class="tag-chip tag-isolation" data-topic="isolation" type="button">Isolation <span class="chip-count">3</span></button>
@@ -77,6 +78,14 @@
           <tr><th>Preview</th><th>Date</th><th>Topic</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
+          <tr data-topic="bdt">
+            <td data-label="Preview" class="preview-cell"><a href="reports/purity_nonclosure_ntbdt.html"><img class="report-thumb" src="reports/_thumbs/purity_nonclosure_ntbdt.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-04-20"><span class="date-relative">just now</span><span class="date-absolute">2026-04-20</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
+            <td data-label="Title"><a href="reports/purity_nonclosure_ntbdt.html">ABCD Purity Non-Closure: Non-Tight BDT Lower Bound and Flat Threshold Partitions</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">We scan the non-tight BDT lower bound (analysis.non\_tight.bdt\_min) from its nominal value of 0.02 to 0.05 and 0.10 and quantify the ABCD purity non-closure against the MC truth purity in each of th…</td>
+            <td data-label="Size"><a href="reports/purity_nonclosure_ntbdt.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.2 MB</a></td>
+          </tr>
           <tr data-topic="efficiency">
             <td data-label="Preview" class="preview-cell"><a href="reports/efficiency_deltaR_comparison.html"><img class="report-thumb" src="reports/_thumbs/efficiency_deltaR_comparison.png" alt="" loading="lazy"></a></td>
             <td data-label="Date" title="2026-04-19"><span class="date-relative">just now</span><span class="date-absolute">2026-04-19</span></td>
