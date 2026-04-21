@@ -5,13 +5,13 @@
   <link>https://shuonli.github.io/ppg12/</link>
   <description>Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</description>
   <language>en</language>
-  <lastBuildDate>Tue, 21 Apr 2026 09:47:59 -0400</lastBuildDate>
+  <lastBuildDate>Tue, 21 Apr 2026 10:20:03 -0400</lastBuildDate>
   <atom:link href="https://shuonli.github.io/ppg12/feed.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</title>
     <link>https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/efficiency_deltaR_comparison.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:47:22 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:19:27 -0400</pubDate>
     <category>Efficiency &amp; Energy Response</category>
     <description>Building on the companion study~dr_study that demonstrated the ΔR &lt; 0.1 truth-matching cut rejects 3.5% of correctly track-ID-matched truth photons in single-interaction MC, this note quantifies the…</description>
   </item>
@@ -19,7 +19,7 @@
     <title>Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</title>
     <link>https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/deltaR_matching_study.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:47:15 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:19:21 -0400</pubDate>
     <category>Efficiency &amp; Energy Response</category>
     <description>This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</description>
   </item>
@@ -27,7 +27,7 @@
     <title>Vertex Reweighting Method Comparison: Reco-vertex vs. No-reweight vs. Truth-vertex: Correcting the MBDvertex efficiency for raw-beam luminosity</title>
     <link>https://shuonli.github.io/ppg12/reports/vtxreweight_method_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/vtxreweight_method_comparison.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:47:07 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:19:14 -0400</pubDate>
     <category>Selection &amp; Config Comparisons</category>
     <description>The current ``nominal&#x27;&#x27; reco-vertex reweight (vertex\_reweight\_on: 1) silently drops MC events with z_ reco=-9999 (no global vertex reconstructed, i.e. MBD trigger failed) because they fall outside…</description>
   </item>
@@ -35,7 +35,7 @@
     <title>Impact of MC z-Vertex Reweighting on the Nominal Isolated-Photon Cross Section and MBD Efficiency</title>
     <link>https://shuonli.github.io/ppg12/reports/vtxreweight_impact.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/vtxreweight_impact.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:47:01 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:19:08 -0400</pubDate>
     <category>Final Cross-Section</category>
     <description>[H] [width=0.98]figures/vtxreweight/vtxreweight_comparison.pdf Left: MBDvertex efficiency (g_ mbd\_eff) from the nominal (bdt\_nom, vertex reweight on) and no-reweight (bdt\_vtxreweight0) configs. Ri…</description>
   </item>
@@ -43,7 +43,7 @@
     <title>MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</title>
     <link>https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/truth_vertex_reco_check.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:56 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:19:03 -0400</pubDate>
     <category>Vertex</category>
     <description>The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</description>
   </item>
@@ -51,7 +51,7 @@
     <title>ABCD Purity Non-Closure: Non-Tight BDT Lower Bound and Flat Threshold Partitions</title>
     <link>https://shuonli.github.io/ppg12/reports/purity_nonclosure_ntbdt.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/purity_nonclosure_ntbdt.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:50 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:58 -0400</pubDate>
     <category>BDT Training &amp; Systematics</category>
     <description>We scan the non-tight BDT lower bound (analysis.non\_tight.bdt\_min) from its nominal value of 0.02 to 0.05 and 0.10 and quantify the ABCD purity non-closure against the MC truth purity in each of th…</description>
   </item>
@@ -59,7 +59,7 @@
     <title>Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</title>
     <link>https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/post_preliminary_updates.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:42 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:50 -0400</pubDate>
     <category>Status Updates &amp; Summaries</category>
     <description>This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</description>
   </item>
@@ -67,7 +67,7 @@
     <title>PPG12 Cross-Check: Parametric Tight / Non-Tight BDT-Pair Variants: ABCD Closure Stress Test at Extreme BDT Cut Combinations</title>
     <link>https://shuonli.github.io/ppg12/reports/ntbdtpair_crosscheck.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/ntbdtpair_crosscheck.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:34 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:43 -0400</pubDate>
     <category>BDT Training &amp; Systematics</category>
     <description>The PPG12 analysis uses an ABCD method for background subtraction, parametrised by E_T-dependent tight and non-tight BDT thresholds. To probe the stability of the background estimate under simultaneo…</description>
   </item>
@@ -75,7 +75,7 @@
     <title>Investigation: MC Purity Correction Factor in PPG12</title>
     <link>https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/mc_purity_correction_investigation.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:18 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:26 -0400</pubDate>
     <category>Purity</category>
     <description>The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</description>
   </item>
@@ -83,7 +83,7 @@
     <title>Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</title>
     <link>https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/isolation_ET_comparison.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:12 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:20 -0400</pubDate>
     <category>Isolation</category>
     <description>The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</description>
   </item>
@@ -91,7 +91,7 @@
     <title>Isolation cone centering fix: |v_z|-dependent mis-centering between cluster COG and tower centers, and an ownership-excluded iso variant</title>
     <link>https://shuonli.github.io/ppg12/reports/iso_cone_fix.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/iso_cone_fix.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:46:05 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:14 -0400</pubDate>
     <category>Isolation</category>
     <description>The manual tower-based and topo-cluster isolation computations in anatreemaker/source/CaloAna24.cc used RawClusterUtility::GetPseudorapidity(cluster, vertex) as the cone axis. That projects the clust…</description>
   </item>
@@ -99,7 +99,7 @@
     <title>Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</title>
     <link>https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_shower_shape_comparison.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:57 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:07 -0400</pubDate>
     <category>Double Interaction / Pileup</category>
     <description>In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</description>
   </item>
@@ -107,7 +107,7 @@
     <title>Double-Interaction (Pileup) Effects in PPG12: Efficiency, Shower Shapes, Truth-Vertex Reweighting, Cluster Size, and Energy Response</title>
     <link>https://shuonli.github.io/ppg12/reports/double_interaction_note.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/double_interaction_note.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:50 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:18:01 -0400</pubDate>
     <category>Double Interaction / Pileup</category>
     <description>Run-24 pp data at s = 200 contain two crossing-angle periods (0 mrad and 1.5 mrad) with very different pileup conditions, where two independent collisions in the same bunch crossing shift the reconst…</description>
   </item>
@@ -115,7 +115,7 @@
     <title>Donut iso variants: inner-R truth-purity scan and ABCD closure: All-calo 120 MeV donut with R_outer=0.4 (cross-check)</title>
     <link>https://shuonli.github.io/ppg12/reports/donut_iso_variants.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/donut_iso_variants.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:41 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:17:52 -0400</pubDate>
     <category>Purity</category>
     <description>Two new reco-isolation definitions were added as cross-check variants (syst\_type=None, syst\_role=None): donutFull (use\_topo\_iso=4): cluster\_iso\_04 - cluster\_iso\_\005,0075,02\. All-calo 120 Me…</description>
   </item>
@@ -123,7 +123,7 @@
     <title>Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</title>
     <link>https://shuonli.github.io/ppg12/reports/converted_photon_study.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/converted_photon_study.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:26 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:17:39 -0400</pubDate>
     <category>Shower Shape</category>
     <description>We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</description>
   </item>
@@ -131,7 +131,7 @@
     <title>Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</title>
     <link>https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/cluster_size_vs_et.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:20 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:17:32 -0400</pubDate>
     <category>Shower Shape</category>
     <description>Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</description>
   </item>
@@ -139,7 +139,7 @@
     <title>BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</title>
     <link>https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/bdt_training_audit.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:45:13 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:17:25 -0400</pubDate>
     <category>BDT Training &amp; Systematics</category>
     <description>A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γ reweighting actually produces flat E_T^γ spectra for signal and background,…</description>
   </item>
@@ -147,7 +147,7 @@
     <title>Selection Plots: BDT Variations</title>
     <link>https://shuonli.github.io/ppg12/reports/selection_report.html</link>
     <guid isPermaLink="true">https://shuonli.github.io/ppg12/reports/selection_report.html</guid>
-    <pubDate>Tue, 21 Apr 2026 09:44:55 -0400</pubDate>
+    <pubDate>Tue, 21 Apr 2026 10:17:18 -0400</pubDate>
     <category>Selection &amp; Config Comparisons</category>
     <description>[htbp] [Inclusive donut (donutFull), R_outer=0.4][width=0.48]figures/purity_sim_donutFull_scan.pdf [Exclusive donut (donutExcl), R_outer=0.4][width=0.48]figures/purity_sim_donutExcl_scan.pdf</description>
   </item>
