@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample Combining Validation: Truth Spectra and Purity Smoothness — PPG12</title>
+  <meta name="description" content="We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \_nom + \_double = 16 per-period files) combine correctly into the signal and jet-inclusive…">
+  <meta property="og:title" content="Sample Combining Validation: Truth Spectra and Purity Smoothness">
+  <meta property="og:description" content="We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \_nom + \_double = 16 per-period files) combine correctly into the signal and jet-inclusive…">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_cards/sample_combining_check.png">
+  <meta property="og:url" content="https://shuonli.github.io/ppg12/reports/sample_combining_check.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1><a href="../index.html" style="color:#B9D9EB;text-decoration:none">&larr; sPHENIX PPG12</a></h1>
+      <div class="subtitle">Purity</div>
+    </div>
+  </header>
+
+  <main class="container detail-main">
+    <h2 class="detail-title">Sample Combining Validation: Truth Spectra and Purity Smoothness</h2>
+    <div class="detail-meta">
+      <span class="detail-date">2026-04-21</span>
+      <span class="detail-size">0.6 MB</span>
+      <button class="detail-copy" type="button" data-copy-url="https://shuonli.github.io/ppg12/reports/sample_combining_check.html">Copy link</button>
+      <button class="detail-fullscreen" type="button">Full screen</button>
+      <a class="detail-download pdf-link" href="sample_combining_check.pdf" target="_blank" rel="noopener">Download PDF</a>
+
+    </div>
+
+    <p class="detail-abstract">We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \_nom + \_double = 16 per-period files) combine correctly into the signal and jet-inclusive…</p>
+
+    <iframe class="detail-iframe" src="sample_combining_check.pdf" title="Sample Combining Validation: Truth Spectra and Purity Smoothness"></iframe>
+
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <a href="../index.html">Back to the index</a> &middot; PPG12 &middot;
+      <a href="https://github.com/Shuonli/ppg12">sPHENIX Collaboration</a>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    // Copy-link button.
+    var copy = document.querySelector('.detail-copy');
+    if (copy) {
+      copy.addEventListener('click', function () {
+        var url = copy.getAttribute('data-copy-url') || window.location.href;
+        navigator.clipboard.writeText(url).then(function () {
+          var prev = copy.textContent;
+          copy.textContent = 'Copied!';
+          copy.classList.add('copied');
+          setTimeout(function () {
+            copy.textContent = prev;
+            copy.classList.remove('copied');
+          }, 1400);
+        }).catch(function () {
+          copy.textContent = 'Press Ctrl+C';
+        });
+      });
+    }
+
+    // Full-screen toggle on the PDF iframe.
+    var fsBtn  = document.querySelector('.detail-fullscreen');
+    var iframe = document.querySelector('.detail-iframe');
+    if (fsBtn && iframe) {
+      var enterNative = function () {
+        if (iframe.requestFullscreen)         return iframe.requestFullscreen();
+        if (iframe.webkitRequestFullscreen)   return iframe.webkitRequestFullscreen();
+        return null;
+      };
+      var exitNative = function () {
+        if (document.exitFullscreen)          return document.exitFullscreen();
+        if (document.webkitExitFullscreen)    return document.webkitExitFullscreen();
+        return null;
+      };
+      var fsElement = function () {
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+      };
+      var togglePseudo = function (on) {
+        iframe.classList.toggle('pseudo-fullscreen', !!on);
+        document.body.classList.toggle('no-scroll', !!on);
+      };
+
+      fsBtn.addEventListener('click', function () {
+        if (iframe.classList.contains('pseudo-fullscreen')) {
+          togglePseudo(false);
+          return;
+        }
+        if (fsElement()) {
+          exitNative();
+          return;
+        }
+        var p = enterNative();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () { togglePseudo(true); });
+        } else if (p === null) {
+          togglePseudo(true);
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && iframe.classList.contains('pseudo-fullscreen')) {
+          togglePseudo(false);
+        }
+      });
+
+      document.addEventListener('fullscreenchange', function () {
+        fsBtn.textContent = fsElement() ? 'Exit full screen' : 'Full screen';
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

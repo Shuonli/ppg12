@@ -21,7 +21,7 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-21 12:54 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-21 13:41 EDT</div>
     </div>
   </header>
 
@@ -61,14 +61,14 @@
         <input id="reports-filter" type="search" placeholder="Filter by title, description, topic, date…   (press / to focus)" aria-label="Filter reports">
       </div>
       <div class="tag-chips" role="tablist" aria-label="Filter by topic">
-        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">22</span></button>
+        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">23</span></button>
         <button class="tag-chip tag-cross-section" data-topic="cross-section" type="button">Final Cross-Section <span class="chip-count">1</span></button>
         <button class="tag-chip tag-double-interaction" data-topic="double-interaction" type="button">Double Interaction / Pileup <span class="chip-count">2</span></button>
         <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">3</span></button>
         <button class="tag-chip tag-shower-shape" data-topic="shower-shape" type="button">Shower Shape <span class="chip-count">3</span></button>
         <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">2</span></button>
         <button class="tag-chip tag-isolation" data-topic="isolation" type="button">Isolation <span class="chip-count">3</span></button>
-        <button class="tag-chip tag-purity" data-topic="purity" type="button">Purity <span class="chip-count">2</span></button>
+        <button class="tag-chip tag-purity" data-topic="purity" type="button">Purity <span class="chip-count">3</span></button>
         <button class="tag-chip tag-vertex" data-topic="vertex" type="button">Vertex <span class="chip-count">2</span></button>
         <button class="tag-chip tag-selection" data-topic="selection" type="button">Selection &amp; Config Comparisons <span class="chip-count">3</span></button>
         <button class="tag-chip tag-updates" data-topic="updates" type="button">Status Updates &amp; Summaries <span class="chip-count">1</span></button>
@@ -198,6 +198,14 @@
             <td data-label="Description">We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</td>
             <td data-label="Size"><a href="reports/converted_photon_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.9 MB</a></td>
           </tr>
+          <tr data-topic="purity">
+            <td data-label="Preview" class="preview-cell"><a href="reports/sample_combining_check.html"><img class="report-thumb" src="reports/_thumbs/sample_combining_check.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-04-21"><span class="date-relative">2m ago</span><span class="date-absolute">2026-04-21</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-purity">Purity</span></td>
+            <td data-label="Title"><a href="reports/sample_combining_check.html">Sample Combining Validation: Truth Spectra and Purity Smoothness</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \_nom + \_double = 16 per-period files) combine correctly into the signal and jet-inclusive…</td>
+            <td data-label="Size"><a href="reports/sample_combining_check.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.6 MB</a></td>
+          </tr>
           <tr data-topic="shower-shape">
             <td data-label="Preview" class="preview-cell"><a href="reports/cluster_size_vs_et.html"><img class="report-thumb" src="reports/_thumbs/cluster_size_vs_et.png" alt="" loading="lazy"></a></td>
             <td data-label="Date" title="2026-04-21"><span class="date-relative">2m ago</span><span class="date-absolute">2026-04-21</span></td>
@@ -208,27 +216,27 @@
           </tr>
           <tr data-topic="bdt">
             <td data-label="Preview" class="preview-cell"><a href="reports/bdt_training_audit.html"><img class="report-thumb" src="reports/_thumbs/bdt_training_audit.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-21"><span class="date-relative">2m ago</span><span class="date-absolute">2026-04-21</span></td>
+            <td data-label="Date" title="2026-04-21"><span class="date-relative">5m ago</span><span class="date-absolute">2026-04-21</span></td>
             <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
             <td data-label="Title"><a href="reports/bdt_training_audit.html">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γ reweighting actually produces flat E_T^γ spectra for signal and background,…</td>
             <td data-label="Size"><a href="reports/bdt_training_audit.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;2.3 MB</a></td>
           </tr>
+          <tr data-topic="selection">
+            <td data-label="Preview" class="preview-cell"><a href="reports/selection_report.html"><img class="report-thumb" src="reports/_thumbs/selection_report.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-04-21"><span class="date-relative">7m ago</span><span class="date-absolute">2026-04-21</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-selection">Selection &amp; Config Comparisons</span></td>
+            <td data-label="Title"><a href="reports/selection_report.html">Selection Plots: BDT Variations</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">\#config.yaml \#bdt nominal input: photon\_jet\_file\_root\_dir: &quot;/sphenix/user/shuhangli/ppg12/FunWithxgboost/&quot; photon\_jet\_file\_branch\_dir: &quot;/bdt\_split.root&quot; \#photon\_jet\_file\_branch\_dir: &quot;…</td>
+            <td data-label="Size"><a href="reports/selection_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;20.1 MB</a></td>
+          </tr>
           <tr data-topic="shower-shape">
             <td data-label="Preview" class="preview-cell"><a href="reports/showershape_report.html"><img class="report-thumb" src="reports/_thumbs/showershape_report.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-21"><span class="date-relative">13m ago</span><span class="date-absolute">2026-04-21</span></td>
+            <td data-label="Date" title="2026-04-21"><span class="date-relative">59m ago</span><span class="date-absolute">2026-04-21</span></td>
             <td data-label="Topic"><span class="tag-pill tag-shower-shape">Shower Shape</span></td>
             <td data-label="Title"><a href="reports/showershape_report.html">Shower Shape Distributions: Configuration Variations</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Shower Shape Distributions: Configuration Variations</td>
             <td data-label="Size"><a href="reports/showershape_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;31.6 MB</a></td>
-          </tr>
-          <tr data-topic="selection">
-            <td data-label="Preview" class="preview-cell"><a href="reports/selection_report.html"><img class="report-thumb" src="reports/_thumbs/selection_report.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-21"><span class="date-relative">20m ago</span><span class="date-absolute">2026-04-21</span></td>
-            <td data-label="Topic"><span class="tag-pill tag-selection">Selection &amp; Config Comparisons</span></td>
-            <td data-label="Title"><a href="reports/selection_report.html">Selection Plots: BDT Variations</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
-            <td data-label="Description">[htbp] [Inclusive donut (donutFull), R_outer=0.4][width=0.48]figures/purity_sim_donutFull_scan.pdf [Exclusive donut (donutExcl), R_outer=0.4][width=0.48]figures/purity_sim_donutExcl_scan.pdf</td>
-            <td data-label="Size"><a href="reports/selection_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;19.4 MB</a></td>
           </tr>
           <tr data-topic="vertex">
             <td data-label="Preview" class="preview-cell"><a href="reports/vertex_distribution_study.html"><img class="report-thumb" src="reports/_thumbs/vertex_distribution_study.png" alt="" loading="lazy"></a></td>
