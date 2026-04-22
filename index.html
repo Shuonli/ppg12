@@ -21,7 +21,7 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-22 14:07 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-22 14:35 EDT</div>
     </div>
   </header>
 
@@ -61,12 +61,12 @@
         <input id="reports-filter" type="search" placeholder="Filter by title, description, topic, date…   (press / to focus)" aria-label="Filter reports">
       </div>
       <div class="tag-chips" role="tablist" aria-label="Filter by topic">
-        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">23</span></button>
+        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">24</span></button>
         <button class="tag-chip tag-cross-section" data-topic="cross-section" type="button">Final Cross-Section <span class="chip-count">1</span></button>
         <button class="tag-chip tag-double-interaction" data-topic="double-interaction" type="button">Double Interaction / Pileup <span class="chip-count">2</span></button>
         <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">3</span></button>
         <button class="tag-chip tag-shower-shape" data-topic="shower-shape" type="button">Shower Shape <span class="chip-count">3</span></button>
-        <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">2</span></button>
+        <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">3</span></button>
         <button class="tag-chip tag-isolation" data-topic="isolation" type="button">Isolation <span class="chip-count">3</span></button>
         <button class="tag-chip tag-purity" data-topic="purity" type="button">Purity <span class="chip-count">2</span></button>
         <button class="tag-chip tag-vertex" data-topic="vertex" type="button">Vertex <span class="chip-count">2</span></button>
@@ -119,6 +119,14 @@
             <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
             <td data-label="Size"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.7 MB</a></td>
           </tr>
+          <tr data-topic="efficiency">
+            <td data-label="Preview" class="preview-cell"><a href="reports/tower_acceptance_2026-04-22.html"><img class="report-thumb" src="reports/_thumbs/tower_acceptance_2026-04-22.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-04-22"><span class="date-relative">just now</span><span class="date-absolute">2026-04-22</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-efficiency">Efficiency &amp; Energy Response</span></td>
+            <td data-label="Title"><a href="reports/tower_acceptance_2026-04-22.html">Tower-Index Acceptance Map Integration: Data vs Inclusive MC in the PPG12 Efficiency Pipeline</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">The official PPG12 efficiency pipeline (RecoEffCalculator\_TTreeReader.C MergeSim.C CalculatePhotonYield.C) has been extended to produce tower-index 2D acceptance maps at four selection levels (prese…</td>
+            <td data-label="Size"><a href="reports/tower_acceptance_2026-04-22.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;2.5 MB</a></td>
+          </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/sample_combining_check.html"><img class="report-thumb" src="reports/_thumbs/sample_combining_check.png" alt="" loading="lazy"></a></td>
             <td data-label="Date" title="2026-04-22"><span class="date-relative">just now</span><span class="date-absolute">2026-04-22</span></td>
@@ -145,7 +153,7 @@
           </tr>
           <tr data-topic="bdt">
             <td data-label="Preview" class="preview-cell"><a href="reports/ntbdtpair_crosscheck.html"><img class="report-thumb" src="reports/_thumbs/ntbdtpair_crosscheck.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-22"><span class="date-relative">just now</span><span class="date-absolute">2026-04-22</span></td>
+            <td data-label="Date" title="2026-04-22"><span class="date-relative">1m ago</span><span class="date-absolute">2026-04-22</span></td>
             <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
             <td data-label="Title"><a href="reports/ntbdtpair_crosscheck.html">PPG12 Cross-Check: Parametric Tight / Non-Tight BDT-Pair Variants: ABCD Closure Stress Test at Extreme BDT Cut Combinations</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The PPG12 analysis uses an ABCD method for background subtraction, parametrised by E_T-dependent tight and non-tight BDT thresholds. To probe the stability of the background estimate under simultaneo…</td>
