@@ -21,7 +21,7 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-04-22 20:08 EDT</div>
+      <div class="subtitle">Last updated: 2026-04-22 21:30 EDT</div>
     </div>
   </header>
 
@@ -66,13 +66,13 @@
         <button class="tag-chip tag-double-interaction" data-topic="double-interaction" type="button">Double Interaction / Pileup <span class="chip-count">2</span></button>
         <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">3</span></button>
         <button class="tag-chip tag-shower-shape" data-topic="shower-shape" type="button">Shower Shape <span class="chip-count">3</span></button>
-        <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">3</span></button>
+        <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">2</span></button>
         <button class="tag-chip tag-isolation" data-topic="isolation" type="button">Isolation <span class="chip-count">3</span></button>
         <button class="tag-chip tag-purity" data-topic="purity" type="button">Purity <span class="chip-count">2</span></button>
         <button class="tag-chip tag-vertex" data-topic="vertex" type="button">Vertex <span class="chip-count">2</span></button>
         <button class="tag-chip tag-selection" data-topic="selection" type="button">Selection &amp; Config Comparisons <span class="chip-count">3</span></button>
         <button class="tag-chip tag-updates" data-topic="updates" type="button">Status Updates &amp; Summaries <span class="chip-count">1</span></button>
-        <button class="tag-chip tag-other" data-topic="other" type="button">Other <span class="chip-count">1</span></button>
+        <button class="tag-chip tag-other" data-topic="other" type="button">Other <span class="chip-count">2</span></button>
       </div>
       <table class="reports-table">
         <thead>
@@ -119,13 +119,13 @@
             <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
             <td data-label="Size"><a href="reports/truth_vertex_reco_check.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.7 MB</a></td>
           </tr>
-          <tr data-topic="efficiency">
+          <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/tower_acceptance_2026-04-22.html"><img class="report-thumb" src="reports/_thumbs/tower_acceptance_2026-04-22.png" alt="" loading="lazy"></a></td>
             <td data-label="Date" title="2026-04-22"><span class="date-relative">just now</span><span class="date-absolute">2026-04-22</span></td>
-            <td data-label="Topic"><span class="tag-pill tag-efficiency">Efficiency &amp; Energy Response</span></td>
-            <td data-label="Title"><a href="reports/tower_acceptance_2026-04-22.html">Tower-Index Acceptance Map Integration: Data vs Inclusive MC in the PPG12 Efficiency Pipeline</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
-            <td data-label="Description">The official PPG12 efficiency pipeline (RecoEffCalculator\_TTreeReader.C MergeSim.C CalculatePhotonYield.C) has been extended to produce tower-index 2D acceptance maps at four selection levels (prese…</td>
-            <td data-label="Size"><a href="reports/tower_acceptance_2026-04-22.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;4.3 MB</a></td>
+            <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
+            <td data-label="Title"><a href="reports/tower_acceptance_2026-04-22.html">Tower-Index Acceptance Map Integration: Data-Driven Dead-Tower Masks + Cross-Section Systematic</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">Four-level tower-index acceptance maps (h_ etaphi\_tower\_\preselect,common,tight,tight\_iso\\_\mc\_inclusive,data\) are now populated automatically in the official efficiency pipeline and written to…</td>
+            <td data-label="Size"><a href="reports/tower_acceptance_2026-04-22.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;2.3 MB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/sample_combining_check.html"><img class="report-thumb" src="reports/_thumbs/sample_combining_check.png" alt="" loading="lazy"></a></td>
@@ -145,7 +145,7 @@
           </tr>
           <tr data-topic="updates">
             <td data-label="Preview" class="preview-cell"><a href="reports/post_preliminary_updates.html"><img class="report-thumb" src="reports/_thumbs/post_preliminary_updates.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-22"><span class="date-relative">1m ago</span><span class="date-absolute">2026-04-22</span></td>
+            <td data-label="Date" title="2026-04-22"><span class="date-relative">just now</span><span class="date-absolute">2026-04-22</span></td>
             <td data-label="Topic"><span class="tag-pill tag-updates">Status Updates &amp; Summaries</span></td>
             <td data-label="Title"><a href="reports/post_preliminary_updates.html">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</td>
@@ -201,7 +201,7 @@
           </tr>
           <tr data-topic="purity">
             <td data-label="Preview" class="preview-cell"><a href="reports/donut_iso_variants.html"><img class="report-thumb" src="reports/_thumbs/donut_iso_variants.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-22"><span class="date-relative">2m ago</span><span class="date-absolute">2026-04-22</span></td>
+            <td data-label="Date" title="2026-04-22"><span class="date-relative">1m ago</span><span class="date-absolute">2026-04-22</span></td>
             <td data-label="Topic"><span class="tag-pill tag-purity">Purity</span></td>
             <td data-label="Title"><a href="reports/donut_iso_variants.html">Donut iso variants: inner-R truth-purity scan and ABCD closure: All-calo 120 MeV donut with R_outer=0.4 (cross-check)</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Two new reco-isolation definitions were added as cross-check variants (syst\_type=None, syst\_role=None): donutFull (use\_topo\_iso=4): cluster\_iso\_04 - cluster\_iso\_\005,0075,02\. All-calo 120 Me…</td>
@@ -293,30 +293,6 @@
           <p class="caption">alt_check_rebin.pdf</p>
         </div>
         <div class="figure-card">
-          <a href="figures/dead_tower_map_common.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">dead_tower_map_common.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/dead_tower_map_preselect.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">dead_tower_map_preselect.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/dead_tower_map_tight.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">dead_tower_map_tight.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/dead_tower_map_tight_iso.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">dead_tower_map_tight_iso.pdf</p>
-        </div>
-        <div class="figure-card">
           <a href="figures/final_bdt_flat_t85_nt50.pdf" target="_blank" rel="noopener">
             <div class="figure-placeholder">PDF</div>
           </a>
@@ -341,58 +317,22 @@
           <p class="caption">final_bdt_flat_t95_nt50.pdf</p>
         </div>
         <div class="figure-card">
-          <a href="figures/final_bdt_mask_common_harddead.pdf" target="_blank" rel="noopener">
+          <a href="figures/final_bdt_mask_phisymm_common.pdf" target="_blank" rel="noopener">
             <div class="figure-placeholder">PDF</div>
           </a>
-          <p class="caption">final_bdt_mask_common_harddead.pdf</p>
+          <p class="caption">final_bdt_mask_phisymm_common.pdf</p>
         </div>
         <div class="figure-card">
-          <a href="figures/final_bdt_mask_common_harddead_zlt2.pdf" target="_blank" rel="noopener">
+          <a href="figures/final_bdt_mask_phisymm_preselect.pdf" target="_blank" rel="noopener">
             <div class="figure-placeholder">PDF</div>
           </a>
-          <p class="caption">final_bdt_mask_common_harddead_zlt2.pdf</p>
+          <p class="caption">final_bdt_mask_phisymm_preselect.pdf</p>
         </div>
         <div class="figure-card">
-          <a href="figures/final_bdt_mask_common_harddead_zlt5.pdf" target="_blank" rel="noopener">
+          <a href="figures/final_bdt_mask_phisymm_tight.pdf" target="_blank" rel="noopener">
             <div class="figure-placeholder">PDF</div>
           </a>
-          <p class="caption">final_bdt_mask_common_harddead_zlt5.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_or_harddead.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_or_harddead.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_or_harddead_zlt2.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_or_harddead_zlt2.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_or_harddead_zlt5.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_or_harddead_zlt5.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_tight_harddead.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_tight_harddead.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_tight_harddead_zlt2.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_tight_harddead_zlt2.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/final_bdt_mask_tight_harddead_zlt5.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">final_bdt_mask_tight_harddead_zlt5.pdf</p>
+          <p class="caption">final_bdt_mask_phisymm_tight.pdf</p>
         </div>
         <div class="figure-card">
           <a href="figures/final_bdt_nom.pdf" target="_blank" rel="noopener">
@@ -453,24 +393,6 @@
             <div class="figure-placeholder">PDF</div>
           </a>
           <p class="caption">iso_tower_thresh_r03_per_clEt.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/mask_variant_bybin.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">mask_variant_bybin.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/mask_variant_shifts.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">mask_variant_shifts.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/mask_variant_xsec_spectrum.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">mask_variant_xsec_spectrum.pdf</p>
         </div>
         <div class="figure-card">
           <a href="figures/mc_purity_innerR_donut_scan.pdf" target="_blank" rel="noopener">
@@ -587,6 +509,12 @@
           <p class="caption">official_tower_tight_zscore.pdf</p>
         </div>
         <div class="figure-card">
+          <a href="figures/phisymm_variant_bybin.pdf" target="_blank" rel="noopener">
+            <div class="figure-placeholder">PDF</div>
+          </a>
+          <p class="caption">phisymm_variant_bybin.pdf</p>
+        </div>
+        <div class="figure-card">
           <a href="figures/purity_closure_flat_scan.pdf" target="_blank" rel="noopener">
             <div class="figure-placeholder">PDF</div>
           </a>
@@ -651,24 +579,6 @@
             <div class="figure-placeholder">PDF</div>
           </a>
           <p class="caption">purity_sim_ntbdt_scan.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/rdist_all_levels.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">rdist_all_levels.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/rdist_common.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">rdist_common.pdf</p>
-        </div>
-        <div class="figure-card">
-          <a href="figures/rdist_tight.pdf" target="_blank" rel="noopener">
-            <div class="figure-placeholder">PDF</div>
-          </a>
-          <p class="caption">rdist_tight.pdf</p>
         </div>
         <div class="figure-card">
           <a href="figures/xsec_flat_scan.pdf" target="_blank" rel="noopener">
