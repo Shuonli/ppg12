@@ -10,11 +10,11 @@ void plot_sideband(){
 
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_iso0ni0nt0.root");
   TFile* fdata = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_468.root");
+          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_bdt_nom.root");
   TFile* fmc   = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_468.root");
+          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_nom.root");
  TFile* fbkg = new TFile(
-          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
+          "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_bdt_nom.root");
 
   TH1D* h_tight_iso_cluster       = (TH1D*) fdata->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster    = (TH1D*) fdata->Get("h_tight_noniso_cluster_0");
@@ -129,7 +129,7 @@ void plot_sideband(){
   TCanvas* c3 = new TCanvas("c3","c3",600,600);
   frame_et_rec->Draw("axis");
   frame_et_rec->GetYaxis()->SetRangeUser(7e-3,2);
-  frame_et_rec->GetXaxis()->SetRangeUser(10,30);
+  frame_et_rec->GetXaxis()->SetRangeUser(10,32);
   frame_et_rec->GetYaxis()->SetTitle("Ratio");
   h_BoverA->Draw("same hist");
 

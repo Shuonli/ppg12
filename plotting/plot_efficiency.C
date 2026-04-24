@@ -25,7 +25,7 @@ void plot_efficiency(const std::string suffix = "bdt_nom")
 
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_truth->SetYTitle("Reconstruction Efficiency");
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 26);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 32);
     frame_et_truth->GetYaxis()->SetRangeUser(0.45, 1.1);
     frame_et_truth->Draw("axis");
 
