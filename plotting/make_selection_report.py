@@ -58,6 +58,9 @@ PLOT_GROUPS = [
         "final_tight_iso_cluster_{s}.pdf",
         "final_all_{s}.pdf",
     ]),
+    ("MC purity correction", [
+        "mc_purity_correction_{s}.pdf",
+    ]),
     ("Isolation fit (CONF)", [
         "h1D_iso_{s}_0_2.pdf",
         "h1D_iso_fit_{s}_0_2.pdf",
@@ -86,6 +89,12 @@ def get_suffixes():
         basename = os.path.basename(path)           # e.g. config_bdt_nom.yaml
         stem = basename.split("_", 1)[1]            # strip 'config_' -> bdt_nom.yaml
         stem = stem.removesuffix(".yaml")           # -> bdt_nom
+        # Only include per-period (_0rad / _1p5mrad) sections for the nominal
+        # variant. For all other variants, keep only the all-range bare config
+        # to avoid bloating the selection report.
+        if stem.endswith("_0rad") or stem.endswith("_1p5mrad"):
+            if stem not in ("bdt_nom_0rad", "bdt_nom_1p5mrad"):
+                continue
         suffixes.append(stem)
     return suffixes
 
@@ -139,17 +148,15 @@ def collect_plots(suffix):
                 seen.add(fpath)
         result.append((label, found))
 
-    # IsoET plots: tight only; pre-mark nontight/comb so the catch-all skips them
-    isoet_files = []
+    # IsoET tight/nontight/comb plots: not displayed in the report (they
+    # multiply per-config page count by ~12). Pre-mark as seen to protect
+    # against any future catch-all picking them up.
     for plot_type in ("tight", "nontight", "comb"):
         for ipt in range(N_PT_BINS):
             fname = f"iso_ET_{plot_type}_pt{ipt}_{suffix}.pdf"
             fpath = os.path.join(FIGURES_DIR, fname)
-            if os.path.exists(fpath) and fpath not in seen:
-                if plot_type == "tight":
-                    isoet_files.append(fpath)
+            if os.path.exists(fpath):
                 seen.add(fpath)
-    result.append(("Isolation ET", isoet_files))
 
     return result
 
@@ -235,6 +242,7 @@ def make_caption(fpath, suffix):
         "final_common_cluster":    "Common cluster yield (data vs MC)",
         "final_tight_iso_cluster": "Tight iso cluster yield (data vs MC)",
         "final_all":               "All correction steps",
+        "mc_purity_correction":    "MC purity correction factor (g_{truth}^{MC}/f_{fit})",
     }
     if plot_type in labels:
         return labels[plot_type]
@@ -293,6 +301,8 @@ def generate_tex(suffixes, output_tex):
         f.write(r"""\documentclass[11pt,letterpaper]{article}
 \usepackage{graphicx}
 \usepackage{subfig}
+\usepackage{chngcntr}
+\counterwithin{figure}{section}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 \usepackage{booktabs}
@@ -325,6 +335,11 @@ def generate_tex(suffixes, output_tex):
             total_plots = sum(len(ps) for _, ps in plots_by_group)
 
             section_name = r"\texttt{" + escape_latex(suffix) + "}"
+            # \clearpage flushes deferred floats from the previous section so
+            # \phantomsection's hyperref anchor lands on THIS section's page,
+            # not stuck on the prior section's overflow.
+            f.write("\\clearpage\n")
+            f.write("\\phantomsection\n")
             f.write(f"\\section{{{section_name}}}\n\n")
 
             # Config block: full file for nominal, unified diff for variants

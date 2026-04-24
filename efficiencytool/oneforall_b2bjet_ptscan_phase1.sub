@@ -1,0 +1,33 @@
+# oneforall_b2bjet_ptscan_phase1.sub
+#
+# Phase 1 for the b2bjet pT-threshold scan (common_b2bjet_pt_min = 5 / 7 GeV).
+# Runs oneforall_tree_and_yield.sh on the 4 merge-feeder (_0rad, _1p5mrad) configs:
+#   tree stage  = RecoEffCalculator_TTreeReader per sample (photon5/10/20, jet8/12/20/30/40, data)
+#   yield stage = MergeSim.C (lumi-weighted per-period MC merge into results/)
+#
+# Follow-up: submit the 2 bare-name configs via oneforall_b2bjet_ptscan_phase2.sub,
+# which runs merge_periods.sh + RecoEffCalculator(data) + CalculatePhotonYield x 2.
+
+universe              = vanilla
+request_memory        = 6GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg in (
+    config_bdt_b2bjet_pt5_0rad.yaml
+    config_bdt_b2bjet_pt5_1p5mrad.yaml
+    config_bdt_b2bjet_pt7_0rad.yaml
+    config_bdt_b2bjet_pt7_1p5mrad.yaml
+    config_bdt_b2bjet_pt5_npb0_0rad.yaml
+    config_bdt_b2bjet_pt5_npb0_1p5mrad.yaml
+    config_bdt_b2bjet_pt7_npb0_0rad.yaml
+    config_bdt_b2bjet_pt7_npb0_1p5mrad.yaml
+)

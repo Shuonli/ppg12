@@ -1,0 +1,22 @@
+# oneforall_all_phase2.sub
+#
+# Phase 2 for the FULL variant scan. Runs oneforall.sh on every bare-name
+# (all-range) config (31 files). Each job:
+#   - merge_periods.sh + RecoEffCalculator_TTreeReader(data) + CalculatePhotonYield x 2
+# Prerequisite: oneforall_all_phase1.sub must have completed successfully so
+# the per-period MC outputs exist.
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg from all_range_configs.list

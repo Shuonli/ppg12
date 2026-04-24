@@ -14,6 +14,7 @@ using namespace PPG12;
 #include <memory>
 
 #include "MbdPileupHelper.h"
+#include "TruthVertexReweightLoader.h"
 
 // EMCAL time sample period used in RecoEffCalculator_TTreeReader.C
 const float TIME_SAMPLE_NS = 17.6;
@@ -40,10 +41,18 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     std::string infilename_branch_dir = configYaml["input"]["photon_jet_file_branch_dir"].as<std::string>();
 
     // Keep output labeling by requested filetype, but allow selected aliases
-    // to read from existing nominal input samples.
+    // to read from existing nominal (single-interaction, SI) input samples.
+    // The *_nom suffix distinguishes SI from DI (*_double) in output filenames
+    // while pointing to the existing nominal trees.
     std::string input_filetype = filetype;
+    if (filetype == "photon5_nom")  input_filetype = "photon5";
     if (filetype == "photon10_nom") input_filetype = "photon10";
+    if (filetype == "photon20_nom") input_filetype = "photon20";
+    if (filetype == "jet8_nom")     input_filetype = "jet8";
     if (filetype == "jet12_nom")    input_filetype = "jet12";
+    if (filetype == "jet20_nom")    input_filetype = "jet20";
+    if (filetype == "jet30_nom")    input_filetype = "jet30";
+    if (filetype == "jet40_nom")    input_filetype = "jet40";
 
     std::string infilename = infilename_root_dir + input_filetype + infilename_branch_dir;
 
@@ -51,20 +60,6 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     {
         infilename = configYaml["input"]["data_file"].as<std::string>();
     }
-
-    TFile *corrFile = TFile::Open("/sphenix/user/hanpuj/JES_MC_Calibration/offline/output_forshuhang.root", "READ");
-    if (!corrFile || corrFile->IsZombie())
-    {
-        std::cerr << "[JESCalib] ERROR: cannot open JES calibration file\n";
-        return;
-    }
-    TF1 *f_corr = dynamic_cast<TF1*>(corrFile->Get("f_corr_run21_r04_z0_eta0123"));
-    if (!f_corr)
-    {
-        std::cerr << "[JESCalib] ERROR: f_corr not found in JES calibration file\n";
-        return;
-    }
-    bool calibjes = true;
 
     std::cout << "filetype: " << filetype
               << " (input source: " << input_filetype << ")" << std::endl;
@@ -136,20 +131,46 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     float vertex_weight = 1.0;
     float cross_weight = weight;
     cross_weight *= mix_weight;   // single/double interaction blending fraction (1.0 for data)
+
+    // Per-event lumi weight: pre-scales MC fills to a merge-target lumi so plain
+    // hadd across periods reproduces the all-range expectation. When
+    // lumi_target == lumi (default), lumi_weight = 1 → standalone per-period
+    // analysis unchanged. Merge-feeder configs set lumi_target = sum(L_periods)
+    // so per-period MC files are pre-scaled contributions to the all-range MC.
+    // Data is unaffected (gated by issim). Mirrors RecoEffCalculator_TTreeReader.C:362-373.
+    float lumi = configYaml["analysis"]["lumi"].as<float>(1.0);
+    float lumi_target = configYaml["analysis"]["lumi_target"].as<float>(lumi);
+    if (issim) {
+        cross_weight *= lumi / lumi_target;
+    }
     // Vertex reweighting for simulation (required when enabled):
     //   results/vertex_reweight_bdt_none.root : h_vertexz_ratio_data_over_mccombined
     TH1* h_vertex_reweight = nullptr;
     int vertex_reweight_on = 1;
     std::string vertex_reweight_file = "results/vertex_reweight.root";
     std::string vtx_scan_data_file = "";
+    // Data-driven iterative truth-vertex reweight (mutually exclusive with
+    // the f(z_r) reco-level reweight above; if both are set the reco one is
+    // silently forced off below).
+    TH1* h_truth_vtx_reweight = nullptr;
+    int truth_vertex_reweight_on = 0;
+    std::string truth_vertex_reweight_file;
     std::cout << "loading vertex reweight file: " << vertex_reweight_file << std::endl;
     if (issim)
     {
-        // optional config knobs (safe defaults)
         vertex_reweight_on = configYaml["analysis"]["vertex_reweight_on"].as<int>(1);
         vertex_reweight_file =
             configYaml["analysis"]["vertex_reweight_file"].as<std::string>("results/vertex_reweight.root");
         vtx_scan_data_file = configYaml["analysis"]["vertex_scan_data_file"].as<std::string>("");
+        truth_vertex_reweight_on = configYaml["analysis"]["truth_vertex_reweight_on"].as<int>(0);
+        truth_vertex_reweight_file =
+            configYaml["analysis"]["truth_vertex_reweight_file"].as<std::string>("");
+        if (truth_vertex_reweight_on && vertex_reweight_on)
+        {
+            std::cout << "[TruthVertexReweight] forcing vertex_reweight_on=0 "
+                      << "(mutually exclusive)." << std::endl;
+            vertex_reweight_on = 0;
+        }
     }
 
 
@@ -279,6 +300,12 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         }
     }
 
+    if (issim && truth_vertex_reweight_on)
+    {
+        h_truth_vtx_reweight = LoadTruthVertexReweight(truth_vertex_reweight_file);
+        if (!h_truth_vtx_reweight) return;
+    }
+
     // Create TChain instead of TTree
     std::string treename = configYaml["input"]["tree"].as<std::string>();
     TChain chain(treename.c_str());
@@ -292,6 +319,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     // Inner exclusion radius options: 0, 0.05, 0.1, 0.2
     float iso_emcalinnerr = configYaml["analysis"]["iso_emcalinnerr"].as<float>(0.0);
     std::cout << "iso_emcalinnerr: " << iso_emcalinnerr << std::endl;
+    float iso_topo_innerr = configYaml["analysis"]["iso_topo_innerr"].as<float>(0.0);
+    std::cout << "iso_topo_innerr: " << iso_topo_innerr << std::endl;
 
     int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
 
@@ -484,6 +513,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     float non_tight_bdt_min = configYaml["analysis"]["non_tight"]["bdt_min"].as<float>(0.0);
     float non_tight_bdt_max_slope = configYaml["analysis"]["non_tight"]["bdt_max_slope"].as<float>(0);
     float non_tight_bdt_max_intercept = configYaml["analysis"]["non_tight"]["bdt_max_intercept"].as<float>(non_tight_bdt_max);
+    float non_tight_bdt_min_slope = configYaml["analysis"]["non_tight"]["bdt_min_slope"].as<float>(0);
+    float non_tight_bdt_min_intercept = configYaml["analysis"]["non_tight"]["bdt_min_intercept"].as<float>(non_tight_bdt_min);
 
     // common cuts for both tight and non tight
 
@@ -549,6 +580,10 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     TTreeReaderValue<int> ncluster(reader, Form("ncluster_%s", clusternodename.c_str()));
     TTreeReaderValue<float> vertexz(reader, "vertexz");
     TTreeReaderValue<float> vertexz_truth(reader, "vertexz_truth");
+    // Optional; only present in reprocessed double-interaction slimtrees.
+    std::unique_ptr<TTreeReaderValue<float>> vertexz_truth_mb_ptr;
+    if (chain.GetBranch("vertexz_truth_mb"))
+        vertexz_truth_mb_ptr.reset(new TTreeReaderValue<float>(reader, "vertexz_truth_mb"));
     TTreeReaderValue<float> energy_scale(reader, "energy_scale");
     TTreeReaderArray<Bool_t> scaledtrigger(reader, "scaledtrigger");
     TTreeReaderArray<Bool_t> livetrigger(reader, "livetrigger");
@@ -578,8 +613,19 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_005 (reader, Form("cluster_iso_topo_005_%s",  clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_0075(reader, Form("cluster_iso_topo_0075_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_01  (reader, Form("cluster_iso_topo_01_%s",   clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_topo_02  (reader, Form("cluster_iso_topo_02_%s",   clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_005(reader, Form("cluster_iso_005_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_0075(reader, Form("cluster_iso_0075_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_04(reader, Form("cluster_iso_excl_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_005(reader, Form("cluster_iso_excl_005_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_0075(reader, Form("cluster_iso_excl_0075_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_01(reader, Form("cluster_iso_excl_01_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_02(reader, Form("cluster_iso_excl_02_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e1(reader, Form("cluster_e1_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e2(reader, Form("cluster_e2_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_e3(reader, Form("cluster_e3_%s", clusternodename.c_str()));
@@ -692,11 +738,21 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         cluster_npb_score = std::make_unique<TTreeReaderArray<float>>(reader, npb_score_branch.c_str());
     }
 
-    // Truth jet arrays
-    bool use_r04_branches = (filetype == "jet12_double" || filetype == "photon10_double");
-    std::string njet_truth_bname = use_r04_branches ? "njet_truth_AntiKt_Truth_r04" : "njet_truth";
-    std::string jet_truth_E_bname = use_r04_branches ? "jet_truth_E_AntiKt_Truth_r04" : "jet_truth_E";
-    std::string jet_truth_Pt_bname = use_r04_branches ? "jet_truth_Pt_AntiKt_Truth_r04" : "jet_truth_Pt";
+    // Truth / reco jet arrays
+    //
+    // Post-Apr 20 2026 reprocess: ALL slimtrees (SI, DI, data) carry the r04
+    // jet branches exclusively:
+    //   truth (sim only):  *_AntiKt_Truth_r04
+    //   reco  sim+data:    *_AntiKt_unsubtracted_r04_calib (JetCalib applied at DST stage)
+    // Picking a wrong/missing branch makes TTreeReader::Next() abort after the
+    // first event and silently zero all reco histograms. Default use_r04_branches
+    // = true matches current production; legacy trees with plain njet / jet_*
+    // can override to false via config.
+    bool use_r04_branches = configYaml["analysis"]["use_r04_branches"].as<bool>(true);
+
+    std::string njet_truth_bname    = use_r04_branches ? "njet_truth_AntiKt_Truth_r04"    : "njet_truth";
+    std::string jet_truth_E_bname   = use_r04_branches ? "jet_truth_E_AntiKt_Truth_r04"   : "jet_truth_E";
+    std::string jet_truth_Pt_bname  = use_r04_branches ? "jet_truth_Pt_AntiKt_Truth_r04"  : "jet_truth_Pt";
     std::string jet_truth_Eta_bname = use_r04_branches ? "jet_truth_Eta_AntiKt_Truth_r04" : "jet_truth_Eta";
     std::string jet_truth_Phi_bname = use_r04_branches ? "jet_truth_Phi_AntiKt_Truth_r04" : "jet_truth_Phi";
 
@@ -706,12 +762,14 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     TTreeReaderArray<float> jet_truth_Eta(reader, jet_truth_Eta_bname.c_str());
     TTreeReaderArray<float> jet_truth_Phi(reader, jet_truth_Phi_bname.c_str());
 
-    // Reco jet arrays
-    std::string njet_bname    = use_r04_branches ? "njet_AntiKt_unsubtracted_r04_calib"    : "njet";
-    std::string jet_E_bname   = use_r04_branches ? "jet_E_AntiKt_unsubtracted_r04_calib"   : "jet_E";
-    std::string jet_Pt_bname  = use_r04_branches ? "jet_Pt_AntiKt_unsubtracted_r04_calib"  : "jet_Pt";
-    std::string jet_Eta_bname = use_r04_branches ? "jet_Eta_AntiKt_unsubtracted_r04_calib" : "jet_Eta";
-    std::string jet_Phi_bname = use_r04_branches ? "jet_Phi_AntiKt_unsubtracted_r04_calib" : "jet_Phi";
+    // Both data and MC slimtrees now store JetCalib-calibrated jets.
+    // Keep use_r04_branches=false as the legacy escape for old trees.
+    const std::string jet_suffix = use_r04_branches ? "_AntiKt_unsubtracted_r04_calib" : std::string("");
+    std::string njet_bname    = use_r04_branches ? ("njet"    + jet_suffix) : std::string("njet");
+    std::string jet_E_bname   = use_r04_branches ? ("jet_E"   + jet_suffix) : std::string("jet_E");
+    std::string jet_Pt_bname  = use_r04_branches ? ("jet_Pt"  + jet_suffix) : std::string("jet_Pt");
+    std::string jet_Eta_bname = use_r04_branches ? ("jet_Eta" + jet_suffix) : std::string("jet_Eta");
+    std::string jet_Phi_bname = use_r04_branches ? ("jet_Phi" + jet_suffix) : std::string("jet_Phi");
 
     TTreeReaderValue<int>   njet  (reader, njet_bname.c_str());
     TTreeReaderArray<float> jet_E  (reader, jet_E_bname.c_str());
@@ -1157,6 +1215,13 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
             }
             weight *= vertex_weight;
         }
+        // Truth-vertex reweight: single MC → w(z_h); double MC → w(z_h)·w(z_mb).
+        if (issim && truth_vertex_reweight_on && !do_vertex_scan)
+        {
+            weight *= vertexz_truth_mb_ptr
+                ? TruthVertexWeight(h_truth_vtx_reweight, *vertexz_truth, **vertexz_truth_mb_ptr)
+                : TruthVertexWeight(h_truth_vtx_reweight, *vertexz_truth);
+        }
 
         // Scan mode: fill vertex histogram and skip all downstream processing
         if (do_vertex_scan)
@@ -1353,10 +1418,43 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
             if (use_topo_iso == 2)
             {
                 recoisoET = cluster_iso_topo_04[icluster];
+                // Inner-R subtraction on topo path (iso_topo_innerr == 0.0 => no subtraction)
+                if (iso_topo_innerr > 0.04 && iso_topo_innerr < 0.06)
+                    recoisoET -= cluster_iso_topo_005[icluster];
+                else if (iso_topo_innerr > 0.07 && iso_topo_innerr < 0.08)
+                    recoisoET -= cluster_iso_topo_0075[icluster];
+                else if (iso_topo_innerr > 0.09 && iso_topo_innerr < 0.11)
+                    recoisoET -= cluster_iso_topo_01[icluster];
+                else if (iso_topo_innerr > 0.19 && iso_topo_innerr < 0.21)
+                    recoisoET -= cluster_iso_topo_02[icluster];
             }
             else if (use_topo_iso == 1)
             {
                 recoisoET = cluster_iso_topo_03[icluster];
+            }
+            else if (use_topo_iso == 4)
+            {
+                // All-calo 120 MeV donut: outer R=0.4 minus all-calo inner {0.05, 0.075, 0.20}.
+                recoisoET = cluster_iso_04[icluster];
+                if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
+                    recoisoET -= cluster_iso_005[icluster];
+                else if (iso_emcalinnerr > 0.07 && iso_emcalinnerr < 0.08)
+                    recoisoET -= cluster_iso_0075[icluster];
+                else if (iso_emcalinnerr > 0.19 && iso_emcalinnerr < 0.21)
+                    recoisoET -= cluster_iso_02[icluster];
+            }
+            else if (use_topo_iso == 5)
+            {
+                // All-calo 120 MeV donut with EMCal tower-ownership exclusion.
+                recoisoET = cluster_iso_excl_04[icluster];
+                if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
+                    recoisoET -= cluster_iso_excl_005[icluster];
+                else if (iso_emcalinnerr > 0.07 && iso_emcalinnerr < 0.08)
+                    recoisoET -= cluster_iso_excl_0075[icluster];
+                else if (iso_emcalinnerr > 0.09 && iso_emcalinnerr < 0.11)
+                    recoisoET -= cluster_iso_excl_01[icluster];
+                else if (iso_emcalinnerr > 0.19 && iso_emcalinnerr < 0.21)
+                    recoisoET -= cluster_iso_excl_02[icluster];
             }
             else if (conesize == 4)
             {
@@ -1647,10 +1745,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 if (std::abs(dphi) > (M_PI / 2))  // Back-to-back: Δφ > 90°
                     otherside_jet = true;
 
-                float jescalib = 1.0;
-                if (calibjes && !issim)
-                    jescalib = f_corr->Eval(jet_Pt[ijet]) / jet_Pt[ijet];
-                float calibrated_jet_pT = jet_Pt[ijet] * jescalib;
+                float calibrated_jet_pT = jet_Pt[ijet];
                 if (std::abs(jet_Eta[ijet]) < jet_eta_cut && std::abs(dphi) > b2bjet_dphi)
                 {
                     if (calibrated_jet_pT > max_b2bjet_pT)
@@ -1791,7 +1886,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                 cluster_et1[icluster] < non_tight_et1_max &&
                 cluster_et4[icluster] > non_tight_et4_min &&
                 cluster_et4[icluster] < non_tight_et4_max &&
-                bdt_score > non_tight_bdt_min &&
+                bdt_score > non_tight_bdt_min_slope * cluster_Et[icluster] + non_tight_bdt_min_intercept &&
                 bdt_score < non_tight_bdt_max_slope * cluster_Et[icluster] + non_tight_bdt_max_intercept)
             {
                 // fail at least one of the tight cuts with small correlation

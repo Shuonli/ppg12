@@ -46,15 +46,15 @@ void plot_final_selection(string tune = "bdt_nom")
     TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
     TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
-    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_10.root");
-    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_05.root");
-    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_20.root");
+    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10.root");
+    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_05.root");
+    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_20.root");
     TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
     h_data->Scale(1.0 / deta);
     TH1F *h_data_cp = (TH1F *)h_data->Clone("h_data_cp");
-    TH1F *h_pythia = (TH1F *)fin_data->Get("h_truth_pT_0");
+    TH1F *h_pythia = (TH1F *)fin_data->Get("h_truth_pT_novtx_0");
     h_pythia->Scale(1.0 / deta);
     TH1F *h_common_cluster_data = (TH1F *)fin_data->Get("h_common_cluster_0");
     h_common_cluster_data->Scale(1.0 / deta);
@@ -458,7 +458,7 @@ void plot_final_selection(string tune = "bdt_nom")
     l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX", "fpl");
 
     string st_thScale = "#kern[-0.55]{#it{#mu}_{f}} = #kern[-0.55]{#it{#mu}_{F}} = #kern[-0.55]{#it{#mu}_{R}} = #kern[-0.55]{#it{E}_{T}^{#gamma}}";
-    l1->AddEntry((TObject *)0, "#scale[0.93]{CT14 PDF / BFG II FF}", "");
+    l1->AddEntry((TObject *)0, "#scale[0.93]{CT14nlo PDF / BFG II FF}", "");
     l1->AddEntry((TObject *)0, "", "");
     myText(xpos + 0.085, ypos2 + 1 * dy1 + 0.015, 1, st_thScale.c_str(), fontsize, 0);
     // l1->AddEntry((TObject*)0, "#it{#mu}_{f} = #it{#mu}_{f} = #it{#mu}_{R} = #it{E}_{T}^{#gamma}", "");
@@ -476,7 +476,7 @@ void plot_final_selection(string tune = "bdt_nom")
     frame_et_truth->SetYTitle("Theory / Data");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
     frame_et_truth->GetYaxis()->SetNdivisions(506);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.2, 3);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.5, 2.0);
     frame_et_truth->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
