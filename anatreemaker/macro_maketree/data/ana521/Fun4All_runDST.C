@@ -36,6 +36,7 @@
 #include <clusteriso/ClusterIso.h>
 
 #include <jetbase/FastJetAlgo.h>
+#include <jetbase/JetCalib.h>
 #include <jetbase/JetReco.h>
 #include <jetbase/TowerJetInput.h>
 
@@ -370,10 +371,20 @@ void Fun4All_runDST(
   _jetRecoUnsub->Verbosity(0);
   se->registerSubsystem(_jetRecoUnsub);
 
+  JetCalib *jetCalib04 = new JetCalib("JetCalib04");
+  jetCalib04->set_InputNode("AntiKt_unsubtracted_r04");
+  jetCalib04->set_OutputNode("AntiKt_unsubtracted_r04_calib");
+  jetCalib04->set_JetRadius(0.4);
+  jetCalib04->set_ZvrtxNode("GlobalVertexMap");
+  jetCalib04->set_ApplyZvrtxDependentCalib(true);
+  jetCalib04->set_ApplyEtaDependentCalib(true);
+  se->registerSubsystem(jetCalib04);
+
   std::string filename = first_file.substr(first_file.find_last_of("/\\") + 1);
   std::string OutFile = Form("OUTTREE_%s", filename.c_str());
   CaloAna24 *caloana24 = new CaloAna24("CaloAna24", OutFile);
   caloana24->set_isMC(false);
+  caloana24->set_jet_node_name("AntiKt_unsubtracted_r04_calib");
   se->registerSubsystem(caloana24);
 
   InputManagers();

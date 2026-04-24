@@ -49,8 +49,18 @@ void scale_histogram(TH1 *h, float lumi)
     }
 }
 
-void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pade.yaml", bool isMC = false)
+void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pade.yaml", bool isMC = false, bool isMCInclusive = false)
 {
+    // isMCInclusive=true overrides the default isMC=true behaviour: instead of using
+    // the jet-only merged MC as the "data" side, use the full (photon + jet, cross-
+    // section weighted) inclusive merged MC. This is the proper MC closure test for
+    // the full cocktail that matches the as-taken data composition, whereas the
+    // isMC && !isMCInclusive path is the jet-only self-consistency test.
+    if (isMCInclusive && !isMC)
+    {
+        std::cout << "WARN: isMCInclusive=true requires isMC=true. Forcing isMC=true." << std::endl;
+        isMC = true;
+    }
     float mbdcorr = 25.2/42 / 0.57;
     float solid_angle = 2 * M_PI * 0.7 * 2;
     // lumi times cross section is events
@@ -76,7 +86,10 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     // for mc we can check the actual purity
     if (isMC)
     {
-        luminosity = jetluminosity;
+        // For the jet-only closure (isMCInclusive=false) the jet MC is the "data", so
+        // we use its luminosity. For the inclusive-MC closure the "data" is the same
+        // photon+jet cocktail as the MC itself (siminput), so use simluminosity.
+        luminosity = isMCInclusive ? simluminosity : jetluminosity;
     }
 
     int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
@@ -85,7 +98,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
-    std::string mcstring = isMC ? "_mc" : "";
+    std::string mcstring = isMC ? (isMCInclusive ? "_mcincl" : "_mc") : "";
 
     std::string outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + mcstring + ".root";
     std::string mc_outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + "_mc.root";
@@ -95,8 +108,15 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     std::string datainput = configYaml["output"]["data_outfile"].as<std::string>() + "_" + var_type + ".root";
     if (isMC)
     {
-        datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_jet_" + var_type + ".root";
-        // datainput = "results/MC_efficiency_nom.root";
+        if (isMCInclusive)
+        {
+            // Inclusive MC = photon + jet cross-section weighted merge, same file as siminput
+            datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
+        }
+        else
+        {
+            datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_jet_" + var_type + ".root";
+        }
     }
     std::string siminput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
@@ -166,6 +186,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     std::string reco_efficiency_id_name = "eff_id_eta" + histogram_postfix;
 
     std::string truth_pythia_name = "h_truth_pT" + histogram_postfix;
+    std::string truth_pythia_novtx_name = "h_truth_pT_novtx" + histogram_postfix;
 
     std::string truth_with_vertex_name = "h_truth_pT_vertexcut" + histogram_postfix;
 
@@ -205,6 +226,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     TEfficiency *eff_id = (TEfficiency *)fsimin->Get(reco_efficiency_id_name.c_str());
 
     TH1F *h_pythia_truth = (TH1F *)fsimin->Get(truth_pythia_name.c_str());
+    TH1F *h_pythia_truth_novtx = (TH1F *)fsimin->Get(truth_pythia_novtx_name.c_str());
 
     // TH1F* h_truth_with_cut = (TH1F *)fsimin->Get(truth_with_cut_name.c_str());
 
@@ -579,14 +601,14 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
 
     int nFinePoints = 1000; // Number of points for granular intervals
-    double xMin = 8;        // Fit range start
+    double xMin = 10;       // Fit range start (tightened 2026-04-24; was 8)
     double xMax = 32;       // Fit range end
 
     TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
     f_purity_fit->SetParameters(1.0, 15.0, 5.0);
     if(fitoption ==1)
     {
-        f_purity_fit = new TF1("f_purity_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+        f_purity_fit = new TF1("f_purity_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
         f_purity_fit->SetParameters(0.5, 0.5, 0.5);
     }
     
@@ -630,12 +652,12 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     if(fitoption ==1)
     {
-        f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+        f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
         f_purity_leak_fit->SetParameters(0.5, 0.5, 0.5);
     }
 
     //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "pol3", 8, 35);
-    //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+    //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
     //    f_purity_leak_fit->SetParameters(0.5, 0.5, 0.5);
 
 
@@ -687,7 +709,7 @@ std::cout << "p-value = " << pvalue << "\n";
         f_purity_truth_fit->SetParameters(1.0, 15.0, 5.0);
         if (fitoption == 1)
         {
-            f_purity_truth_fit = new TF1("f_purity_truth_fit", "([0] + [1]*x) / (1 + [2]*x)", xMin, xMax);
+            f_purity_truth_fit = new TF1("f_purity_truth_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
             f_purity_truth_fit->SetParameters(0.5, 0.5, 0.5);
         }
         g_purity_truth->Fit(f_purity_truth_fit, "REMN", "", xMin, xMax);
@@ -1034,6 +1056,7 @@ std::cout << "p-value = " << pvalue << "\n";
     }
     */
     scale_histogram(h_pythia_truth, simluminosity);
+    scale_histogram(h_pythia_truth_novtx, simluminosity);
     // h_truth_with_cut
     /*
     for (int ibin = 1; ibin <= h_truth_with_cut->GetNbinsX(); ibin++)
@@ -1075,6 +1098,7 @@ std::cout << "p-value = " << pvalue << "\n";
     TFile *fout = new TFile(outfilename.c_str(), "RECREATE");
 
     h_pythia_truth->Write();
+    h_pythia_truth_novtx->Write();
     h_truth_with_cut->Write();
 
     for (int i = 0; i < niterations_total; i++)
@@ -1164,6 +1188,53 @@ std::cout << "p-value = " << pvalue << "\n";
         std::cout << "response->Hresponse()->Write()" << std::endl;
         response->Hresponse()->Write();
     }
+
+    // ---------------------------------------------------------------------
+    // Tower-index (ietacent x iphicent) acceptance maps:
+    //   - Read 4 TH2s from signal merge (fsimin) and jet merge, sum into the
+    //     inclusive MC tower map (MergeSim already applies xsec x lumi/lumi_target
+    //     weights per sample, so plain Add gives inclusive).
+    //   - Read the 4 TH2s from data (fdatain) as-is.
+    //   - Write both with _mc_inclusive / _data suffix into Photon_final_{var_type}.root
+    //     for direct downstream plotting (no re-hadd needed).
+    // ---------------------------------------------------------------------
+    fout->cd();
+    const std::vector<std::string> tower_levels = {
+        "preselect", "common", "tight", "tight_iso"
+    };
+    std::string jetinput = configYaml["output"]["eff_outfile"].as<std::string>()
+                         + "_jet_" + var_type + ".root";
+    TFile *fjetin = TFile::Open(jetinput.c_str(), "READ");
+    for (const auto &lvl : tower_levels)
+    {
+        std::string hname = "h_etaphi_tower_" + lvl;
+        TH2F *h_sig = (TH2F *) fsimin->Get(hname.c_str());
+        if (!h_sig) {
+            std::cout << "WARNING: missing " << hname << " in " << siminput << std::endl;
+            continue;
+        }
+        TH2F *h_inc = (TH2F *) h_sig->Clone((hname + "_mc_inclusive").c_str());
+        h_inc->SetDirectory(fout);
+        if (fjetin && !fjetin->IsZombie()) {
+            TH2F *h_jet = (TH2F *) fjetin->Get(hname.c_str());
+            if (h_jet) h_inc->Add(h_jet);
+            else std::cout << "WARNING: missing " << hname << " in " << jetinput << std::endl;
+        }
+        h_inc->Write((hname + "_mc_inclusive").c_str(), TObject::kOverwrite);
+
+        // Pass data through too (only if fdatain holds real data, not the
+        // isMC-closure-mode reuse of the MC file).
+        if (!isMC)
+        {
+            TH2F *h_dat = (TH2F *) fdatain->Get(hname.c_str());
+            if (h_dat) {
+                TH2F *h_dat_out = (TH2F *) h_dat->Clone((hname + "_data").c_str());
+                h_dat_out->SetDirectory(fout);
+                h_dat_out->Write((hname + "_data").c_str(), TObject::kOverwrite);
+            }
+        }
+    }
+    if (fjetin) fjetin->Close();
 
     fout->Write();
     fout->Close();

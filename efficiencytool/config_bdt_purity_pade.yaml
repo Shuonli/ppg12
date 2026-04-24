@@ -12,7 +12,7 @@ input:
   # bdt_et_bin_edges has N+1 values; bdt_et_bin_models has N values.
   # Clusters outside all bins use bdt_model_name as fallback.
   bdt_et_bin_edges: [8, 15, 35]
-  bdt_et_bin_models: ["base_v1E", "base_v1E"]
+  bdt_et_bin_models: ["base_v3E", "base_v3E"]
   unfold_input: "results/MC_efficiency_photon5.root"
 
 output:
@@ -76,11 +76,28 @@ analysis:
   # Path to data vertex scan output file (h_vertexz). Used for on-the-fly vertex reweighting.
   # Leave empty ("") to use the pre-made vertex_reweight_file instead.
   vertex_scan_data_file: ""
+  # Data-driven iterative truth-vertex reweight (standalone tool in
+  # efficiencytool/truth_vertex_reweight/). When on, forces vertex_reweight_on
+  # off and applies w(z_h) (single MC) or w(z_h)*w(z_mb) (double MC) per event.
+  # Flip truth_vertex_reweight_on to 1 to switch the nominal 1.5 mrad
+  # analysis from the f(z_r) reco-level reweight to the truth-level one.
+  truth_vertex_reweight_on: 0
+  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
   fit_option: 0
   cluster_escale: 1.0
   cluster_eres: 0.0
   mc_purity_correction: 0
   mc_purity_correction_file: ""
+
+  # Data-driven tower mask (phi-symmetry z<-2 at tight-selection level).
+  # Nominal production applies this mask symmetrically to data and MC to
+  # correct for MC not emulating all Run-24 data dead towers. Switched on
+  # as nominal on 2026-04-23. Other single-level masks (preselect, common,
+  # OR) are available as systematic cross-checks via VARIANTS in
+  # make_bdt_variations.py.
+  tower_mask_on: 1
+  tower_mask_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/tower_masks_bdt_nom.root"
+  tower_mask_name: "mask_phisymm_tight"
 
   tight:
     reta77_min: 0.0
@@ -145,8 +162,8 @@ analysis:
     #bdt
     bdt_max: 1.0
     bdt_min: 0.7
-    bdt_min_slope: -0.015
-    bdt_min_intercept: 0.80
+    bdt_min_slope: -0.003333333333333336
+    bdt_min_intercept: 0.8333333333333334
 
 
   non_tight:
@@ -201,9 +218,12 @@ analysis:
 
     #bdt
     bdt_max: 0.5
+    bdt_max_slope: 0.003333333333333336
+    bdt_max_intercept: 0.6666666666666666
     bdt_min: 0.02
-    bdt_min_slope: -0.015
-    bdt_min_intercept: 0.80
+
+    bdt_min_intercept: 0.7333333333333333
+    bdt_min_slope: -0.01333333333333333
 
   common:
     wr_cogx_bound: 0.0
@@ -231,12 +251,14 @@ analysis:
 
 
   # Run range for data processing (-1 = no bound)
-  run_min: 51274
+  run_min: 47289
   run_max: 54000
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
-  # Total luminosity (pb^-1) for the selected run range
-  lumi: 16.2735
+  # Total luminosity (pb^-1) for the selected run range.
+  # Nominal switched to all-z (beam-delivered) 64.3718 pb^-1 on 2026-04-22;
+  # paired with vertex_cut_truth=9999 to widen the MBD-eff truth denominator.
+  lumi: 64.3718
 
   unfold:
     resultit: 2
@@ -246,3 +268,5 @@ analysis:
 
 
 
+  lumi_target: 64.3718
+  vertex_cut_truth: 9999.0

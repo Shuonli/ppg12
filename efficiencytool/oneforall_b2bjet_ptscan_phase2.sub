@@ -1,0 +1,25 @@
+# oneforall_b2bjet_ptscan_phase2.sub
+#
+# Phase 2 for the b2bjet pT-threshold scan. Run AFTER phase 1 completes.
+# Invokes oneforall.sh on the 2 bare-name (all-range) configs, which triggers
+# merge_periods.sh + RecoEffCalculator_TTreeReader(data) + CalculatePhotonYield x 2.
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg in (
+    config_bdt_b2bjet_pt5.yaml
+    config_bdt_b2bjet_pt7.yaml
+    config_bdt_b2bjet_pt5_npb0.yaml
+    config_bdt_b2bjet_pt7_npb0.yaml
+)

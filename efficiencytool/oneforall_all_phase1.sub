@@ -1,0 +1,24 @@
+# oneforall_all_phase1.sub
+#
+# Phase 1 for the FULL variant scan. Runs oneforall_tree_and_yield.sh on every
+# feeder config (80 files: *_0rad.yaml, *_1p5mrad.yaml, *_0mrad.yaml for
+# ntbdtpair). Each job does the TTree stage (RecoEffCalculator_TTreeReader per
+# sample) + MergeSim (per-period MC merge into results/).
+#
+# Phase 2 (oneforall_all_phase2.sub) runs AFTER this completes, on the 31
+# bare-name configs.
+
+universe              = vanilla
+request_memory        = 6GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg from all_feeder_configs.list

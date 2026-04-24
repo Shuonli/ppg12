@@ -775,12 +775,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     TTreeReaderArray<float> jet_truth_Eta(reader, jet_truth_Eta_bname.c_str());
     TTreeReaderArray<float> jet_truth_Phi(reader, jet_truth_Phi_bname.c_str());
 
-    // MC slimtrees store JetCalib-calibrated jets (_AntiKt_unsubtracted_r04_calib);
-    // data slimtrees (ana521 production) use plain _AntiKt_unsubtracted_r04 without _calib.
+    // Both data (ana521 production, Apr 24 2026 reprocess with JetCalib) and MC
+    // slimtrees now store JetCalib-calibrated jets under _AntiKt_unsubtracted_r04_calib.
     // Keep use_r04_branches=false as the legacy escape for old trees.
-    const std::string jet_suffix = use_r04_branches
-        ? (issim ? "_AntiKt_unsubtracted_r04_calib" : "_AntiKt_unsubtracted_r04")
-        : std::string("");
+    const std::string jet_suffix = use_r04_branches ? "_AntiKt_unsubtracted_r04_calib" : std::string("");
     std::string njet_bname    = use_r04_branches ? ("njet"    + jet_suffix) : std::string("njet");
     std::string jet_E_bname   = use_r04_branches ? ("jet_E"   + jet_suffix) : std::string("jet_E");
     std::string jet_Pt_bname  = use_r04_branches ? ("jet_Pt"  + jet_suffix) : std::string("jet_Pt");
