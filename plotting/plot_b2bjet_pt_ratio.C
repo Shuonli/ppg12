@@ -28,11 +28,11 @@ void plot_b2bjet_pt_ratio()
     c->SetTicky();
 
     TH2F *frame = new TH2F("frame", ";#it{E}_{T}^{#gamma} [GeV];d#sigma(b2b #it{p}_{T}^{jet}#geqX) / d#sigma(b2b #it{p}_{T}^{jet}#geq5 GeV)",
-                           100, 8, 36, 100, 0, 1.4);
+                           100, 10, 36, 100, 0, 1.4);
     frame->GetYaxis()->SetTitleOffset(1.2);
     frame->Draw();
 
-    TLine *one = new TLine(8, 1.0, 36, 1.0);
+    TLine *one = new TLine(10, 1.0, 36, 1.0);
     one->SetLineStyle(2);
     one->SetLineColor(kGray + 1);
     one->Draw("same");

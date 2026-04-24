@@ -29,7 +29,7 @@ void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficienc
 
     frame_et_truth->SetYTitle("dN/N/dp_{T}");
     frame_et_truth->GetYaxis()->SetRangeUser(1e-6, 1);
-    frame_et_truth->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
     frame_et_truth->GetXaxis()->SetTitleOffset(0.98);
     frame_et_truth->GetYaxis()->SetTitleOffset(1.15);
     frame_et_truth->GetXaxis()->SetLabelSize(0.045);
@@ -87,7 +87,7 @@ void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficienc
     frame_ratio->SetYTitle("Data / Pythia prior");
     frame_ratio->GetYaxis()->SetNdivisions(506);
     frame_ratio->GetYaxis()->SetRangeUser(0.0, 2.0);
-    frame_ratio->GetXaxis()->SetRangeUser(8, 35);
+    frame_ratio->GetXaxis()->SetRangeUser(10, 35);
     frame_ratio->GetYaxis()->SetTitleOffset(frame_et_truth->GetYaxis()->GetTitleOffset() * 4 / 6.);
     frame_ratio->GetYaxis()->SetLabelOffset(frame_et_truth->GetYaxis()->GetLabelOffset() * 4 / 6.);
     frame_ratio->GetXaxis()->SetLabelSize(frame_et_truth->GetXaxis()->GetLabelSize() * 6 / 4.);

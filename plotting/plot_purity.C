@@ -19,7 +19,7 @@ void plot_purity()
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];Purity");
     frame_et_rec->GetYaxis()->SetRangeUser(0.0, 1.1);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 30);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 30);
     frame_et_rec->Draw("axis");
     
     gpurity->SetMarkerColor(kBlack);

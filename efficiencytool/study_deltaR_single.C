@@ -53,8 +53,8 @@ void study_deltaR_single(int maxEvents = -1)
     const std::vector<float> dR_thresholds = {0.05f, 0.08f, 0.1f, 0.15f, 0.2f, 0.3f};
 
     // pT bin edges (from plotcommon.h)
-    const int NptBins = 12;
-    const double ptEdges[13] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
+    const int NptBins = 11;
+    const double ptEdges[12] = {10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
 
     // Output
     const TString outFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/deltaR_single_study.root";

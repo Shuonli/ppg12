@@ -239,8 +239,8 @@ void investigate_vertex_shift() {
     TH1F *h_dz_failed_double = new TH1F("h_dz_failed_double",  ";|#Deltaz| [cm];Failed match", 60, 0, 60);
 
     // Matching eff vs ET for single and double
-    const int nPtBins = 12;
-    double ptBins[nPtBins+1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
+    const int nPtBins = 11;
+    double ptBins[nPtBins+1] = {10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
     TH1F *h_truth_pt_single   = new TH1F("h_truth_pt_single",   ";truth p_{T} [GeV];", nPtBins, ptBins);
     TH1F *h_matched_pt_single = new TH1F("h_matched_pt_single", ";truth p_{T} [GeV];", nPtBins, ptBins);
     TH1F *h_truth_pt_double   = new TH1F("h_truth_pt_double",   ";truth p_{T} [GeV];", nPtBins, ptBins);

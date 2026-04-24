@@ -48,8 +48,8 @@ analysis:
   cone_size: 3
   eff_dR: 0.1
   trigger_used: 30
-  pT_bins: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36]
-  pT_bins_truth: [7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45]
+  pT_bins: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36]
+  pT_bins_truth: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45]
   use_topo_iso: 2  # 0: standard cone (size set by cone_size), 1: cluster_iso_topo_03, 2: cluster_iso_topo_04
   iso_threshold: 1
   iso_hcalonly: 0

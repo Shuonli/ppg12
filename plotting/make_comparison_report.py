@@ -31,7 +31,7 @@ OUTPUT_DIR  = "selection_report"
 TEX_NAME    = "comparison_report.tex"
 
 # Number of pT bins (matches NptBins in plotcommon.h)
-N_PT_BINS = 12
+N_PT_BINS = 11
 
 # Ordered plot groups with display label and expected filenames (use {s} for suffix).
 PLOT_GROUPS = [

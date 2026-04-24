@@ -139,7 +139,7 @@ void plot_saturation(const std::string suffix = "showershape")
         TPad *p1 = dynamic_cast<TPad*>(c->FindObject("p1"));
         p1->cd(); p1->SetLogy();
         TH1F *fr = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr_all"));
-        fr->GetXaxis()->SetRangeUser(8, 40);
+        fr->GetXaxis()->SetRangeUser(10, 40);
         fr->GetYaxis()->SetRangeUser(2e-4, 1.0);
         fr->SetYTitle("Normalised entries / GeV");
         fr->GetXaxis()->SetLabelSize(0);
@@ -160,7 +160,7 @@ void plot_saturation(const std::string suffix = "showershape")
         TPad *p2 = dynamic_cast<TPad*>(c->FindObject("p2"));
         p2->cd();
         TH1F *fr2 = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr2_all"));
-        fr2->GetXaxis()->SetRangeUser(8, 40);
+        fr2->GetXaxis()->SetRangeUser(10, 40);
         fr2->GetYaxis()->SetRangeUser(0.0, 2.5);
         fr2->SetYTitle("Data / MC");
         fr2->GetYaxis()->SetTitleSize(0.12);  fr2->GetYaxis()->SetTitleOffset(0.45);
@@ -190,7 +190,7 @@ void plot_saturation(const std::string suffix = "showershape")
         TPad *p1 = dynamic_cast<TPad*>(c->FindObject("p1"));
         p1->cd(); p1->SetLogy();
         TH1F *fr = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr_sat"));
-        fr->GetXaxis()->SetRangeUser(8, 40);
+        fr->GetXaxis()->SetRangeUser(10, 40);
         fr->GetYaxis()->SetRangeUser(2e-4, 1.0);
         fr->SetYTitle("Normalised entries / GeV");
         fr->GetXaxis()->SetLabelSize(0);
@@ -209,7 +209,7 @@ void plot_saturation(const std::string suffix = "showershape")
         TPad *p2 = dynamic_cast<TPad*>(c->FindObject("p2"));
         p2->cd();
         TH1F *fr2 = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr2_sat"));
-        fr2->GetXaxis()->SetRangeUser(8, 40);
+        fr2->GetXaxis()->SetRangeUser(10, 40);
         fr2->GetYaxis()->SetRangeUser(0.0, 2.5);
         fr2->SetYTitle("Data / MC");
         fr2->GetYaxis()->SetTitleSize(0.12);  fr2->GetYaxis()->SetTitleOffset(0.45);
@@ -236,7 +236,7 @@ void plot_saturation(const std::string suffix = "showershape")
 
         TCanvas *c = new TCanvas("c_sat_frac", "c_sat_frac", 600, 600);
         TH1F *fr = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr_frac"));
-        fr->GetXaxis()->SetRangeUser(8, 40);
+        fr->GetXaxis()->SetRangeUser(10, 40);
         fr->GetYaxis()->SetRangeUser(0.0, 0.6);
         fr->SetYTitle("Fraction of clusters with n_{sat} > 0");
         fr->Draw("axis");
@@ -267,7 +267,7 @@ void plot_saturation(const std::string suffix = "showershape")
         TCanvas *c = new TCanvas("c_sat_breakdown_data", "c_sat_breakdown_data", 600, 600);
         c->SetLogy();
         TH1F *fr = dynamic_cast<TH1F*>(frame_et_rec->Clone("fr_breakdown"));
-        fr->GetXaxis()->SetRangeUser(8, 40);
+        fr->GetXaxis()->SetRangeUser(10, 40);
         fr->GetYaxis()->SetRangeUser(1e-5, 1.0);
         fr->SetYTitle("Fraction of clusters / GeV");
         fr->Draw("axis");
