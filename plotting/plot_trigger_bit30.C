@@ -153,7 +153,7 @@ void plot_trigger_bit30()
         c1->SetLeftMargin(0.17);
         c1->SetRightMargin(0.04);
         c1->SetTopMargin(0.06);
-        c1->SetBottomMargin(0.12);
+        c1->SetBottomMargin(0.15);
 
         h_MBDns->SetStats(0);
         h_MBDns->GetXaxis()->SetRangeUser(7, 40);
@@ -161,21 +161,30 @@ void plot_trigger_bit30()
         h_MBDns->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         h_MBDns->GetYaxis()->SetTitle("Clusters");
         h_MBDns->GetYaxis()->SetTitleOffset(1.45);
+        h_MBDns->GetXaxis()->SetTitleOffset(1.15);
 
+        // MBD N&S drawn on top (thick solid black). Photon 4 GeV underneath
+        // (thinner dashed red). Since bit-30 eff ~99.6%, the two histograms
+        // sit on top of each other above the turn-on; differentiating line
+        // style makes both visible at a glance.
         h_MBDns->SetLineColor(kBlack);
-        h_MBDns->SetLineWidth(2);
+        h_MBDns->SetLineStyle(1);   // solid
+        h_MBDns->SetLineWidth(3);
         h_MBDns->SetMarkerColor(kBlack);
         h_MBDns->SetMarkerStyle(20);
         h_MBDns->SetMarkerSize(0.7);
 
         h_Photon4GeV->SetLineColor(kRed + 1);
+        h_Photon4GeV->SetLineStyle(2);   // dashed
         h_Photon4GeV->SetLineWidth(2);
         h_Photon4GeV->SetMarkerColor(kRed + 1);
         h_Photon4GeV->SetMarkerStyle(24);
         h_Photon4GeV->SetMarkerSize(0.7);
 
-        h_MBDns->Draw("hist e");
-        h_Photon4GeV->Draw("hist e same");
+        // Draw Photon4GeV first (underneath), then MBDns on top so both are
+        // distinguishable in the overlap region.
+        h_Photon4GeV->Draw("hist");
+        h_MBDns->Draw("hist same");
 
         TLegend *l = new TLegend(0.45, 0.66, 0.93, 0.82);
         legStyle(l, 0.20, 0.038);
@@ -204,7 +213,7 @@ void plot_trigger_bit30()
         c2->SetLeftMargin(0.17);
         c2->SetRightMargin(0.04);
         c2->SetTopMargin(0.06);
-        c2->SetBottomMargin(0.12);
+        c2->SetBottomMargin(0.15);
 
         TH1F *frame = new TH1F("frame_trig_turnon", "",
                                1, 7, 40);
@@ -215,6 +224,7 @@ void plot_trigger_bit30()
         frame->GetYaxis()->SetTitle(
             "#varepsilon_{L1}(Photon 4 GeV | MBD N&S)");
         frame->GetYaxis()->SetTitleOffset(1.35);
+        frame->GetXaxis()->SetTitleOffset(1.15);
         frame->Draw("axis");
 
         eff_bit30->SetMarkerStyle(20);
@@ -259,14 +269,14 @@ void plot_trigger_bit30()
         ptop->SetLeftMargin(0.17);
         ptop->SetRightMargin(0.04);
         ptop->SetTopMargin(0.06);
-        ptop->SetBottomMargin(0.12);
+        ptop->SetBottomMargin(0.16);
         ptop->Draw();
 
         TPad *pbot = new TPad("pbot", "", 0.0, 0.00, 1.0, 0.52);
         pbot->SetLeftMargin(0.17);
         pbot->SetRightMargin(0.04);
         pbot->SetTopMargin(0.06);
-        pbot->SetBottomMargin(0.14);
+        pbot->SetBottomMargin(0.17);
         pbot->Draw();
 
         // ---- Top panel: full turn-on ------------------------------------
