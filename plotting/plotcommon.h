@@ -5,6 +5,13 @@
 const int NptBins = 12;
 const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
 
+inline TH1D *rebinToPtBins(TH1D *h, const char *name)
+{
+  double edges[NptBins + 1];
+  for (int i = 0; i <= NptBins; ++i) edges[i] = ptRanges[i];
+  return (TH1D *) h->Rebin(NptBins, name, edges);
+}
+
 const float pTmin = 10;
 const float pTmax = 36;
 
@@ -18,11 +25,11 @@ TGraph *linezero;
 
 string strleg1 = "#bf{#it{sPHENIX}} Internal";
 string strleg2 = "#it{p}+#it{p} #kern[-0.1]{#sqrt{#it{s}} = 200 GeV}";
-string strleg2_1 = "#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, 16.6 pb^{-1}}";
+string strleg2_1 = "#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, 64.37 pb^{-1}}";
 string strleg3 = "|#it{#eta^{#gamma}}| < 0.7";
 string strlegphotonjet = "|#it{#eta^{#gamma}}| < 0.7, |#it{#eta^{jet}}| < 0.6";
 string strleg4 = "#it{E}_{T}^{iso, #kern[-0.2]{#it{R}=0.3}}< 4 GeV";
-string strleg5 = "         = 16.6 pb^{-1}";
+string strleg5 = "         = 64.37 pb^{-1}";
 string strdijet = "#Delta#it{#phi} > 3#pi/4";
 string strSigMC = "PYTHIA Signal";
 string strMC = "PYTHIA8";

@@ -9,8 +9,8 @@ void plot_response()
 
     string matrix = "response matrix";
 
-    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nom.root");
-    TFile *fdata_nr = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_nr.root");
+    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root");
+    TFile *fdata_nr = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_no_unfolding_reweighting.root");
 
     TH2D* h_response_leak_reweighted = (TH2D*) fdata->Get("h_response_full_0");
 
