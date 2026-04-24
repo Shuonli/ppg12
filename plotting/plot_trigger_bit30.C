@@ -156,7 +156,7 @@ void plot_trigger_bit30()
         c1->SetBottomMargin(0.15);
 
         h_MBDns->SetStats(0);
-        h_MBDns->GetXaxis()->SetRangeUser(7, 40);
+        h_MBDns->GetXaxis()->SetRangeUser(10, 40);
         h_MBDns->GetYaxis()->SetRangeUser(1, 5.0 * h_MBDns->GetMaximum());
         h_MBDns->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         h_MBDns->GetYaxis()->SetTitle("Clusters");
@@ -218,7 +218,7 @@ void plot_trigger_bit30()
         TH1F *frame = new TH1F("frame_trig_turnon", "",
                                1, 7, 40);
         frame->SetStats(0);
-        frame->GetXaxis()->SetRangeUser(7, 40);
+        frame->GetXaxis()->SetRangeUser(10, 40);
         frame->GetYaxis()->SetRangeUser(0.0, 1.1);
         frame->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame->GetYaxis()->SetTitle(
@@ -284,7 +284,7 @@ void plot_trigger_bit30()
         TH1F *frame_top = new TH1F("frame_trig_fit_top", "",
                                    1, 7, 40);
         frame_top->SetStats(0);
-        frame_top->GetXaxis()->SetRangeUser(7, 40);
+        frame_top->GetXaxis()->SetRangeUser(10, 40);
         frame_top->GetYaxis()->SetRangeUser(0.0, 1.1);
         frame_top->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame_top->GetYaxis()->SetTitle(

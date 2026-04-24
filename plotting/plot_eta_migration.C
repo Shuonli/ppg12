@@ -18,13 +18,19 @@
 
 void plot_eta_migration(
     const std::string &single_file = "../efficiencytool/results/eta_migration_signal_nom.root",
-    const std::string &double_file = "../efficiencytool/results/eta_migration_double_signal_nom.root")
+    const std::string &double_file = "../efficiencytool/results/eta_migration_double_signal_nom.root",
+    const std::string &background_file = "../efficiencytool/results/eta_migration_background_nom.root",
+    const std::string &background_double_file = "")
 {
     init_plot();
     gSystem->Exec("mkdir -p figures");
 
     TFile *f_single = TFile::Open(single_file.c_str());
     TFile *f_double = TFile::Open(double_file.c_str());
+    TFile *f_bkg    = TFile::Open(background_file.c_str());
+    TFile *f_bkg_d  = background_double_file.empty()
+                          ? nullptr
+                          : TFile::Open(background_double_file.c_str());
 
     if (!f_single || f_single->IsZombie())
     {
@@ -37,6 +43,20 @@ void plot_eta_migration(
     {
         std::cout << "WARNING: Cannot open double-interaction file: " << double_file << std::endl;
         std::cout << "         Will skip double-interaction overlays." << std::endl;
+    }
+
+    bool have_bkg = (f_bkg && !f_bkg->IsZombie());
+    if (!have_bkg)
+    {
+        std::cout << "WARNING: Cannot open background file: " << background_file << std::endl;
+        std::cout << "         Will skip background sideband flow plots." << std::endl;
+    }
+
+    bool have_bkg_double = (f_bkg_d && !f_bkg_d->IsZombie());
+    if (!have_bkg_double)
+    {
+        std::cout << "WARNING: Cannot open background double-interaction file: " << background_double_file << std::endl;
+        std::cout << "         Will skip background double-int overlays." << std::endl;
     }
 
     const float eta_fid = 0.7;  // fiducial eta boundary
@@ -182,7 +202,7 @@ void plot_eta_migration(
                 }
             }
             frame->GetYaxis()->SetRangeUser(0, ymax_fake * 1.3);
-            frame->GetXaxis()->SetRangeUser(8, 36);
+            frame->GetXaxis()->SetRangeUser(10, 36);
             frame->Draw("axis");
 
             g_fake_s->Draw("P same");
@@ -247,7 +267,7 @@ void plot_eta_migration(
                 }
             }
             frame->GetYaxis()->SetRangeUser(0, ymax_loss * 1.3);
-            frame->GetXaxis()->SetRangeUser(8, 36);
+            frame->GetXaxis()->SetRangeUser(10, 36);
             frame->Draw("axis");
 
             g_loss_s->Draw("P same");
@@ -322,7 +342,7 @@ void plot_eta_migration(
                 }
             }
             frame->GetYaxis()->SetRangeUser(0, ymax_resp * 1.3);
-            frame->GetXaxis()->SetRangeUser(8, 36);
+            frame->GetXaxis()->SetRangeUser(10, 36);
             frame->Draw("axis");
 
             g_frac_s->Draw("P same");
@@ -365,18 +385,9 @@ void plot_eta_migration(
 
         if (h_good_ti_s && h_fake_ti_s)
         {
-            // Rebin to analysis pT bins
-            const int nPt = NptBins;
-            double edges[NptBins + 1];
-            for (int i = 0; i <= NptBins; i++) edges[i] = ptRanges[i];
-
-            auto rebinTo = [&](TH1D *h, const char *name) -> TH1D * {
-                return (TH1D *)h->Rebin(nPt, name, edges);
-            };
-
             // Inward: denominator = good_ti + fake_ti
-            TH1D *rGood_s = rebinTo(h_good_ti_s, "rGood_ti_s");
-            TH1D *rFake_s = rebinTo(h_fake_ti_s, "rFake_ti_s");
+            TH1D *rGood_s = rebinToPtBins(h_good_ti_s, "rGood_ti_s");
+            TH1D *rFake_s = rebinToPtBins(h_fake_ti_s, "rFake_ti_s");
             TH1D *rDen_s = (TH1D *)rGood_s->Clone("rDen_ti_s");
             rDen_s->Add(rFake_s);
 
@@ -386,8 +397,8 @@ void plot_eta_migration(
             TH1D *frac_in_d = nullptr;
             if (h_good_ti_d && h_fake_ti_d)
             {
-                TH1D *rGood_d = rebinTo(h_good_ti_d, "rGood_ti_d");
-                TH1D *rFake_d = rebinTo(h_fake_ti_d, "rFake_ti_d");
+                TH1D *rGood_d = rebinToPtBins(h_good_ti_d, "rGood_ti_d");
+                TH1D *rFake_d = rebinToPtBins(h_fake_ti_d, "rFake_ti_d");
                 TH1D *rDen_d = (TH1D *)rGood_d->Clone("rDen_ti_d");
                 rDen_d->Add(rFake_d);
                 frac_in_d = (TH1D *)rFake_d->Clone("frac_in_d");
@@ -399,15 +410,15 @@ void plot_eta_migration(
             TH1D *frac_out_d = nullptr;
             if (h_loss_num_s && h_loss_den_s)
             {
-                TH1D *rLossN_s = rebinTo(h_loss_num_s, "rLossN_s");
-                TH1D *rLossD_s = rebinTo(h_loss_den_s, "rLossD_s");
+                TH1D *rLossN_s = rebinToPtBins(h_loss_num_s, "rLossN_s");
+                TH1D *rLossD_s = rebinToPtBins(h_loss_den_s, "rLossD_s");
                 frac_out_s = (TH1D *)rLossN_s->Clone("frac_out_s");
                 frac_out_s->Divide(rLossN_s, rLossD_s, 1, 1, "B");
             }
             if (h_loss_num_d && h_loss_den_d)
             {
-                TH1D *rLossN_d = rebinTo(h_loss_num_d, "rLossN_d");
-                TH1D *rLossD_d = rebinTo(h_loss_den_d, "rLossD_d");
+                TH1D *rLossN_d = rebinToPtBins(h_loss_num_d, "rLossN_d");
+                TH1D *rLossD_d = rebinToPtBins(h_loss_den_d, "rLossD_d");
                 frac_out_d = (TH1D *)rLossN_d->Clone("frac_out_d");
                 frac_out_d->Divide(rLossN_d, rLossD_d, 1, 1, "B");
             }
@@ -515,7 +526,7 @@ void plot_eta_migration(
             float ymax = hs->GetMaximum("nostack") * 1.5;
             if (ymax <= 0) ymax = 10;
             frame->GetYaxis()->SetRangeUser(0, ymax);
-            frame->GetXaxis()->SetRangeUser(8, 36);
+            frame->GetXaxis()->SetRangeUser(10, 36);
             frame->Draw("axis");
 
             hs->Draw("HIST same");
@@ -578,7 +589,7 @@ void plot_eta_migration(
             float ymax = hs_d->GetMaximum("nostack") * 1.5;
             if (ymax <= 0) ymax = 10;
             frame->GetYaxis()->SetRangeUser(0, ymax);
-            frame->GetXaxis()->SetRangeUser(8, 36);
+            frame->GetXaxis()->SetRangeUser(10, 36);
             frame->Draw("axis");
 
             hs_d->Draw("HIST same");
@@ -675,7 +686,7 @@ void plot_eta_migration(
             h2_deta->SetTitle("");
             h2_deta->GetXaxis()->SetTitle("Reco #it{E}_{T} [GeV]");
             h2_deta->GetYaxis()->SetTitle("#Delta#eta = #eta_{reco} - #eta_{truth}");
-            h2_deta->GetXaxis()->SetRangeUser(8, 36);
+            h2_deta->GetXaxis()->SetRangeUser(10, 36);
             h2_deta->Draw("COLZ");
 
             // Profile overlay: mean delta-eta vs ET
@@ -721,21 +732,12 @@ void plot_eta_migration(
 
         if (h_total_s && h_A_s && h_C_s)
         {
-            // Rebin to analysis pT bins for cleaner ratios
-            const int nPt = NptBins;
-            double edges[NptBins + 1];
-            for (int i = 0; i <= NptBins; i++) edges[i] = ptRanges[i];
-
-            auto rebinTo = [&](TH1D *h, const char *name) -> TH1D * {
-                return (TH1D *)h->Rebin(nPt, name, edges);
-            };
-
             // Denominator: fakes passing any ABCD region (A+B+C+D), not all fakes
             // This avoids the ~98% of double-interaction fakes that fail common cuts
-            TH1D *rA_s = rebinTo(h_A_s, "rA_s");
-            TH1D *rB_s = rebinTo(h_B_s, "rB_s");
-            TH1D *rC_s = rebinTo(h_C_s, "rC_s");
-            TH1D *rD_s = rebinTo(h_D_s, "rD_s");
+            TH1D *rA_s = rebinToPtBins(h_A_s, "rA_s");
+            TH1D *rB_s = rebinToPtBins(h_B_s, "rB_s");
+            TH1D *rC_s = rebinToPtBins(h_C_s, "rC_s");
+            TH1D *rD_s = rebinToPtBins(h_D_s, "rD_s");
             TH1D *rABCD_s = (TH1D *)rA_s->Clone("rABCD_s");
             rABCD_s->Add(rB_s);
             rABCD_s->Add(rC_s);
@@ -751,10 +753,10 @@ void plot_eta_migration(
             TH1D *frac_C_d = nullptr;
             if (h_total_d && h_A_d && h_B_d && h_C_d && h_D_d)
             {
-                TH1D *rA_d = rebinTo(h_A_d, "rA_d");
-                TH1D *rB_d = rebinTo(h_B_d, "rB_d");
-                TH1D *rC_d = rebinTo(h_C_d, "rC_d");
-                TH1D *rD_d = rebinTo(h_D_d, "rD_d");
+                TH1D *rA_d = rebinToPtBins(h_A_d, "rA_d");
+                TH1D *rB_d = rebinToPtBins(h_B_d, "rB_d");
+                TH1D *rC_d = rebinToPtBins(h_C_d, "rC_d");
+                TH1D *rD_d = rebinToPtBins(h_D_d, "rD_d");
                 TH1D *rABCD_d = (TH1D *)rA_d->Clone("rABCD_d");
                 rABCD_d->Add(rB_d);
                 rABCD_d->Add(rC_d);
@@ -827,6 +829,611 @@ void plot_eta_migration(
         else
         {
             std::cout << "Missing ABCD fake histograms for signal leakage plot" << std::endl;
+        }
+    }
+
+    // Leakage fractions cX = good_signal_in_X / good_signal_in_A
+    // (matches the ABCD definition used by the main pipeline).
+    {
+        TH1D *h_gA_s = (TH1D *)f_single->Get("h_good_tight_iso");
+        TH1D *h_gB_s = (TH1D *)f_single->Get("h_good_tight_noniso");
+        TH1D *h_gC_s = (TH1D *)f_single->Get("h_good_nontight_iso");
+        TH1D *h_gD_s = (TH1D *)f_single->Get("h_good_nontight_noniso");
+
+        TH1D *h_gA_d = have_double ? (TH1D *)f_double->Get("h_good_tight_iso_double") : nullptr;
+        TH1D *h_gB_d = have_double ? (TH1D *)f_double->Get("h_good_tight_noniso_double") : nullptr;
+        TH1D *h_gC_d = have_double ? (TH1D *)f_double->Get("h_good_nontight_iso_double") : nullptr;
+        TH1D *h_gD_d = have_double ? (TH1D *)f_double->Get("h_good_nontight_noniso_double") : nullptr;
+
+        if (h_gA_s && h_gB_s && h_gC_s && h_gD_s)
+        {
+            // Single interaction leakage fractions
+            TH1D *rA_s = rebinToPtBins(h_gA_s, "leak_rA_s");
+            TH1D *rB_s = rebinToPtBins(h_gB_s, "leak_rB_s");
+            TH1D *rC_s = rebinToPtBins(h_gC_s, "leak_rC_s");
+            TH1D *rD_s = rebinToPtBins(h_gD_s, "leak_rD_s");
+
+            TH1D *cB_s = (TH1D *)rB_s->Clone("cB_s");
+            cB_s->Divide(rB_s, rA_s, 1, 1, "B");
+            TH1D *cC_s = (TH1D *)rC_s->Clone("cC_s");
+            cC_s->Divide(rC_s, rA_s, 1, 1, "B");
+            TH1D *cD_s = (TH1D *)rD_s->Clone("cD_s");
+            cD_s->Divide(rD_s, rA_s, 1, 1, "B");
+
+            // Double interaction leakage fractions
+            TH1D *cB_d = nullptr, *cC_d = nullptr, *cD_d = nullptr;
+            if (h_gA_d && h_gB_d && h_gC_d && h_gD_d)
+            {
+                TH1D *rA_d = rebinToPtBins(h_gA_d, "leak_rA_d");
+                TH1D *rB_d = rebinToPtBins(h_gB_d, "leak_rB_d");
+                TH1D *rC_d = rebinToPtBins(h_gC_d, "leak_rC_d");
+                TH1D *rD_d = rebinToPtBins(h_gD_d, "leak_rD_d");
+
+                cB_d = (TH1D *)rB_d->Clone("cB_d");
+                cB_d->Divide(rB_d, rA_d, 1, 1, "B");
+                cC_d = (TH1D *)rC_d->Clone("cC_d");
+                cC_d->Divide(rC_d, rA_d, 1, 1, "B");
+                cD_d = (TH1D *)rD_d->Clone("cD_d");
+                cD_d->Divide(rD_d, rA_d, 1, 1, "B");
+            }
+
+            // --- Upper panel: absolute leakage fractions ---
+            TCanvas *c10 = new TCanvas("c_leakage_fracs", "", 800, 800);
+            TPad *pad1 = new TPad("pad1_leak", "", 0, 0.35, 1, 1.0);
+            pad1->SetBottomMargin(0.02);
+            pad1->Draw();
+            TPad *pad2 = new TPad("pad2_leak", "", 0, 0.0, 1, 0.35);
+            pad2->SetTopMargin(0.02);
+            pad2->SetBottomMargin(0.30);
+            pad2->Draw();
+
+            pad1->cd();
+            float ymax_leak = 0.20;
+            if (cB_d)
+            {
+                for (int ib = 1; ib <= cB_d->GetNbinsX(); ib++)
+                    if (cB_d->GetBinContent(ib) > ymax_leak) ymax_leak = cB_d->GetBinContent(ib);
+            }
+            TH1F *frame10 = new TH1F("frame_leak_fracs",
+                ";; c_{X} = N_{X}^{sig} / N_{A}^{sig}", 100, 8, 36);
+            frame10->GetYaxis()->SetRangeUser(0, ymax_leak * 1.4);
+            frame10->GetYaxis()->SetTitleSize(0.055);
+            frame10->GetYaxis()->SetLabelSize(0.05);
+            frame10->GetXaxis()->SetLabelSize(0);
+            frame10->Draw("axis");
+
+            // Single: black, filled markers
+            cB_s->SetMarkerStyle(20); cB_s->SetMarkerSize(1.2);
+            cB_s->SetMarkerColor(kBlack); cB_s->SetLineColor(kBlack);
+            cB_s->Draw("E1 same");
+
+            cC_s->SetMarkerStyle(21); cC_s->SetMarkerSize(1.2);
+            cC_s->SetMarkerColor(kBlack); cC_s->SetLineColor(kBlack);
+            cC_s->Draw("E1 same");
+
+            cD_s->SetMarkerStyle(22); cD_s->SetMarkerSize(1.3);
+            cD_s->SetMarkerColor(kBlack); cD_s->SetLineColor(kBlack);
+            cD_s->Draw("E1 same");
+
+            // Double: red, open markers
+            if (cB_d)
+            {
+                cB_d->SetMarkerStyle(24); cB_d->SetMarkerSize(1.2);
+                cB_d->SetMarkerColor(kRed); cB_d->SetLineColor(kRed);
+                cB_d->Draw("E1 same");
+            }
+            if (cC_d)
+            {
+                cC_d->SetMarkerStyle(25); cC_d->SetMarkerSize(1.2);
+                cC_d->SetMarkerColor(kRed); cC_d->SetLineColor(kRed);
+                cC_d->Draw("E1 same");
+            }
+            if (cD_d)
+            {
+                cD_d->SetMarkerStyle(26); cD_d->SetMarkerSize(1.3);
+                cD_d->SetMarkerColor(kRed); cD_d->SetLineColor(kRed);
+                cD_d->Draw("E1 same");
+            }
+
+            myText(0.20, 0.92, 1, strleg1.c_str(), 0.045);
+            myText(0.20, 0.86, 1, strleg2.c_str(), 0.045);
+            myText(0.20, 0.80, 1, strSigMC.c_str(), 0.04);
+
+            TLegend *leg10 = new TLegend(0.50, 0.55, 0.93, 0.92);
+            leg10->SetBorderSize(0);
+            leg10->SetFillStyle(0);
+            leg10->SetTextSize(0.037);
+            leg10->SetHeader("Single (filled)  Double (open)");
+            leg10->AddEntry(cB_s, "c_{B} (tight, non-iso) - single", "lp");
+            leg10->AddEntry(cC_s, "c_{C} (non-tight, iso) - single", "lp");
+            leg10->AddEntry(cD_s, "c_{D} (non-tight, non-iso) - single", "lp");
+            if (cB_d) leg10->AddEntry(cB_d, "c_{B} - double", "lp");
+            if (cC_d) leg10->AddEntry(cC_d, "c_{C} - double", "lp");
+            if (cD_d) leg10->AddEntry(cD_d, "c_{D} - double", "lp");
+            leg10->Draw();
+
+            // --- Lower panel: double / single ratio ---
+            pad2->cd();
+            TH1F *frame10r = new TH1F("frame_leak_ratio",
+                ";Reco #it{E}_{T} [GeV];Double / Single", 100, 8, 36);
+            frame10r->GetYaxis()->SetRangeUser(0, 5.0);
+            frame10r->GetYaxis()->SetTitleSize(0.09);
+            frame10r->GetYaxis()->SetTitleOffset(0.55);
+            frame10r->GetYaxis()->SetLabelSize(0.08);
+            frame10r->GetXaxis()->SetTitleSize(0.10);
+            frame10r->GetXaxis()->SetLabelSize(0.08);
+            frame10r->GetYaxis()->SetNdivisions(505);
+            frame10r->Draw("axis");
+
+            TLine *unity = new TLine(8, 1, 36, 1);
+            unity->SetLineStyle(7);
+            unity->SetLineColor(kGray + 1);
+            unity->Draw("same");
+
+            auto makeRatio = [](TH1D *num, TH1D *den, const char *name,
+                                int marker, double size, int color) -> TH1D * {
+                if (!num) return nullptr;
+                TH1D *r = (TH1D *)num->Clone(name);
+                r->Divide(den);
+                r->SetMarkerStyle(marker); r->SetMarkerSize(size);
+                r->SetMarkerColor(color);  r->SetLineColor(color);
+                r->Draw("E1 same");
+                return r;
+            };
+            TH1D *rat_B = makeRatio(cB_d, cB_s, "rat_B", 20, 1.0, kBlue + 1);
+            TH1D *rat_C = makeRatio(cC_d, cC_s, "rat_C", 21, 1.0, kGreen + 2);
+            TH1D *rat_D = makeRatio(cD_d, cD_s, "rat_D", 22, 1.1, kMagenta + 1);
+
+            TLegend *leg10r = new TLegend(0.18, 0.65, 0.55, 0.95);
+            leg10r->SetBorderSize(0);
+            leg10r->SetFillStyle(0);
+            leg10r->SetTextSize(0.07);
+            if (rat_B) leg10r->AddEntry(rat_B, "c_{B}", "lp");
+            if (rat_C) leg10r->AddEntry(rat_C, "c_{C}", "lp");
+            if (rat_D) leg10r->AddEntry(rat_D, "c_{D}", "lp");
+            leg10r->Draw();
+
+            c10->SaveAs("figures/eta_migration_leakage_fractions.pdf");
+            std::cout << "[Plot 10] Saved figures/eta_migration_leakage_fractions.pdf" << std::endl;
+            delete c10;
+        }
+        else
+        {
+            std::cout << "Missing good signal ABCD histograms for leakage fraction plot" << std::endl;
+        }
+    }
+
+    // _noNPB histograms are required: the NPB model is trained only on
+    // in-fiducial clusters, so its score is a sentinel for outside-fiducial
+    // ones — leaving the NPB cut on would zero the entire outflow.
+    if (have_bkg)
+    {
+        struct RegionHists {
+            const char *key;      // "A", "B", "C", "D"
+            const char *label;    // legend label
+            TH1D *native = nullptr;
+            TH1D *inflow = nullptr;
+            TH1D *outflow = nullptr;
+            TH1D *inflow_rate = nullptr;
+            TH1D *outflow_rate = nullptr;
+            // Double interaction (full GEANT jet12_double)
+            TH1D *native_d = nullptr;
+            TH1D *inflow_d = nullptr;
+            TH1D *outflow_d = nullptr;
+            TH1D *inflow_rate_d = nullptr;
+            TH1D *outflow_rate_d = nullptr;
+        };
+
+        RegionHists regs[4] = {
+            {"A", "A: tight + iso"},
+            {"B", "B: tight + non-iso"},
+            {"C", "C: non-tight + iso"},
+            {"D", "D: non-tight + non-iso"}
+        };
+
+        auto loadRatesForFile = [&](TFile *f, RegionHists &r,
+                                     TH1D *&rb_nat, TH1D *&rb_in, TH1D *&rb_out,
+                                     TH1D *&in_rate, TH1D *&out_rate,
+                                     const char *tag)
+        {
+            TH1D *h_nat  = (TH1D *)f->Get(Form("h_bkg_%s_native_noNPB",  r.key));
+            TH1D *h_in   = (TH1D *)f->Get(Form("h_bkg_%s_inflow_noNPB",  r.key));
+            TH1D *h_out  = (TH1D *)f->Get(Form("h_bkg_%s_outflow_noNPB", r.key));
+            if (!h_nat || !h_in || !h_out) return false;
+            rb_nat = rebinToPtBins(h_nat, Form("rb_nat_%s_%s", r.key, tag));
+            rb_in  = rebinToPtBins(h_in,  Form("rb_in_%s_%s",  r.key, tag));
+            rb_out = rebinToPtBins(h_out, Form("rb_out_%s_%s", r.key, tag));
+            TH1D *den_in = (TH1D *)rb_nat->Clone(Form("den_in_%s_%s",  r.key, tag));
+            den_in->Add(rb_in);
+            TH1D *den_out = (TH1D *)rb_nat->Clone(Form("den_out_%s_%s", r.key, tag));
+            den_out->Add(rb_out);
+            in_rate = (TH1D *)rb_in->Clone(Form("in_rate_%s_%s", r.key, tag));
+            in_rate->Divide(rb_in, den_in, 1, 1, "B");
+            out_rate = (TH1D *)rb_out->Clone(Form("out_rate_%s_%s", r.key, tag));
+            out_rate->Divide(rb_out, den_out, 1, 1, "B");
+            return true;
+        };
+
+        for (auto &r : regs)
+        {
+            TH1D *rb_nat = nullptr, *rb_in = nullptr, *rb_out = nullptr;
+            if (!loadRatesForFile(f_bkg, r, rb_nat, rb_in, rb_out, r.inflow_rate, r.outflow_rate, "s"))
+            {
+                std::cout << "  [Plot 11] missing _noNPB histograms for region " << r.key << std::endl;
+                continue;
+            }
+            r.native = rb_nat;
+            r.inflow = rb_in;
+            r.outflow = rb_out;
+
+            if (have_bkg_double)
+            {
+                TH1D *rb_nat_d = nullptr, *rb_in_d = nullptr, *rb_out_d = nullptr;
+                if (loadRatesForFile(f_bkg_d, r, rb_nat_d, rb_in_d, rb_out_d, r.inflow_rate_d, r.outflow_rate_d, "d"))
+                {
+                    r.native_d = rb_nat_d;
+                    r.inflow_d = rb_in_d;
+                    r.outflow_d = rb_out_d;
+                }
+            }
+        }
+
+        // --- 2x2 panel figure: inflow + outflow rates per region ---
+        TCanvas *c11 = new TCanvas("c_bkg_sideband_flow", "", 1100, 900);
+        c11->Divide(2, 2);
+        for (int ir = 0; ir < 4; ir++)
+        {
+            c11->cd(ir + 1);
+            RegionHists &r = regs[ir];
+            if (!r.inflow_rate || !r.outflow_rate) continue;
+
+            // Auto y-range across all graphs
+            float ymax_panel = 0.10;
+            auto scan = [&](TH1D *h) {
+                if (!h) return;
+                for (int ib = 1; ib <= h->GetNbinsX(); ib++)
+                {
+                    float v = h->GetBinContent(ib);
+                    if (std::isfinite(v) && v > ymax_panel) ymax_panel = v;
+                }
+            };
+            scan(r.inflow_rate);
+            scan(r.outflow_rate);
+            scan(r.inflow_rate_d);
+            scan(r.outflow_rate_d);
+            ymax_panel *= 1.4;
+
+            TH1F *frame = new TH1F(Form("frame_bkg_flow_%d", ir),
+                ";Reco #it{E}_{T} [GeV];Flow fraction",
+                100, 8, 36);
+            frame->GetYaxis()->SetRangeUser(0, ymax_panel);
+            frame->Draw("axis");
+
+            // Single interaction: filled markers
+            r.inflow_rate->SetMarkerStyle(20);
+            r.inflow_rate->SetMarkerSize(1.2);
+            r.inflow_rate->SetMarkerColor(kBlack);
+            r.inflow_rate->SetLineColor(kBlack);
+            r.inflow_rate->Draw("E1 same");
+
+            r.outflow_rate->SetMarkerStyle(21);
+            r.outflow_rate->SetMarkerSize(1.2);
+            r.outflow_rate->SetMarkerColor(kBlue + 1);
+            r.outflow_rate->SetLineColor(kBlue + 1);
+            r.outflow_rate->Draw("E1 same");
+
+            // Double interaction: open markers, red
+            if (r.inflow_rate_d)
+            {
+                r.inflow_rate_d->SetMarkerStyle(24);
+                r.inflow_rate_d->SetMarkerSize(1.2);
+                r.inflow_rate_d->SetMarkerColor(kRed + 1);
+                r.inflow_rate_d->SetLineColor(kRed + 1);
+                r.inflow_rate_d->Draw("E1 same");
+            }
+            if (r.outflow_rate_d)
+            {
+                r.outflow_rate_d->SetMarkerStyle(25);
+                r.outflow_rate_d->SetMarkerSize(1.2);
+                r.outflow_rate_d->SetMarkerColor(kOrange + 7);
+                r.outflow_rate_d->SetLineColor(kOrange + 7);
+                r.outflow_rate_d->Draw("E1 same");
+            }
+
+            myText(0.20, 0.90, 1, r.label, 0.045);
+            myText(0.20, 0.83, 1, "Jet MC (bkg only, no-NPB)", 0.033);
+
+            if (ir == 0)
+            {
+                TLegend *leg = new TLegend(0.42, 0.62, 0.93, 0.90);
+                leg->SetBorderSize(0);
+                leg->SetFillStyle(0);
+                leg->SetTextSize(0.036);
+                leg->SetHeader("Single (filled)  Double (open)");
+                leg->AddEntry(r.inflow_rate,  "Inflow - single",  "lp");
+                leg->AddEntry(r.outflow_rate, "Outflow - single", "lp");
+                if (r.inflow_rate_d)  leg->AddEntry(r.inflow_rate_d,  "Inflow - double",  "lp");
+                if (r.outflow_rate_d) leg->AddEntry(r.outflow_rate_d, "Outflow - double", "lp");
+                leg->Draw();
+            }
+        }
+        c11->SaveAs("figures/eta_migration_bkg_sideband_flow.pdf");
+        std::cout << "[Plot 11] Saved figures/eta_migration_bkg_sideband_flow.pdf" << std::endl;
+        delete c11;
+
+        // (inflow - outflow) / native: net bias in the sideband count.
+        TCanvas *c11b = new TCanvas("c_bkg_net_flow", "", 900, 650);
+        TH1F *frame11b = new TH1F("frame_bkg_net_flow",
+            ";Reco #it{E}_{T} [GeV];(Inflow #minus Outflow) / Native", 100, 8, 36);
+
+        float ymax_net =  0.05;
+        float ymin_net = -0.05;
+        TH1D *net_hists_s[4] = {nullptr, nullptr, nullptr, nullptr};
+        TH1D *net_hists_d[4] = {nullptr, nullptr, nullptr, nullptr};
+        Color_t net_colors[4] = {kBlack, kBlue + 1, kGreen + 2, kOrange + 7};
+        Style_t net_markers_s[4] = {20, 21, 22, 23};
+        Style_t net_markers_d[4] = {24, 25, 26, 32};
+
+        auto computeNet = [&](TH1D *rb_nat, TH1D *rb_in, TH1D *rb_out, const char *name) -> TH1D * {
+            if (!rb_nat || !rb_in || !rb_out) return nullptr;
+            TH1D *net = (TH1D *)rb_in->Clone(name);
+            net->Add(rb_out, -1.0);
+            net->Divide(rb_nat);
+            return net;
+        };
+
+        for (int ir = 0; ir < 4; ir++)
+        {
+            RegionHists &r = regs[ir];
+            net_hists_s[ir] = computeNet(r.native,   r.inflow,   r.outflow,   Form("net_s_%s", r.key));
+            net_hists_d[ir] = computeNet(r.native_d, r.inflow_d, r.outflow_d, Form("net_d_%s", r.key));
+            for (TH1D *h : {net_hists_s[ir], net_hists_d[ir]})
+            {
+                if (!h) continue;
+                for (int ib = 1; ib <= h->GetNbinsX(); ib++)
+                {
+                    float v = h->GetBinContent(ib);
+                    if (std::isfinite(v))
+                    {
+                        if (v > ymax_net) ymax_net = v;
+                        if (v < ymin_net) ymin_net = v;
+                    }
+                }
+            }
+        }
+        float span = std::max(std::abs(ymax_net), std::abs(ymin_net)) * 1.4;
+        frame11b->GetYaxis()->SetRangeUser(-span, span);
+        frame11b->Draw("axis");
+        TLine *zero11 = new TLine(8, 0, 36, 0);
+        zero11->SetLineStyle(7);
+        zero11->SetLineColor(kGray + 1);
+        zero11->Draw("same");
+
+        TLegend *leg11b = new TLegend(0.18, 0.65, 0.55, 0.92);
+        leg11b->SetBorderSize(0);
+        leg11b->SetFillStyle(0);
+        leg11b->SetTextSize(0.034);
+        leg11b->SetHeader("Single (filled)  Double (open)");
+
+        for (int ir = 0; ir < 4; ir++)
+        {
+            if (net_hists_s[ir])
+            {
+                net_hists_s[ir]->SetMarkerStyle(net_markers_s[ir]);
+                net_hists_s[ir]->SetMarkerSize(1.2);
+                net_hists_s[ir]->SetMarkerColor(net_colors[ir]);
+                net_hists_s[ir]->SetLineColor(net_colors[ir]);
+                net_hists_s[ir]->Draw("E1 same");
+                leg11b->AddEntry(net_hists_s[ir], Form("%s - single", regs[ir].label), "lp");
+            }
+            if (net_hists_d[ir])
+            {
+                net_hists_d[ir]->SetMarkerStyle(net_markers_d[ir]);
+                net_hists_d[ir]->SetMarkerSize(1.2);
+                net_hists_d[ir]->SetMarkerColor(net_colors[ir]);
+                net_hists_d[ir]->SetLineColor(net_colors[ir]);
+                net_hists_d[ir]->Draw("E1 same");
+                leg11b->AddEntry(net_hists_d[ir], Form("%s - double", regs[ir].label), "lp");
+            }
+        }
+        leg11b->Draw();
+
+        myText(0.60, 0.92, 1, strleg1.c_str(), 0.040);
+        myText(0.60, 0.87, 1, strleg2.c_str(), 0.040);
+        myText(0.60, 0.82, 1, "Jet MC (bkg only, no-NPB)", 0.034);
+
+        c11b->SaveAs("figures/eta_migration_bkg_net_flow.pdf");
+        std::cout << "[Plot 11b] Saved figures/eta_migration_bkg_net_flow.pdf" << std::endl;
+        delete c11b;
+
+        // R-factor bias estimate: R_meas / R_native, with R = B*C/D.
+        TH1D *rR_s = nullptr, *rR_d = nullptr;
+        auto makeRfactorRatio = [&](TFile *f, const char *tag) -> TH1D * {
+            TH1D *hB_n = (TH1D *)f->Get("h_bkg_B_native_noNPB");
+            TH1D *hC_n = (TH1D *)f->Get("h_bkg_C_native_noNPB");
+            TH1D *hD_n = (TH1D *)f->Get("h_bkg_D_native_noNPB");
+            TH1D *hB_i = (TH1D *)f->Get("h_bkg_B_inflow_noNPB");
+            TH1D *hC_i = (TH1D *)f->Get("h_bkg_C_inflow_noNPB");
+            TH1D *hD_i = (TH1D *)f->Get("h_bkg_D_inflow_noNPB");
+            TH1D *hB_o = (TH1D *)f->Get("h_bkg_B_outflow_noNPB");
+            TH1D *hC_o = (TH1D *)f->Get("h_bkg_C_outflow_noNPB");
+            TH1D *hD_o = (TH1D *)f->Get("h_bkg_D_outflow_noNPB");
+            if (!hB_n || !hC_n || !hD_n || !hB_i || !hC_i || !hD_i || !hB_o || !hC_o || !hD_o)
+                return nullptr;
+
+            TH1D *rB_n = rebinToPtBins(hB_n, Form("rB_n_Rf_%s", tag));
+            TH1D *rC_n = rebinToPtBins(hC_n, Form("rC_n_Rf_%s", tag));
+            TH1D *rD_n = rebinToPtBins(hD_n, Form("rD_n_Rf_%s", tag));
+            TH1D *rB_i = rebinToPtBins(hB_i, Form("rB_i_Rf_%s", tag));
+            TH1D *rC_i = rebinToPtBins(hC_i, Form("rC_i_Rf_%s", tag));
+            TH1D *rD_i = rebinToPtBins(hD_i, Form("rD_i_Rf_%s", tag));
+            TH1D *rB_o = rebinToPtBins(hB_o, Form("rB_o_Rf_%s", tag));
+            TH1D *rC_o = rebinToPtBins(hC_o, Form("rC_o_Rf_%s", tag));
+            TH1D *rD_o = rebinToPtBins(hD_o, Form("rD_o_Rf_%s", tag));
+
+            // B_true = B_native, i.e. what the sideband SHOULD see without migration.
+            // B_meas = B_native + B_inflow, i.e. what the analysis actually sees
+            // (the sideband only counts reco-inside clusters). Outflow is the
+            // counterfactual — clusters that would have contributed if reco were in-fid.
+            TH1D *B_meas = (TH1D *)rB_n->Clone(Form("B_meas_%s", tag));
+            B_meas->Add(rB_i);
+            TH1D *C_meas = (TH1D *)rC_n->Clone(Form("C_meas_%s", tag));
+            C_meas->Add(rC_i);
+            TH1D *D_meas = (TH1D *)rD_n->Clone(Form("D_meas_%s", tag));
+            D_meas->Add(rD_i);
+
+            TH1D *R_native = (TH1D *)rB_n->Clone(Form("R_native_%s", tag));
+            R_native->Multiply(rC_n);
+            R_native->Divide(rD_n);
+
+            TH1D *R_meas = (TH1D *)B_meas->Clone(Form("R_meas_%s", tag));
+            R_meas->Multiply(C_meas);
+            R_meas->Divide(D_meas);
+
+            TH1D *rR = (TH1D *)R_meas->Clone(Form("R_ratio_%s", tag));
+            rR->Divide(R_native);
+            return rR;
+        };
+
+        rR_s = makeRfactorRatio(f_bkg, "s");
+        if (have_bkg_double)
+            rR_d = makeRfactorRatio(f_bkg_d, "d");
+
+        if (rR_s)
+        {
+            TCanvas *c11c = new TCanvas("c_bkg_rfactor_bias", "", 900, 650);
+            TH1F *frame11c = new TH1F("frame_bkg_rfactor",
+                ";Reco #it{E}_{T} [GeV];R_{measured} / R_{native}", 100, 8, 36);
+            float ymax_r = 1.05, ymin_r = 0.95;
+            auto scanR = [&](TH1D *h) {
+                if (!h) return;
+                for (int ib = 1; ib <= h->GetNbinsX(); ib++)
+                {
+                    float v = h->GetBinContent(ib);
+                    if (std::isfinite(v) && v > 0)
+                    {
+                        if (v > ymax_r) ymax_r = v;
+                        if (v < ymin_r) ymin_r = v;
+                    }
+                }
+            };
+            scanR(rR_s);
+            scanR(rR_d);
+            frame11c->GetYaxis()->SetRangeUser(std::max(0.0f, ymin_r - 0.05f), ymax_r + 0.05f);
+            frame11c->Draw("axis");
+
+            TLine *unity11c = new TLine(8, 1.0, 36, 1.0);
+            unity11c->SetLineStyle(7);
+            unity11c->SetLineColor(kGray + 1);
+            unity11c->Draw("same");
+
+            rR_s->SetMarkerStyle(20);
+            rR_s->SetMarkerSize(1.3);
+            rR_s->SetMarkerColor(kBlack);
+            rR_s->SetLineColor(kBlack);
+            rR_s->Draw("E1 same");
+
+            if (rR_d)
+            {
+                rR_d->SetMarkerStyle(24);
+                rR_d->SetMarkerSize(1.3);
+                rR_d->SetMarkerColor(kRed + 1);
+                rR_d->SetLineColor(kRed + 1);
+                rR_d->Draw("E1 same");
+            }
+
+            myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
+            myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
+            myText(0.20, 0.80, 1, "Jet MC: R = B #times C / D", 0.036);
+
+            TLegend *leg11c = new TLegend(0.55, 0.72, 0.93, 0.92);
+            leg11c->SetBorderSize(0);
+            leg11c->SetFillStyle(0);
+            leg11c->SetTextSize(0.037);
+            leg11c->AddEntry(rR_s, "Single interaction (jet20+jet30)", "lp");
+            if (rR_d) leg11c->AddEntry(rR_d, "Double interaction (jet12_double)", "lp");
+            leg11c->Draw();
+
+            c11c->SaveAs("figures/eta_migration_bkg_rfactor_bias.pdf");
+            std::cout << "[Plot 11c] Saved figures/eta_migration_bkg_rfactor_bias.pdf" << std::endl;
+            delete c11c;
+        }
+
+        // --- 2D eta truth vs reco for background (single + double side by side) ---
+        {
+            auto drawMigrationMatrix = [&](TFile *f, const char *tag, const char *title_text,
+                                           const char *outname)
+            {
+                TH2D *h2_bkg = (TH2D *)f->Get("h2_bkg_eta_truth_vs_reco");
+                if (!h2_bkg) return;
+                TCanvas *cc = new TCanvas(Form("c_bkg_mig_matrix_%s", tag), "", 900, 800);
+                cc->SetRightMargin(0.15);
+                cc->SetLogz();
+
+                h2_bkg->SetStats(0);
+                h2_bkg->SetTitle("");
+                h2_bkg->GetXaxis()->SetTitle("Reco #eta");
+                h2_bkg->GetYaxis()->SetTitle("Truth #eta (leading contributor)");
+                h2_bkg->GetXaxis()->SetRangeUser(-1.2, 1.2);
+                h2_bkg->GetYaxis()->SetRangeUser(-1.2, 1.2);
+                h2_bkg->Draw("COLZ");
+                drawEtaLines2D();
+
+                myText(0.20, 0.92, 1, strleg1.c_str(), 0.04);
+                myText(0.20, 0.87, 1, strleg2.c_str(), 0.04);
+                myText(0.20, 0.82, 1, title_text, 0.035);
+
+                cc->SaveAs(outname);
+                std::cout << "[Plot 11d] Saved " << outname << std::endl;
+                delete cc;
+            };
+
+            drawMigrationMatrix(f_bkg, "single", "Jet MC (bkg only, single int.)",
+                                "figures/eta_migration_bkg_matrix.pdf");
+            if (have_bkg_double)
+                drawMigrationMatrix(f_bkg_d, "double", "Jet MC (bkg only, jet12_double)",
+                                    "figures/eta_migration_bkg_matrix_double.pdf");
+        }
+
+        // Print numbers per pT bin for report
+        std::cout << std::endl;
+        std::cout << "============================================================" << std::endl;
+        std::cout << "  Background sideband flow (weighted, per pT bin)" << std::endl;
+        std::cout << "============================================================" << std::endl;
+        std::cout << std::fixed << std::setprecision(4);
+        for (auto &r : regs)
+        {
+            if (!r.inflow_rate || !r.outflow_rate) continue;
+            std::cout << "  Region " << r.key << " (" << r.label << ")" << std::endl;
+            std::cout << "    pT bin         in_s    out_s";
+            if (r.inflow_rate_d) std::cout << "    in_d     out_d";
+            std::cout << std::endl;
+            for (int ib = 1; ib <= r.inflow_rate->GetNbinsX(); ib++)
+            {
+                float lo = r.inflow_rate->GetBinLowEdge(ib);
+                float hi = lo + r.inflow_rate->GetBinWidth(ib);
+                std::cout << "    [" << std::setw(4) << lo << "," << std::setw(4) << hi << "]  "
+                          << std::setw(9) << r.inflow_rate->GetBinContent(ib) << "  "
+                          << std::setw(9) << r.outflow_rate->GetBinContent(ib);
+                if (r.inflow_rate_d)
+                    std::cout << "  " << std::setw(9) << r.inflow_rate_d->GetBinContent(ib)
+                              << "  " << std::setw(9) << r.outflow_rate_d->GetBinContent(ib);
+                std::cout << std::endl;
+            }
+        }
+        if (rR_s)
+        {
+            std::cout << "  R-factor bias (R_meas/R_native) per pT bin:" << std::endl;
+            for (int ib = 1; ib <= rR_s->GetNbinsX(); ib++)
+            {
+                float lo = rR_s->GetBinLowEdge(ib);
+                float hi = lo + rR_s->GetBinWidth(ib);
+                std::cout << "    [" << std::setw(4) << lo << "," << std::setw(4) << hi << "]  "
+                          << "single: " << std::setw(7) << rR_s->GetBinContent(ib);
+                if (rR_d)
+                    std::cout << "  double: " << std::setw(7) << rR_d->GetBinContent(ib);
+                std::cout << std::endl;
+            }
         }
     }
 

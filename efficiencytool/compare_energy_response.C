@@ -34,6 +34,36 @@
 
 #include <yaml-cpp/yaml.h>
 
+// ------------- Double-sided Crystal-Ball PDF --------------------------
+// par[0] = N
+// par[1] = mu
+// par[2] = sigma
+// par[3] = alpha_L (>0)    par[4] = n_L (>1)
+// par[5] = alpha_H (>0)    par[6] = n_H (>1)
+// Gaussian core on  -alpha_L < (x-mu)/sigma < alpha_H
+// Power-law tail on both sides outside that window.
+static Double_t double_cb(Double_t *x, Double_t *par)
+{
+    Double_t N  = par[0];
+    Double_t mu = par[1];
+    Double_t sg = par[2];
+    Double_t aL = par[3], nL = par[4];
+    Double_t aH = par[5], nH = par[6];
+    if (sg <= 0) return 0;
+    Double_t t = (x[0] - mu) / sg;
+    if (t > -aL && t < aH)
+        return N * TMath::Exp(-0.5 * t * t);
+    if (t <= -aL) {
+        Double_t A = TMath::Power(nL / TMath::Abs(aL), nL) * TMath::Exp(-0.5 * aL * aL);
+        Double_t B = nL / TMath::Abs(aL) - TMath::Abs(aL);
+        return N * A * TMath::Power(B - t, -nL);
+    }
+    // t >= aH
+    Double_t A = TMath::Power(nH / TMath::Abs(aH), nH) * TMath::Exp(-0.5 * aH * aH);
+    Double_t B = nH / TMath::Abs(aH) - TMath::Abs(aH);
+    return N * A * TMath::Power(B + t, -nH);
+}
+
 // ------------- Cluster-weighted pileup fractions (from calc_pileup_range.C)
 // 0 mrad crossing angle : 22.4% double, 77.6% single
 // 1.5 mrad crossing angle: 7.9% double, 92.1% single
@@ -155,7 +185,7 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
     if (configYaml["analysis"]["pT_bins_truth"]) {
         pT_bins_truth = configYaml["analysis"]["pT_bins_truth"].as<std::vector<float>>();
     } else {
-        pT_bins_truth = {7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45};
+        pT_bins_truth = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45};
     }
     int NptBins = (int)pT_bins_truth.size() - 1;
     double ptEdges[100];
@@ -374,6 +404,7 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
         TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
         TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
         TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+        TTreeReaderArray<float> cluster_iso_excl_04(reader, Form("cluster_iso_excl_04_%s", clusternodename.c_str()));
         TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
         TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
 
@@ -481,6 +512,8 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
                     float recoisoET = -999;
                     if      (use_topo_iso == 2)      recoisoET = cluster_iso_topo_04[icl];
                     else if (use_topo_iso == 1)      recoisoET = cluster_iso_topo_03[icl];
+                    else if (use_topo_iso == 4)      recoisoET = cluster_iso_04[icl];
+                    else if (use_topo_iso == 5)      recoisoET = cluster_iso_excl_04[icl];
                     else if (conesize == 4)          recoisoET = cluster_iso_04[icl];
                     else if (conesize == 3)          recoisoET = cluster_iso_03[icl];
                     else if (conesize == 2)          recoisoET = cluster_iso_02[icl];
@@ -564,11 +597,23 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
 
     // -----------------------------------------------------------------
     // Summary stats: for each (set, level), extract mean/sigma per pT bin
-    // by fitting a truncated Gaussian in [0.3, 1.7] of the r=rET axis,
-    // and also compute the unfit histogram mean/RMS as a cross-check.
-    // We store two TH1F per (set,level,obs): h_mean, h_sigma.
+    // by two independent fits:
+    //   (a) truncated Gaussian on [0.3, 1.7] — core resolution, legacy default
+    //       stored in  h_{resp}_{mean,sigma}_{set}_{level}
+    //   (b) Crystal-Ball  on [0.3, 2.0]      — captures low-side tail from
+    //       brem / shower leakage / double-interaction kinematic shift
+    //       stored in  h_{resp}_cb_{mean,sigma}_{set}_{level}
+    //       (plus h_{resp}_cb_{alpha,n}_{set}_{level} for diagnostics)
+    // Fallbacks: if either fit fails, the histogram mean/RMS is stored.
     // -----------------------------------------------------------------
     std::map<TString, TH1F*> hMeanET, hSigmaET, hMeanE, hSigmaE;
+    std::map<TString, TH1F*> hMeanET_cb, hSigmaET_cb, hMeanE_cb, hSigmaE_cb;
+    std::map<TString, TH1F*> hAlphaET_cb, hNET_cb;  // diagnostics (ET only)
+    // Double-sided CB (for tight_iso level where the one-sided CB misses
+    // a residual high-side tail from isolation leakage; populated for all
+    // levels for consistency)
+    std::map<TString, TH1F*> hMeanET_dscb, hSigmaET_dscb;
+    std::map<TString, TH1F*> hAlphaLET_dscb, hAlphaHET_dscb;
     auto makeSummary = [&](const char *prefix, const TString &setname, const TString &lvl)
     {
         TString n_m = Form("%s_mean_%s_%s",  prefix, setname.Data(), lvl.Data());
@@ -578,46 +623,143 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
         hm->Sumw2(); hs->Sumw2();
         return std::make_pair(hm, hs);
     };
+    auto makeDiag = [&](const char *prefix, const TString &setname, const TString &lvl,
+                        const char *suffix, const char *ytit)
+    {
+        TString n = Form("%s_%s_%s_%s", prefix, suffix, setname.Data(), lvl.Data());
+        TH1F *h = new TH1F(n.Data(), Form(";truth p_{T} [GeV];%s", ytit), NptBins, ptEdges);
+        h->Sumw2();
+        return h;
+    };
 
-    auto fitSliceStats = [&](TH2F *h2, TH1F *hm, TH1F *hs)
+    auto fitSliceStats = [&](TH2F *h2,
+                             TH1F *hm,    TH1F *hs,
+                             TH1F *hm_cb, TH1F *hs_cb,
+                             TH1F *ha_cb = nullptr, TH1F *hn_cb = nullptr,
+                             TH1F *hm_dscb = nullptr, TH1F *hs_dscb = nullptr,
+                             TH1F *haL_dscb = nullptr, TH1F *haH_dscb = nullptr)
     {
         for (int ipt = 1; ipt <= NptBins; ipt++) {
             TH1D *proj = h2->ProjectionY(Form("_tmp_%s_pt%d", h2->GetName(), ipt), ipt, ipt);
             if (proj->GetEntries() < 20 || proj->Integral() <= 0) { delete proj; continue; }
-            // Truncated Gaussian fit in [0.3, 1.7] (robust against tails).
-            // Unique name so ROOT's gROOT list does not collide across calls.
+
+            // --- (a) Truncated Gaussian fit in [0.3, 1.7] ---
             TF1 f(Form("fresp_%s_pt%d", h2->GetName(), ipt), "gaus", 0.3, 1.7);
             f.SetParameter(0, proj->GetMaximum());
             f.SetParameter(1, proj->GetMean());
             f.SetParameter(2, std::max(0.05, (double)proj->GetStdDev()));
             int rc = proj->Fit(&f, "RQN");
+            double mu_g, sg_g, dmu_g, dsg_g;
             if (rc == 0) {
-                hm->SetBinContent(ipt, f.GetParameter(1));
-                hm->SetBinError  (ipt, f.GetParError(1));
-                hs->SetBinContent(ipt, f.GetParameter(2));
-                hs->SetBinError  (ipt, f.GetParError(2));
+                mu_g = f.GetParameter(1); dmu_g = f.GetParError(1);
+                sg_g = f.GetParameter(2); dsg_g = f.GetParError(2);
             } else {
-                hm->SetBinContent(ipt, proj->GetMean());
-                hm->SetBinError  (ipt, proj->GetMeanError());
-                hs->SetBinContent(ipt, proj->GetStdDev());
-                hs->SetBinError  (ipt, proj->GetStdDevError());
+                mu_g = proj->GetMean();   dmu_g = proj->GetMeanError();
+                sg_g = proj->GetStdDev(); dsg_g = proj->GetStdDevError();
             }
+            hm->SetBinContent(ipt, mu_g); hm->SetBinError(ipt, dmu_g);
+            hs->SetBinContent(ipt, sg_g); hs->SetBinError(ipt, dsg_g);
+
+            // --- (b) Crystal-Ball fit in [0.3, 2.0] ---
+            // ROOT "crystalball": [0]=const, [1]=mean, [2]=sigma, [3]=alpha (>0 -> low-side tail), [4]=n
+            TF1 fcb(Form("fcb_%s_pt%d", h2->GetName(), ipt), "crystalball", 0.3, 2.0);
+            fcb.SetParameter(0, proj->GetMaximum());
+            fcb.SetParameter(1, mu_g);
+            fcb.SetParameter(2, std::max(0.03, sg_g));
+            fcb.SetParameter(3, 1.0);
+            fcb.SetParameter(4, 5.0);
+            fcb.SetParLimits(2, 0.005, 0.4);
+            fcb.SetParLimits(3, 0.1, 10.0);
+            fcb.SetParLimits(4, 1.05, 100.0);
+            int rc_cb = proj->Fit(&fcb, "RQN");
+            double mu_cb = mu_g, sg_cb = sg_g;
+            if (rc_cb == 0) {
+                mu_cb = fcb.GetParameter(1);
+                sg_cb = fcb.GetParameter(2);
+                hm_cb->SetBinContent(ipt, mu_cb);
+                hm_cb->SetBinError  (ipt, fcb.GetParError(1));
+                hs_cb->SetBinContent(ipt, sg_cb);
+                hs_cb->SetBinError  (ipt, fcb.GetParError(2));
+                if (ha_cb) { ha_cb->SetBinContent(ipt, fcb.GetParameter(3)); ha_cb->SetBinError(ipt, fcb.GetParError(3)); }
+                if (hn_cb) { hn_cb->SetBinContent(ipt, fcb.GetParameter(4)); hn_cb->SetBinError(ipt, fcb.GetParError(4)); }
+            } else {
+                hm_cb->SetBinContent(ipt, mu_g); hm_cb->SetBinError(ipt, dmu_g);
+                hs_cb->SetBinContent(ipt, sg_g); hs_cb->SetBinError(ipt, dsg_g);
+            }
+
+            // --- (c) Double-sided Crystal-Ball fit in [0.3, 2.0] ---
+            if (hm_dscb && hs_dscb) {
+                TF1 fdscb(Form("fdscb_%s_pt%d", h2->GetName(), ipt), double_cb, 0.3, 2.0, 7);
+                fdscb.SetParNames("N", "mu", "sigma", "alphaL", "nL", "alphaH", "nH");
+                fdscb.SetParameter(0, proj->GetMaximum());
+                fdscb.SetParameter(1, mu_cb);
+                fdscb.SetParameter(2, std::max(0.03, sg_cb));
+                fdscb.SetParameter(3, 1.0);
+                fdscb.SetParameter(4, 5.0);
+                fdscb.SetParameter(5, 1.5);
+                fdscb.SetParameter(6, 5.0);
+                fdscb.SetParLimits(2, 0.005, 0.4);
+                fdscb.SetParLimits(3, 0.1, 10.0);
+                fdscb.SetParLimits(4, 1.05, 100.0);
+                fdscb.SetParLimits(5, 0.1, 10.0);
+                fdscb.SetParLimits(6, 1.05, 100.0);
+                int rc_dscb = proj->Fit(&fdscb, "RQN");
+                if (rc_dscb == 0) {
+                    hm_dscb->SetBinContent(ipt, fdscb.GetParameter(1));
+                    hm_dscb->SetBinError  (ipt, fdscb.GetParError(1));
+                    hs_dscb->SetBinContent(ipt, fdscb.GetParameter(2));
+                    hs_dscb->SetBinError  (ipt, fdscb.GetParError(2));
+                    if (haL_dscb) {
+                        haL_dscb->SetBinContent(ipt, fdscb.GetParameter(3));
+                        haL_dscb->SetBinError  (ipt, fdscb.GetParError(3));
+                    }
+                    if (haH_dscb) {
+                        haH_dscb->SetBinContent(ipt, fdscb.GetParameter(5));
+                        haH_dscb->SetBinError  (ipt, fdscb.GetParError(5));
+                    }
+                } else {
+                    // Fallback: inherit CB (or Gauss if CB also failed)
+                    hm_dscb->SetBinContent(ipt, mu_cb); hm_dscb->SetBinError(ipt, dmu_g);
+                    hs_dscb->SetBinContent(ipt, sg_cb); hs_dscb->SetBinError(ipt, dsg_g);
+                }
+            }
+
             delete proj;
         }
     };
 
     for (auto &s : sets) {
         for (auto &lvl : levels) {
-            auto smET = makeSummary("h_respET", s.name, lvl);
-            auto smE  = makeSummary("h_respE",  s.name, lvl);
+            auto smET      = makeSummary("h_respET",      s.name, lvl);
+            auto smE       = makeSummary("h_respE",       s.name, lvl);
+            auto smET_cb   = makeSummary("h_respET_cb",   s.name, lvl);
+            auto smE_cb    = makeSummary("h_respE_cb",    s.name, lvl);
+            auto smET_dscb = makeSummary("h_respET_dscb", s.name, lvl);
+            TH1F *ha   = makeDiag("h_respET_cb",   s.name, lvl, "alpha",  "#alpha_{CB}");
+            TH1F *hn   = makeDiag("h_respET_cb",   s.name, lvl, "n",      "n_{CB}");
+            TH1F *haL  = makeDiag("h_respET_dscb", s.name, lvl, "alphaL", "#alpha_{L}");
+            TH1F *haH  = makeDiag("h_respET_dscb", s.name, lvl, "alphaH", "#alpha_{H}");
             TString k1 = Form("h_respET_%s_%s", s.name.Data(), lvl.Data());
             TString k2 = Form("h_respE_%s_%s",  s.name.Data(), lvl.Data());
-            fitSliceStats(hRespET[k1], smET.first, smET.second);
-            fitSliceStats(hRespE [k2], smE.first,  smE.second);
-            hMeanET [smET.first ->GetName()] = smET.first;
-            hSigmaET[smET.second->GetName()] = smET.second;
-            hMeanE  [smE.first  ->GetName()] = smE.first;
-            hSigmaE [smE.second ->GetName()] = smE.second;
+            fitSliceStats(hRespET[k1], smET.first, smET.second,
+                          smET_cb.first, smET_cb.second, ha, hn,
+                          smET_dscb.first, smET_dscb.second, haL, haH);
+            fitSliceStats(hRespE [k2], smE.first,  smE.second,
+                          smE_cb.first,  smE_cb.second);
+            hMeanET       [smET.first      ->GetName()] = smET.first;
+            hSigmaET      [smET.second     ->GetName()] = smET.second;
+            hMeanE        [smE.first       ->GetName()] = smE.first;
+            hSigmaE       [smE.second      ->GetName()] = smE.second;
+            hMeanET_cb    [smET_cb.first   ->GetName()] = smET_cb.first;
+            hSigmaET_cb   [smET_cb.second  ->GetName()] = smET_cb.second;
+            hMeanE_cb     [smE_cb.first    ->GetName()] = smE_cb.first;
+            hSigmaE_cb    [smE_cb.second   ->GetName()] = smE_cb.second;
+            hAlphaET_cb   [ha->GetName()] = ha;
+            hNET_cb       [hn->GetName()] = hn;
+            hMeanET_dscb  [smET_dscb.first ->GetName()] = smET_dscb.first;
+            hSigmaET_dscb [smET_dscb.second->GetName()] = smET_dscb.second;
+            hAlphaLET_dscb[haL->GetName()] = haL;
+            hAlphaHET_dscb[haH->GetName()] = haH;
         }
     }
 
@@ -635,12 +777,22 @@ void compare_energy_response(TString configname = "config_bdt_nom.yaml",
             s.h_vtx_weight->Write();
         }
     }
-    for (auto &kv : hRespET)  kv.second->Write();
-    for (auto &kv : hRespE)   kv.second->Write();
-    for (auto &kv : hMeanET)  kv.second->Write();
-    for (auto &kv : hSigmaET) kv.second->Write();
-    for (auto &kv : hMeanE)   kv.second->Write();
-    for (auto &kv : hSigmaE)  kv.second->Write();
+    for (auto &kv : hRespET)     kv.second->Write();
+    for (auto &kv : hRespE)      kv.second->Write();
+    for (auto &kv : hMeanET)     kv.second->Write();
+    for (auto &kv : hSigmaET)    kv.second->Write();
+    for (auto &kv : hMeanE)      kv.second->Write();
+    for (auto &kv : hSigmaE)     kv.second->Write();
+    for (auto &kv : hMeanET_cb)     kv.second->Write();
+    for (auto &kv : hSigmaET_cb)    kv.second->Write();
+    for (auto &kv : hMeanE_cb)      kv.second->Write();
+    for (auto &kv : hSigmaE_cb)     kv.second->Write();
+    for (auto &kv : hAlphaET_cb)    kv.second->Write();
+    for (auto &kv : hNET_cb)        kv.second->Write();
+    for (auto &kv : hMeanET_dscb)   kv.second->Write();
+    for (auto &kv : hSigmaET_dscb)  kv.second->Write();
+    for (auto &kv : hAlphaLET_dscb) kv.second->Write();
+    for (auto &kv : hAlphaHET_dscb) kv.second->Write();
     fout->Close();
     delete fout;
 

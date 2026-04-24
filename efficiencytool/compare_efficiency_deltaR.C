@@ -105,7 +105,7 @@ void compare_efficiency_deltaR(TString configname = "config_bdt_nom.yaml",
     if (configYaml["analysis"]["pT_bins_truth"]) {
         pT_bins_truth = configYaml["analysis"]["pT_bins_truth"].as<std::vector<float>>();
     } else {
-        pT_bins_truth = {7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45};
+        pT_bins_truth = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45};
     }
     int NptBins = (int)pT_bins_truth.size() - 1;
     double ptEdges[100];
@@ -161,8 +161,8 @@ void compare_efficiency_deltaR(TString configname = "config_bdt_nom.yaml",
     // =================================================================
     // Define samples
     // =================================================================
-    float DOUBLE_FRAC = 0.187f;
-    float SINGLE_FRAC = 1.0f - DOUBLE_FRAC; // 0.813
+    float DOUBLE_FRAC = 0.224f;   // cluster-weighted, 0 mrad (from calc_pileup_range.C)
+    float SINGLE_FRAC = 1.0f - DOUBLE_FRAC; // 0.776
 
     std::vector<SampleInfo> single_samples = {
         {"photon10", "/sphenix/user/shuhangli/ppg12/FunWithxgboost/photon10/bdt_split.root", 1.0f},
@@ -293,6 +293,13 @@ void compare_efficiency_deltaR(TString configname = "config_bdt_nom.yaml",
             TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
             TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
             TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_005(reader, Form("cluster_iso_005_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_0075(reader, Form("cluster_iso_0075_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_excl_04(reader, Form("cluster_iso_excl_04_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_excl_005(reader, Form("cluster_iso_excl_005_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_excl_0075(reader, Form("cluster_iso_excl_0075_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_excl_01(reader, Form("cluster_iso_excl_01_%s", clusternodename.c_str()));
+            TTreeReaderArray<float> cluster_iso_excl_02(reader, Form("cluster_iso_excl_02_%s", clusternodename.c_str()));
             TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
             TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
 
@@ -440,6 +447,26 @@ void compare_efficiency_deltaR(TString configname = "config_bdt_nom.yaml",
                                 recoisoET = cluster_iso_topo_04[icl];
                             } else if (use_topo_iso == 1) {
                                 recoisoET = cluster_iso_topo_03[icl];
+                            } else if (use_topo_iso == 4) {
+                                // All-calo 120 MeV donut: outer R=0.4 minus all-calo inner {0.05, 0.075, 0.20}.
+                                recoisoET = cluster_iso_04[icl];
+                                if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
+                                    recoisoET -= cluster_iso_005[icl];
+                                else if (iso_emcalinnerr > 0.07 && iso_emcalinnerr < 0.08)
+                                    recoisoET -= cluster_iso_0075[icl];
+                                else if (iso_emcalinnerr > 0.19 && iso_emcalinnerr < 0.21)
+                                    recoisoET -= cluster_iso_02[icl];
+                            } else if (use_topo_iso == 5) {
+                                // All-calo 120 MeV donut with EMCal tower-ownership exclusion.
+                                recoisoET = cluster_iso_excl_04[icl];
+                                if (iso_emcalinnerr > 0.04 && iso_emcalinnerr < 0.06)
+                                    recoisoET -= cluster_iso_excl_005[icl];
+                                else if (iso_emcalinnerr > 0.07 && iso_emcalinnerr < 0.08)
+                                    recoisoET -= cluster_iso_excl_0075[icl];
+                                else if (iso_emcalinnerr > 0.09 && iso_emcalinnerr < 0.11)
+                                    recoisoET -= cluster_iso_excl_01[icl];
+                                else if (iso_emcalinnerr > 0.19 && iso_emcalinnerr < 0.21)
+                                    recoisoET -= cluster_iso_excl_02[icl];
                             } else if (conesize == 4) {
                                 recoisoET = cluster_iso_04[icl];
                             } else if (conesize == 3) {

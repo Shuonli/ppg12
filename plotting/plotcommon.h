@@ -2,8 +2,8 @@
 #include "sPhenixStyle.C"
 
 
-const int NptBins = 12;
-const float ptRanges[NptBins + 1] = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
+const int NptBins = 11;
+const float ptRanges[NptBins + 1] = {10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36};
 
 inline TH1D *rebinToPtBins(TH1D *h, const char *name)
 {
@@ -45,13 +45,13 @@ void init_plot()
   const float et_high = 50;
   frame_et_rec = new TH1F("frame_et", "", 43, et_low, et_high);
   frame_et_rec->SetXTitle("#it{E}_{T}^{#gamma,rec} [GeV]");
-  frame_et_rec->GetXaxis()->SetRangeUser(8, 40);
+  frame_et_rec->GetXaxis()->SetRangeUser(10, 40);
   frame_et_rec->SetYTitle("Counts");
   frame_et_rec->GetYaxis()->SetRangeUser(5, 5e5);
 
   frame_et_truth = new TH1F("frame_et_truth", "", 430, et_low, et_high);
   frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma, truth} [GeV]");
-  frame_et_truth->GetXaxis()->SetRangeUser(8, 40);
+  frame_et_truth->GetXaxis()->SetRangeUser(10, 40);
   frame_et_truth->SetYTitle("Efficiency");
   frame_et_truth->GetYaxis()->SetRangeUser(0.2, 1.1);
 

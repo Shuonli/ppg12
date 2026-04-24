@@ -898,13 +898,13 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         200, 0, 20);
 
     // Tower-index (ietacent x iphicent) acceptance maps at 4 selection levels,
-    // filled for clusters with ET >= tower_map_et_min (default 8 GeV = analysis
+    // filled for clusters with ET >= tower_map_et_min (default 10 GeV = analysis
     // cross-section lower edge). Uses the same per-event `weight` as the
     // adjacent fills (MC: cross_section x lumi/lumi_target x vertex_weight x
     // truth_vertex_reweight; data: prescale). MergeSim plain-hadds these so the
     // merged MC output is the inclusive (signal + jet background) tower map --
     // apples-to-apples with data for dead-tower diagnosis.
-    const float tower_map_et_min = configYaml["analysis"]["tower_map_et_min"].as<float>(8.0f);
+    const float tower_map_et_min = configYaml["analysis"]["tower_map_et_min"].as<float>(10.0f);
     TH2F *h_etaphi_tower_preselect = new TH2F(
         "h_etaphi_tower_preselect",
         Form("Cluster tower map (ET>=%.1f GeV, preselect);cluster i#eta;cluster i#phi", tower_map_et_min),

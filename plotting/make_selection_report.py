@@ -25,7 +25,7 @@ OUTPUT_DIR  = "selection_report"
 TEX_NAME    = "selection_report.tex"
 
 # Number of pT bins (matches NptBins in plotcommon.h)
-N_PT_BINS = 12  # noqa: matches NptBins in plotcommon.h
+N_PT_BINS = 11  # noqa: matches NptBins in plotcommon.h
 
 # Ordered plot groups with display label and expected filenames (use {s} for suffix).
 PLOT_GROUPS = [

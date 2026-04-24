@@ -40,7 +40,7 @@ void plot_satdiff()
 
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->Draw("axis");
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
     frame_et_rec->GetYaxis()->SetRangeUser(0.8, 1.3);
     //frame_et_rec->SetYTitle("ana468/ana462");
     frame_et_rec->SetYTitle("new/old calib");
@@ -74,7 +74,7 @@ void plot_satdiff()
 
     TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
     frame_et_rec->Draw("axis");
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
     frame_et_rec->GetYaxis()->SetRangeUser(0.2, 1.8);
 
     h_cluster_common_ET_ratio->SetLineColor(kBlack);

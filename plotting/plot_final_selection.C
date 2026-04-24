@@ -40,7 +40,7 @@ void plot_final_selection(string tune = "bdt_nom")
     float deta = 1.4;
 
     float lowery = 0.2;
-    float lowerx = 10;
+    float lowerx = 12;
     float upperx = 32;
 
     TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
@@ -644,7 +644,7 @@ void plot_final_selection(string tune = "bdt_nom")
     pad_1->cd();
     // common, tight iso, sub, sub with unfold and final result
     frame_et_rec->GetYaxis()->SetRangeUser(2, 1e5);
-    frame_et_rec->GetXaxis()->SetRangeUser(8, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
     frame_et_rec->SetYTitle("dN/dE_{T} [GeV^{-1}]");
     frame_et_rec->Draw("axis");
 

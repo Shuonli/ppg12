@@ -51,7 +51,7 @@ void plot_sideband_selection(const std::string suffix = "nomtest"){
 
   TCanvas* c1 = new TCanvas("c1","c1",600,600);
   frame_et_rec->Draw("axis");
-  frame_et_rec->GetXaxis()->SetRangeUser(8,35);
+  frame_et_rec->GetXaxis()->SetRangeUser(10,35);
   frame_et_rec->GetYaxis()->SetRangeUser(1, 5e5);
   h_tight_iso_cluster->Draw("same e");
 
