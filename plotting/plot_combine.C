@@ -4,9 +4,9 @@ void plot_combine()
 {
     init_plot();
 
-    TFile *f_photon5 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon5_mbdeffup.root", "READ");
-    TFile *f_photon10 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon10_mbdeffup.root", "READ");
-    TFile *f_photon20 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon20_mbdeffup.root", "READ");
+    TFile *f_photon5 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon5_bdt_nom.root", "READ");
+    TFile *f_photon10 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon10_bdt_nom.root", "READ");
+    TFile *f_photon20 = new TFile("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_photon20_bdt_nom.root", "READ");
 
     int rebinx = 10;
 
@@ -44,7 +44,7 @@ void plot_combine()
     // f1->Draw("same");
 
     TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
-    h_10_over_05->GetXaxis()->SetRangeUser(10, 30);
+    h_10_over_05->GetXaxis()->SetRangeUser(10, 32);
     h_10_over_05->GetYaxis()->SetRangeUser(0.6, 1.4);
     h_10_over_05->SetYTitle("photon10/photon5");
     h_10_over_05->SetXTitle("Leading #it{E}_{T}^{#gamma} [GeV]");
