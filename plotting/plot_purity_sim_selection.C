@@ -7,12 +7,11 @@ void plot_purity_sim_selection(const std::string suffix = "bdt_nom")
     
     string savePath = "figures/";
 
-    // The truth-purity points (g_purity_truth) come from the INCLUSIVE MC pass
-    // (signal+jet xsec-weighted merge), produced by CalculatePhotonYield with
-    // isMCInclusive=true into the _mcincl.root file. The default _mc.root is
-    // jet-only and has truth-matched > observed, which silently zeros the
-    // TGraphAsymmErrors fY.
-    std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_" + suffix + "_mcincl.root";
+    // The MC-closure pass of CalculatePhotonYield treats the jet MC as the
+    // "data" input (jet MC IS the inclusive MC reference for this analysis,
+    // since the data is jet-dominated and signal contribution is small). The
+    // truth purity points are filled by the same pass into _mc.root.
+    std::string dataname = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_" + suffix + "_mc.root";
 
     TFile *fdata = new TFile(dataname.c_str());
 
