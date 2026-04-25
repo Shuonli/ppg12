@@ -405,8 +405,20 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
 
     ROOT.myText(0.55, 0.88, 1, ROOT.strleg1.c_str(), 0.045)
     ROOT.myText(0.55, 0.83, 1, ROOT.strleg2.c_str(), 0.045)
-    ROOT.myMarkerLineText(0.18, 0.88, 1, ROOT.kRed,  20, ROOT.kRed,  1, "up var.",   0.05, True)
-    ROOT.myMarkerLineText(0.18, 0.82, 1, ROOT.kBlue, 20, ROOT.kBlue, 1, "down var.", 0.05, True)
+    # Line-only legend entries (the bands are Draw("HIST") so no markers).
+    def _line_legend(x, y, color, text, tsize=0.05):
+        ln = ROOT.TLine()
+        ln.SetLineColor(color)
+        ln.SetLineWidth(2)
+        ln.SetLineStyle(1)
+        ln.DrawLineNDC(x - 0.040, y, x - 0.010, y)
+        lab = ROOT.TLatex()
+        lab.SetNDC()
+        lab.SetTextAlign(12)
+        lab.SetTextSize(tsize)
+        lab.DrawLatex(x, y, text)
+    _line_legend(0.22, 0.88, ROOT.kRed,  "up var.")
+    _line_legend(0.22, 0.82, ROOT.kBlue, "down var.")
     ROOT.myText(0.18, 0.76, 1, type_name.replace("_", " "), 0.05)
 
     out = os.path.join(figdir, f"syst_bdt_rel_{type_name}.pdf")
