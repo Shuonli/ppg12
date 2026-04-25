@@ -571,14 +571,35 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                   << ": " << n_masked << " masked towers" << std::endl;
     }
 
-    // polynomial 3 for the reweighting
-    // TF1 *f_reweight = new TF1("f_reweight", "[0] + [1]*x + [2]*x*x + [3]*x*x*x", 0, 100);
-    TF1 *f_reweight = new TF1("f_reweight", "([0] + [1]*x + [3]*x*x) / (1 + [2]*x + [4]*x*x)", 0, 100);
-    // need to make this into the config file in the future!!!
-    // f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
-    // f_reweight->SetParameters(1.04713, 0.00623875, -0.00106856, 2.64199e-06);
-    // f_reweight->SetParameters(0.714962, -0.0856443, -0.125383, 0.00345831, 0.00462972);
-    f_reweight->SetParameters(0.787183, -0.109761, -0.137895, 0.00449023, 0.00533778);
+    // Truth-pT reweight for unfolding response prior. Loaded from YAML
+    // (analysis.unfold.truth_reweight.{formula,params,xmin,xmax,clamp_pT_min,clamp_pT_max}).
+    // Re-derived 2026-04-25 against allz nominal; nominal lives in config_bdt_nom*.yaml.
+    // Default fallback (no block in YAML): flat reweight = 1.0 with no clamping, so
+    // missing-field configs degrade visibly rather than silently bias the response.
+    std::string trw_formula = "1";
+    std::vector<double> trw_params;
+    double trw_xmin = 0.0, trw_xmax = 100.0;
+    double trw_clamp_pT_min = 0.0, trw_clamp_pT_max = 1e9;
+    if (configYaml["analysis"]["unfold"]["truth_reweight"]) {
+        const auto &trw_node = configYaml["analysis"]["unfold"]["truth_reweight"];
+        trw_formula = trw_node["formula"].as<std::string>("1");
+        if (trw_node["params"]) {
+            for (const auto &p : trw_node["params"]) trw_params.push_back(p.as<double>());
+        }
+        trw_xmin = trw_node["xmin"].as<double>(0.0);
+        trw_xmax = trw_node["xmax"].as<double>(100.0);
+        trw_clamp_pT_min = trw_node["clamp_pT_min"].as<double>(0.0);
+        trw_clamp_pT_max = trw_node["clamp_pT_max"].as<double>(1e9);
+    } else {
+        std::cout << "[f_reweight] WARNING: analysis.unfold.truth_reweight not in config; "
+                  << "falling back to flat reweight = 1.0" << std::endl;
+    }
+    TF1 *f_reweight = new TF1("f_reweight", trw_formula.c_str(), trw_xmin, trw_xmax);
+    for (size_t i = 0; i < trw_params.size(); ++i) f_reweight->SetParameter(i, trw_params[i]);
+    std::cout << "[f_reweight] formula=\"" << trw_formula << "\" params=[";
+    for (size_t i = 0; i < trw_params.size(); ++i)
+        std::cout << trw_params[i] << (i + 1 < trw_params.size() ? "," : "");
+    std::cout << "] clamp_pT=[" << trw_clamp_pT_min << "," << trw_clamp_pT_max << "]" << std::endl;
 
     //load MBD t0 correction
     std::cout << "loading MBD t0 correction" << std::endl;
@@ -2822,7 +2843,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 float response_reweight = 1.0;
                                 if (reweight)
                                 {
-                                    response_reweight = particle_Pt[iparticle] > 30 ? f_reweight->Eval(30) : f_reweight->Eval(particle_Pt[iparticle]);
+                                    double pt_clamped = std::min(trw_clamp_pT_max,
+                                                                  std::max(trw_clamp_pT_min,
+                                                                           (double)particle_Pt[iparticle]));
+                                    response_reweight = f_reweight->Eval(pt_clamped);
                                 }
                                 h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight*response_reweight);
                                 h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight*response_reweight);
