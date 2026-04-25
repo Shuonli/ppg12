@@ -56,11 +56,13 @@ Known bugs, discrepancies, and pitfalls in the PPG12 codebase.
 
 ## Data Processing Issues
 
-### Two-Pass Architecture Order
+### Two-Pass Architecture Order (main cross-section pipeline)
 
-**Problem:** The vertex scan (Pass 1) MUST complete before the full analysis (Pass 2) begins. Running them out of order produces incorrect vertex reweighting.
+**Problem:** In `RecoEffCalculator_TTreeReader.C`, the vertex scan (Pass 1) MUST complete before the full analysis (Pass 2) begins. Running them out of order produces incorrect vertex reweighting.
 
 **Solution:** Use `oneforall_tree.sh` which enforces the correct order.
+
+**Note:** The showershape DI pipeline no longer uses this two-pass architecture. It runs single-pass with truth-vertex reweighting (`submit_showershape_di.sub` + `TruthVertexReweightLoader.h`); the legacy two-pass reco-vertex script is kept as `run_showershape_double_reco_legacy.sh`.
 
 ### MergeSim Expected Samples
 

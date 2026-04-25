@@ -2,27 +2,23 @@
 
 export macropath=$(pwd)
 
-# Input list file
-export listfile="${macropath}/test.list"
+# Path to the dst files
+export dstpath="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet8"
 # Path to the output directory
 export TargetDir="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet8/condorout"
-# Number of condor jobs
-total_jobs=2000
+# Total events for this condor. (1 line = 1000 events)
+total_line=10000
+#total_line=10031
+# Events per job (1 line = 1000 events)
+lines_per_job=10
 # Skip lines (for the case of resubmission or continuation)
 skip_lines=0
 
-total_line=$(wc -l < "${listfile}")
-lines_per_job=$(( (total_line + total_jobs - 1) / total_jobs ))
+total_jobs=$(( (total_line + lines_per_job - 1) / lines_per_job ))
 
-submitted=0
 for ((i=0; i<total_jobs; i++)); do
     start_line=$(( i * lines_per_job + 1 + skip_lines))
     end_line=$(( start_line + lines_per_job - 1 + skip_lines))
-
-    # Skip if start_line exceeds total lines
-    if (( start_line > total_line )); then
-        break
-    fi
 
     mkdir -p "${TargetDir}/OutDir$i"
     WorkDir="${TargetDir}/OutDir$i"
@@ -31,16 +27,17 @@ for ((i=0; i<total_jobs; i++)); do
     cp "$macropath/Fun4All_run_sim.C" "${WorkDir}/"
     chmod +x "${WorkDir}/CondorRunTC$i.sh"
 
-    sed -n "${start_line},${end_line}p" "${listfile}" > "${WorkDir}/test.list"
-
-    submitted=$((submitted + 1))
+    sed -n "${start_line},${end_line}p" $dstpath/dst_calo_cluster.list > "${WorkDir}/dst_calo_cluster.list"
+    sed -n "${start_line},${end_line}p" $dstpath/dst_truth_jet.list   > "${WorkDir}/dst_truth_jet.list"
+    sed -n "${start_line},${end_line}p" $dstpath/g4hits.list          > "${WorkDir}/g4hits.list"
+    sed -n "${start_line},${end_line}p" $dstpath/dst_mbd_epd.list     > "${WorkDir}/dst_mbd_epd.list"
 done
 
 # Build one shared submit file and submit once (replaces per-iteration condor_submit loop)
 cat > "${TargetDir}/ff.sub" << EOF
 +JobFlavour                   = "workday"
 initialdir                    = ${TargetDir}/OutDir\$(Process)
-transfer_input_files          = ${TargetDir}/OutDir\$(Process)/CondorRunTC\$(Process).sh,${TargetDir}/OutDir\$(Process)/Fun4All_run_sim.C,${TargetDir}/OutDir\$(Process)/test.list
+transfer_input_files          = ${TargetDir}/OutDir\$(Process)/CondorRunTC\$(Process).sh,${TargetDir}/OutDir\$(Process)/Fun4All_run_sim.C
 Executable                    = ${TargetDir}/OutDir\$(Process)/CondorRunTC\$(Process).sh
 request_memory                = 4GB
 PeriodicHold                  = (NumJobStarts>=2 && JobStatus == 1)
@@ -52,7 +49,7 @@ Error                         = test.err
 Log                           = /tmp/sli_\$(Process).log
 Notify_user                   = sl4859@columbia.edu
 
-Queue ${submitted}
+Queue ${total_jobs}
 EOF
 
 condor_submit "${TargetDir}/ff.sub"

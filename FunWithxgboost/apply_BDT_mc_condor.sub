@@ -1,0 +1,21 @@
+universe              = vanilla
+executable            = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT_mc.sh
+
+# One job per MC sample
+output                = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/mc_$(Cluster).$(Process).$(sample).out
+error                 = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/mc_$(Cluster).$(Process).$(sample).err
+log                   = /tmp/$(Cluster)_mc.log
+
+# Inherit environment so ROOT, sPHENIX env, yaml-cpp, etc. are available
+getenv                = true
+
+# MC BDT apply memory footprint is larger than data (full-sample load).
+# photon10 existing bdt_split.root ≈ 14 GB on disk, event loop keeps several float arrays
+# of size 4096 × 31 branches per variant × 2 variants ≈ 1 MB resident; dominant cost is
+# TTree::CloneTree + write buffers. 8 GB is safe; bump up if OOM holds occur.
+request_memory        = 8GB
+request_disk          = 30GB
+request_cpus          = 1
+
+arguments             = $(sample)
+queue sample from /sphenix/user/shuhangli/ppg12/FunWithxgboost/mc_samples.list

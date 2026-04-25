@@ -8,7 +8,9 @@
 #include <yaml-cpp/yaml.h>
 
 // scale: "05" (mu=0.5*ET), "10" (nominal), "20" (mu=2*ET)
+// pdf_tag: "" (default, CT14lo, reads ggd/orhic_{scale}.root) or "_nlo" (CT14nlo rerun)
 void MakeJetPHOXhisto(const std::string &scale = "10",
+                      const std::string &pdf_tag = "",
                       const std::string &configname = "/sphenix/user/shuhangli/ppg12/efficiencytool/config_bdt_nom.yaml")
 {
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
@@ -88,12 +90,12 @@ void MakeJetPHOXhisto(const std::string &scale = "10",
         delete f;
     };
 
-    fillFromFile(pawres + "ggdrhic_" + scale + ".root");  // direct photon
-    fillFromFile(pawres + "ggorhic_" + scale + ".root");  // fragmentation
+    fillFromFile(pawres + "ggdrhic" + pdf_tag + "_" + scale + ".root");  // direct photon
+    fillFromFile(pawres + "ggorhic" + pdf_tag + "_" + scale + ".root");  // fragmentation
 
     std::cout << "Combined integral: " << h_truth_pT->Integral() << std::endl;
 
-    std::string outputname = "rootFiles/jetPHOX_" + scale + ".root";
+    std::string outputname = "rootFiles/jetPHOX" + pdf_tag + "_" + scale + ".root";
     TFile *fout = new TFile(outputname.c_str(), "RECREATE");
     h_truth_pT->Write();
     h_truth_eta_pT->Write();

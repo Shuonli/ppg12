@@ -69,7 +69,10 @@ case "${MODE}" in
                 1.5mrad|1p5mrad) CONFIGNAME="config_showershape_1p5rad.yaml" ;;
             esac
         fi
-        INNER_SCRIPT="run_showershape_double.sh"
+        # NOTE: This legacy two-pass reco-vertex script was renamed to
+        # run_showershape_double_reco_legacy.sh; the primary single-pass
+        # truth-vertex showershape flow is now submit_showershape_di.sub.
+        INNER_SCRIPT="run_showershape_double_reco_legacy.sh"
         ;;
     crosssection)
         CONFIGNAME="${CONFIGNAME:-config_bdt_nom.yaml}"

@@ -1,0 +1,12 @@
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+request_memory        = 4GB
+request_disk          = 4GB
+request_cpus          = 1
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+queue cfg matching (config_bdt_donut*_mcpc.yaml)

@@ -1,0 +1,14 @@
+universe              = vanilla
+request_memory        = 4GB
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+queue cfg in (
+    config_bdt_mask_phisymm_preselect.yaml
+    config_bdt_mask_phisymm_common.yaml
+    config_bdt_mask_phisymm_tight.yaml
+)

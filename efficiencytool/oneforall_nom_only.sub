@@ -1,0 +1,24 @@
+# oneforall_nom_only.sub
+#
+# Phase-2 condor submit for the nominal all-range config:
+#   - config_bdt_nom.yaml
+#
+# Calls oneforall.sh, which invokes merge_periods.sh + RecoEffCalculator on
+# all-range data + CalculatePhotonYield on the merged MC. Requires that
+# Phase 1 (oneforall_tree_double_nom_only.sub) has already finished, so the
+# per-period MC efficiency + response files exist for both crossings.
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg in ( config_bdt_nom.yaml )

@@ -1,0 +1,19 @@
+# Condor submit for apply_BDT.C on the 16 healthy MC samples post iso-fix reprocess.
+# Excludes jet8_double, jet12_double (which had hadd zombie-file failures and are
+# being re-hadded separately). Runs apply_BDT.C once per filetype in
+# mc_filetypes_16good.list.
+
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT_mc.sh
+arguments    = $(filetype)
+
+output       = logs/apply_BDT_mc16_$(Cluster).$(Process).out
+error        = logs/apply_BDT_mc16_$(Cluster).$(Process).err
+log          = /tmp/apply_BDT_mc16_$(Cluster).log
+
+getenv       = true
+request_memory = 16GB
+request_disk   = 30GB
+request_cpus   = 1
+
+queue filetype from mc_filetypes_16good.list

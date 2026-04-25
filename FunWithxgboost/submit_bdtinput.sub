@@ -1,0 +1,18 @@
+# Condor submit file for BDTinput.C data prep.
+# Runs BDTinput.C once per (config, filetype) entry in bdtinput_joblist.txt.
+# 18 jobs total: 9 samples (8 MC + data) × 2 variants (split, nosplit).
+
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_bdtinput.sh
+arguments    = $(cfg) $(filetype)
+
+output       = logs/bdtinput_$(Cluster).$(Process).out
+error        = logs/bdtinput_$(Cluster).$(Process).err
+log          = /tmp/bdtinput_$(Cluster).log
+
+getenv       = true
+request_memory = 8GB
+request_disk   = 4GB
+request_cpus   = 1
+
+queue cfg, filetype from bdtinput_joblist.txt

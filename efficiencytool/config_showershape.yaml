@@ -72,11 +72,17 @@ analysis:
   bdt_on: 1
   mc_iso_shift: 0.2
   mc_iso_scale: 1.2
-  vertex_reweight_on: 1
+  vertex_reweight_on: 0        # merge-target: MC is the hadd of pre-scaled feeders
   use_split_bdt: 1  # 1: use model_{name}_split_single_tmva.root and npb_score_split_tmva.root (matches apply_BDT.C)
   # Path to data vertex scan output file (h_vertexz). Used for on-the-fly vertex reweighting.
   # Leave empty ("") to use the pre-made vertex_reweight_file instead.
-  vertex_scan_data_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_bdt_all_vtxscan.root"
+  vertex_scan_data_file: ""
+  # All-range bare showershape config: MC is produced by merging the two
+  # per-crossing-angle feeders (config_showershape_{0rad,1p5mrad}.yaml), where
+  # the iterative truth-vertex reweight is already baked into per-event fills.
+  # Applying the reweight again here would double-count, so it is OFF.
+  truth_vertex_reweight_on: 0
+  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
   fit_option: 0
   common_b2bjet_cut: 0
 
@@ -238,12 +244,17 @@ analysis:
   mbd_avgsigma_max: 2.0
 
   # Run range for data processing (-1 = no bound)
-  run_min: -1
-  run_max: -1
+  # All-range: sum of 0 mrad (47289-51274) + 1.5 mrad (51274-54000)
+  run_min: 47289
+  run_max: 54000
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
-  # Total luminosity (pb^-1) for the selected run range
-  lumi: 49.562
+  # Total luminosity (pb^-1) for the selected run range: 32.6574 + 16.2735
+  lumi: 48.9309
+  # Merge-target lumi = lumi here (bare all-range). Feeder configs set
+  # lumi_target = 48.9309 with lumi per-period so the per-event lumi/lumi_target
+  # pre-scale makes the per-period hadd reproduce the all-range MC.
+  lumi_target: 48.9309
 
   unfold:
     resultit: 5

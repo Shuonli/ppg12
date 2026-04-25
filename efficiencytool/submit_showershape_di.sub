@@ -1,0 +1,31 @@
+# Condor submit file for the ShowerShapeCheck.C DI (double-interaction) pipeline.
+#
+# One row in $(list_file) == one ShowerShapeCheck.C invocation.
+# 8 paired samples per crossing-angle config:
+#   photon{5,10,20}_nom + photon{5,10,20}_double   (doinclusive=false)
+#   jet{8,12,20,30,40}_nom + jet{8,12,20,30,40}_double  (doinclusive=true)
+# Plus 1 data job (mix_weight=1.0). 17 rows total per list.
+#
+# Submit with the list file passed on the command line, e.g.:
+#   condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub
+#   condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+#
+# Pre-flight: ensure `logs/` exists under efficiencytool/ before submitting.
+
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/efficiencytool/run_showershape_di_job.sh
+arguments    = $(config) $(sample) $(doinclusive) $(mix_weight)
+
+output       = logs/showershape_di_$(sample)_$(Cluster).$(Process).out
+error        = logs/showershape_di_$(sample)_$(Cluster).$(Process).err
+log          = logs/showershape_di_$(Cluster).log
+
+getenv         = true
+request_memory = 16GB
+request_disk   = 30GB
+request_cpus   = 1
+
+PeriodicHold   = (NumJobStarts>=1 && JobStatus == 1)
+Notification   = Never
+
+queue config,sample,doinclusive,mix_weight from $(list_file)

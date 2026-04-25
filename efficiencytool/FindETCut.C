@@ -56,7 +56,7 @@ float findEffCutoff(TH2D *h_input, float eff, float pTlow, float pThigh, float i
             break;
         }
     }
-    
+
 
     if (!found)
     {
@@ -68,113 +68,72 @@ float findEffCutoff(TH2D *h_input, float eff, float pTlow, float pThigh, float i
     return isohigh_eff;
 }
 
-void FindETCut()
+void FindETCut(const char* var_type, double target_eff = 0.9)
 {
 
     SetAtlasStyle();
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
 
-    bool x_is_truth = false;
-
-    bool is_signal = true;
-
-    //TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root", "READ");
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_nom.root", "READ");
-
-    if(!is_signal){
-        fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet.root", "READ");
-    }
-    
-
-    TH2D *h_eff = (TH2D *)fin->Get("h_singal_truth_isoET_0");
-
-    if(!x_is_truth){
-        h_eff = (TH2D *)fin->Get("h_singal_reco_isoET_0");
+    std::string infile = std::string("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_") + var_type + ".root";
+    TFile *fin = new TFile(infile.c_str(), "READ");
+    if (!fin || fin->IsZombie())
+    {
+        std::cerr << "ERROR: cannot open " << infile << std::endl;
+        return;
     }
 
-    
+    TH2D *h_eff_input = (TH2D *)fin->Get("h_singal_reco_isoET_0");
+    if (!h_eff_input)
+    {
+        std::cerr << "ERROR: histogram h_singal_reco_isoET_0 missing in " << infile << std::endl;
+        return;
+    }
+
     const int nbins = 13; // 8-40 GeV in 1 GeV bins
-    TH1F *h_eff90 = new TH1F("h_eff90", "90% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 36);
-    TH1F *h_eff80 = new TH1F("h_eff80", "80% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 36);
-    TH1F *h_eff70 = new TH1F("h_eff70", "70% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 36);
-    
+    std::string htitle = Form("%d%% Efficiency Cutoff; pT [GeV]; isoET [GeV]", (int)(100 * target_eff));
+    TH1F *h_eff = new TH1F("h_eff", htitle.c_str(), nbins, 10, 36);
 
-   /*
-    const int nbins = 5; // 8-40 GeV in 1 GeV bins
-    TH1F *h_eff90 = new TH1F("h_eff90", "70% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 15);
-    TH1F *h_eff80 = new TH1F("h_eff80", "50% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 15);
-    TH1F *h_eff70 = new TH1F("h_eff70", "30% Efficiency Cutoff; pT [GeV]; isoET [GeV]", nbins, 10, 15);
-    */
-
-    // Populate histograms
-    float ybinwidth = h_eff->GetYaxis()->GetBinWidth(1);
+    // Populate histogram
+    float ybinwidth = h_eff_input->GetYaxis()->GetBinWidth(1);
     for (int i = 1; i <= nbins; ++i)
     {
-        float pTlow = h_eff90->GetXaxis()->GetBinLowEdge(i);
-        float pThigh = h_eff90->GetXaxis()->GetBinUpEdge(i);
+        float pTlow = h_eff->GetXaxis()->GetBinLowEdge(i);
+        float pThigh = h_eff->GetXaxis()->GetBinUpEdge(i);
 
-
-        
-        h_eff90->SetBinError(i, ybinwidth / 2.0);
-        h_eff90->SetBinContent(i, findEffCutoff(h_eff, 0.9, pTlow, pThigh, -1.0));
-        h_eff80->SetBinError(i, ybinwidth / 2.0);
-        h_eff80->SetBinContent(i, findEffCutoff(h_eff, 0.8, pTlow, pThigh, -1.0));
-        h_eff70->SetBinError(i, ybinwidth / 2.0);
-        h_eff70->SetBinContent(i, findEffCutoff(h_eff, 0.7, pTlow, pThigh, -1.0));
-        
-        /*
-        h_eff90->SetBinError(i, ybinwidth / 2.0);
-        h_eff90->SetBinContent(i, findEffCutoff(h_eff, 0.6, pTlow, pThigh, -1.0));
-        h_eff80->SetBinError(i, ybinwidth / 2.0);
-        h_eff80->SetBinContent(i, findEffCutoff(h_eff, 0.5, pTlow, pThigh, -1.0));
-        h_eff70->SetBinError(i, ybinwidth / 2.0);
-        h_eff70->SetBinContent(i, findEffCutoff(h_eff, 0.4, pTlow, pThigh, -1.0));
-        */
+        h_eff->SetBinError(i, ybinwidth / 2.0);
+        h_eff->SetBinContent(i, findEffCutoff(h_eff_input, target_eff, pTlow, pThigh, -1.0));
     }
 
-    std::vector<int> colors = {kPink + 8, kSpring - 7, kAzure - 3, kViolet + 3, kOrange + 10};
-    // Perform linear fits
-    TF1 *fit90 = new TF1("fit90", "pol1", 8, 40);
-    fit90->SetLineColor(colors[0]);
-    h_eff90->Fit(fit90, "RQ");
-    TF1 *fit80 = new TF1("fit80", "pol1", 8, 40);
-    fit80->SetLineColor(colors[1]);
-    h_eff80->Fit(fit80, "RQ");
-    TF1 *fit70 = new TF1("fit70", "pol1", 8, 40);
-    fit70->SetLineColor(colors[2]);
-    h_eff70->Fit(fit70, "RQ");
-    
+    std::vector<int> colors = {kPink + 8, kPink + 8};
+    // Perform linear fit over the matched pT range [10, 36]
+    TF1 *fit = new TF1("fit", "pol1", 10, 36);
+    fit->SetLineColor(colors[0]);
+    h_eff->Fit(fit, "RQ");
+
+    double intercept = fit->GetParameter(0);
+    double slope = fit->GetParameter(1);
 
     // Prepare fit result text
     std::vector<std::string> fitTexts = {
         "Pythia, #sqrt{s} = 200 GeV",
-        Form("90%%: E^{iso}_{T} = %.3f  + %.3fp_{T}",
-             fit90->GetParameter(0),
-             fit90->GetParameter(1)),
-        Form("80%%: E^{iso}_{T} = %.3f  + %.3fp_{T}",
-             fit80->GetParameter(0),
-             fit80->GetParameter(1)),
-        Form("70%%: E^{iso}_{T} = %.3f  + %.3fp_{T}",
-             fit70->GetParameter(0),
-             fit70->GetParameter(1)),
+        Form("%d%%: E^{iso}_{T} = %.3f  + %.3fp_{T}",
+             (int)(100 * target_eff), intercept, slope),
         "vtx |z| < 30 cm, |#eta^{#gamma}|<0.7"};
 
-    // Plotting parameters
-
-    std::vector<int> markers = {20, 21, 22};
-    std::vector<std::string> legends = {"90% Efficiency", "80% Efficiency", "70% Efficiency"};
+    std::vector<int> markers = {20, 20};
+    std::vector<std::string> legends = {Form("%d%% Efficiency", (int)(100 * target_eff)), ""};
 
     std::string xtitle = "Cluster p_{T} [GeV]";
 
-    if (x_is_truth)
-    {
-        xtitle = "Truth #gamma p_{T} [GeV]";
-    }
+    std::string outpdf = std::string("ETCut_FitResults_") + var_type + "_eff" + std::to_string((int)(100 * target_eff)) + ".pdf";
+
+    // draw_1D_multiple_plot requires >=2 histograms; duplicate for visual (fit is already shown)
+    TH1F *h_eff_dup = (TH1F*)h_eff->Clone("h_eff_dup");
 
     // Draw plots with fit results
     draw_1D_multiple_plot(
-        {h_eff90, h_eff80, h_eff70}, colors, markers,
+        {h_eff, h_eff_dup}, colors, markers,
         false, 1, false,                                   // Rebin/Normalize
         true, 10, 3, false,                                // X-axis
         true, -0.5, 5.0, false,                                 // Y-axis
@@ -182,16 +141,19 @@ void FindETCut()
         false, "",                                         // Data/Run status
         true, fitTexts, 0.15, 0.85, 0.035,                 // Text annotations
         true, legends, 0.6, 0.80, 0.035,                   // Legend
-        "ETCut_FitResults.pdf"                             // Output
+        outpdf.c_str()                                      // Output
     );
 
-    float scale = 1.0;
-    //print the fit result
-    std::cout << "90% Efficiency Fit: EisoT = " << fit90->GetParameter(0)*scale << " + " << fit90->GetParameter(1)*scale << "pT" << std::endl;
-    std::cout << "80% Efficiency Fit: EisoT = " << fit80->GetParameter(0)*scale << " + " << fit80->GetParameter(1)*scale << "pT" << std::endl;
-    std::cout << "70% Efficiency Fit: EisoT = " << fit70->GetParameter(0)*scale << " + " << fit70->GetParameter(1)*scale << "pT" << std::endl;
+    // Machine-parseable line for driver scripts
+    std::cout.precision(17);
+    std::cout << "DERIVED_ISO_CUT var_type=" << var_type
+              << " target_eff=" << target_eff
+              << " intercept=" << intercept
+              << " slope=" << slope << std::endl;
+}
 
-    // Cleanup
-    // fin->Close();
-    // delete fin;
+void FindETCut()
+{
+    // Preserves original no-arg behaviour which opened MC_efficiency_bdt_nom.root
+    FindETCut("nom", 0.9);
 }

@@ -1,0 +1,17 @@
+universe              = vanilla
+request_memory        = 16GB
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+queue cfg in (
+    config_bdt_mask_phisymm_preselect_0rad.yaml
+    config_bdt_mask_phisymm_preselect_1p5mrad.yaml
+    config_bdt_mask_phisymm_common_0rad.yaml
+    config_bdt_mask_phisymm_common_1p5mrad.yaml
+    config_bdt_mask_phisymm_tight_0rad.yaml
+    config_bdt_mask_phisymm_tight_1p5mrad.yaml
+)

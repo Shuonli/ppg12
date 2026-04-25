@@ -1,0 +1,16 @@
+# One-off submit for novtxcut merge-feeder TTree pipeline.
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in ( config_bdt_novtxcut_0rad.yaml config_bdt_novtxcut_1p5mrad.yaml )

@@ -77,6 +77,11 @@ analysis:
   # Path to data vertex scan output file (h_vertexz). Used for on-the-fly vertex reweighting.
   # Leave empty ("") to use the pre-made vertex_reweight_file instead.
   vertex_scan_data_file: ""
+  # Data-driven iterative truth-vertex reweight (standalone tool in
+  # efficiencytool/truth_vertex_reweight/). When on, forces vertex_reweight_on
+  # off and applies w(z_h) (single MC) or w(z_h)*w(z_mb) (double MC) per event.
+  truth_vertex_reweight_on: 1
+  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root"
   fit_option: 0
   common_b2bjet_cut: 0
 
@@ -242,8 +247,12 @@ analysis:
   run_max: 51274
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
-  # Total luminosity (pb^-1) for the selected run range
+  # Total luminosity (pb^-1) for the selected run range (0 mrad 60cm-fiducial)
   lumi: 32.6574
+  # Merge-feeder: pre-scale MC to the all-range target lumi so hadd across
+  # periods reproduces all-range MC (see RecoEffCalculator_TTreeReader.C /
+  # ShowerShapeCheck.C: cross_weight *= lumi/lumi_target for MC).
+  lumi_target: 48.9309
 
   unfold:
     resultit: 5

@@ -1,0 +1,34 @@
+# oneforall_all.sub
+#
+# Phase 2 of the full pipeline: cross-period merge + CalculatePhotonYield for
+# the 2 all-range targets (config_bdt_all.yaml, config_bdt_allz_all.yaml).
+# Each job invokes oneforall.sh, whose case dispatch calls merge_periods.sh
+# (lumi-weighted plain hadd of the per-period merge-feeder MC) followed by
+# CalculatePhotonYield x 2.
+#
+# PRECONDITION: Phase 1 (oneforall_tree_double.sub) must have completed for
+# the per-period merge-feeders, i.e. the following must exist on disk:
+#   results/MC_efficiency_bdt_{0rad,nom}.root              (for bdt_all)
+#   results/MC_efficiency_jet_bdt_{0rad,nom}.root
+#   results/MC_response_bdt_{0rad,nom}.root
+#   results/MC_efficiency_bdt_allz_{0rad,1p5mrad}.root     (for bdt_allz_all)
+#   results/MC_efficiency_jet_bdt_allz_{0rad,1p5mrad}.root
+#   results/MC_response_bdt_allz_{0rad,1p5mrad}.root
+#
+# Memory: 4GB (CalculatePhotonYield reads merged MC + data + response and
+# runs RooUnfoldBayes; modest single-threaded footprint).
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg from all_range_configs.list

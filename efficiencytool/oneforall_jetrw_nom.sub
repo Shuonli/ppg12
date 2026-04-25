@@ -1,0 +1,21 @@
+# One-off submit: rerun Phase 1 (per-sample TTree-reader applying truth-vertex
+# reweight) for the nominal merge-feeders only, after switching the production
+# reweight files from photon10-based to jet-based (jet12+jet20+jet30 SI+DI).
+#
+# Single use; delete after the rerun completes and the vertex-shape comparison
+# is published.
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).jetrw_nom.log
+output                = logs/$(cfg).jetrw_nom.out
+error                 = logs/$(cfg).jetrw_nom.err
+
+queue cfg in ( config_bdt_nom_0rad.yaml config_bdt_nom_1p5mrad.yaml )

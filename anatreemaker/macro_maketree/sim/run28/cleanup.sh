@@ -4,8 +4,8 @@
 # Iterates through jet and photon directories and removes OutDir* folders
 
 base_dir="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28"
-dirs=("jet5" "jet12" "jet20" "jet30" "jet40" "photon10" "photon20" "photon5")
-
+#dirs=("jet5" "jet12" "jet20" "jet30" "jet40" "photon10" "photon20" "photon5")
+dirs=("photon5" "photon10" "photon20" "jet5" "jet8" "jet12" "jet20" "jet30" "jet40" "photon10_double" "jet12_double" "photon5_double" "photon20_double" "jet8_double jet20_double" "jet30_double" "jet40_double" "jet50_double")
 echo "=========================================="
 echo "Starting cleanup"
 echo "Base directory: $base_dir"

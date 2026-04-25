@@ -10,8 +10,8 @@ log                   = /tmp/$(Cluster).log
 getenv                = true
 
 # Request modest resources (older-condor compatible units)
-request_memory        = 2048MB
-request_disk          = 2GB
+request_memory        = 4GB
+request_disk          = 4GB
 request_cpus          = 1
 
 # One job per line in datalist.list: each line becomes $(inputfile)

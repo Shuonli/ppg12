@@ -16,6 +16,7 @@ using namespace PPG12;
 #include <string>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -40,9 +41,9 @@ void EtaMigrationStudy(
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
 
-    // This macro is sim-only (photon MC samples)
+    // This macro is sim-only (photon and jet MC samples)
     bool issim = true;
-    static const bool isbackground = filetype.find("jet") != std::string::npos;
+    const bool isbackground = filetype.find("jet") != std::string::npos;
 
     // ---------------------------------------------------------------
     // Input file setup
@@ -355,6 +356,20 @@ void EtaMigrationStudy(
     TTreeReaderValue<int> ncluster(reader, Form("ncluster_%s", clusternodename.c_str()));
     TTreeReaderValue<float> vertexz(reader, "vertexz");
 
+    // Double-interaction MC uses the "_AntiKt_Truth_r04" jet branch naming.
+    const bool use_r04_branches = (filetype == "jet12_double" || filetype == "photon10_double");
+    const std::string njet_truth_bname   = use_r04_branches ? "njet_truth_AntiKt_Truth_r04"   : "njet_truth";
+    const std::string jet_truth_Pt_bname = use_r04_branches ? "jet_truth_Pt_AntiKt_Truth_r04" : "jet_truth_Pt";
+
+    // Truth jet arrays (used for jet pT window cut on background samples)
+    std::unique_ptr<TTreeReaderValue<int>>      njet_truth_ptr;
+    std::unique_ptr<TTreeReaderArray<float>>    jet_truth_Pt_ptr;
+    if (isbackground)
+    {
+        njet_truth_ptr.reset(new TTreeReaderValue<int>(reader, njet_truth_bname.c_str()));
+        jet_truth_Pt_ptr.reset(new TTreeReaderArray<float>(reader, jet_truth_Pt_bname.c_str()));
+    }
+
     // Particle arrays
     TTreeReaderArray<float> particle_Pt(reader, "particle_Pt");
     TTreeReaderArray<float> particle_Eta(reader, "particle_Eta");
@@ -380,6 +395,7 @@ void EtaMigrationStudy(
     TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_04(reader, Form("cluster_iso_excl_04_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_topo_04(reader, Form("cluster_iso_topo_04_%s", clusternodename.c_str()));
 
@@ -471,6 +487,44 @@ void EtaMigrationStudy(
     TH1D *h_vtxz_all = makeH1("h_vtxz_all", 240, -120, 120);
     TH1D *h_vtxz_fakes = makeH1("h_vtxz_fakes", 240, -120, 120);
 
+    // --- Background (jet MC) sideband flow histograms ---
+    // Per-ABCD-region sideband flow histograms.
+    //   native[r]  : truth inside, reco inside  → legitimate count
+    //   inflow[r]  : truth outside, reco inside → contaminates measured region
+    //   outflow[r] : truth inside, reco outside → would have been in r without migration
+    //   inside[r]  : reco inside (= native + inflow)
+    // Two parallel sets are booked: one with the nominal NPB preselection, one
+    // with it skipped — the NPB score is -1 for outside-fiducial clusters, so
+    // only the noNPB set yields non-zero outflow.
+    struct BkgFlowSet {
+        TH1D *inside[4]  = {nullptr, nullptr, nullptr, nullptr};
+        TH1D *inflow[4]  = {nullptr, nullptr, nullptr, nullptr};
+        TH1D *outflow[4] = {nullptr, nullptr, nullptr, nullptr};
+        TH1D *native[4]  = {nullptr, nullptr, nullptr, nullptr};
+    };
+    auto bookBkgSet = [&](const char *suffix) -> BkgFlowSet {
+        const char letters[4] = {'A', 'B', 'C', 'D'};
+        BkgFlowSet s;
+        for (int r = 0; r < 4; r++)
+        {
+            const char L = letters[r];
+            s.inside[r]  = makeH1(Form("h_bkg_%c_inside%s",  L, suffix), nETbins_fine, ETlo, EThi);
+            s.inflow[r]  = makeH1(Form("h_bkg_%c_inflow%s",  L, suffix), nETbins_fine, ETlo, EThi);
+            s.outflow[r] = makeH1(Form("h_bkg_%c_outflow%s", L, suffix), nETbins_fine, ETlo, EThi);
+            s.native[r]  = makeH1(Form("h_bkg_%c_native%s",  L, suffix), nETbins_fine, ETlo, EThi);
+        }
+        return s;
+    };
+
+    BkgFlowSet bkg_npb   = bookBkgSet("");
+    BkgFlowSet bkg_noNPB = bookBkgSet("_noNPB");
+
+    // Matching diagnostic histograms for background
+    TH1D *h_bkg_all_reco_inside     = makeH1("h_bkg_all_reco_inside",     nETbins_fine, ETlo, EThi);
+    TH1D *h_bkg_matched_reco_inside = makeH1("h_bkg_matched_reco_inside", nETbins_fine, ETlo, EThi);
+    TH1D *h_bkg_truth_eta_inflow    = makeH1("h_bkg_truth_eta_inflow",    nEtaBins, etaLo, etaHi);
+    TH2D *h2_bkg_eta_truth_vs_reco  = makeH2("h2_bkg_eta_truth_vs_reco",  nEtaBins, etaLo, etaHi, nEtaBins, etaLo, etaHi);
+
     // --- Double interaction histograms ---
     TH2D *h2_eta_truth_vs_reco_double = nullptr;
     TH2D *h2_eta_truth_vs_reco_tight_iso_double = nullptr;
@@ -547,7 +601,7 @@ void EtaMigrationStudy(
                             float cl_et1, float cl_et2, float cl_et3, float cl_et4,
                             float e11_over_e33, float e32_over_e35,
                             float cl_prob, float bdt_score, float cl_npb_score,
-                            float wr_cogx) -> ABCDResult
+                            float wr_cogx, bool skip_npb = false) -> ABCDResult
     {
         ABCDResult r = {false, false, false, false, false};
 
@@ -559,7 +613,12 @@ void EtaMigrationStudy(
         if (recoisoET > recononiso_min && recoisoET < recononiso_max)
             r.noniso = true;
 
-        // Common cuts
+        // Common cuts. The NPB common cut acts as a preselection that scores
+        // clusters using a TMVA model trained only on in-fiducial clusters —
+        // outside |eta|<0.7 the stored NPB score is the sentinel -1, so the cut
+        // rejects every migrated cluster. `skip_npb` disables that cut so the
+        // shower-shape/isolation sidebands remain populated for the outflow
+        // measurement in the eta migration study.
         bool passes_common_shape =
             cl_prob > common_prob_min &&
             cl_prob < common_prob_max &&
@@ -567,7 +626,7 @@ void EtaMigrationStudy(
             e11_over_e33 < common_e11_over_e33_max &&
             wr_cogx > common_wr_cogx_bound &&
             (cl_weta_cogx < common_cluster_weta_cogx_bound) &&
-            (!common_npb_cut_on || cl_npb_score > common_npb_score_cut);
+            (skip_npb || !common_npb_cut_on || cl_npb_score > common_npb_score_cut);
 
         if (passes_common_shape)
             r.common_pass = true;
@@ -653,6 +712,17 @@ void EtaMigrationStudy(
     long long n_both_outside = 0;
     long long n_fake_inward_double = 0;
 
+    // Per-event truth-particle bookkeeping. Lifted outside the event loop so
+    // the containers reuse capacity across events instead of allocating fresh
+    // every time (jet samples can have hundreds of particles per event).
+    // Vectors are keyed by iparticle (dense 0..nparticles-1).
+    std::unordered_map<int, int> particle_trkidmap;
+    std::vector<float> truth_eta_v;
+    std::vector<float> truth_pt_v;
+    std::vector<float> truth_iso_v;
+    std::vector<unsigned char> truth_inside_fiducial;
+    std::vector<unsigned char> is_registered_truth;
+
     while (reader.Next())
     {
         // Vertex reweighting
@@ -679,19 +749,21 @@ void EtaMigrationStudy(
             continue;
         }
 
-        // ---------------------------------------------------------------
-        // Truth particle loop: register ALL photons regardless of eta
-        // ---------------------------------------------------------------
-        std::map<int, int> particle_trkidmap;
-        std::map<int, float> truth_eta_map;
-        std::map<int, float> truth_pt_map;
-        std::map<int, float> truth_iso_map;
-        std::map<int, bool> truth_inside_fiducial;
-        // Set of truth photon indices that are registered (direct/frag + isolated)
-        std::set<int> registered_truth_photons;
+        // Truth-particle bookkeeping.
+        //   Signal mode: register direct/fragmentation isolated photons.
+        //   Background mode: register every particle — cluster_truthtrkID picks
+        //     the dominant contributor at match time.
+        const int npart = *nparticles;
+        particle_trkidmap.clear();
+        particle_trkidmap.reserve(npart);
+        truth_eta_v.assign(npart, 0.0f);
+        truth_pt_v.assign(npart, 0.0f);
+        truth_iso_v.assign(npart, 0.0f);
+        truth_inside_fiducial.assign(npart, 0);
+        is_registered_truth.assign(npart, 0);
 
         float maxphotonpT = 0;
-        for (int iparticle = 0; iparticle < *nparticles; iparticle++)
+        for (int iparticle = 0; iparticle < npart; iparticle++)
         {
             particle_trkidmap[particle_trkid[iparticle]] = iparticle;
 
@@ -703,23 +775,28 @@ void EtaMigrationStudy(
             else if (conesize == 2)
                 truthisoET = particle_truth_iso_02[iparticle];
 
-            if (particle_pid[iparticle] == 22)
+            if (isbackground)
+            {
+                float peta = particle_Eta[iparticle];
+                truth_eta_v[iparticle] = peta;
+                truth_pt_v[iparticle] = particle_Pt[iparticle];
+                truth_iso_v[iparticle] = truthisoET;
+                truth_inside_fiducial[iparticle] = (peta > eta_lo && peta < eta_hi) ? 1 : 0;
+                is_registered_truth[iparticle] = 1;
+            }
+            else if (particle_pid[iparticle] == 22)
             {
                 if (particle_Pt[iparticle] > maxphotonpT)
                     maxphotonpT = particle_Pt[iparticle];
 
-                if (particle_photonclass[iparticle] < 3) // direct or fragmentation
+                if (particle_photonclass[iparticle] < 3 && truthisoET < truthisocut)
                 {
-                    if (truthisoET < truthisocut)
-                    {
-                        // Register this truth photon — NO eta filter
-                        float peta = particle_Eta[iparticle];
-                        truth_eta_map[iparticle] = peta;
-                        truth_pt_map[iparticle] = particle_Pt[iparticle];
-                        truth_iso_map[iparticle] = truthisoET;
-                        truth_inside_fiducial[iparticle] = (peta > eta_lo && peta < eta_hi);
-                        registered_truth_photons.insert(iparticle);
-                    }
+                    float peta = particle_Eta[iparticle];
+                    truth_eta_v[iparticle] = peta;
+                    truth_pt_v[iparticle] = particle_Pt[iparticle];
+                    truth_iso_v[iparticle] = truthisoET;
+                    truth_inside_fiducial[iparticle] = (peta > eta_lo && peta < eta_hi) ? 1 : 0;
+                    is_registered_truth[iparticle] = 1;
                 }
             }
         }
@@ -728,6 +805,21 @@ void EtaMigrationStudy(
         if (!isbackground)
         {
             if ((maxphotonpT > max_photon_upper) || (maxphotonpT < max_photon_lower))
+            {
+                ientry++;
+                continue;
+            }
+        }
+        else
+        {
+            // Jet pT window cut — prevents double-counting across overlapping jet samples
+            float maxjetpT = 0;
+            for (int ijet = 0; ijet < **njet_truth_ptr; ijet++)
+            {
+                if ((*jet_truth_Pt_ptr)[ijet] > maxjetpT)
+                    maxjetpT = (*jet_truth_Pt_ptr)[ijet];
+            }
+            if (maxjetpT == 0 || maxjetpT > max_jet_upper || maxjetpT < max_jet_lower)
             {
                 ientry++;
                 continue;
@@ -775,6 +867,10 @@ void EtaMigrationStudy(
                 recoisoET = cluster_iso_topo_04[icluster];
             else if (use_topo_iso == 1)
                 recoisoET = cluster_iso_topo_03[icluster];
+            else if (use_topo_iso == 4)
+                recoisoET = cluster_iso_04[icluster];
+            else if (use_topo_iso == 5)
+                recoisoET = cluster_iso_excl_04[icluster];
             else if (conesize == 4)
                 recoisoET = cluster_iso_04[icluster];
             else if (conesize == 3)
@@ -810,31 +906,69 @@ void EtaMigrationStudy(
                 cluster_prob[icluster], bdt_score, cluster_npb_score[icluster],
                 wr_cogx);
 
-            // Truth matching via cluster_truthtrkID
-            if (particle_trkidmap.find(cluster_truthtrkID[icluster]) == particle_trkidmap.end())
-                continue;
-            int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
-
-            // Only consider clusters matched to registered truth photons
-            if (registered_truth_photons.find(iparticle) == registered_truth_photons.end())
-                continue;
-
-            float truth_eta = truth_eta_map[iparticle];
-            float truth_pt = truth_pt_map[iparticle];
-            bool truth_inside = truth_inside_fiducial[iparticle];
             bool reco_inside = (cluster_eta > eta_lo && cluster_eta < eta_hi);
+
+            // Background diagnostic: count every reco cluster inside fiducial, regardless of match
+            if (isbackground && reco_inside)
+                h_bkg_all_reco_inside->Fill(clusterET, weight);
+
+            // Truth matching via cluster_truthtrkID
+            auto trk_it = particle_trkidmap.find(cluster_truthtrkID[icluster]);
+            if (trk_it == particle_trkidmap.end()) continue;
+            int iparticle = trk_it->second;
+            if (!is_registered_truth[iparticle]) continue;
+
+            float truth_eta = truth_eta_v[iparticle];
+            float truth_pt = truth_pt_v[iparticle];
+            bool truth_inside = (truth_inside_fiducial[iparticle] != 0);
 
             n_total_matched++;
 
-            // Fill 2D migration matrix
             h2_eta_truth_vs_reco->Fill(cluster_eta, truth_eta, weight);
             if (abcd.tight && abcd.iso)
                 h2_eta_truth_vs_reco_tight_iso->Fill(cluster_eta, truth_eta, weight);
-
-            // Delta eta diagnostic
             h2_deta_vs_ET->Fill(clusterET, cluster_eta - truth_eta, weight);
 
-            // Classify migration category
+            // Background-only diagnostics: matched-cluster fill, truth-vs-reco
+            // eta matrix, and ABCD sideband inflow/outflow. The _noNPB pass is
+            // needed because the NPB score is a sentinel for outside-fiducial
+            // clusters (it would zero outflow under the standard cut).
+            if (isbackground)
+            {
+                if (reco_inside)
+                    h_bkg_matched_reco_inside->Fill(clusterET, weight);
+                h2_bkg_eta_truth_vs_reco->Fill(cluster_eta, truth_eta, weight);
+
+                ABCDResult abcd_noNPB = classifyABCD(clusterET, recoisoET,
+                    cluster_weta_cogx[icluster], cluster_wphi_cogx[icluster],
+                    cluster_et1[icluster], cluster_et2[icluster],
+                    cluster_et3[icluster], cluster_et4[icluster],
+                    e11_over_e33, e32_over_e35,
+                    cluster_prob[icluster], bdt_score, cluster_npb_score[icluster],
+                    wr_cogx, /*skip_npb=*/true);
+
+                // Each ABCD result picks at most one region (A=0, B=1, C=2, D=3).
+                auto fillSet = [&](const ABCDResult &res, BkgFlowSet &s)
+                {
+                    int region = -1;
+                    if      (res.tight    && res.iso)    region = 0;
+                    else if (res.tight    && res.noniso) region = 1;
+                    else if (res.nontight && res.iso)    region = 2;
+                    else if (res.nontight && res.noniso) region = 3;
+                    if (region < 0) return;
+                    if (reco_inside)                  s.inside[region]->Fill(clusterET, weight);
+                    if (reco_inside &&  truth_inside) s.native[region]->Fill(clusterET, weight);
+                    if (reco_inside && !truth_inside) s.inflow[region]->Fill(clusterET, weight);
+                    if (!reco_inside && truth_inside) s.outflow[region]->Fill(clusterET, weight);
+                };
+                fillSet(abcd, bkg_npb);
+                fillSet(abcd_noNPB, bkg_noNPB);
+
+                if (reco_inside && !truth_inside)
+                    h_bkg_truth_eta_inflow->Fill(truth_eta, weight);
+            }
+
+            // Classify migration category (signal-oriented accounting)
             if (truth_inside && reco_inside)
             {
                 // Good: both inside fiducial
@@ -1004,6 +1138,19 @@ void EtaMigrationStudy(
     h2_deta_vs_ET->Write();
     h_vtxz_all->Write();
     h_vtxz_fakes->Write();
+
+    auto writeBkgSet = [](const BkgFlowSet &s) {
+        for (int r = 0; r < 4; r++) s.inside[r]->Write();
+        for (int r = 0; r < 4; r++) s.inflow[r]->Write();
+        for (int r = 0; r < 4; r++) s.outflow[r]->Write();
+        for (int r = 0; r < 4; r++) s.native[r]->Write();
+    };
+    writeBkgSet(bkg_npb);
+    writeBkgSet(bkg_noNPB);
+    h_bkg_all_reco_inside->Write();
+    h_bkg_matched_reco_inside->Write();
+    h_bkg_truth_eta_inflow->Write();
+    h2_bkg_eta_truth_vs_reco->Write();
 
     // Write double interaction histograms
     if (do_double_interaction)

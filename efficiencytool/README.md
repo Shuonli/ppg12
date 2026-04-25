@@ -14,11 +14,22 @@ bash run_showershape.sh
 bash run_showershape.sh config_showershape_nom.yaml
 ```
 
-### Double-interaction MC blending (Au+Au pileup)
+### Double-interaction MC blending (single-pass, condor)
 
 ```bash
-bash run_showershape_double.sh [config_showershape.yaml]
+cd efficiencytool
+mkdir -p logs
+# 0 mrad
+condor_submit list_file=showershape_di_jobs_0rad.list submit_showershape_di.sub
+# 1.5 mrad
+condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+# after all jobs finish
+bash hadd_showershape_di.sh config_showershape_0rad.yaml
+bash hadd_showershape_di.sh config_showershape_1p5rad.yaml
 ```
+
+The retired two-pass reco-vertex scheme (`run_showershape_double_reco_legacy.sh`)
+is kept on disk for reference only.
 
 ### Generate shower shape systematic variation configs
 
@@ -97,56 +108,69 @@ Standard two-pass pipeline for single-interaction MC samples:
 - **Pass 2** (full analysis): runs all samples in parallel using Pass 1 output for vertex reweighting.
 - After Pass 2: `hadd` merges photon5/10/20 → `MC_efficiencyshower_shape_signal_*.root` and jet5/8/12/20/40 → `MC_efficiencyshower_shape_jet_inclusive_*.root`.
 
-### run_showershape_double.sh — Double-Interaction MC Blending
+### Single-pass DI (double-interaction) pipeline — condor
 
-Used when the Au+Au MC sample is a physical mixture of single-interaction (`nom`) and double-interaction (`double`) events. Current fractions:
+Used when the MC sample is a physical mixture of single-interaction (`nom`) and
+double-interaction (`double`) events. Cluster-weighted fractions from
+`calc_pileup_range.C` (triple+ folded into double):
 
-```
-SINGLE_FRAC = 0.813   (nom)
-DOUBLE_FRAC = 0.187   (double)
+| Crossing angle | Run range | `cw_double` | `cw_single` |
+|---|---|---|---|
+| 0 mrad | 47289–51274 | 0.224 | 0.776 |
+| 1.5 mrad | 51274–54000 | 0.079 | 0.921 |
+
+**Design.** Unlike the retired two-pass reco-vertex scheme, vertex reweighting
+is now handled inline by `TruthVertexReweightLoader.h`: given a truth vertex
+`z_h` (and MB `z_mb` for DI), it returns the data/MC weight from the pre-built
+`truth_vertex_reweight/output/{0mrad,1p5mrad}/reweight.root` file. Because the
+truth-vertex shape is sample-invariant at first order, the same reweight file
+is reused across all MC samples — no refit, no vertex-scan pass, no per-run
+`vtxscan_sim_override` wiring. `ShowerShapeCheck.C` already includes and
+applies this machinery unconditionally when `truth_vertex_reweight_on: 1` in
+the YAML (see `config_showershape_0rad.yaml` / `config_showershape_1p5rad.yaml`).
+
+**Pairs (per crossing angle).** 8 SI/DI sample pairs + 1 data = 17 condor jobs:
+
+| Sample family | `doinclusive` | Pairs |
+|---|---|---|
+| Photon | `false` | photon{5,10,20}_nom × photon{5,10,20}_double |
+| Jet    | `true`  | jet{8,12,20,30,40}_nom × jet{8,12,20,30,40}_double |
+
+The `*_nom` suffix is an alias: `ShowerShapeCheck.C` reads the nominal SI tree
+(`photon10`, `jet12`, …) but writes the output under the `*_nom` name so the
+SI file does not overwrite the SI-only run from `run_showershape.sh`.
+`jet5` is skipped (no DI partner); `jet50_double` is skipped (no analysis use).
+
+**How to run.**
+```bash
+cd efficiencytool
+mkdir -p logs
+condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub
+condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+# after all jobs complete
+bash hadd_showershape_di.sh config_showershape_0rad.yaml
+bash hadd_showershape_di.sh config_showershape_1p5rad.yaml
 ```
 
-**Pipeline (three stages):**
+**What each job does.** `run_showershape_di_job.sh` invokes
+```
+ShowerShapeCheck.C(config, sample, doinclusive, false, mix_weight)
+```
+with `do_vertex_scan=false` and no override. `mix_weight` = `SINGLE_FRAC` for
+`*_nom` rows, `DOUBLE_FRAC` for `*_double` rows, and `1.0` for data.
 
-**Stage 1 — Pass 1 (vertex scan, parallel):**
-Each MC sub-sample is run with its physical fraction as `mix_weight`, so that when the vtxscan outputs are added together the result represents the correctly-weighted blended vertex distribution:
+**Downstream merge** (`hadd_showershape_di.sh`):
+```
+signal_combined_{suffix}.root       = hadd(photon{5,10,20}_{nom,double}_{suffix}.root)
+jet_inclusive_combined_{suffix}.root = hadd(jet{8,12,20,30,40}_{nom,double}_inclusive_{suffix}.root)
+```
+Per-event cross-section weights (from `CrossSectionWeights.h`) × `mix_weight`
+are already embedded, so plain `hadd` yields the correctly-blended MC.
 
-```
-ShowerShapeCheck(config, "photon10_double", false, true, 0.187)
-ShowerShapeCheck(config, "jet12_double",    true,  true, 0.187)
-ShowerShapeCheck(config, "photon10_nom",    false, true, 0.813)
-ShowerShapeCheck(config, "jet12_nom",       true,  true, 0.813)
-ShowerShapeCheck(config, "data",            false, true)
-```
-
-**Stage 2 — hadd vtxscan files:**
-Merges nom and double vtxscan outputs into one combined vtxscan per sample type:
-```
-photon10_combined_*_vtxscan.root = photon10_nom_*_vtxscan + photon10_double_*_vtxscan
-jet12_combined_inclusive_*_vtxscan.root = jet12_nom_*_vtxscan + jet12_double_*_vtxscan
-```
-Because `mix_weight` was already embedded, plain `hadd` yields the correctly blended distribution.
-
-**Stage 3 — Pass 2 (full analysis, parallel):**
-Both nom and double use the **same combined vtxscan** (via `vtxscan_sim_override`) so that the vertex reweighting ratio is computed against the blended MC distribution. Each sub-sample applies its own `mix_weight` to all histogram fills:
-
-```
-ShowerShapeCheck(config, "photon10_double", false, false, 0.187, photon10_combined_vtxscan)
-ShowerShapeCheck(config, "jet12_double",    true,  false, 0.187, jet12_combined_vtxscan)
-ShowerShapeCheck(config, "photon10_nom",    false, false, 0.813, photon10_combined_vtxscan)
-ShowerShapeCheck(config, "jet12_nom",       true,  false, 0.813, jet12_combined_vtxscan)
-ShowerShapeCheck(config, "data",            false)
-```
-
-**Stage 4 — hadd final outputs:**
-```
-photon10_combined_*.root = photon10_nom_*.root + photon10_double_*.root
-jet12_combined_inclusive_*.root = jet12_nom_inclusive_*.root + jet12_double_inclusive_*.root
-```
-Since `mix_weight` was already embedded per-event, plain `hadd` is correct.
-
-**Output files** land in `results/` and follow the naming pattern:
-`MC_efficiencyshower_shape_{sample}_{suffix}.root`
+**Retired legacy script:** `run_showershape_double_reco_legacy.sh` is the old
+two-pass reco-vertex scheme (Pass 1 vertex scan → hadd blended vtxscan → Pass 2
+full analysis using `vtxscan_sim_override`). It remains on disk for reference
+but has been superseded by the single-pass truth-vertex-reweight pipeline above.
 
 ### make_showershape_variations.py
 

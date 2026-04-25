@@ -82,10 +82,27 @@ The conf note documents the older FunWithxgboost parameters, not the current nom
 
 ## BDT Thresholds
 
-| Set | slope | intercept | Used by |
-|-----|-------|-----------|---------|
-| Nominal BDT | -0.015 | 0.80 | RecoEffCalculator (parametric) |
-| Showershape | -0.02 | 0.86 | ShowerShapeCheck configs |
+Cross-section pipeline current nominal: ntbdtpair `t80_70_h70_70_l60_40`.
+
+| Set | tight.bdt_min slope/int | non_tight.bdt_max slope/int | non_tight.bdt_min slope/int | Used by |
+|-----|--------|---------|---------|---------|
+| Cross-section nominal (April 2026) | -0.00667 / 0.8667 | 0.0 / 0.7 | -0.01333 / 0.7333 | `config_bdt_{0rad,nom,all,allz_*}.yaml`, all syst variants regenerated from `config_bdt_nom.yaml` |
+| Showershape | -0.02 / 0.86 | (parametric, see config) | (parametric, see config) | `config_showershape_*.yaml` (independent cut convention) |
+
+**Stale BDT-cut configs (April 2026 audit)**: 12 hand-maintained configs not in `make_bdt_variations.py:VARIANTS` still hold the OLD `0.80 / -0.015` nominal: `config_bdt_truthvtxreweight.yaml`, `config_bdt_rbr_120MeV.yaml`, `config_bdt_nosplit.yaml`, `config_bdt_innerR_{005,0075,01,02}{,_nore}.yaml` (8 files). Running these reproduces the OLD-nominal cuts, not the current ones.
+
+**Code support**: `RecoEffCalculator_TTreeReader.C` and `ShowerShapeCheck.C` read all parametric fields (slope+intercept for both tight.bdt_min and non_tight.bdt_min/max). Older macros (`RecoEffCalculator.C`, `EtaMigrationStudy.C`, `Cluster_rbr.C`, `NPB_PurityStudy.C`, `DoubleInteractionCheck.C`) only read the flat `bdt_min` and apply ET-independent cuts — running them on a parametric-cut config silently uses the flat fallback only.
+
+## Vertex / Lumi Coupling (full-run-range pipeline)
+
+Two new YAML fields (April 2026) decouple subtle behaviors that previously rode on a single scalar:
+
+| Field | Default | Purpose | Read by |
+|-------|---------|---------|---------|
+| `vertex_cut_truth` | = `vertex_cut` | Max |z_truth| for MBD-eff denominator (`RecoEffCalculator_TTreeReader.C:1785`). Set to 9999 in allz cross-check to widen the truth denominator while keeping the |z_reco|<60 reco fiducial cut elsewhere. | RecoEffCalculator_TTreeReader.C only |
+| `lumi_target` | = `lumi` | Target lumi for per-event MC scaling `weight *= lumi/lumi_target`. Set to `sum(L_periods)` in merge-feeder configs so plain hadd across periods reproduces all-range MC. | RecoEffCalculator_TTreeReader.C only |
+
+`make_bdt_variations.py:apply_overrides` auto-defaults `lumi_target := lumi` for variants WITHOUT explicit override, so systematic variants regenerated from a merge-feeder base do NOT inherit the merge-target scaling.
 
 **DoubleInteractionCheck.C reads only flat `bdt_min`** (no slope/intercept). It applies a less restrictive, ET-independent threshold compared to the parametric cut in the main analysis.
 

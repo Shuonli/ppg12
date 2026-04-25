@@ -18,7 +18,8 @@ void MergeSim(const std::string &configname = "config.yaml") {
 
     std::string outfilename = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
-    std::string infilenamejet5 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet5" + "_" + var_type + ".root";
+    // jet5 is dropped from the nominal DI-blending pipeline (no jet5_double
+    // MC partner), so the merged inclusive jet sample starts at jet8.
     std::string infilenamejet8 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet8" + "_" + var_type + ".root";
     std::string infilenamejet12 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet12" + "_" + var_type + ".root";
     std::string infilenamejet20 = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + "jet20" + "_" + var_type + ".root";
@@ -56,7 +57,6 @@ void MergeSim(const std::string &configname = "config.yaml") {
     
     merger_jet.OutputFile(outfilenamejet.c_str(), "RECREATE");
 
-    merger_jet.AddFile(infilenamejet5.c_str());
     merger_jet.AddFile(infilenamejet8.c_str());
     merger_jet.AddFile(infilenamejet12.c_str());
     merger_jet.AddFile(infilenamejet20.c_str());

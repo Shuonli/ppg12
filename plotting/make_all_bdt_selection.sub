@@ -1,0 +1,28 @@
+# make_all_bdt_selection.sub
+#
+# Phase 3 of the full pipeline: per-config selection plots. One condor job per
+# config_bdt_*.yaml; each job invokes make_selection_plots_dispatch.sh which
+# extracts the bdt_<var_type> suffix and calls make_selection_plots.sh,
+# which runs 11 ROOT plotting macros in parallel (sideband, purity, iso ET,
+# efficiency, final selection, CONF panels x 4).
+#
+# Memory: 8 GB. 11 parallel ROOT processes per job, each ~500-700 MB peak.
+# This is below the 16 GB Phase 1 budget because plotting macros hold less
+# in memory than the TTreeReader analysis stage.
+
+universe              = vanilla
+request_memory        = 8GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "make_selection_plots_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).plot.log
+output                = logs/$(cfg).plot.out
+error                 = logs/$(cfg).plot.err
+
+# Queue one job per BDT config (paths are relative to plotting/, so we match
+# the configs under ../efficiencytool/ via a glob).
+queue cfg matching files (../efficiencytool/config_bdt*.yaml)

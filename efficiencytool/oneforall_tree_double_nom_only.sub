@@ -1,0 +1,31 @@
+# oneforall_tree_double_nom_only.sub
+#
+# Phase-1 condor submit restricted to the nominal config's two merge-feeder
+# siblings:
+#   - config_bdt_nom_0rad.yaml
+#   - config_bdt_nom_1p5mrad.yaml
+#
+# Each job runs oneforall_tree_double_dispatch.sh, which invokes the DI
+# TTree pipeline (17 samples = 8 SI + 8 DI + 1 data) and writes per-period
+# MC efficiency + data outputs. Memory profile matches
+# oneforall_tree_double.sub (16 GB per job -- 17 parallel ROOT instances
+# during the TTree pass).
+#
+# After Phase 1 completes, submit oneforall_nom_only.sub (or run
+# `bash oneforall.sh config_bdt_nom.yaml` directly) for the all-range Phase 2
+# merge + data + CalculatePhotonYield.
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in ( config_bdt_nom_0rad.yaml config_bdt_nom_1p5mrad.yaml )

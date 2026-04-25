@@ -1,0 +1,116 @@
+#include "plotcommon.h"
+
+// Absolute isolated-photon cross-section dσ/dET for the nominal + 9 mask
+// variants, laid out as 3 panels (common / tight / OR family), each
+// showing nominal (black) + 3 severities of that family.
+
+void plot_mask_variant_xsec_spectrum()
+{
+    init_plot();
+    const char *RES = "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results";
+
+    auto read_spec = [&](const char *fn, const char *newname) -> TH1F * {
+        TFile *f = TFile::Open(Form("%s/%s", RES, fn), "READ");
+        if (!f || f->IsZombie()) { std::cerr << "cannot open " << fn << std::endl; return nullptr; }
+        TH1F *h = (TH1F *) f->Get("h_unfold_sub_result");
+        TH1F *c = (TH1F *) h->Clone(newname);
+        c->SetDirectory(nullptr);
+        f->Close();
+        return c;
+    };
+
+    TH1F *h_nom = read_spec("Photon_final_bdt_nom.root", "h_nom");
+    h_nom->SetMarkerStyle(24);
+    h_nom->SetMarkerColor(kBlack);
+    h_nom->SetLineColor(kBlack);
+    h_nom->SetMarkerSize(1.2);
+    h_nom->SetLineWidth(2);
+
+    struct Var { const char *label; const char *file; int color; int style; };
+    struct Family { const char *name; std::vector<Var> vars; };
+
+    std::vector<Family> F = {
+        {"common-level mask", {
+            {"hard-dead only", "Photon_final_bdt_mask_common_harddead.root",       kAzure - 3, 20},
+            {"+ z<-5",         "Photon_final_bdt_mask_common_harddead_zlt5.root",  kTeal + 2,  21},
+            {"+ z<-2",         "Photon_final_bdt_mask_common_harddead_zlt2.root",  kBlue + 2,  22},
+        }},
+        {"tight-level mask", {
+            {"hard-dead only", "Photon_final_bdt_mask_tight_harddead.root",        kOrange + 7, 20},
+            {"+ z<-5",         "Photon_final_bdt_mask_tight_harddead_zlt5.root",   kRed - 3,    21},
+            {"+ z<-2",         "Photon_final_bdt_mask_tight_harddead_zlt2.root",   kRed + 2,    22},
+        }},
+        {"OR(common, tight) mask", {
+            {"hard-dead only", "Photon_final_bdt_mask_or_harddead.root",           kGreen + 1,  20},
+            {"+ z<-5",         "Photon_final_bdt_mask_or_harddead_zlt5.root",      kGreen + 3,  21},
+            {"+ z<-2",         "Photon_final_bdt_mask_or_harddead_zlt2.root",      kSpring - 7, 22},
+        }},
+    };
+
+    TCanvas *c = new TCanvas("c_spec", "", 900, 1300);
+    c->Divide(1, 3, 0, 0.01);
+
+    auto draw_panel = [&](TVirtualPad *p, const Family &fam, int ipanel, int npanel)
+    {
+        bool is_top    = (ipanel == 1);
+        bool is_bottom = (ipanel == npanel);
+        p->SetLeftMargin(0.15);
+        p->SetRightMargin(0.06);
+        p->SetTopMargin(is_top ? 0.12 : 0.02);
+        p->SetBottomMargin(is_bottom ? 0.18 : 0.02);
+        p->SetLogy();
+        p->cd();
+
+        TH1F *frame = new TH1F(Form("frame_s%d", ipanel), "", NptBins, ptRanges);
+        frame->GetYaxis()->SetRangeUser(1e-2, 5e3);
+        frame->SetYTitle("d#sigma / d#it{E}_{T} [nb/GeV]");
+        frame->GetYaxis()->SetTitleSize(0.058);
+        frame->GetYaxis()->SetTitleOffset(1.12);
+        frame->GetYaxis()->SetLabelSize(0.055);
+        if (!is_bottom) {
+            frame->GetXaxis()->SetLabelSize(0);
+            frame->GetXaxis()->SetTitleSize(0);
+        } else {
+            frame->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+            frame->GetXaxis()->SetTitleSize(0.058);
+            frame->GetXaxis()->SetLabelSize(0.055);
+        }
+        frame->GetXaxis()->SetRangeUser(10, 36);
+        frame->Draw("AXIS");
+
+        h_nom->Draw("P same E1");
+        TLegend *leg = new TLegend(0.52, 0.50, 0.94, 0.85);
+        leg->SetFillStyle(0); leg->SetBorderSize(0); leg->SetTextSize(0.048);
+        leg->SetHeader(fam.name, "L");
+        leg->AddEntry(h_nom, "nominal (all-z)", "LP");
+        for (size_t iv = 0; iv < fam.vars.size(); ++iv) {
+            const Var &v = fam.vars[iv];
+            TH1F *h = read_spec(v.file, Form("h_%d_%zu", ipanel, iv));
+            h->SetMarkerStyle(v.style);
+            h->SetMarkerColor(v.color);
+            h->SetLineColor(v.color);
+            h->SetMarkerSize(1.2);
+            h->SetLineWidth(2);
+            h->Draw("P same E1");
+            leg->AddEntry(h, v.label, "LP");
+        }
+        leg->Draw();
+
+        if (is_top) {
+            TLatex lx; lx.SetNDC();
+            lx.SetTextSize(0.065);
+            lx.DrawLatex(0.17, 0.93, strleg1.c_str());
+            lx.SetTextSize(0.045);
+            lx.DrawLatex(0.17, 0.88, "#it{p}+#it{p} #sqrt{#it{s}} = 200 GeV, 64.4 pb^{-1} (all-z)");
+            lx.DrawLatex(0.17, 0.835, strleg3.c_str());
+        }
+    };
+
+    draw_panel(c->cd(1), F[0], 1, 3);
+    draw_panel(c->cd(2), F[1], 2, 3);
+    draw_panel(c->cd(3), F[2], 3, 3);
+
+    const char *outdir = "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures";
+    c->SaveAs(Form("%s/mask_variant_xsec_spectrum.pdf", outdir));
+    c->SaveAs(Form("%s/mask_variant_xsec_spectrum.png", outdir));
+}

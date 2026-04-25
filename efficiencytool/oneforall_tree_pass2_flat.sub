@@ -1,0 +1,11 @@
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+request_memory        = 6GB
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall_tree_pass2.sh $(cfg)"
+log                   = logs/$(cfg)_pass2.log
+output                = logs/$(cfg)_pass2.out
+error                 = logs/$(cfg)_pass2.err
+
+queue cfg matching (config_bdt_flat_*.yaml)

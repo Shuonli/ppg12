@@ -1,0 +1,42 @@
+# oneforall_tree_double_allz_mask.sub
+#
+# Phase-1 condor submit for the new allz nominal + 9 tower-mask variants
+# (30 period jobs). Nominal moved from 60cm-fiducial (48.9309 pb^-1) to
+# all-z beam-delivered (64.3718 pb^-1) + vertex_cut_truth=9999 on
+# 2026-04-22. Mask variants: 6 single-level + 3 OR(common, tight).
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in (
+    config_bdt_nom_0rad.yaml
+    config_bdt_nom_1p5mrad.yaml
+    config_bdt_mask_common_harddead_0rad.yaml
+    config_bdt_mask_common_harddead_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt5_0rad.yaml
+    config_bdt_mask_common_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt2_0rad.yaml
+    config_bdt_mask_common_harddead_zlt2_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_0rad.yaml
+    config_bdt_mask_tight_harddead_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt5_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt2_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt2_1p5mrad.yaml
+    config_bdt_mask_or_harddead_0rad.yaml
+    config_bdt_mask_or_harddead_1p5mrad.yaml
+    config_bdt_mask_or_harddead_zlt5_0rad.yaml
+    config_bdt_mask_or_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_or_harddead_zlt2_0rad.yaml
+    config_bdt_mask_or_harddead_zlt2_1p5mrad.yaml
+)

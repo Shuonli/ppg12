@@ -32,7 +32,7 @@
 #include "plotcommon.h"
 
 void chi2_weight_scan(
-    const std::string &configname = "config_showershape_1p5rad.yaml",
+    const std::string &configname = "config_showershape_1p5mrad.yaml",
     int    nSteps = 201,
     double wMin   = 0.0,
     double wMax   = 1.0,

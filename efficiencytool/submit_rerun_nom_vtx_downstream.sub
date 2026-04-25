@@ -1,0 +1,19 @@
+# Condor submit: run oneforall.sh (MergeSim + CalculatePhotonYield) for both configs
+# Submit AFTER the tree jobs finish.
+
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/rerun_ds_$(cfg).log
+output                = logs/rerun_ds_$(cfg).out
+error                 = logs/rerun_ds_$(cfg).err
+
+request_memory        = 4GB
+request_cpus          = 1
+request_disk          = 4GB
+getenv                = true
+
+queue cfg in (config_bdt_nom.yaml, config_bdt_vtxreweight0.yaml)

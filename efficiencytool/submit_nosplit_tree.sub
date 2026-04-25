@@ -1,0 +1,20 @@
+# Condor submit for running oneforall_tree.sh on ONLY config_bdt_nosplit.yaml.
+# oneforall_tree.sh runs RecoEffCalculator_TTreeReader for all 10 samples
+# (photon5/10/20, jet5/8/12/20/30/40, data) in two passes (vertex scan + full analysis).
+
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall_tree.sh config_bdt_nosplit.yaml"
+
+log                   = logs/nosplit_tree.log
+output                = logs/nosplit_tree.out
+error                 = logs/nosplit_tree.err
+
+request_memory        = 12GB
+request_cpus          = 10
+request_disk          = 10GB
+getenv                = true
+
+queue

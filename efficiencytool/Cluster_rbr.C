@@ -46,6 +46,12 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     std::map<int, float> sum_isoET_sq;
     std::map<int, float> count_isoET_clusters;
 
+    std::map<int, float> count_mbd_events;
+    std::map<int, float> sum_mbdnorthq;
+    std::map<int, float> sum_mbdnorthq_sq;
+    std::map<int, float> sum_mbdsouthq;
+    std::map<int, float> sum_mbdsouthq_sq;
+
     std::ifstream lumifile(lumifilename);
     if (lumifile.is_open())
     {
@@ -74,7 +80,6 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
     int use_topo_iso = configYaml["analysis"]["use_topo_iso"].as<int>(0);
-    use_topo_iso = 0;
     int n_nt_fail = configYaml["analysis"]["n_nt_fail"].as<int>(1);
 
     int weta_fail = configYaml["analysis"]["weta_fail"].as<int>(0);
@@ -269,6 +274,8 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
     TTreeReaderValue<int> mbdnorthhit(reader, "mbdnorthhit");
     TTreeReaderValue<int> mbdsouthhit(reader, "mbdsouthhit");
+    TTreeReaderValue<float> mbdnorthq(reader, "mbdnorthqsum");
+    TTreeReaderValue<float> mbdsouthhq(reader, "mbdsouthqsum");
     TTreeReaderValue<float> vertexz(reader, "vertexz");
     TTreeReaderValue<float> energy_scale(reader, "energy_scale");
     TTreeReaderValue<int> runnumber(reader, "runnumber");
@@ -282,6 +289,7 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     TTreeReaderArray<float> cluster_Eta(reader, Form("cluster_Eta_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_prob(reader, Form("cluster_prob_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_02(reader, Form("cluster_iso_02_%s", clusternodename.c_str()));
+    TTreeReaderArray<float> cluster_iso_excl_04(reader, Form("cluster_iso_excl_04_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_03(reader, Form("cluster_iso_03_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_04(reader, Form("cluster_iso_04_%s", clusternodename.c_str()));
     TTreeReaderArray<float> cluster_iso_topo_03(reader, Form("cluster_iso_topo_03_%s", clusternodename.c_str()));
@@ -353,6 +361,12 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
         event_count[*runnumber] += 1;
 
+        count_mbd_events[*runnumber] += 1;
+        sum_mbdnorthq[*runnumber] += *mbdnorthq;
+        sum_mbdnorthq_sq[*runnumber] += (*mbdnorthq) * (*mbdnorthq);
+        sum_mbdsouthq[*runnumber] += *mbdsouthhq;
+        sum_mbdsouthq_sq[*runnumber] += (*mbdsouthhq) * (*mbdsouthhq);
+
         Long64_t scaler_val = currentscaler_scaled[trigger_used];
         if (min_scaler.find(*runnumber) == min_scaler.end() || scaler_val < min_scaler[*runnumber])
             min_scaler[*runnumber] = scaler_val;
@@ -388,6 +402,14 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
             {
                 recoisoET = cluster_iso_topo_03[icluster];
             }
+            else if (use_topo_iso == 4)
+            {
+                recoisoET = cluster_iso_04[icluster];
+            }
+            else if (use_topo_iso == 5)
+            {
+                recoisoET = cluster_iso_excl_04[icluster];
+            }
             else if (conesize == 4)
             {
                 recoisoET = cluster_iso_04[icluster];
@@ -406,10 +428,13 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
                 continue;
             }
 
-            if (!use_topo_iso && iso_threshold)
+            if (!use_topo_iso && iso_threshold == 1)
             {
                 recoisoET = cluster_iso_03_60_emcal[icluster] + cluster_iso_03_60_hcalin[icluster] + cluster_iso_03_60_hcalout[icluster];
-                //recoisoET = cluster_iso_03_120_emcal[icluster] + cluster_iso_03_120_hcalin[icluster] + cluster_iso_03_120_hcalout[icluster];
+            }
+            else if (!use_topo_iso && iso_threshold == 2)
+            {
+                recoisoET = cluster_iso_03_120_emcal[icluster] + cluster_iso_03_120_hcalin[icluster] + cluster_iso_03_120_hcalout[icluster];
             }
 
             bool common_pass = false;
@@ -822,7 +847,53 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
 
     std::cout << "Total lumi: " << total_lumi << std::endl;
 
-    TFile* fout = new TFile("rbrQA.root", "RECREATE");
+    // Build MBD charge run-by-run graphs (after trigger+vertex selection)
+    std::vector<double> x_mbdnorthq, x_mbdnorthq_error, y_mbdnorthq, y_mbdnorthq_error;
+    std::vector<double> x_mbdsouthq, x_mbdsouthq_error, y_mbdsouthq, y_mbdsouthq_error;
+    for (auto const &mbd_entry : count_mbd_events)
+    {
+        int run = mbd_entry.first;
+        float n = mbd_entry.second;
+        float lumi = lumivals[run];
+        if (n < 10 || lumi == 0)
+            continue;
+
+        float mean_north = sum_mbdnorthq[run] / n;
+        float mean_south = sum_mbdsouthq[run] / n;
+
+        float variance_north = 0;
+        if (n > 1)
+        {
+            variance_north = (sum_mbdnorthq_sq[run] - sum_mbdnorthq[run] * sum_mbdnorthq[run] / n) / (n - 1);
+            if (variance_north < 0)
+                variance_north = 0;
+        }
+        float err_north = (n > 1) ? sqrt(variance_north / n) : 0;
+
+        float variance_south = 0;
+        if (n > 1)
+        {
+            variance_south = (sum_mbdsouthq_sq[run] - sum_mbdsouthq[run] * sum_mbdsouthq[run] / n) / (n - 1);
+            if (variance_south < 0)
+                variance_south = 0;
+        }
+        float err_south = (n > 1) ? sqrt(variance_south / n) : 0;
+
+        x_mbdnorthq.push_back(run);
+        x_mbdnorthq_error.push_back(0);
+        y_mbdnorthq.push_back(mean_north);
+        y_mbdnorthq_error.push_back(err_north);
+
+        x_mbdsouthq.push_back(run);
+        x_mbdsouthq_error.push_back(0);
+        y_mbdsouthq.push_back(mean_south);
+        y_mbdsouthq_error.push_back(err_south);
+    }
+
+    std::string var_type = configYaml["output"]["var_type"].as<std::string>("nom");
+    std::string outfname = "rbrQA_" + var_type + ".root";
+    std::cout << "Output file: " << outfname << std::endl;
+    TFile* fout = new TFile(outfname.c_str(), "RECREATE");
 
     TGraphErrors *gr_common = new TGraphErrors(x_common.size(), &x_common[0], &y_common[0], &x_common_error[0], &y_common_error[0]);
     gr_common->SetName("gr_common");
@@ -857,6 +928,23 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     TGraphErrors *gr_avg_isoET = new TGraphErrors(x_avg_isoET.size(), &x_avg_isoET[0], &y_avg_isoET[0], &x_avg_isoET_error[0], &y_avg_isoET_error[0]);
     gr_avg_isoET->SetName("gr_avg_isoET");
 
+    TGraphErrors *gr_mbdnorthq = nullptr;
+    TGraphErrors *gr_mbdsouthq = nullptr;
+    if (!x_mbdnorthq.empty())
+    {
+        gr_mbdnorthq = new TGraphErrors(x_mbdnorthq.size(), &x_mbdnorthq[0], &y_mbdnorthq[0], &x_mbdnorthq_error[0], &y_mbdnorthq_error[0]);
+        gr_mbdnorthq->SetName("gr_mbdnorthq");
+        gr_mbdnorthq->GetXaxis()->SetTitle("Run Number");
+        gr_mbdnorthq->GetYaxis()->SetTitle("<MBD North Q_{sum}> [a.u.]");
+    }
+    if (!x_mbdsouthq.empty())
+    {
+        gr_mbdsouthq = new TGraphErrors(x_mbdsouthq.size(), &x_mbdsouthq[0], &y_mbdsouthq[0], &x_mbdsouthq_error[0], &y_mbdsouthq_error[0]);
+        gr_mbdsouthq->SetName("gr_mbdsouthq");
+        gr_mbdsouthq->GetXaxis()->SetTitle("Run Number");
+        gr_mbdsouthq->GetYaxis()->SetTitle("<MBD South Q_{sum}> [a.u.]");
+    }
+
     fout->cd();
     gr_event->Write();
     gr_min_scaler->Write();
@@ -869,6 +957,42 @@ void Cluster_rbr(const std::string &configname = "config_bdt_nom.yaml", const st
     gr_nontight_noniso->Write();
     gr_corr->Write();
     gr_avg_isoET->Write();
+    if (gr_mbdnorthq) gr_mbdnorthq->Write();
+    if (gr_mbdsouthq) gr_mbdsouthq->Write();
+
+    // Two-pad canvas saved before Close — graphs are owned by the file directory
+    if (gr_mbdnorthq && gr_mbdsouthq)
+    {
+        TCanvas *c_mbd = new TCanvas("c_mbd", "MBD Charge per Run", 900, 700);
+        c_mbd->Divide(1, 2);
+
+        c_mbd->cd(1);
+        gPad->SetLeftMargin(0.12);
+        gPad->SetBottomMargin(0.12);
+        gr_mbdnorthq->SetMarkerStyle(20);
+        gr_mbdnorthq->SetMarkerSize(0.5);
+        gr_mbdnorthq->SetMarkerColor(kBlue + 1);
+        gr_mbdnorthq->SetLineColor(kBlue + 1);
+        gr_mbdnorthq->Draw("AP");
+        gr_mbdnorthq->GetYaxis()->SetRangeUser(0, 8);
+        gPad->Modified();
+
+        c_mbd->cd(2);
+        gPad->SetLeftMargin(0.12);
+        gPad->SetBottomMargin(0.12);
+        gr_mbdsouthq->SetMarkerStyle(20);
+        gr_mbdsouthq->SetMarkerSize(0.5);
+        gr_mbdsouthq->SetMarkerColor(kRed + 1);
+        gr_mbdsouthq->SetLineColor(kRed + 1);
+        gr_mbdsouthq->Draw("AP");
+        gr_mbdsouthq->GetYaxis()->SetRangeUser(0, 8);
+        gPad->Modified();
+
+        std::string pdf_name = "rbrQA_mbd_charge_" + var_type + ".pdf";
+        c_mbd->SaveAs(pdf_name.c_str());
+        std::cout << "MBD charge canvas saved to " << pdf_name << std::endl;
+        delete c_mbd;
+    }
 
     fout->Write();
     fout->Close();

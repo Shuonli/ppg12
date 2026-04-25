@@ -1,0 +1,20 @@
+# Condor submit file for apply_BDT.C on MC samples (dual cluster variant).
+# Runs apply_BDT.C once per filetype in mc_filetypes.list (currently 18 samples:
+# 3 signal SI + 6 jet SI + 3 signal DI + 6 jet DI, including jet50_double).
+# Each job reads .../sim/run28/{filetype}/condorout/combined.root and writes
+# FunWithxgboost/{filetype}/bdt_split.root with both split + nosplit BDT branches.
+
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT_mc.sh
+arguments    = $(filetype)
+
+output       = logs/apply_BDT_mc_$(Cluster).$(Process).out
+error        = logs/apply_BDT_mc_$(Cluster).$(Process).err
+log          = /tmp/apply_BDT_mc_$(Cluster).log
+
+getenv       = true
+request_memory = 16GB
+request_disk   = 30GB
+request_cpus   = 1
+
+queue filetype from mc_filetypes.list

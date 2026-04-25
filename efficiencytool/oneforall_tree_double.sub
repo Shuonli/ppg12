@@ -1,0 +1,32 @@
+# oneforall_tree_double.sub
+#
+# Condor submit for the full per-config DI cross-section pipeline. One job
+# per config_bdt_*.yaml; each job runs oneforall_tree_double_dispatch.sh
+# which derives DOUBLE_FRAC from the config's run_min and invokes
+# oneforall_tree_double.sh (Pass 1 + Pass 2 TTree reader for SI+DI samples,
+# hadd, MergeSim, CalculatePhotonYield x 2).
+#
+# All-range configs (config_bdt_*_all.yaml) skip the TTree pass and exit
+# cleanly; handle them with `condor_submit oneforall.sub` after this batch
+# completes (their merge-feeder per-period MC must exist first).
+#
+# Memory: 16GB. The DI pipeline runs 17 parallel ROOT processes per pass
+# (8 SI + 8 DI MC + 1 data) -- each TTreeReader instance + slimtree buffers
+# uses ~500-700 MB, summing to ~8-12 GB peak. 6 GB is too tight (jobs were
+# held with "over cgroup memory limit of 6144 megabytes" at ~6100 MB peak).
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+# Queue one job per BDT config
+queue cfg matching (config_bdt*.yaml)

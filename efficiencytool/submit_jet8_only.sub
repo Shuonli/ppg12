@@ -1,0 +1,16 @@
+universe     = vanilla
+PeriodicHold = (NumJobStarts>=1 && JobStatus == 1)
+Notification = Never
+executable   = /bin/bash
+arguments    = "run_jet8_only.sh config_bdt_nosplit.yaml"
+
+log          = logs/jet8_only.log
+output       = logs/jet8_only.out
+error        = logs/jet8_only.err
+
+request_memory = 8GB
+request_cpus   = 1
+request_disk   = 4GB
+getenv         = true
+
+queue

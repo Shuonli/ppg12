@@ -7,23 +7,29 @@
 
 #include "plotcommon.h"
 
-void plot_mbd_sigma_efficiency()
+// Default suffix = "showershape" (all-range bare config). Pass e.g. "showershape_0rad"
+// to restrict to the 0 mrad period.
+void plot_mbd_sigma_efficiency(const std::string &config_suffix = "showershape")
 {
     init_plot();
 
+    const std::string base = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/";
+    const std::string dataFile = base + "data_histoshower_shape_" + config_suffix + ".root";
+    const std::string mcFile   = base + "MC_efficiencyshower_shape_jet12_inclusive_" + config_suffix + ".root";
+
     // Open data file
-    TFile *f_data = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_showershape_0rad.root", "READ");
+    TFile *f_data = TFile::Open(dataFile.c_str(), "READ");
     if (!f_data || f_data->IsZombie())
     {
-        std::cerr << "Error: Could not open data file!" << std::endl;
+        std::cerr << "Error: Could not open data file: " << dataFile << std::endl;
         return;
     }
 
-    // Open inclusive MC file
-    TFile *f_mc = TFile::Open("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet12_inclusive_showershape_0rad.root", "READ");
+    // Open inclusive MC file (jet12 sample as single-sample proxy for MC sigma_t shape)
+    TFile *f_mc = TFile::Open(mcFile.c_str(), "READ");
     if (!f_mc || f_mc->IsZombie())
     {
-        std::cerr << "Error: Could not open MC file!" << std::endl;
+        std::cerr << "Error: Could not open MC file: " << mcFile << std::endl;
         f_data->Close();
         return;
     }
@@ -150,9 +156,10 @@ void plot_mbd_sigma_efficiency()
     myMarkerLineText(0.60, 0.83, 1.5, kRed+1, 24, kRed+1, 2, "Inclusive MC", 0.035, true);
 
     // Save
-    c->SaveAs("mbd_sigma_selection_efficiency.pdf");
+    const std::string outPdf = "mbd_sigma_selection_efficiency_" + config_suffix + ".pdf";
+    c->SaveAs(outPdf.c_str());
 
-    std::cout << "Plot saved to mbd_sigma_selection_efficiency.pdf" << std::endl;
+    std::cout << "Plot saved to " << outPdf << std::endl;
 
     // Cleanup
     delete h_frac_data;

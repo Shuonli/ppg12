@@ -17,10 +17,11 @@ PPG12 uses pp collision data from the RHIC 2024 Run. The run is divided into two
 | Run range | 47289--51274 | 51274--54000 |
 | Crossing angle | 0 mrad (head-on) | 1.5 mrad |
 | Integrated luminosity | 32.66 pb^-1 | 16.86 pb^-1 |
-| Double-interaction fraction | 18.7% | 7.2% |
-| Pileup rate | Higher | Lower |
+| Event-level f_double | 11.1% | 3.9% |
+| Cluster-weighted cw_double | 22.4% | 7.9% |
+| Pileup rate P(>=2\|>=1) | 12.1% | 4.0% |
 
-The crossing angle change at run 51274 significantly reduced the pileup rate. The 1.5 mrad crossing angle reduces the luminous region overlap between bunches, lowering the probability of two independent pp collisions in the same bunch crossing from 18.7% to 7.2%.
+The crossing angle change at run 51274 significantly reduced the pileup rate. The 1.5 mrad crossing angle reduces the luminous region overlap between bunches, lowering mu_corr from 0.236 to 0.078. See [Pileup Fractions](../../reference/pileup-fractions.md) for the full calculation from `calc_pileup_range.C`.
 
 ### Combined Run Statistics
 
@@ -60,7 +61,7 @@ At the luminosities achieved in Run 24, there is a significant probability of tw
 - Additional energy in the isolation cone from the second collision
 - Modified shower-shape BDT scores from the vertex-displaced reconstruction
 
-The double-interaction fractions (18.7% at 0 mrad, 7.2% at 1.5 mrad) are derived from RHIC beam parameters and validated by MBD timing measurements.
+The double-interaction fractions (event-level: 11.1% at 0 mrad, 3.9% at 1.5 mrad; cluster-weighted: 22.4%, 7.9%) are computed from per-run luminosity data via `calc_pileup_range.C` and validated by MBD timing measurements.
 
 ### Pileup Rejection
 
@@ -119,7 +120,7 @@ The RHIC accelerator parameters directly affect PPG12 through:
 
 1. **Luminosity:** Determines the statistical reach of the measurement. The cross-section is normalized by L_int, so the ~9% sigma_MBD uncertainty propagates directly.
 
-2. **Pileup rate:** The crossing-angle-dependent double-interaction fraction (18.7% vs 7.2%) motivates the nominal choice of the 1.5 mrad period and the systematic studies of pileup effects on cluster kinematics and isolation.
+2. **Pileup rate:** The crossing-angle-dependent cluster-weighted double-interaction fraction (22.4% vs 7.9%) motivates the nominal choice of the 1.5 mrad period and the systematic studies of pileup effects on cluster kinematics and isolation.
 
 3. **Bunch structure:** The 9.4 MHz crossing rate and INTT 60 ns timing determine the pileup suppression capability.
 

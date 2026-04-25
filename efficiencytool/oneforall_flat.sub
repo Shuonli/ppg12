@@ -1,0 +1,11 @@
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+request_memory        = 4GB
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+log                   = logs/$(cfg)_mergeyield.log
+output                = logs/$(cfg)_mergeyield.out
+error                 = logs/$(cfg)_mergeyield.err
+
+queue cfg matching (config_bdt_flat_*.yaml)

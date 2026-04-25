@@ -1,0 +1,20 @@
+# Condor submit for running oneforall.sh on ONLY config_bdt_nosplit.yaml
+# after tree processing is complete.
+# oneforall.sh runs MergeSim.C + CalculatePhotonYield.C.
+
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall.sh config_bdt_nosplit.yaml"
+
+log                   = logs/nosplit_downstream.log
+output                = logs/nosplit_downstream.out
+error                 = logs/nosplit_downstream.err
+
+request_memory        = 4GB
+request_cpus          = 1
+request_disk          = 4GB
+getenv                = true
+
+queue

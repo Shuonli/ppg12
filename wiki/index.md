@@ -31,6 +31,7 @@ Isolated photon cross-section in pp at sqrt(s) = 200 GeV, sPHENIX (Run 24).
 - [Data Flow](reference/data-flow.md) -- File naming conventions, branch contracts between stages
 - [MC Samples](reference/mc-samples.md) -- All MC samples, cross-sections, pT ranges, file locations
 - [File Inventory](reference/file-inventory.md) -- Every significant file with one-line purpose
+- [Pileup Fractions](reference/pileup-fractions.md) -- Double-interaction fractions from calc_pileup_range.C (cluster-weighted and event-level)
 
 ## Physics Knowledge Base
 

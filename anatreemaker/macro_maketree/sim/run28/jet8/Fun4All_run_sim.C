@@ -75,11 +75,11 @@ R__LOAD_LIBRARY(libjetbackground.so)
 
 void Fun4All_run_sim(
     const int nEvents = 0,
-    const string &inputFile0 = "test.list",
-    //const string &inputFile1 = "dst_calo_cluster.list",
-    //const string &inputFile3 = "dst_mbd_epd.list",
-    //const string &inputFile4 = "dst_truth_jet.list",
-    //const string &inputFile2 = "dst_truth.list",
+    const string &inputFile0 = "g4hits.list",
+    const string &inputFile1 = "dst_calo_cluster.list",
+    const string &inputFile3 = "dst_mbd_epd.list",
+    const string &inputFile4 = "dst_truth_jet.list",
+    const string &inputFile2 = "dst_truth.list",
 
     const string &outputFile = "output_sim.root",
 
@@ -101,10 +101,10 @@ void Fun4All_run_sim(
   Input::VERBOSITY = 1;
   Input::READHITS = true;
   INPUTREADHITS::listfile[0] = inputFile0;
-  //INPUTREADHITS::listfile[1] = inputFile1;
+  INPUTREADHITS::listfile[1] = inputFile1;
   //INPUTREADHITS::listfile[2] = inputFile2;
-  //INPUTREADHITS::listfile[3] = inputFile3;
-  //INPUTREADHITS::listfile[4] = inputFile4;
+  INPUTREADHITS::listfile[3] = inputFile3;
+  INPUTREADHITS::listfile[4] = inputFile4;
 
   InputInit();
   InputRegister();
