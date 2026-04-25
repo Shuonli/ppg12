@@ -7,6 +7,14 @@ input:
   data_file: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root"
   tree: "slimtree"
   cluster_node_name: "CLUSTERINFO_CEMC"
+  # Dual-variant BDT scoring: apply_BDT.C iterates over this list and writes both
+  # cluster_bdt_{node}_* branch sets in one pass. Legacy cluster_node_name +
+  # analysis.use_split_bdt are ignored when this block is present.
+  cluster_variants:
+    - node: "CLUSTERINFO_CEMC"
+      model_suffix: "_split"
+    - node: "CLUSTERINFO_CEMC_NO_SPLIT"
+      model_suffix: "_nosplit"
   unfold_input: "results/MC_efficiency_photon5.root"
 
 output: 

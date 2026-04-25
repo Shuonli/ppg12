@@ -183,14 +183,22 @@ Background samples use QCD 2->2 processes. Clusters from these events that pass 
 
 ### Double-Interaction Samples
 
-Full GEANT4 double-interaction samples overlay two independent pp collisions:
+Full GEANT4 double-interaction samples overlay two independent pp collisions. After the Apr 2026 reprocess, 8 SI/DI pairs are available:
 
-| Sample | Purpose | Mixing fraction |
-|--------|---------|-----------------|
-| photon10_double | Signal with pileup | 18.7% (0 mrad), 7.2% (1.5 mrad) |
-| jet12_double | Background with pileup | Same fractions |
+| DI sample | Partner SI | Purpose |
+|-----------|-----------|---------|
+| photon5_double | photon5 | Signal with pileup (0--14 GeV) |
+| photon10_double | photon10 | Signal with pileup (14--30 GeV) |
+| photon20_double | photon20 | Signal with pileup (30+ GeV) |
+| jet8_double | jet8 | Background with pileup (9--14 GeV jet) |
+| jet12_double | jet12 | Background with pileup (14--21 GeV jet) |
+| jet20_double | jet20 | Background with pileup (21--32 GeV jet) |
+| jet30_double | jet30 | Background with pileup (32--42 GeV jet) |
+| jet40_double | jet40 | Background with pileup (42--100 GeV jet) |
 
-These are blended with single-interaction samples in the two-pass pipeline (`run_showershape_double.sh`) to study pileup effects on shower shapes and purity.
+Mixing fractions (all pairs): 22.4% (0 mrad), 7.9% (1.5 mrad), cluster-weighted.
+
+These are blended with single-interaction samples in the single-pass truth-vertex-reweight showershape pipeline (`submit_showershape_di.sub`) to study pileup effects on shower shapes and purity. See [Double-Interaction Efficiency](../../concepts/double-interaction-efficiency.md) and [MC Samples](../../reference/mc-samples.md#double-interaction-samples).
 
 ### Events per Sample
 

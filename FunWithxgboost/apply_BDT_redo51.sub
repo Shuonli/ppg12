@@ -1,0 +1,11 @@
+universe              = vanilla
+executable            = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT.sh
+output                = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/redo51.$(Cluster).$(Process).out
+error                 = /sphenix/user/shuhangli/ppg12/FunWithxgboost/logs/redo51.$(Cluster).$(Process).err
+log                   = /tmp/$(Cluster).log
+getenv                = true
+request_memory        = 4GB
+request_disk          = 4GB
+request_cpus          = 1
+arguments             = $(inputfile)
+queue inputfile from /sphenix/user/shuhangli/ppg12/FunWithxgboost/datalist_redo.list

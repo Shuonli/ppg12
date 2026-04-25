@@ -37,7 +37,7 @@ void plot_efficiency_overlay_noDR()
     const char *sampleSets[]   = {"single", "double", "mixed"};
     const char *sampleLabels[] = {"Single-interaction MC",
                                   "Double-interaction MC",
-                                  "Mixed 0 mrad (81.3%+18.7%)"};
+                                  "Mixed 0 mrad (77.6%+22.4%)"};
     const int nSamples = 3;
 
     // Colors and markers per sample set

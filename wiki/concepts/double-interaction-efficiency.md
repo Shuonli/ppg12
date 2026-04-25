@@ -9,7 +9,45 @@ Key findings:
 - True isolation degradation is ~4% absolute
 - Single-interaction MC is appropriate for efficiency corrections
 
-Cluster-weighted pileup fractions are higher than event-level fractions because double-interaction events produce more clusters on average: 22.4% of clusters at 0 mrad (vs 18.7% event-level) and 13.3% at 1.5 mrad (vs 7.2% event-level).
+Cluster-weighted pileup fractions are higher than event-level fractions because double-interaction events produce more clusters on average: 22.4% of clusters at 0 mrad (vs 11.1% event-level) and 7.9% at 1.5 mrad (vs 3.9% event-level). See [Pileup Fractions Reference](../reference/pileup-fractions.md) for the full calculation.
+
+## Available Full-GEANT DI MC Samples
+
+Eight SI/DI sample pairs are available for blending. DI sample cross-sections mirror their SI partners (see `efficiencytool/CrossSectionWeights.h:54-134`). Six of the eight `_double`/`_nom` aliases reuse the SI partner's kinematic window verbatim; `photon10_double` and `jet12_double` carry wider windows (10--100 GeV) as legacy pre-expansion behavior.
+
+| Pair | SI sample | DI sample | SI truth pT window |
+|------|-----------|-----------|--------------------|
+| photon5 | `photon5` | `photon5_double` | 0--14 GeV |
+| photon10 | `photon10` | `photon10_double` | 14--30 GeV |
+| photon20 | `photon20` | `photon20_double` | 30+ GeV |
+| jet8 | `jet8` | `jet8_double` | 9--14 GeV truth jet pT |
+| jet12 | `jet12` | `jet12_double` | 14--21 GeV |
+| jet20 | `jet20` | `jet20_double` | 21--32 GeV |
+| jet30 | `jet30` | `jet30_double` | 32--42 GeV |
+| jet40 | `jet40` | `jet40_double` | 42--100 GeV |
+
+SI filetypes in DI blending contexts (job lists, `ShowerShapeCheck.C`) are passed as `{sample}_nom` (e.g. `photon10_nom`), which `GetSampleConfig` treats identically to `{sample}`.
+
+Paths: `/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/{sample}/condorout/combined.root`.
+
+**Skipped samples:**
+- `jet5` — no DI partner produced (`jet5_double` does not exist).
+- `jet50_double` — no SI partner in the main pipeline sample set (`jet50` is only used for BDT training, not in `FunWithxgboost/mc_samples.list` or `MergeSim.C`).
+
+## Showershape DI Pipeline (Single-Pass Truth-Vertex Reweight)
+
+The showershape DI pipeline has been migrated to single-pass truth-vertex reweighting and is packaged for condor via `efficiencytool/submit_showershape_di.sub` with job lists `showershape_di_jobs_{0rad,1p5rad}.list` (8 SI/DI pairs + 1 data = 17 jobs per crossing-angle config).
+
+Per-event weight applied in `ShowerShapeCheck.C:1211-1216`:
+- Single MC: `w_truth = h_w_iterative.Interpolate(z_truth)`
+- Double MC: `w_truth = h_w_iterative.Interpolate(z_hard) * h_w_iterative.Interpolate(z_mb)` (factorized over the two truth vertices)
+- A multiplicative `mix_weight` (cluster-weighted DI fraction or its SI complement; 1.0 for data) is also applied.
+
+`h_w_iterative` is derived once per crossing-angle period by the iterative data-driven fit in `efficiencytool/truth_vertex_reweight/fit_truth_vertex_reweight.py`, driven by `truth_vertex_reweight/config.yaml:79-93` (uses SI and DI `photon10`/`jet12` for the fit) and written to `truth_vertex_reweight/output/{0mrad,1p5mrad}/reweight.root`. Runtime loading is handled by `efficiencytool/TruthVertexReweightLoader.h`. The reweight is sample-invariant; the same `h_w_iterative` is applied to every MC sample.
+
+The previous two-pass reco-vertex approach (fill `h_vertexz`, hadd, then rescan with override) is retired. The executable script has been renamed `run_showershape_double.sh` → `run_showershape_double_reco_legacy.sh` and is kept only for reproducing historical results.
+
+The nominal cross-section pipeline (`RecoEffCalculator_TTreeReader.C`) also supports `truth_vertex_reweight_on` / `truth_vertex_reweight_file` and is being extended to the same 8 SI/DI pairs for DI-aware efficiency estimation.
 
 ## Truth Photon Content
 
@@ -111,7 +149,7 @@ eff->SetUseWeightedEvents();
 eff->FillWeighted(passed, weight, x);
 ```
 
-`SetUseWeightedEvents()` configures `TEfficiency` to use `Sumw2()`-enabled internal histograms, and `FillWeighted` correctly accumulates weighted counts. This fix is essential for the blended single+double interaction efficiency study where mixing weights (e.g., 0.187 and 0.813 for the 0 mrad configuration) must be correctly propagated.
+`SetUseWeightedEvents()` configures `TEfficiency` to use `Sumw2()`-enabled internal histograms, and `FillWeighted` correctly accumulates weighted counts. This fix is essential for the blended single+double interaction efficiency study where mixing weights (e.g., 0.224 and 0.776 for the 0 mrad configuration) must be correctly propagated.
 
 ## Conclusions
 
@@ -121,16 +159,20 @@ eff->FillWeighted(passed, weight, x);
 
 3. **True pileup effects are small.** Isolation degrades by ~4% absolute; missing clusters account for 8% of the unmatched fraction (~5% of all double-interaction truth photons).
 
-4. **Single-interaction MC is appropriate for efficiency corrections.** The efficiency drop is an artifact of truth-matching, not detector response. Real pileup effects are small and treated as systematic uncertainties after weighting by physics double-interaction fractions (18.7% at 0 mrad, 7.2% at 1.5 mrad).
+4. **Single-interaction MC is appropriate for efficiency corrections.** The efficiency drop is an artifact of truth-matching, not detector response. Real pileup effects are small and treated as systematic uncertainties after weighting by cluster-weighted double-interaction fractions (22.4% at 0 mrad, 7.9% at 1.5 mrad).
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
 | `efficiencytool/reports/double_interaction_efficiency_report.tex` | Full investigation report with all figures |
-| `efficiencytool/DoubleInteractionCheck.C` | Toy vertex-shift simulation (~1535 lines) |
-| `efficiencytool/ShowerShapeCheck.C` | Shower shape analysis with `mix_weight` + vtxscan override |
-| `efficiencytool/run_showershape_double.sh` | Full GEANT blending pipeline (2-pass) |
+| `efficiencytool/DoubleInteractionCheck.C` | Toy vertex-shift simulation (~1446 lines) |
+| `efficiencytool/ShowerShapeCheck.C` | Shower shape analysis with `mix_weight` + truth-vertex reweight |
+| `efficiencytool/TruthVertexReweightLoader.h` | Loads `h_w_iterative` and applies per-vertex weight (including double-vertex factorization) |
+| `efficiencytool/truth_vertex_reweight/` | Iterative data-driven fit producing per-period `reweight.root` |
+| `efficiencytool/submit_showershape_di.sub` + `showershape_di_jobs_{0rad,1p5rad}.list` | Condor packaging for the 17-job single-pass DI showershape pipeline |
+| `efficiencytool/run_showershape_di_job.sh` | Per-job executable (calls `ShowerShapeCheck.C` with `do_vertex_scan=false`) |
+| `efficiencytool/run_showershape_double_reco_legacy.sh` | Retired two-pass reco-vertex blending (kept for history) |
 | `efficiencytool/run_double_interaction.sh` | Toy simulation orchestration |
 | `efficiencytool/CrossSectionWeights.h` | MC cross-section weights |
 | `plotting/plot_double_interaction.C` | Plotting macro for toy sim results |

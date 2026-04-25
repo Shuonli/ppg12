@@ -1,0 +1,17 @@
+# One-off submit for re-running the allz merge-feeders after the
+# truth_vertex_reweight_on=1 fix. Single use; delete after.
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in ( config_bdt_allz_0rad.yaml config_bdt_allz_1p5mrad.yaml )

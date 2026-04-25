@@ -4,6 +4,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{xcolor}
 \usepackage{caption}
@@ -326,6 +327,37 @@ ${\sim}2.6\%$ at $32$--$36$~GeV. This $\pT$ dependence means the bias is not a
 simple overall normalization shift but distorts the shape of the unfolded
 spectrum.
 
+%% --------------------------------------------------
+\subsection{ABCD Leakage Fractions: Single vs.\ Double Interaction}
+\label{sec:leakage_fractions}
+
+The ABCD signal leakage fractions $c_B$, $c_C$, $c_D$ (defined as the ratio of
+truth-matched signal in regions B, C, D to that in region~A) directly enter the
+background subtraction and purity correction.  Figure~\ref{fig:leakage_fractions}
+shows these fractions computed from the ``good'' signal (truth inside fiducial
+$\abseta < 0.7$) for both single and double interaction.
+
+\begin{itemize}
+  \item \textbf{$c_B$ (tight, non-isolated):}  Increases from ${\sim}6$--$11\%$
+    (single) to ${\sim}11$--$29\%$ (double), a factor ${\sim}2$--$3\times$.
+    The vertex shift in double-interaction events smears the topo-cluster
+    isolation sum, causing isolated photons to fail the isolation cut and migrate
+    from region~A to B.
+
+  \item \textbf{$c_C$ (non-tight, isolated):}  Comparable between single and
+    double (${\sim}2$--$8\%$), with no systematic amplification.  The shower
+    shape BDT is less sensitive to vertex shifts at the level relevant here.
+
+  \item \textbf{$c_D$ (non-tight, non-isolated):}  Small in both cases
+    ($< 2\%$), with modest increase for double interaction.
+\end{itemize}
+
+The dominant effect is the $c_B$ amplification.  Since the ABCD background
+estimate is $N_\text{bkg}^A = R \cdot B \cdot C / D$ with signal leakage
+corrections proportional to $(1 - c_B)(1 - c_C)/(1 - c_D)$, the $2$--$3\times$
+increase in $c_B$ for double interaction significantly affects the corrected
+purity, particularly at high $\ET$ where the leakage is largest.
+
 %% ============================================================
 \section{Discussion}
 \label{sec:discussion}
@@ -495,5 +527,247 @@ Figures~\ref{fig:matrix}--\ref{fig:deta} show the distributions produced by
     clusters.}
   \label{fig:deta}
 \end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.55\textwidth]{eta_migration_leakage_fractions.pdf}
+  \caption{ABCD signal leakage fractions $c_X = N_X^\text{sig} / N_A^\text{sig}$
+    for single interaction (filled markers) and double interaction (open markers)
+    as a function of $\ET$.  Upper panel: absolute leakage fractions for regions
+    B, C, and D.  Lower panel: double-to-single ratio.  The isolation leakage
+    $c_B$ increases by a factor of ${\sim}2$--$3\times$ under double interaction
+    due to vertex-shift smearing of the isolation cone, while the shower-shape
+    leakage $c_C$ is comparable or slightly reduced.}
+  \label{fig:leakage_fractions}
+\end{figure}
+
+%% ============================================================
+\clearpage
+\section{Sideband Flow from Background-Only MC}
+\label{sec:bkg_flow}
+
+The results so far quantify the impact of eta edge migration on the signal
+sample using photon MC. The PPG12 ABCD background estimate relies on three
+sideband regions (B, C, D) that are populated overwhelmingly by jet-induced
+fake clusters in data. To assess how fiducial boundary migration distorts
+these sideband populations --- and therefore the background estimate itself
+--- we run \texttt{EtaMigrationStudy.C} on the background-only MC with
+\emph{every} truth particle registered as a candidate match (not just
+direct/fragmentation photons), using \texttt{cluster\_truthtrkID} to find the
+dominant truth contributor per cluster --- typically a decay photon from a
+$\pi^{0}$ or $\eta$ in jet MC.
+
+Two interaction scenarios are studied:
+\begin{description}
+  \item[Single-interaction background] jet20 ($21 < \pT^\text{jet} < 32$) and
+    jet30 ($32 < \pT^\text{jet} < 42$) samples, cross-section weighted and
+    merged. This matches the nominal PPG12 background MC.
+  \item[Double-interaction background] the full-GEANT pileup sample
+    \texttt{jet12\_double} ($\pT^\text{jet} > 10$), simulated with two
+    overlapping \pp{} collisions at nominal luminosity. This represents the
+    asymptotic ``100\% pileup'' rate; in real data at 1.5~mrad crossing only
+    ${\sim}7.9\%$ of clusters come from double interactions.
+\end{description}
+
+\subsection{The NPB-Sentinel Issue}
+\label{subsec:bkg_npb_sentinel}
+
+The PPG12 ABCD common preselection requires an NPB (non-photon-background) TMVA
+score $> 0.5$. The NPB model was trained only on clusters with $\abseta < 0.7$;
+for clusters reconstructed outside the fiducial, the stored NPB score is the
+sentinel value $-1$. Consequently the NPB cut rejects \emph{every} cluster
+outside the fiducial volume, which eliminates outward-migration candidates from
+the shower-shape sidebands before any flow measurement can be made. To restore
+the symmetry, the eta-migration analysis fills a parallel ``no-NPB'' histogram
+set in which the NPB common cut is skipped. The inflow (measured) side is
+essentially unchanged because NPB rejects almost no in-fiducial background
+clusters (the score is typically $> 0.9$ for real showers). The outflow side
+now carries meaningful statistics.
+
+All plots in this section use the no-NPB classification.
+
+\subsection{Definitions}
+\label{subsec:bkg_defs}
+
+For each cluster with a valid truth match, we classify into one of three flow
+categories per ABCD region $X \in \{A, B, C, D\}$:
+\begin{description}
+  \item[Native] truth and reco both inside $\abseta < 0.7$, cluster passes $X$.
+    These are the clusters that \emph{should} count in region $X$.
+  \item[Inflow] truth $\abseta > 0.7$, reco $\abseta < 0.7$, cluster passes $X$.
+    Spurious additions to measured $X$ --- migration \emph{into} the fiducial
+    sideband.
+  \item[Outflow] truth $\abseta < 0.7$, reco $\abseta > 0.7$, cluster passes
+    $X$ (by shower-shape/isolation criteria, independent of reco $\eta$).
+    Clusters that would have populated region $X$ had the reco $\eta$ been
+    correctly inside fiducial --- migration \emph{out of} the fiducial
+    sideband. Note that the analysis does \emph{not} count these in the
+    measured sideband, because the fiducial cut is applied on reco $\eta$.
+\end{description}
+
+We then define two flow rates:
+\begin{align}
+  r_\text{in}^{X}(\ET) &= \frac{N_X^\text{inflow}}
+                              {N_X^\text{native} + N_X^\text{inflow}},
+  \label{eq:bkg_inflow_rate} \\
+  r_\text{out}^{X}(\ET) &= \frac{N_X^\text{outflow}}
+                              {N_X^\text{native} + N_X^\text{outflow}}.
+  \label{eq:bkg_outflow_rate}
+\end{align}
+$r_\text{in}^{X}$ is the fraction of the \emph{measured} region-$X$ count that
+comes from migrated clusters. $r_\text{out}^{X}$ is the fraction of clusters
+that \emph{should} have populated region $X$ but were lost to outward migration.
+
+\subsection{Single-Interaction Results}
+\label{subsec:bkg_flow_single}
+
+Table~\ref{tab:bkg_flow_single} shows the integrated flow rates for jet20+jet30
+(single interaction). All rates are below 3\%, with outflow and inflow of
+comparable magnitude. The tight BDT regions (A, B) show outflow slightly larger
+than inflow because the tight shower-shape cuts preferentially select clean
+in-fiducial clusters that happen to migrate outward; the edge-crossed clusters
+that migrate inward carry worse shower shapes and are rejected. Region C
+(non-tight, iso) is the region most affected by inward migration.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Integrated inflow and outflow rates (jet20+jet30, single interaction)
+    in the no-NPB classification.}
+  \label{tab:bkg_flow_single}
+  \begin{tabular}{lcc}
+    \toprule
+    Region & $\langle r_\text{in} \rangle$ & $\langle r_\text{out} \rangle$ \\
+    \midrule
+    A: tight + iso        & 1.01\% & 1.80\% \\
+    B: tight + non-iso    & 0.91\% & 1.95\% \\
+    C: non-tight + iso    & 2.70\% & 1.65\% \\
+    D: non-tight + non-iso & 1.22\% & 1.33\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Double-Interaction Results}
+\label{subsec:bkg_flow_double}
+
+The full-GEANT double-interaction sample \texttt{jet12\_double} shows
+\emph{dramatically} larger migration rates: the vertex shift from the overlap
+of two collisions pushes cluster $\eta$ by
+$\Delta\eta \sim -\Delta z / (R_\text{EMCal} \cosh \eta) \sim 0.2$ on top of
+the single-interaction cluster-position resolution. Integrated rates reach
+several tens of percent in the tight-excluding non-tight regions (C, D), and
+the inflow dominates strongly over the outflow:
+the measured sideband populations are contaminated $\sim 30$--$40\%$ by
+pileup-migrated clusters at high $\ET$. This is far larger than the
+single-interaction effect and drives the bulk of the pileup-related $R$-factor
+bias discussed below.
+
+Note that \texttt{jet12\_double} represents the pure double-interaction limit.
+At the nominal 1.5~mrad crossing angle, the cluster-weighted pileup fraction is
+${\sim}7.9\%$ (from \texttt{calc\_pileup\_range.C}), so the effective bias in
+data is the weighted average
+$r^\text{eff} \approx 0.921 \, r^\text{single} + 0.079 \, r^\text{double}$.
+
+\subsection{Impact on the ABCD $R$-Factor}
+\label{subsec:bkg_rfactor}
+
+The ABCD background estimate uses $R = N_B \cdot N_C / N_D$ to project sideband
+counts into the signal region (with small signal-leakage corrections applied
+at the next level). Because inflow is present in all three non-signal regions,
+a substantial portion of the single-interaction bias cancels in the ratio.
+Figure~\ref{fig:bkg_rfactor_bias} shows $R^\text{meas}/R^\text{native}$ where
+$R^\text{meas}$ uses the measured sideband populations
+$N_X^\text{meas} = N_X^\text{native} + N_X^\text{inflow}$ and $R^\text{native}$
+uses $N_X^\text{native}$ only.
+
+For single-interaction jet MC, the $R$-factor bias is $\lesssim 4\%$ across
+most of the analysis range, rising to $\sim 10\%$ in the top two $\pT$ bins
+where statistics are marginal. For pure double-interaction (\texttt{jet12\_double}),
+the bias grows rapidly with $\ET$ and reaches $\times 2$--$\times 2.5$ at
+$\ET \sim 20$--$25$~GeV. In the blended data scenario with 7.9\% pileup, the
+effective bias is
+$1.0 + 0.079 \times (R^\text{d}/R^\text{n} - 1)$, which translates to roughly
+$\sim 6$--$12\%$ at mid-$\ET$ and potentially larger at high-$\ET$. This is
+at the same order as PPG12's existing sideband systematic uncertainties and
+warrants a follow-up systematic evaluation.
+
+\subsection{Figures}
+\label{subsec:bkg_flow_figs}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.95\textwidth]{eta_migration_bkg_sideband_flow.pdf}
+  \caption{Inflow and outflow rates (no-NPB classification) vs. reco $\ET$
+    per ABCD region in jet MC. Single interaction (filled black / blue markers)
+    produces rates $\lesssim 3\%$; the full-GEANT \texttt{jet12\_double}
+    sample (open red / orange markers) drives much larger asymmetric
+    inflow, reaching $\sim 30$--$70\%$ in regions C and D at high $\ET$.
+    The asymmetry $r_\text{in} > r_\text{out}$ in the double-interaction case
+    reflects the vertex-shift bias: pileup reconstructs clusters at a
+    different $\eta$ than the leading truth particle.}
+  \label{fig:bkg_sideband_flow}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_bkg_net_flow.pdf}
+    \caption{Net sideband bias $(N^\text{inflow} - N^\text{outflow}) /
+      N^\text{native}$ vs. reco $\ET$ per region. Single interaction is
+      consistent with zero at $\lesssim 2\%$; double interaction drives
+      significant positive bias in regions C and D at high $\ET$.}
+    \label{fig:bkg_net_flow}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_bkg_rfactor_bias.pdf}
+    \caption{Ratio $R^\text{meas}/R^\text{native}$ of the ABCD $R$-factor
+      using measured ($N^\text{native} + N^\text{inflow}$) vs. native
+      populations. Single interaction shows $< 10\%$ bias; pure double
+      interaction (\texttt{jet12\_double}) shows a bias up to $\times 2.5$ at
+      mid-$\ET$.}
+    \label{fig:bkg_rfactor_bias}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_bkg_matrix.pdf}
+    \caption{Migration matrix (reco $\eta$ vs.\ truth $\eta$ of the dominant
+      contributor) for single-interaction jet MC. Narrow diagonal with small
+      off-diagonal tails across the $\abseta = 0.7$ boundary (red dashed).
+      Color axis is logarithmic.}
+    \label{fig:bkg_migration_matrix}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{eta_migration_bkg_matrix_double.pdf}
+    \caption{Migration matrix for the full-GEANT double-interaction sample
+      \texttt{jet12\_double}. The diagonal is visibly broader and extensive
+      off-diagonal migration appears near and across the $\abseta = 0.7$
+      boundary.}
+    \label{fig:bkg_migration_matrix_double}
+  \end{minipage}
+\end{figure}
+
+\subsection{Summary}
+\label{subsec:bkg_flow_summary}
+
+\begin{itemize}
+  \item For single-interaction background MC the eta edge produces comparable
+    inflow and outflow in every ABCD sideband ($\lesssim 3\%$), and the
+    residual $R$-factor bias is $\lesssim 4\%$ across the analysis range.
+  \item For pure double-interaction MC (\texttt{jet12\_double}) the inflow
+    dominates strongly (tens of percent), and the $R$-factor bias reaches
+    $\times 2$--$2.5$ at mid $\ET$.
+  \item Applied with the measured 7.9\% pileup fraction at 1.5~mrad, the
+    effective $R$-factor bias in data is at the $\sim 5$--$15\%$ level,
+    comparable to other PPG12 ABCD systematic uncertainties and motivating
+    a dedicated systematic evaluation.
+\end{itemize}
 
 \end{document}

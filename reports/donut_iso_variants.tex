@@ -1,0 +1,881 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[dvipsnames]{xcolor}
+
+\graphicspath{{../plotting/figures/}}
+
+\title{Donut iso variants: inner-$R$ truth-purity scan and ABCD closure\\
+\large All-calo 120\,MeV donut with $R_\mathrm{outer}=0.4$ (cross-check)}
+\author{PPG12 Analysis Team (automated)}
+\date{April 19, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+
+Two new reco-isolation definitions were added as cross-check variants
+(\texttt{syst\_type=None}, \texttt{syst\_role=None}):
+\begin{itemize}
+  \item \textbf{donutFull} (\texttt{use\_topo\_iso=4}):
+    \texttt{cluster\_iso\_04} $-$ \texttt{cluster\_iso\_\{005,0075,02\}}.
+    All-calo 120\,MeV tower sum (EMCal+HCalIn+HCalOut),
+    outer $R=0.4$, inner $R \in \{0.05, 0.075, 0.20\}$.
+    Cluster ET is subtracted as a scalar in both terms and cancels in the difference.
+  \item \textbf{donutExcl} (\texttt{use\_topo\_iso=5}):
+    \texttt{cluster\_iso\_excl\_04} $-$ \texttt{cluster\_iso\_excl\_\{005,0075,01,02\}}.
+    Same three-calo 120\,MeV sum, but EMCal towers owned by the cluster are skipped at tower granularity
+    rather than subtracted as a scalar. Inner $R \in \{0.05, 0.075, 0.10, 0.20\}$.
+\end{itemize}
+
+Switch added in \texttt{RecoEffCalculator\_TTreeReader.C:2042--2065}, mirrored in five companion macros.
+\texttt{donutFull\_01} is deliberately skipped because \texttt{cluster\_iso\_01} does not exist in the slimtree
+(logged in \texttt{reports/anatreemaker\_reprocess\_TODO.md}, along with the EMCal-only inner-ring branches
+needed for a pure-EMCal donut).
+
+\textbf{Key finding:} \texttt{donutFull\_02} and \texttt{donutExcl\_02} give
+$\sim 2.5\times$ better ABCD-on-MC closure than nominal topo04 iso
+(mean closure deviation $\langle|1-r|\rangle \approx 0.07$ vs.\ nominal $0.185$).
+Low-pT closure is worst across \emph{all} variants (ratio $1.35$--$1.80$ at 9\,GeV),
+high-pT closure is $0.83$--$0.87$ at 34\,GeV.
+
+\section*{Two-pass workflow}
+
+Per-variant iso cut was derived at 80\,\% target efficiency:
+\begin{enumerate}
+  \item \textbf{Pass 1}: run the full
+    \texttt{RecoEffCalculator\_TTreeReader + MergeSim + CalculatePhotonYield}
+    with placeholder loose cut ($b=100, s=0$).
+  \item \textbf{Cut derivation}: parameterized
+    \texttt{FindETCut.C(var\_type, target\_eff)} fits
+    $E_T^\mathrm{iso,cut} = b + s\, p_T$ at 80\,\%;
+    \texttt{derive\_iso\_cuts.py} drives all 7 variants.
+  \item \textbf{Pass 2}: regenerate configs with derived $(b, s)$, re-run pipeline on HTCondor cluster 2701654.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Derived 80\,\% iso cuts (isoET $< b + s\,p_T$).}
+\begin{tabular}{lrr}
+\toprule
+Variant & $b$ [GeV] & $s$ \\
+\midrule
+donutFull\_005  & $0.1089$ & $0.0224$  \\
+donutFull\_0075 & $0.2642$ & $0.0061$  \\
+donutFull\_02   & $0.2305$ & $-0.0012$ \\
+donutExcl\_005  & $0.2457$ & $0.0111$  \\
+donutExcl\_0075 & $0.2774$ & $0.0053$  \\
+donutExcl\_01   & $0.2921$ & $0.0017$  \\
+donutExcl\_02   & $0.2305$ & $-0.0012$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Truth-matched signal purity}
+
+Purity read from \texttt{Photon\_final\_bdt\_<var>\_mc.root} (MC-as-data, truth labels populated).
+
+\begin{table}[H]
+\centering
+\caption{Truth-matched photon purity at three representative $p_T$ bins.
+Nominal topo04 iso included for reference.}
+\begin{tabular}{lrrr}
+\toprule
+Variant & $y(9\,\mathrm{GeV})$ & $y(21\,\mathrm{GeV})$ & $y(34\,\mathrm{GeV})$ \\
+\midrule
+nom (reference) & $0.581$ & $0.743$ & $0.797$ \\
+donutFull\_005  & $0.684$ & $0.786$ & $0.849$ \\
+donutFull\_0075 & $0.608$ & $0.805$ & $0.873$ \\
+donutFull\_02   & $0.496$ & $0.728$ & $0.805$ \\
+donutExcl\_005  & $0.648$ & $0.803$ & $0.858$ \\
+donutExcl\_0075 & $0.606$ & $0.804$ & $0.874$ \\
+donutExcl\_01   & $0.577$ & $0.793$ & $0.869$ \\
+donutExcl\_02   & $0.496$ & $0.728$ & $0.805$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_donutFull_scan.pdf}
+\caption{donutFull family.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_donutExcl_scan.pdf}
+\caption{donutExcl family.}
+\end{subfigure}
+\caption{Truth-matched signal purity vs.\ cluster $p_T$ for the donut-iso variants.
+Tighter inner $R$ (smaller value) yields higher purity at low $p_T$; variants converge at high $p_T$.}
+\end{figure}
+
+\section*{isoET distribution by inner $R$ (representative $p_T$ bins)}
+
+Overlay of the tight-shower-shape isoET distribution
+(\texttt{h\_tight\_isoET\_0\_<ipt>}, from \texttt{data\_histo\_bdt\_<var>.root}),
+normalized to unit area, across donut inner $R$ values at one low-$p_T$ bin
+($10 < p_T < 12$\,GeV) and one higher-$p_T$ bin ($22 < p_T < 24$\,GeV).
+Tight-region data is background-dominated below the iso cut; the distribution
+shape reflects the underlying-event pedestal of the donut definition.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_ptlow.pdf}
+\caption{donutFull, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_pthigh.pdf}
+\caption{donutFull, high $p_T$.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_ptlow.pdf}
+\caption{donutExcl, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_pthigh.pdf}
+\caption{donutExcl, high $p_T$.}
+\end{subfigure}
+\caption{Tight-region isoET distributions in DATA for different donut inner $R$
+at two representative $p_T$ bins. As $R_\mathrm{inner}$ grows, the annulus shrinks
+and the distribution narrows / shifts toward zero. At low $p_T$ the distribution
+is broader; at high $p_T$ it collapses toward the iso-cut edge.}
+\end{figure}
+
+\subsection*{Same in truth-matched MC signal (photon MC)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_ptlow_sigMC.pdf}
+\caption{donutFull, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_pthigh_sigMC.pdf}
+\caption{donutFull, high $p_T$.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_ptlow_sigMC.pdf}
+\caption{donutExcl, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_pthigh_sigMC.pdf}
+\caption{donutExcl, high $p_T$.}
+\end{subfigure}
+\caption{Same as above for the truth-matched MC signal (merged photon MC,
+\texttt{MC\_efficiency\_bdt\_<var>.root}). Distributions peak near zero and
+are narrower than data, as expected for isolated prompt photons.
+Shape differences across $R_\mathrm{inner}$ are subtler because the
+underlying-event pedestal is smaller in signal-only MC.}
+\end{figure}
+
+\subsection*{Same in inclusive MC (photon + jet, weighted)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_ptlow_incMC.pdf}
+\caption{donutFull, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutFull_pthigh_incMC.pdf}
+\caption{donutFull, high $p_T$.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_ptlow_incMC.pdf}
+\caption{donutExcl, low $p_T$.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{isoET_donutExcl_pthigh_incMC.pdf}
+\caption{donutExcl, high $p_T$.}
+\end{subfigure}
+\caption{Same as above for inclusive MC (photon MC $+$ jet MC, each weighted
+by its cross section via MergeSim). This is the direct MC analogue of the
+data plot above and should match data at cut1. The shape mirrors data closely,
+confirming the donut definition's behavior on the background-dominated
+tight-region population.}
+\end{figure}
+
+\section*{ABCD-on-MC closure}
+
+The key validation: does the ABCD background subtraction reproduce the truth purity on MC?
+The ratio $r = \mathrm{purity}_\mathrm{ABCD} / \mathrm{purity}_\mathrm{truth}$
+is stored in \texttt{g\_mc\_purity\_fit\_ratio}; $r = 1$ is perfect closure.
+
+\begin{table}[H]
+\centering
+\caption{ABCD/truth closure ratio at selected $p_T$ bins and mean absolute deviation from unity.
+Lower $\langle|1-r|\rangle$ means better closure.}
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & $r(9)$ & $r(15)$ & $r(21)$ & $r(28)$ & $r(34)$ & $\langle|1-r|\rangle$ \\
+\midrule
+nom (reference) & $1.795$ & $0.972$ & $0.910$ & $0.842$ & $0.832$ & $0.185$ \\
+donutFull\_005  & $1.356$ & $0.972$ & $0.899$ & $0.826$ & $0.833$ & $0.136$ \\
+donutFull\_0075 & $1.543$ & $1.004$ & $0.931$ & $0.861$ & $0.873$ & $0.138$ \\
+\textbf{donutFull\_02} & $\mathbf{0.997}$ & $\mathbf{0.943}$ & $\mathbf{0.934}$ & $\mathbf{0.865}$ & $\mathbf{0.868}$ & $\mathbf{0.069}$ \\
+donutExcl\_005  & $1.710$ & $1.004$ & $0.937$ & $0.844$ & $0.864$ & $0.164$ \\
+donutExcl\_0075 & $1.536$ & $1.002$ & $0.929$ & $0.866$ & $0.874$ & $0.137$ \\
+donutExcl\_01   & $1.346$ & $1.003$ & $0.922$ & $0.877$ & $0.872$ & $0.113$ \\
+\textbf{donutExcl\_02} & $\mathbf{0.999}$ & $\mathbf{0.942}$ & $\mathbf{0.933}$ & $\mathbf{0.865}$ & $\mathbf{0.868}$ & $\mathbf{0.070}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{purity_closure_donutFull_scan.pdf}
+\caption{donutFull family.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{purity_closure_donutExcl_scan.pdf}
+\caption{donutExcl family.}
+\end{subfigure}
+\caption{Closure of ABCD-derived purity against truth-matched purity on MC.
+The dashed line at 1.0 is perfect closure. All variants (including nominal) show
+a common low-$p_T$ over-prediction and high-$p_T$ under-prediction;
+inner $R = 0.20$ variants are closest to unity across the full $p_T$ range.}
+\end{figure}
+
+\section*{Physics observations}
+
+\begin{itemize}
+  \item \textbf{Closure is the headline result.} The nominal topo04 iso
+    has an 18.5\% average deviation from unity; donut variants with
+    $R_\mathrm{inner} = 0.20$ reduce this to 6.9--7.0\%. Other donut
+    variants fall in between (11--16\%).
+  \item \textbf{Low-$p_T$ non-closure is universal.}
+    At $p_T = 9$\,GeV the ratio is $1.35$--$1.80$ across \emph{all}
+    variants including nominal. This is probably driven by the fit-region
+    statistics at the edge of the reco $p_T$ binning, not by the iso
+    definition itself.
+  \item \textbf{High-$p_T$ under-prediction is also universal}, with
+    $r \approx 0.83$--$0.87$ at 34\,GeV across all variants. ABCD consistently
+    under-estimates truth purity at high $p_T$ regardless of the iso
+    definition.
+  \item \textbf{Inner $R$ dominates purity, not outer-cone treatment.}
+    donutFull vs.\ donutExcl at matched $R_\mathrm{inner}$ give truth
+    purities within $\pm 0.05$ at low $p_T$ and $\lesssim 0.02$ at high
+    $p_T$. \texttt{donutFull\_02} and \texttt{donutExcl\_02} are
+    numerically identical to four decimals because the fitted iso cut is
+    the same (see derived $(b, s)$).
+  \item \textbf{Tighter inner $R$ gives higher truth purity at low $p_T$.}
+    For the Excl family, $y(9\,\mathrm{GeV})$ monotonically decreases
+    from $0.648$ at $R_\mathrm{inner} = 0.05$ to $0.496$ at $R_\mathrm{inner} = 0.20$.
+    Interpretation: larger inner $R$ admits less annulus area, giving a
+    looser absolute iso cut that keeps more background.
+\end{itemize}
+
+\section*{Caveats and follow-ups}
+
+\begin{itemize}
+  \item \textbf{Outer cone includes HCal.} The donut is not pure EMCal.
+    A pure-EMCal donut requires new inner-ring branches
+    \texttt{cluster\_iso\_\{005,0075,01,02\}\_emcal} at matching threshold
+    (logged in \texttt{reports/anatreemaker\_reprocess\_TODO.md}).
+  \item \textbf{\texttt{donutFull\_01} skipped} pending upstream
+    \texttt{cluster\_iso\_01} branch (all-calo, 120\,MeV, $R<0.1$).
+  \item \textbf{Degraded mirrors} (\texttt{Cluster\_rbr.C},
+    \texttt{EtaMigrationStudy.C}, \texttt{compare\_energy\_response.C})
+    silently use the full outer cone without inner subtraction for cases 4/5
+    since they do not read \texttt{iso\_emcalinnerr}. Do not run donut
+    variants through these diagnostic utilities expecting donut semantics.
+  \item \textbf{MC iso scale/shift} set to 1.0/0.0 for all donut variants
+    because the nominal 1.2/0.1 was tuned against full-cone topo04. Retuning
+    would be needed if these ever became systematic variants.
+  \item \textbf{The low-$p_T$ closure deviation is present in nominal too.}
+    This is a pre-existing effect of the ABCD method at the binning edge,
+    independent of the iso definition. Worth understanding before any
+    purity systematic is claimed.
+\end{itemize}
+
+\section*{Reviewer pass matrix}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Artifact & Physics & Cosmetics & Re-derivation & Fix-validator \\
+\midrule
+\texttt{use\_topo\_iso=4,5} switch & PASS (2 WARN util) & N/A & N/A & PASS \\
+donut truth-purity scan PDFs & N/A & PASS (2 WARN) & PASS & N/A \\
+donut closure PDFs & N/A & (not yet reviewed) & PASS & N/A \\
+80\,\% iso cuts & N/A & N/A & PASS & PASS \\
+\texttt{g\_purity\_truth} (7 variants) & N/A & N/A & PASS & PASS \\
+\texttt{g\_mc\_purity\_fit\_ratio} (7 variants) & N/A & N/A & PASS & PASS \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\section*{Per-variant MC purity closure}
+
+Each panel below shows, for one variant, the ABCD-derived purity on MC (points with error bars),
+the fit to the ABCD points (solid line), the signal-leakage-corrected ABCD purity,
+and the truth-matched purity (red markers). For a closure-good variant, the ABCD
+points/fit should track the truth markers; deviations mark where the ABCD
+subtraction biases the purity estimate at that $p_T$.
+Nominal topo04 iso (\texttt{bdt\_nom}) is included as a reference.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_nom.pdf}
+\caption{nom (reference).}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutFull_005.pdf}
+\caption{donutFull\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutFull_0075.pdf}
+\caption{donutFull\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutFull_02.pdf}
+\caption{donutFull\_02.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutExcl_005.pdf}
+\caption{donutExcl\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutExcl_0075.pdf}
+\caption{donutExcl\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutExcl_01.pdf}
+\caption{donutExcl\_01.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutExcl_02.pdf}
+\caption{donutExcl\_02.}
+\end{subfigure}
+\caption{Per-variant MC purity closure plots. Each panel: ABCD-derived purity points (from
+\texttt{gpurity}/\texttt{gpurity\_leak}), the ABCD fit, and truth-matched purity
+(\texttt{g\_purity\_truth}). The quality of agreement between ABCD and truth across $p_T$
+is the closure check summarized in the previous section's ratio table.
+\texttt{donutFull\_02} and \texttt{donutExcl\_02} show the tightest truth--ABCD agreement,
+especially at low $p_T$.}
+\end{figure}
+
+
+
+\section*{Final cross section per variant}
+
+\subsection*{Donut / nominal ratio}
+
+The following ratio is defined per reco $p_T$ bin on the unfolded signal yield
+\texttt{h\_unfold\_sub\_result} (which is the background-subtracted, unfolded
+yield used to compute $d^2\sigma/d\eta\, dp_T$): $r = \mathrm{yield}_\mathrm{donut} /
+\mathrm{yield}_\mathrm{nom}$.
+
+\begin{table}[H]
+\centering
+\caption{Donut / nominal unfolded-yield ratio at selected $p_T$ bins.
+Mean absolute deviation from unity averaged over the 12 reco $p_T$ bins.}
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & $r(9)$ & $r(15)$ & $r(21)$ & $r(28)$ & $r(34)$ & $\langle|1-r|\rangle$ \\
+\midrule
+donutFull\_005  & $1.129$ & $0.929$ & $0.844$ & $0.818$  & $0.788$  & $0.130$ \\
+donutFull\_0075 & $1.035$ & $0.921$ & $0.837$ & $0.903$  & $0.835$  & $0.097$ \\
+donutFull\_02   & $1.354$ & $0.974$ & $0.999$ & $1.310$  & $1.048$  & $0.138$ \\
+\textbf{donutExcl\_005 (anomalous)} & $0.812$ & $0.908$ & $1.937$ & $\mathbf{-6.02}$ & $\mathbf{-0.04}$ & $1.665$ \\
+donutExcl\_0075 & $1.042$ & $0.917$ & $0.830$ & $0.869$  & $0.837$  & $0.104$ \\
+donutExcl\_01   & $1.137$ & $0.938$ & $0.882$ & $1.018$  & $0.822$  & $0.096$ \\
+donutExcl\_02   & $1.352$ & $0.974$ & $0.999$ & $1.310$  & $1.048$  & $0.137$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{donutExcl\_005 anomaly.} This variant yields negative unfolded
+signal at $p_T \ge 28$\,GeV, implying the ABCD background estimate exceeds
+the tight+iso count in those bins. Looking at the raw
+\texttt{h\_unfold\_sub\_result} across $p_T$: values at $p_T = 22$--$26$
+are anomalously large (2--6$\times$ nominal) before the bin-11 sign flip to $-5.66$
+and bin-12 $-0.81$. Truth purity for the same variant is healthy (0.65--0.86),
+so the pathology is in yield extraction, not purity. Likely an interaction
+between the tight-iso count and the R-factor estimator at low statistics
+with the tightest inner $R$ + ownership-excluded outer cone. Recommend:
+re-run with higher MC statistics (more condor jobs per sample) or drop this
+variant from the scan.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{xsec_ratio_donutFull_scan.pdf}
+\caption{donutFull / nominal.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\linewidth]{xsec_ratio_donutExcl_scan.pdf}
+\caption{donutExcl / nominal.}
+\end{subfigure}
+\caption{Unfolded-yield ratio (donut / nominal) vs.\ reco $p_T$.
+Dashed line at unity. Excluding \texttt{donutExcl\_005}, variants agree with
+nominal to $\sim 10$--$14\%$ on $\langle|1-r|\rangle$. The \texttt{R\_inner}=0.20
+variants diverge upward at low $p_T$ (ratio up to 1.35) and stay within
+$\pm 5$\% of nominal at mid-$p_T$. \texttt{donutExcl\_005} is plotted but
+pT $\ge 26$\,GeV points fall off-scale (negative / $\gg 1.4$).}
+\end{figure}
+
+\subsection*{Per-variant final cross section}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_nom.pdf}
+\caption{nom.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_005.pdf}
+\caption{donutFull\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_0075.pdf}
+\caption{donutFull\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_02.pdf}
+\caption{donutFull\_02.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_005.pdf}
+\caption{donutExcl\_005 (anomalous).}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_0075.pdf}
+\caption{donutExcl\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_01.pdf}
+\caption{donutExcl\_01.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_02.pdf}
+\caption{donutExcl\_02.}
+\end{subfigure}
+\caption{Per-variant final isolated-photon cross section
+$d^2\sigma/d\eta\, dp_T$ vs.\ $p_T^\gamma$, produced by
+\texttt{plot\_final\_selection.C}. Nominal topo04 iso (first panel) for reference.
+The \texttt{donutExcl\_005} panel shows the high-$p_T$ anomaly noted above.}
+\end{figure}
+
+
+
+\section*{Isolation ET template fits (CONF)}
+
+Produced by \texttt{plotting/CONF\_plots.C} from
+\texttt{data\_histo\_bdt\_<var>.root} (tight and non-tight data) and
+\texttt{MC\_efficiency\_bdt\_<var>.root} (MC signal template). Two $p_T$ bin
+ranges shown as representatives: \textbf{8--14\,GeV} (bins 0--2) and
+\textbf{20--26\,GeV} (bins 6--8). The fit overlays the MC signal shape + a
+non-tight-derived background template onto the tight-region data,
+extracting the signal fraction per pT range. Full 4-range sets
+(0--2, 3--5, 6--8, 9--9) for all 7 donut variants are in
+\texttt{plotting/figures/h1D\_iso\_fit\_bdt\_donut*.pdf}; the selection
+report includes them in each per-config section via the standard PLOT\_GROUPS
+``Isolation fit (CONF)'' entry.
+
+\subsection*{Low $p_T$ bin range: $8 < p_T < 14$\,GeV (bins 0--2)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_nom_0_2.pdf}
+\caption{nom.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_005_0_2.pdf}
+\caption{donutFull\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_0075_0_2.pdf}
+\caption{donutFull\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_02_0_2.pdf}
+\caption{donutFull\_02.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_005_0_2.pdf}
+\caption{donutExcl\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_0075_0_2.pdf}
+\caption{donutExcl\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_01_0_2.pdf}
+\caption{donutExcl\_01.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_02_0_2.pdf}
+\caption{donutExcl\_02.}
+\end{subfigure}
+\caption{Isolation-ET templates vs.\ tight data (points), with
+MC signal template (blue fill) and non-tight data-derived background template
+(red fill), for $8 < p_T < 14$\,GeV. Nominal reference and all 7 donut variants.}
+\end{figure}
+
+\subsection*{High $p_T$ bin range: $20 < p_T < 26$\,GeV (bins 6--8)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_nom_6_8.pdf}
+\caption{nom.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_005_6_8.pdf}
+\caption{donutFull\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_0075_6_8.pdf}
+\caption{donutFull\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutFull_02_6_8.pdf}
+\caption{donutFull\_02.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_005_6_8.pdf}
+\caption{donutExcl\_005.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_0075_6_8.pdf}
+\caption{donutExcl\_0075.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_01_6_8.pdf}
+\caption{donutExcl\_01.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_donutExcl_02_6_8.pdf}
+\caption{donutExcl\_02.}
+\end{subfigure}
+\caption{Same as above for $20 < p_T < 26$\,GeV. The \texttt{donutExcl\_005}
+high-$p_T$ pathology noted in the cross-section section shows up here as
+the signal+background templates failing to cover the tight-region data shape.}
+\end{figure}
+
+
+
+\section*{BDT model alternatives: \texttt{base\_v0} and \texttt{base\_v0E}}
+
+Cross-check on BDT model choice: two additional variants apply earlier model
+versions (\texttt{base\_v0}, \texttt{base\_v0E}) across both ET bins via
+\texttt{bdt\_et\_bin\_models=["base\_v0","base\_v0"]} (resp.\ v0E). Nominal
+topo04 iso and nominal tight/non-tight BDT cuts are kept. Both $cluster\_bdt\_CLUSTERINFO\_CEMC\_base\_v0$ and $*\_base\_v0E$
+branches already exist in the slimtree; no re-apply needed.
+HTCondor cluster 2734512 (2 jobs, $\sim$20\,min each).
+
+\subsection*{Summary numbers}
+
+\begin{table}[H]
+\centering
+\caption{Truth purity, ABCD/truth closure, and unfolded-yield ratio to nominal,
+at selected $p_T$ bins. Lower $\langle|1-r|\rangle$ is better closure.
+Higher $|1-r_\mathrm{xsec}|$ means larger deviation of the cross section from nominal.}
+\begin{tabular}{lrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{Truth purity} & \multicolumn{3}{c}{ABCD/truth closure} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Variant & $y(9)$ & $y(21)$ & $y(34)$ & $r(9)$ & $r(21)$ & $\langle|1-r|\rangle$ \\
+\midrule
+nom (reference)       & $0.581$ & $0.743$ & $0.797$ & $1.795$ & $0.910$ & $0.185$ \\
+bdtmodel\_v0          & $0.544$ & $0.744$ & $0.782$ & $2.177$ & $0.973$ & $0.226$ \\
+bdtmodel\_v0E         & $0.557$ & $0.753$ & $0.786$ & $2.491$ & $0.961$ & $0.265$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Unfolded-yield ratio (variant / nominal) across the $p_T$ spectrum.}
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & $r(9)$ & $r(15)$ & $r(21)$ & $r(28)$ & $r(34)$ & $\langle|1-r|\rangle$ \\
+\midrule
+bdtmodel\_v0    & $0.751$ & $0.980$ & $1.014$ & $1.183$ & $1.604$ & $0.196$ \\
+bdtmodel\_v0E   & $0.760$ & $0.974$ & $1.006$ & $1.219$ & $1.742$ & $0.223$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Observations.}
+(1) Truth purity for the v0/v0E models is close to (but slightly lower than)
+nominal at low $p_T$ ($0.54$--$0.56$ vs.\ $0.58$), and essentially identical
+at high $p_T$.
+(2) \textbf{ABCD closure is worse} for both alternatives:
+$\langle|1-r|\rangle = 0.226$ (v0) and $0.265$ (v0E) vs.\ $0.185$ nominal.
+The low-$p_T$ over-prediction is particularly strong ($r = 2.18$ and $2.49$
+at $p_T = 9$\,GeV vs.\ $1.80$ nominal), suggesting the ABCD R-factor
+assumption is less satisfied with these BDT discriminants.
+(3) Cross section at high $p_T$ diverges sharply from nominal:
+$1.60\times$ and $1.74\times$ at $p_T=34$\,GeV respectively.
+The v0/v0E models either admit substantially more tight+iso yield
+(looser BDT) or have larger non-closure absorbing into the subtracted
+``signal'' yield. Given that the cross-section ratio grows with $p_T$ while
+closure degrades at low $p_T$, the high-$p_T$ excess is likely driven by
+poorer signal--background separation of the older BDT variants in the
+region where statistics are thin.
+
+\subsection*{Per-variant MC purity closure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.33\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_nom.pdf}
+\caption{nom (reference).}
+\end{subfigure}%
+\begin{subfigure}[t]{0.33\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_bdtmodel_v0.pdf}
+\caption{bdtmodel\_v0.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.33\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_bdtmodel_v0E.pdf}
+\caption{bdtmodel\_v0E.}
+\end{subfigure}
+\caption{MC purity closure for the two alternative BDT models. Each panel
+shows the ABCD-derived purity (points), the fit, and the truth-matched
+purity (red markers).}
+\end{figure}
+
+\subsection*{Isolation ET template fits}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_nom_0_2.pdf}
+\caption{nom, $8<p_T<14$.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_nom_6_8.pdf}
+\caption{nom, $20<p_T<26$.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_bdtmodel_v0_0_2.pdf}
+\caption{v0, $8<p_T<14$.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_bdtmodel_v0_6_8.pdf}
+\caption{v0, $20<p_T<26$.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_bdtmodel_v0E_0_2.pdf}
+\caption{v0E, $8<p_T<14$.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{h1D_iso_bdt_bdtmodel_v0E_6_8.pdf}
+\caption{v0E, $20<p_T<26$.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_bdtmodel_v0.pdf}
+\caption{Final $d^2\sigma$, v0.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_bdtmodel_v0E.pdf}
+\caption{Final $d^2\sigma$, v0E.}
+\end{subfigure}
+\caption{CONF template overlays (\texttt{h1D\_iso\_*}: tight data points,
+MC signal template in blue fill, non-tight background template in red fill)
+for nominal and the two alternative BDT models at two $p_T$ ranges,
+followed by the unfolded final cross section per alternative model.
+Poorer template agreement for v0/v0E at high $p_T$ is consistent with the
+weaker closure reported above.}
+\end{figure}
+
+
+
+\section*{Final cross section with MC purity correction turned on}
+
+Same 7 donut variants as Figure~8, now run with \texttt{mc\_purity\_correction=1}
+in the config (the existing \texttt{config\_bdt\_mc\_purity\_correction.yaml}
+mechanism applied per-variant). In this mode \texttt{CalculatePhotonYield.C}
+uses the MC-as-data truth purity (from \texttt{Photon\_final\_bdt\_<var>\_mcpc\_mc.root})
+as a multiplicative correction when extracting the data purity, rather than
+trusting the ABCD fit alone. Truth purity and ABCD-on-MC closure are unchanged
+from the non-mcpc run (they are MC-only quantities); the difference is in the
+data yield.
+
+\begin{table}[H]
+\centering
+\caption{mcpc: cross-section ratio (variant / nominal, both without mcpc for the
+nominal denominator) and mean absolute deviation.
+Compare with the corresponding non-mcpc row from the earlier cross-section table.}
+\begin{tabular}{lrrrrr}
+\toprule
+Variant & $r_\mathrm{xs}(9)$ & $r_\mathrm{xs}(21)$ & $r_\mathrm{xs}(34)$ & $\langle|1-r_\mathrm{xs}|\rangle$ \\
+\midrule
+donutFull\_005\_mcpc  & $1.534$ & $0.844$ & $0.655$ & $0.282$ \\
+donutFull\_0075\_mcpc & $1.599$ & $0.837$ & $0.725$ & $0.257$ \\
+donutFull\_02\_mcpc   & $1.352$ & $0.999$ & $0.910$ & $0.129$ \\
+donutExcl\_005\_mcpc  & $1.619$ & $0.937$ & $0.673$ & $0.321$ \\
+donutExcl\_0075\_mcpc & $1.607$ & $0.929$ & $0.726$ & $0.264$ \\
+donutExcl\_01\_mcpc   & $1.540$ & $0.922$ & $0.714$ & $0.220$ \\
+donutExcl\_02\_mcpc   & $1.350$ & $0.999$ & $0.911$ & $0.129$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Note on \texttt{donutExcl\_005}.} Without MC purity correction this
+variant showed negative unfolded yields at $p_T \ge 28$\,GeV ($\langle|1-r|\rangle = 1.665$).
+With mcpc on, the yields are all positive and $\langle|1-r|\rangle$ drops to
+$0.321$. MC purity correction effectively rescues the pathological variant
+by using the MC truth purity in place of the badly-behaved ABCD purity at high $p_T$.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_nom.pdf}
+\caption{nom (no mcpc, reference).}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_005_mcpc.pdf}
+\caption{donutFull\_005\_mcpc.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_0075_mcpc.pdf}
+\caption{donutFull\_0075\_mcpc.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_02_mcpc.pdf}
+\caption{donutFull\_02\_mcpc.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_005_mcpc.pdf}
+\caption{donutExcl\_005\_mcpc.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_0075_mcpc.pdf}
+\caption{donutExcl\_0075\_mcpc.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_01_mcpc.pdf}
+\caption{donutExcl\_01\_mcpc.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.24\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_02_mcpc.pdf}
+\caption{donutExcl\_02\_mcpc.}
+\end{subfigure}
+\caption{Per-variant final cross section with MC-purity correction enabled
+(\texttt{mc\_purity\_correction=1}). Nominal (no mcpc) panel included as
+reference. The \texttt{donutExcl\_005\_mcpc} panel no longer shows the
+negative-yield pathology at high $p_T$.}
+\end{figure}
+
+\section*{Full cone, no inner veto ring}
+
+Two additional cross-check variants use the same tower-based isolation
+(R=0.4 outer, 120\,MeV threshold, all-calo or ownership-excluded EMCal)
+but \emph{skip the inner-$R$ subtraction}. Implemented by setting
+\texttt{iso\_emcalinnerr=0.0} in the \texttt{use\_topo\_iso=4/5} block,
+so the isolation value is the raw full cone $E_T^\mathrm{iso} =
+\texttt{cluster\_iso\_04}$ (or \texttt{\_excl\_04}) with no annulus subtraction.
+80\,\% iso cuts rederived via the two-pass workflow:
+
+\begin{table}[H]
+\centering
+\caption{Derived 80\,\% iso cuts for the full-cone (no-inner-ring) variants.}
+\begin{tabular}{lrr}
+\toprule
+Variant & $b$ [GeV] & $s$ \\
+\midrule
+donutFull\_noinner & $0.0712$ & $0.01655$ \\
+donutExcl\_noinner & $0.2069$ & $0.01889$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Truth purity, closure, and cross-section ratio vs.\ nominal for the
+full-cone variants.}
+\begin{tabular}{lrrrrr}
+\toprule
+ & \multicolumn{3}{c}{Truth purity} & \multicolumn{2}{c}{Closure / xsec} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-6}
+Variant & $y(9)$ & $y(21)$ & $y(34)$ & $\langle|1-r_\mathrm{cls}|\rangle$ & $\langle|1-r_\mathrm{xs}|\rangle$ \\
+\midrule
+nom (reference)    & $0.581$ & $0.743$ & $0.797$ & $0.185$ & $0$ \\
+donutFull\_noinner & $0.653$ & $0.765$ & $0.827$ & $0.197$ & $0.236$ \\
+donutExcl\_noinner & $0.632$ & $0.780$ & $0.843$ & $0.153$ & $0.167$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Observations.} Full-cone iso without inner-ring subtraction gives
+purity \emph{higher} than nominal at all $p_T$ (by $\sim 0.05$--$0.07$ at
+low $p_T$), but closure is only marginally better than nominal for
+\texttt{donutExcl\_noinner} ($\langle|1-r|\rangle = 0.153$ vs.\ nominal $0.185$)
+and slightly \emph{worse} for \texttt{donutFull\_noinner} ($0.197$).
+Cross-section ratios at high $p_T$ are closer to unity ($0.78$--$0.89$) than
+some of the donut variants, but mean deviation is larger than the best donut
+($R_\mathrm{inner}=0.20$) variants.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutFull_noinner.pdf}
+\caption{donutFull\_noinner purity.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\linewidth]{purity_sim_bdt_donutExcl_noinner.pdf}
+\caption{donutExcl\_noinner purity.}
+\end{subfigure}%
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutFull_noinner.pdf}
+\caption{donutFull\_noinner final.}
+\end{subfigure}
+
+\vspace{0.3em}
+
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\linewidth]{final_bdt_donutExcl_noinner.pdf}
+\caption{donutExcl\_noinner final.}
+\end{subfigure}
+\caption{Full-cone (no inner-ring) variants: per-variant MC purity closure
+(top row) and final $d^2\sigma / d\eta\, dp_T$ (bottom row).}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,41 @@
+# oneforall_tree_double_rstat_mask.sub
+#
+# Phase-1 condor submit re-running the 9 tower-mask variants after the
+# mask file was regenerated with the empirical R-distribution z-score
+# (replacing the per-bin Poisson approximation that was invalid for
+# weight-combined MC). 18 period jobs. Nominal is unchanged (doesn't
+# use a mask).
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in (
+    config_bdt_mask_common_harddead_0rad.yaml
+    config_bdt_mask_common_harddead_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt5_0rad.yaml
+    config_bdt_mask_common_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt2_0rad.yaml
+    config_bdt_mask_common_harddead_zlt2_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_0rad.yaml
+    config_bdt_mask_tight_harddead_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt5_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt2_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt2_1p5mrad.yaml
+    config_bdt_mask_or_harddead_0rad.yaml
+    config_bdt_mask_or_harddead_1p5mrad.yaml
+    config_bdt_mask_or_harddead_zlt5_0rad.yaml
+    config_bdt_mask_or_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_or_harddead_zlt2_0rad.yaml
+    config_bdt_mask_or_harddead_zlt2_1p5mrad.yaml
+)

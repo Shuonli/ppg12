@@ -3,7 +3,7 @@ best_val_auc: null
 config:
   data:
     background_files:
-    - shapes_data_npb.txt
+    - shapes_split_data_npb.txt
     background_selection: pid == -1
     et_max: 40.0
     et_min: 6.0
@@ -155,28 +155,28 @@ per_bin_auc_single_model:
     - -1
     - 0
   - !!binary |
-    YGSuI+Li7z8=
+    BsY2Rd+47z8=
   15-20: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    36pdLLnh7z8=
+    03/8MF/D7z8=
   20-25: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    yF73OWbY7z8=
+    Um2g8kZI7z8=
   25-30: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    Lb74tqJ/7z8=
+    aUX3qlbm7j8=
   30-35: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    do5SM49m7z8=
+    LMbeGecK7T8=
   35-40: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    dEu36iux7T8=
+    oAH36ljX7T8=
   5-10: !!python/object/apply:numpy._core.multiarray.scalar
   - *id003
   - !!binary |
-    yR/5CLG/7z8=
+    ed/XvQty7z8=

@@ -1,0 +1,414 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\newcommand{\nown}{$n_{\mathrm{owned}}$}
+\newcommand{\dietag}{$\Delta i_\eta$}
+\newcommand{\diphig}{$\Delta i_\phi$}
+
+\title{Cluster Size vs $E_T$ --- Per-Period, Per-Selection\\[-2pt]
+\large Data vs MC with truth-vertex reweighting and DI mixing}
+\author{PPG12}
+\date{\today}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\noindent
+\textbf{What is plotted.}  Per-cluster mean tower count \nown\ (from
+\texttt{cluster\_ownership\_array}) and 7$\times$7-window bounding-box
+widths \dietag, \diphig\ vs reco $E_T$, split per crossing angle, for
+three orthogonal cluster selections:
+\begin{itemize}
+\item \textbf{baseline}: fiducial $|\eta_{\mathrm{reco}}|<0.7$ and reco
+  vertex $|z_r|<60$\,cm only.
+\item \textbf{common cut}: baseline plus the PPG12 common-region cut
+  block from \texttt{config\_showershape\_\{1p5rad,0rad\}.yaml}
+  (\texttt{cluster\_prob}, $e_{11}/e_{33}<0.98$, $\langle
+  w_{\eta,\mathrm{cogx}}\rangle<2$, NPB score $>0.5$).
+\item \textbf{tight cut}: common plus the parametric tight block
+  (ET-dependent width and energy-fraction bounds and the
+  $\mathtt{base\_v1E}$ BDT threshold
+  $\mathrm{bdt}>-0.02\,E_T + 0.86$).
+\end{itemize}
+Sim weighting uses the data-driven iterative truth-vertex reweight
+$w(z_h)$ from \texttt{efficiencytool/truth\_vertex\_reweight/} (per-period
+\texttt{reweight.root}; method described in
+\texttt{truth\_vertex\_reco\_check.pdf}) consumed the same way
+\texttt{ShowerShapeCheck.C} does.  Data is filtered by run range
+(51274--54000 for 1.5\,mrad, 47289--51274 for 0\,mrad).
+DI mixing uses $\langle y\rangle_{\mathrm{mix}} = (1-f)\langle
+y\rangle_{\mathrm{single}}+f\langle y\rangle_{\mathrm{double}}$
+applied bin-by-bin to the pooled-MC means, with $f=0.079$ (1.5\,mrad)
+or $0.224$ (0\,mrad).
+
+\vspace{0.4em}
+\noindent\textbf{Key findings.}
+All numerical values cited below are measured from the pooled
+TProfiles in the two-bin average $E_T\in[19,21]$\,GeV of the split
+container, after the truth-vertex reweight. See
+Appendix~\ref{app:numbers} for the full table.
+\begin{itemize}
+\item \textbf{At baseline, truth-vertex-reweighted jet MC already tracks
+  data closely.}  At $E_T\!=\!20$\,GeV, 1.5\,mrad:
+  $\langle n_{\mathrm{owned}}\rangle_{\mathrm{data}}\!=\!15.86$ vs
+  $\langle n_{\mathrm{owned}}\rangle_{\mathrm{jet\,MC}}\!=\!15.38$,
+  a \textbf{+0.5-tower gap} (vs +2.3 reported in March without
+  per-period reweighting).  Photon MC baseline is $10.44$ --- the
+  familiar signal/background separation.
+\item \textbf{The common cut removes the noise-like tower excess,
+  preferentially from data.}  At 1.5\,mrad and $E_T\!=\!20$\,GeV,
+  $\langle n_{\mathrm{owned}}\rangle$ drops from $15.86\!\to\!11.01$
+  in data (a 31\% decrease), $15.38\!\to\!14.33$ in jet MC (only 7\%),
+  and $10.44\!\to\!10.39$ in photon MC (essentially unchanged).  The
+  common cut's NPB + $w_\eta$-bound block targets noise/threshold
+  contamination which is far more prevalent in data than in MC.
+\item \textbf{The tight cut converges data, jet MC, and photon MC to
+  the signal cluster size.}  At $E_T\!=\!20$\,GeV, 1.5\,mrad:
+  data tight $9.92$, jet MC tight $10.94$, photon MC tight $10.21$
+  --- a $\pm 5\%$ spread around a common $\sim\!10.4$ tower signal
+  size.  \textbf{Photon-MC tight is the direct comparator for
+  data-tight}: the two agree to $\sim\!3\%$ on $\langle
+  n_{\mathrm{owned}}\rangle$ and $\langle\Delta i_\eta\rangle$
+  across $E_T\in[10,30]$\,GeV.  The residual data$\lesssim$photon-MC
+  tendency in $n_{\mathrm{owned}}$ may reflect the BDT cutting more
+  aggressively on data than on MC and is consistent within
+  statistical errors.
+\item \textbf{The $\eta$-asymmetric excess is selection-driven.}
+  Baseline $\langle\Delta i_\eta\rangle$ shows the largest
+  data$-$MC gap (data $5.65$ vs photon MC $3.78$ at $E_T\!=\!20$,
+  1.5\,mrad); both cuts collapse it to the MC band ($3.63$ after
+  tight).  $\langle\Delta i_\phi\rangle$ is essentially consistent at
+  every stage (data tight $3.82$ vs photon MC tight $3.88$) --- the
+  excess sits preferentially in $\eta$, consistent with the
+  March-report interpretation.
+\item \textbf{Period differences are small after tight selection.}
+  At $E_T\!=\!20$\,GeV, data-tight $\langle
+  n_{\mathrm{owned}}\rangle\!=\!9.92$ (1.5\,mrad) vs $9.98$ (0\,mrad),
+  consistent within statistical errors.  Baseline data differs
+  more visibly between periods: $15.86$ (1.5\,mrad) vs $14.37$
+  (0\,mrad), suggesting the 0\,mrad broader luminous region pushes
+  more clusters to $|z|$ values where the 7$\times$7 window captures
+  less of the shower.  Tight selection absorbs this effect.
+\item \textbf{DI mixing is sub-leading in this selection.}  At
+  1.5\,mrad ($f\!=\!7.9\%$) the DI-blend shift in $\langle
+  n_{\mathrm{owned}}\rangle$ is below $0.1$ tower for every selection.
+  At 0\,mrad ($f\!=\!22.4\%$) the DI blend shifts jet-MC baseline
+  upward by $\sim\!0.3$ towers (visible in Figs.~\ref{fig:cuts_0mrad},
+  dashed blue curves) but drops to below $0.1$ tower after the tight
+  cut.  See Figs.~\ref{fig:di_photon},~\ref{fig:di_jet} for the pure
+  single vs.~double sample-level comparison.
+\end{itemize}
+
+%% =====================================================================
+\section*{1.5\,mrad (nominal period)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/cluster_size/cluster_size_period_overlay_split_1p5mrad.pdf}
+\caption{1.5\,mrad, split container.  Overlay of data and MC at three
+selections: baseline (open markers), common-pass (half-emphasized),
+tight-pass (filled).  The photon-MC tight-pass curve is the direct
+signal-MC comparator for data-tight.  pol2 trend lines are drawn on
+the data and on the tight-pass curves.  Lumi 16.86\,pb$^{-1}$;
+truth-vertex reweight $w(z_h)$ applied per event; DI blending
+bin-by-bin at $f=7.9\%$ (not shown on this overlay — see
+Figs.~\ref{fig:di_photon},~\ref{fig:di_jet}).}
+\label{fig:overlay_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/cluster_size/cluster_size_period_cuts_split_1p5mrad.pdf}
+\caption{1.5\,mrad, split container.  Three metrics
+(rows) $\times$ two selections (columns: common, tight), with the
+DI-blended MC curves drawn as dashed overlays.  Same samples and
+weighting as Fig.~\ref{fig:overlay_1p5}.  This view makes the MC
+pooling (single vs DI-blended) easy to read for each selection
+separately.}
+\label{fig:cuts_1p5}
+\end{figure}
+
+%% =====================================================================
+\section*{0\,mrad (early period)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/cluster_size/cluster_size_period_overlay_split_0mrad.pdf}
+\caption{0\,mrad, split container.  Same overlay format as
+Fig.~\ref{fig:overlay_1p5}.  Lumi 32.66\,pb$^{-1}$;
+truth-vertex reweight is the 0\,mrad \texttt{reweight.root}
+(converged in 7 iterations, cf.\ \texttt{truth\_vertex\_reco\_check.pdf}).
+DI fraction $f=22.4\%$ applied to MC in the DI-blend overlay.}
+\label{fig:overlay_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/cluster_size/cluster_size_period_cuts_split_0mrad.pdf}
+\caption{0\,mrad, split container.  Same layout as
+Fig.~\ref{fig:cuts_1p5} but for the 0\,mrad period.}
+\label{fig:cuts_0mrad}
+\end{figure}
+
+%% =====================================================================
+\section*{Single vs double interaction (pre-cut reference)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/cluster_size/cluster_size_di_photon10.pdf}
+\caption{Photon DI reference: \texttt{photon10\_nom} (blue) vs
+\texttt{photon10\_double} (red), plus the two mixed periods
+($f=7.9\%$ green, $f=22.4\%$ magenta).  Pre-cut, both containers.
+This figure is unchanged from the March short report and does not
+apply the truth-vertex reweight --- it is retained as a direct
+sample-level reference for the DI effect.}
+\label{fig:di_photon}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/cluster_size/cluster_size_di_jet12.pdf}
+\caption{Jet DI reference: \texttt{jet12\_nom} vs
+\texttt{jet12\_double} in the same format as Fig.~\ref{fig:di_photon}.
+DI effect on jet cluster size is several times larger than on photon,
+consistent with softer neighbouring towers getting pushed above the
+70\,MeV threshold.}
+\label{fig:di_jet}
+\end{figure}
+
+%% =====================================================================
+\section*{2D cluster-size vs $E_T$ and shapes by $E_T$ bin}
+
+\noindent The TProfile views in Figs.~\ref{fig:overlay_1p5}--\ref{fig:cuts_0mrad}
+collapse the distribution of each cluster-size metric to its per-bin mean.
+To expose non-Gaussian tails, ET-dependent shape evolution, and the sample-to-sample
+shape agreement beyond the mean, the ClusterSizeStudy macro now also books
+TH2F histograms of (metric $\times$ cluster $E_T$) per selection.  The 1D-binned-by-$E_T$
+panels below are \emph{projections} of those TH2Fs in the standard PPG12 reco-$p_T$ bins
+($8,10,12,14,16,18,20,22,24,26,28,32,36$\,GeV, from \texttt{plotting/plotcommon.h}).
+All figures use the tight selection (the common/baseline variants are also produced
+in \texttt{reports/figures/cluster\_size/} with filenames
+\texttt{cluster\_size\_\{2d,1d\_byet\}\_\{metric\}\_\{baseline,common\}\_split\_\{period\}.pdf}
+and are available on request).
+
+\subsection*{1.5\,mrad, tight selection}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_n_owned_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $n_{\mathrm{owned}}$ vs cluster $E_T$ for data (left),
+pooled photon MC (middle), pooled jet MC (right).  Log-$z$.  Tight selection
+converges all three samples to a narrow signal-like band in $E_T$--$n_{\mathrm{owned}}$.}
+\label{fig:2d_nowned_tight_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_n_owned_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $n_{\mathrm{owned}}$ distribution in each of the 12
+PPG12 reco-$p_T$ bins, normalized to unit area.  Data (black), pooled photon
+MC (red open), pooled jet MC (blue open).  The agreement between data and
+photon-MC is bin-by-bin consistent across $E_T\in[10,30]$\,GeV.}
+\label{fig:1dbyet_nowned_tight_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_width_eta_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $\Delta i_\eta$ vs $E_T$, same layout as
+Fig.~\ref{fig:2d_nowned_tight_1p5}.  The data $\eta$-excess is absorbed by the
+tight cut; the 2D view shows the selection cleans the high-$\Delta i_\eta$ tail.}
+\label{fig:2d_weta_tight_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_width_eta_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $\Delta i_\eta$ distributions per $E_T$ bin.
+Data $\Delta i_\eta$ shape matches photon-MC after the tight cut, consistent
+with the mean agreement in Table~\ref{tab:numbers}.}
+\label{fig:1dbyet_weta_tight_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_width_phi_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $\Delta i_\phi$ vs $E_T$.  The $\phi$ direction is
+already in good agreement before the tight cut; the 2D view confirms the shape
+agreement is uniform across $E_T$.}
+\label{fig:2d_wphi_tight_1p5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_width_phi_tight_split_1p5mrad.pdf}
+\caption{1.5\,mrad, tight.  $\Delta i_\phi$ distributions per $E_T$ bin.}
+\label{fig:1dbyet_wphi_tight_1p5}
+\end{figure}
+
+\subsection*{0\,mrad, tight selection}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_n_owned_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $n_{\mathrm{owned}}$ vs cluster $E_T$ (data / photon MC / jet MC).}
+\label{fig:2d_nowned_tight_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_n_owned_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $n_{\mathrm{owned}}$ distributions per $E_T$ bin.}
+\label{fig:1dbyet_nowned_tight_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_width_eta_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $\Delta i_\eta$ vs $E_T$.}
+\label{fig:2d_weta_tight_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_width_eta_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $\Delta i_\eta$ distributions per $E_T$ bin.}
+\label{fig:1dbyet_weta_tight_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_2d_width_phi_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $\Delta i_\phi$ vs $E_T$.}
+\label{fig:2d_wphi_tight_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/cluster_size/cluster_size_1d_byet_width_phi_tight_split_0mrad.pdf}
+\caption{0\,mrad, tight.  $\Delta i_\phi$ distributions per $E_T$ bin.}
+\label{fig:1dbyet_wphi_tight_0mrad}
+\end{figure}
+
+%% =====================================================================
+\section*{Methods, caveats, reproducibility}
+
+\textbf{Cuts.}  The common and tight blocks are loaded verbatim from
+the showershape configs.  The tight BDT threshold uses the
+\texttt{base\_v1E} model (the dominant ET-binned PPG12 choice) with the
+ET-dependent threshold $\mathrm{bdt}>-0.02\,E_T+0.86$ and the fixed
+parametric $\mathrm{et1}$, $\langle w_\eta\rangle$, $\langle
+w_\phi\rangle$ bounds from \texttt{tight:} in the YAML.  The common
+block uses $\mathrm{prob}\in[0,1]$, $e_{11}/e_{33}\in[0,0.98]$, NPB
+score $>0.5$, $\langle w_{\eta,\mathrm{cogx}}\rangle<2$.
+
+\textbf{Vertex reweighting.}  The nominal method is the data-driven
+iterative truth-vertex reweight $w(z)$ consumed by
+\texttt{ShowerShapeCheck.C} via \texttt{truth\_vertex\_reweight\_on:
+1} in the showershape configs and the \texttt{h\_w\_iterative}
+histogram in \texttt{reweight.root}.  Per event, the MC weight is
+multiplied by $w(z_h)$ for single-interaction MC and by
+$w(z_h)\,w(z_\mathrm{mb})$ for double-interaction MC.  \textit{Caveat}:
+the present \texttt{photon10\_double} and \texttt{jet12\_double}
+\texttt{bdt\_split.root} files were produced before the
+\texttt{vertexz\_truth\_mb} branch was added to the anatreemaker
+output, so the secondary-vertex factor is silently dropped for those
+two samples --- an optional-pointer guard identical to the one in
+\texttt{ShowerShapeCheck.C}.  The impact on cluster-size means is
+expected to be below the percent level at 1.5\,mrad (where the DI
+blend fraction is only 7.9\%) and sub-percent at 0\,mrad (where the
+MC beam profile is already close to the luminous region). Regenerating
+these two \texttt{bdt\_split.root} files from the reprocessed
+\texttt{combined.root} (which does carry \texttt{vertexz\_truth\_mb})
+is a follow-up and would remove this caveat.
+
+\textbf{DI mixing.}  Applied bin-by-bin at the pooled-MC level:
+$\langle y\rangle_{\mathrm{mix}}(E_T) = \langle
+y\rangle_{\mathrm{single\ pool}}(E_T) + f\,
+[\,\langle y\rangle_{\texttt{photon10\_double}}(E_T) -
+  \langle y\rangle_{\texttt{photon10}}(E_T)\,]$
+(and analogously for the jet pool with
+\texttt{jet12\_double}/\texttt{jet12}), which avoids biasing the blend
+by the per-sample event counts.  The pooled single-MC uses unit
+sample-weights within each class and takes the cross-section-weighted
+mean via \texttt{TProfile::Add}.
+
+\textbf{No-split container.}  The \texttt{photon10\_double} and
+\texttt{jet12\_double} production predates the dual-container
+\texttt{apply\_BDT.C}, so the no-split container lacks BDT and NPB
+branches for those two samples.  The cuts figures for the no-split
+container therefore \emph{do not} include DI-blended MC; the baseline
+plots include all samples.
+
+\textbf{Reproducibility.}
+\begin{verbatim}
+cd efficiencytool
+PERIOD=1p5mrad PARALLEL=6 bash run_cluster_size.sh
+PERIOD=0mrad  PARALLEL=6 bash run_cluster_size.sh
+cd ../plotting
+root -l -b -q 'plot_cluster_size_cuts.C+g'   # TProfile means (existing)
+root -l -b -q 'plot_cluster_size_2d.C'       # 2D + 1D-by-ET (new)
+\end{verbatim}
+
+\appendix
+\section{\texorpdfstring{Per-selection numerical values at $E_T\simeq 20$\,GeV}{Per-selection numerical values at ET ~ 20 GeV}}
+\label{app:numbers}
+
+Table values are the mean over bin centres $19.5$ and $20.5$\,GeV of
+the split-container pooled TProfiles, for each period and each of the
+three selections.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llrrrrrr}
+\toprule
+ & & \multicolumn{3}{c}{1.5\,mrad} & \multicolumn{3}{c}{0\,mrad}\\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+metric & sample & baseline & common & tight & baseline & common & tight \\
+\midrule
+$\langle n_{\mathrm{owned}}\rangle$   & data   & 15.86 & 11.01 & 9.92 & 14.37 & 11.77 & 9.98 \\
+                                      & photon & 10.44 & 10.39 & 10.21 & 10.56 & 10.51 & 10.32 \\
+                                      & jet    & 15.38 & 14.33 & 10.94 & 15.51 & 14.59 & 11.05 \\
+\midrule
+$\langle \Delta i_\eta\rangle$         & data   &  5.65 &  3.90 & 3.63 &  5.10 &  4.15 & 3.66 \\
+                                      & photon &  3.78 &  3.77 & 3.72 &  3.83 &  3.82 & 3.76 \\
+                                      & jet    &  4.81 &  4.63 & 3.84 &  4.85 &  4.69 & 3.88 \\
+\midrule
+$\langle \Delta i_\phi\rangle$         & data   &  4.24 &  4.03 & 3.82 &  4.19 &  4.06 & 3.80 \\
+                                      & photon &  3.93 &  3.91 & 3.88 &  3.93 &  3.91 & 3.88 \\
+                                      & jet    &  4.95 &  4.76 & 4.16 &  4.96 &  4.79 & 4.17 \\
+\bottomrule
+\end{tabular}
+\caption{Cluster-size means in the bin centre $E_T\in[19,21]$\,GeV,
+split container, truth-vertex-reweighted MC.  Values read from
+the per-period TProfiles in
+\texttt{results/cluster\_size\_cuts\_PERIOD\_SAMPLE.root}
+(PERIOD is either 1p5mrad or 0mrad).
+Photon pool is photon5+photon10+photon20; jet pool is
+jet5+jet8+jet12+jet20+jet30+jet40.  DI blending is applied in the
+figures only, not in this table, to separate the single-MC pool
+values from the DI-blend overlay.}
+\label{tab:numbers}
+\end{table}
+
+\vspace{0.4em}
+\noindent\textbf{Full narrative report:}
+\href{https://shuonli.github.io/ppg12/}{\nolinkurl{cluster_size_vs_et.pdf}}
+has the sample inventory, detailed per-figure observations, and
+noise/threshold follow-up discussion that is cross-referenced from the
+summary bullets above.
+
+\end{document}

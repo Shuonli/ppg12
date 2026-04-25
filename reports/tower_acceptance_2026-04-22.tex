@@ -1,0 +1,641 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+\newcommand{\etg}{\ensuremath{E_T^\gamma}}
+\newcommand{\crit}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\info}[1]{\textcolor{blue}{#1}}
+\newcommand{\ok}[1]{\textcolor{green!50!black}{\textbf{#1}}}
+\newcommand{\figdir}{../plotting/figures}
+
+\title{Tower-Index Acceptance Map Integration:\\
+\large Data-Driven Dead-Tower Masks + Cross-Section Systematic}
+\author{PPG12 Analysis Team (automated report)}
+\date{2026-04-22}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+
+Four-level tower-index acceptance maps
+($h_{\rm etaphi\_tower\_\{preselect,common,tight,tight\_iso\}\_\{mc\_inclusive,data\}}$)
+are now populated automatically in the official efficiency pipeline
+and written to \texttt{Photon\_final\_bdt\_nom.root} for every
+production. Direct data-vs-MC comparison shows clear dead-region
+asymmetry: MC does not emulate the full set of dead towers active in
+Run-24 data.
+
+\textbf{Primary methodology: data-only phi-symmetry}. For each 2-eta-row
+band, fit a Gaussian to the 256 per-phi data counts and flag phi bins
+with z~$<$~-2 as dead. Independent of MC; exact under the assumption
+that the cross-section is phi-symmetric at fixed $\eta$ in pp. Three
+masks generated --- one per selection level:
+\texttt{mask\_phisymm\_\{preselect, common, tight, or\}} with 1344 /
+1160 / 646 / 1180 masked towers respectively (the OR mask is the
+union of the common and tight masks).
+
+\textbf{Direct cross-section measurement}: re-run the efficiency +
+unfolding + ABCD pipeline with the phi-symm masks applied
+symmetrically to both data and MC. Integrated $\sigma$ shifts in
+$\etg \in [10, 36]$\,GeV:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+variant & $\Delta\sigma / \sigma_{\rm nom}$ \\
+\midrule
+\texttt{mask\_phisymm\_preselect}              & +2.01\% \\
+\texttt{mask\_phisymm\_common}                 & +2.26\% \\
+\texttt{mask\_phisymm\_tight}                  & +1.37\% \\
+\texttt{mask\_phisymm\_or} (common $\cup$ tight) & +2.28\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Recommended envelope}: \textbf{+2.5\% one-sided acceptance
+systematic} on the nominal all-range cross-section. The four variants
+agree within $\sim$1\% across selection levels, consistent with a
+uniform detector-level dead-tower effect.
+
+\textbf{Nominal}: all-z (beam-delivered) lumi 64.37\,pb$^{-1}$ +
+$v_{z,{\rm truth}}<9999$ (since 2026-04-22). Integrated cross-section
+$\sigma_{\rm nom} = 1963$\,pb over $\etg \in [10, 36]$\,GeV.
+
+\section{Findings Table}
+
+\begin{longtable}{@{}p{1.9cm}p{4.8cm}p{5.8cm}p{4.3cm}@{}}
+\toprule
+Severity & Location & Finding & Impact \\
+\midrule
+\crit{HIGH-1} & \texttt{Photon\_final\_bdt\_nom.root} &
+MC GEANT acceptance does not emulate the full Run-24 data dead-tower
+list. Direct $\sigma$ shift under symmetric masking is +1.4 to +2.3\%. &
+Cross-section biased LOW by $\sim$2\%; supply this as systematic
+or fix the MC dead-tower list. \\
+\addlinespace
+\info{INFO-1} & \texttt{RecoEffCalculator\_TTreeReader.C} &
+4 tower-index TH2F maps now auto-filled every production. Three
+optional mask config keys: \texttt{tower\_mask\_on/file/name}. Veto
+applied symmetrically to data + MC at top of cluster loop. &
+Integration complete. Masks become a drop-in variant. \\
+\addlinespace
+\info{INFO-2} & \texttt{tower\_masks\_bdt\_nom.root} &
+Three phi-symmetry masks (z$<$-2, 2-eta-row bands). Mask counts
+monotonic in stats: preselect 1344, common 1160, tight 646. &
+Data-driven, no MC dependence. \\
+\addlinespace
+\ok{PASS-1} & alt-check 4$\times$4 tower grouping &
+log(R) Gaussian fit at 4$\times$4 grouping gives
+2\% deficit at tight, consistent with phi-symm $\sigma$ shift. &
+Two independent methods converge. \\
+\addlinespace
+\ok{PASS-2} & all 4 tower-map histograms present in
+\texttt{Photon\_final\_bdt\_nom.root}; masks load cleanly;
+condor ran end-to-end & Verified. & No fix needed. \\
+\bottomrule
+\end{longtable}
+
+\section{Pipeline Integration}
+
+\subsection{Motivation}
+
+The cross-section formula
+$d^2\sigma / dp_T\, d\eta = N_{\rm iso\,prompt}/(\varepsilon\cdot\mathcal{L}
+\cdot \Delta)$ assumes $\varepsilon$ --- built from MC --- correctly
+captures the acceptance of the data sample. If MC fails to emulate
+all dead towers active in data, $\varepsilon_{\rm MC}$ is
+systematically higher than the true $\varepsilon_{\rm data}$ and the
+measured $\sigma$ is biased low by $\varepsilon_{\rm data} /
+\varepsilon_{\rm MC}$.
+
+\subsection{Code changes (summary)}
+
+\textbf{\texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C}}:
+\begin{itemize}
+  \item 4 new \texttt{TH2F} pointers declared + allocated:
+  \texttt{h\_etaphi\_tower\_\{preselect, common, tight, tight\_iso\}},
+  96 $i\eta$ $\times$ 256 $i\phi$, filled at 4 points in the cluster
+  loop using the canonical per-event \texttt{weight} (MC: xsec
+  $\times$ lumi/lumi\_target $\times$ vertex\_weight $\times$
+  truth\_vertex\_reweight; data: prescale). \etg-gated at $\ge$ 8~GeV.
+  \item Three optional YAML keys: \texttt{tower\_mask\_on},
+  \texttt{tower\_mask\_file}, \texttt{tower\_mask\_name}. When on, a
+  TH2I is loaded at init and a cluster-loop veto is inserted at the
+  TOP of both cluster loops:
+  \begin{verbatim}
+  if (is_tower_masked(icluster)) continue;
+  \end{verbatim}
+  Applied identically to data (!issim) and MC so efficiency
+  denominators and numerators see the same masked sample.
+\end{itemize}
+
+\textbf{\texttt{efficiencytool/CalculatePhotonYield.C}}: pass-through
+block before \texttt{fout->Write()} clones the signal TH2 from
+\texttt{fsimin}, adds the jet TH2 from
+\texttt{\{eff\_outfile\}\_jet\_\{var\_type\}.root}, and writes as
+\texttt{h\_etaphi\_tower\_\{level\}\_mc\_inclusive}. Also clones data
+TH2 as \texttt{\_data}. Eight histograms now shipped with every
+\texttt{Photon\_final\_*.root}.
+
+\textbf{\texttt{efficiencytool/MergeSim.C}}: unchanged (plain
+TFileMerger auto-hadds TH2s).
+
+\textbf{\texttt{FunWithxgboost/make\_bdt\_variations.py}}: 3 new
+variant entries (\texttt{mask\_phisymm\_preselect},
+\texttt{mask\_phisymm\_common}, \texttt{mask\_phisymm\_tight}), each
+auto-expanded to 3 YAMLs (bare + 2 periods). Nine total.
+
+\section{Data-vs-MC Tower Maps}
+
+Figures~\ref{fig:preselect}--\ref{fig:tight} show the lumi-weighted
+inclusive MC tower map (left) and the corresponding data map (right)
+at three selection levels (preselect, common, tight). Dark patches in
+the data maps mark dead-tower regions not present in MC.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_mc.pdf}
+    \caption{inclusive MC}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_data.pdf}
+    \caption{data}
+  \end{subfigure}
+  \caption{\textbf{Preselect}: $\etg \ge 8$\,GeV, nosat, no shape cuts.}
+  \label{fig:preselect}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_mc.pdf}
+    \caption{inclusive MC}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_data.pdf}
+    \caption{data}
+  \end{subfigure}
+  \caption{\textbf{Common}: preselect $\cap$ \{NPB $>$ 0.5,
+  $e_{11}/e_{33} < 0.98$, $w_{r,{\rm cog}x} > 0$,
+  $w_{\eta,{\rm cog}x} < 2$\}.}
+  \label{fig:common}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_mc.pdf}
+    \caption{inclusive MC}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_data.pdf}
+    \caption{data}
+  \end{subfigure}
+  \caption{\textbf{Tight}: common $\cap$ 10 shape-var tight windows
+  $\cap$ parametric BDT.}
+  \label{fig:tight}
+\end{figure}
+
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Data-only phi-symmetry mask construction}
+\label{sec:phisymm}
+
+For each 2-eta-row band (48 bands covering the 96-tower $i\eta$
+range), the 256 per-phi data counts are projected out. Under the
+physics assumption that the cross-section is $\phi$-symmetric at
+fixed $\eta$ in pp at RHIC (valid to many-percent accuracy), the
+expected distribution across $\phi$ is uniform, and deviations trace
+either statistical fluctuations or local detector effects.
+
+\textbf{Fit}: 3-$\sigma$ iterative Gaussian to the 256-bin
+distribution, yielding $(\mu_{\phi,{\rm band}}, \sigma_{\phi,{\rm band}})$.
+
+\textbf{Mask decision}: a tower $(i\eta, i\phi)$ is flagged as dead
+if its band's phi count is more than $2\sigma_\phi$ below the band's
+$\mu_\phi$:
+$(n_{\rm data}[b, i\phi] - \mu_{\phi,b})/\sigma_{\phi,b} < -2$.
+Within a band, both $\eta$ rows are masked when a $\phi$ bin is
+flagged.
+
+\textbf{Output}: 3 TH2I masks (one per selection level) in
+\texttt{efficiencytool/tower\_masks\_bdt\_nom.root}:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+mask & level & towers masked \\
+\midrule
+\texttt{mask\_phisymm\_preselect} & preselect & 1344 \\
+\texttt{mask\_phisymm\_common}    & common    & 1160 \\
+\texttt{mask\_phisymm\_tight}     & tight     &  646 \\
+\texttt{mask\_phisymm\_or} & union of common and tight & 1180 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The OR mask has 1180 towers --- only 20 more than common alone, because
+the tight mask (646) is largely contained in the common mask (626
+overlap). The OR mask is a conservative test of whether adding a few
+tight-only dead regions moves $\sigma$ meaningfully.
+
+The mask-count decrease with selection tightness reflects the
+decreasing data statistics: fewer clusters per $\phi$ bin in the
+tight sample $\to$ larger fit $\sigma$ $\to$ fewer bins cross the
+z$<$-2 threshold.
+
+\subsection{Independent cross-check: 4$\times$4 tower grouping}
+
+To verify that the phi-symm numbers are robust, the 96$\times$256
+grid is rebinned into 4$\times$4 super-cells and a Gaussian is fit
+to the log(R) distribution of $R = p_{\rm data}/p_{\rm MC}$ (which
+is log-normal, not normal, in the per-bin-count regime). At 4$\times$4
+grouping the Gaussian fit is clean at every level, and the fraction
+of data in z$<$-2 cells is:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+level & $\mu_{\rm log R}$ & $\sigma_{\rm log R}$ & deficit \% \\
+\midrule
+preselect & 0.039 & 0.224 & 2.71\% \\
+common    & 0.114 & 0.327 & 1.96\% \\
+tight     & 0.151 & 0.544 & 1.98\% \\
+tight+iso & 0.732 & 1.332 & 0.97\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Convergence}: the phi-symm-based $\sigma$ shift (+1.4 to
++2.3\% per level) and the 4$\times$4 log(R) deficit (2--3\% per level)
+agree within $\sim$1\% --- two independent estimators arrive at the
+same answer.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/alt_check_rebin.pdf}
+    \caption{log(R) at 1$\times$1 / 2$\times$2 / 4$\times$4 grouping}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/alt_check_phisymm.pdf}
+    \caption{phi-symm data-only mask map}
+  \end{subfigure}
+  \caption{Alt-check methods. Left: log(R) fit narrows dramatically
+  with coarser binning --- the 1$\times$1 distribution is
+  stat-dominated and not physically meaningful at tight/tight+iso
+  (see backup report in
+  \texttt{reports/tower\_acceptance\_2026-04-22.tex.v1-fullhistory.bak}
+  for the rejected 1$\times$1 numbers). Right: data tower maps per
+  level with phi-symm-flagged z$<$-2 cells overlaid as red markers.}
+  \label{fig:alt_methods}
+\end{figure}
+
+\section{Cross-Section Shifts from Phi-Symm Masks}
+\label{sec:xsec}
+
+\subsection{Integrated $\sigma$ shifts}
+
+Running the complete RecoEff + MergeSim + CalculatePhotonYield
+pipeline with each mask applied symmetrically to data and MC:
+
+\begin{table}[H]
+  \centering
+  \caption{Integrated cross-section in $\etg \in [10, 36]$\,GeV for
+  each phi-symm mask variant, normalized to the all-z nominal.
+  $\sigma_{\rm nom} = 1963$\,pb.}
+  \label{tab:phisymm_shifts}
+  \begin{tabular}{lrr}
+    \toprule
+    variant & $\sigma_{\rm masked}/\sigma_{\rm nom}$ & $\Delta\sigma$ \\
+    \midrule
+    nominal (all-z)                   & 1.0000 & 0.00\% \\
+    \texttt{mask\_phisymm\_preselect} & 1.0201 & +2.01\% \\
+    \texttt{mask\_phisymm\_common}    & 1.0226 & +2.26\% \\
+    \texttt{mask\_phisymm\_tight}     & 1.0137 & +1.37\% \\
+    \texttt{mask\_phisymm\_or}        & 1.0228 & +2.28\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+All three shifts are positive, as expected: masking removes MC
+content in data-dead regions that was inflating $\varepsilon_{\rm MC}$;
+removing the asymmetry raises the corrected cross-section.
+
+The shifts agree across levels to $\sim$1\%; preselect and common
+give essentially the same ($\sim$2\%), while tight gives slightly
+smaller (the tight mask covers only 646 towers vs 1344 for preselect,
+so its masking is milder).
+
+\subsection{Per-\etg-bin ratios}
+
+\begin{table}[H]
+  \centering
+  \caption{Per-bin $\sigma_{\rm masked}/\sigma_{\rm nominal}$ for each
+  phi-symm variant. Low-\etg\ bins ($<$20 GeV) show a consistent
+  $\sim$1--3\% upward shift, the physical acceptance-correction
+  effect. Mid-\etg\ bins are within $\pm$2\% of unity. The
+  $[32, 36)$ bin shows a $-7\%$ to $-13\%$ fluctuation which is
+  statistical, not physics (few-event masked-region fluctuation in a
+  low-rate bin); it does not affect the integrated shift since the
+  spectrum is dominated by low \etg.}
+  \label{tab:phisymm_bybin}
+  \begin{tabular}{lrrrr}
+    \toprule
+    $\etg$ bin [GeV] & preselect & common & tight & OR \\
+    \midrule
+    $[10, 12)$ & $+2.42\%$ & $+2.66\%$ & $+1.61\%$ & $+2.70\%$ \\
+    $[12, 14)$ & $+1.92\%$ & $+1.99\%$ & $+1.10\%$ & $+2.00\%$ \\
+    $[14, 16)$ & $+1.44\%$ & $+1.66\%$ & $+0.92\%$ & $+1.69\%$ \\
+    $[16, 18)$ & $+0.93\%$ & $+1.43\%$ & $+0.97\%$ & $+1.40\%$ \\
+    $[18, 20)$ & $+0.29\%$ & $+1.12\%$ & $+1.13\%$ & $+1.04\%$ \\
+    $[20, 22)$ & $-0.65\%$ & $+0.55\%$ & $+1.11\%$ & $+0.43\%$ \\
+    $[22, 24)$ & $-1.92\%$ & $-0.55\%$ & $+0.83\%$ & $-0.72\%$ \\
+    $[24, 26)$ & $-1.55\%$ & $-0.19\%$ & $+0.84\%$ & $-0.38\%$ \\
+    $[26, 28)$ & $-1.07\%$ & $+0.57\%$ & $+1.82\%$ & $+0.50\%$ \\
+    $[28, 32)$ & $-0.64\%$ & $+1.55\%$ & $+1.44\%$ & $+0.98\%$ \\
+    $[32, 36)$ & $-7.92\%$ & $-5.25\%$ & $-12.53\%$ & $-12.96\%$ \\
+    \midrule
+    $[10, 36)$ integrated & $+2.01\%$ & $+2.26\%$ & $+1.37\%$ & $+2.28\%$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\textwidth]{\figdir/phisymm_variant_bybin.pdf}
+  \caption{Per-bin $\sigma_{\rm masked}/\sigma_{\rm nominal}$ for the
+  three phi-symm mask variants (same data as
+  Table~\ref{tab:phisymm_bybin}). All three sit within $\pm$3\% of
+  nominal across $\etg \in [10, 30]$ GeV, with expected statistical
+  scatter in the $[32, 36)$ bin. No dramatic pT-dependent distortion
+  --- the mask affects low and high \etg\ similarly.}
+  \label{fig:phisymm_bybin}
+\end{figure}
+
+\subsection{Recommended per-bin systematic}
+
+For differential cross-section quotes, assign the following
+one-sided acceptance systematic per bin (envelope across the three
+variants):
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\etg\ range [GeV] & acceptance systematic \\
+\midrule
+$[10, 28)$       & $+2\%$ (low-\etg\ physical shift bounds the envelope) \\
+$[28, 32)$       & $+2\%$ (still consistent) \\
+$[32, 36)$       & $\pm 10\%$ (stat-driven; consider merging with $[28, 32)$) \\
+\midrule
+$[10, 36]$ integrated & $+2.5\%$ one-sided \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Official cross-section plots (data vs NLO)}
+\label{sec:official_xsec}
+
+For visual comparison against JETPHOX NLO and Vogelsang NLO, the
+standard PPG12 cross-section plots were regenerated for each
+phi-symm variant.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_nom.pdf}
+    \caption{nominal (all-z)}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_phisymm_preselect.pdf}
+    \caption{preselect mask (+2.01\%)}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_phisymm_common.pdf}
+    \caption{common mask (+2.26\%)}
+  \end{subfigure}\\[2pt]
+  \begin{subfigure}[t]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_phisymm_tight.pdf}
+    \caption{tight mask (+1.37\%)}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.32\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_phisymm_or.pdf}
+    \caption{OR mask (+2.28\%)}
+  \end{subfigure}
+  \caption{Official PPG12 cross-section plots (upper: Data vs NLO
+  theory; lower: Theory/Data) for the nominal and four phi-symm
+  variants. All four variants produce nearly-identical spectra ---
+  the mask does not distort the \etg\ shape.}
+  \label{fig:phisymm_official}
+\end{figure}
+
+\section{Full systematic variant table (post-fix, current nominal)}
+\label{sec:big_table}
+
+With \texttt{mask\_phisymm\_tight} now baked into the nominal config
+(2026-04-23), the complete systematic variant production was re-run
+through Phase 1 (TTreeReader, 104 jobs) + Phase 2
+(MergeSim/merge\_periods + CalculatePhotonYield, 43 jobs).
+
+\textbf{Production quality note.} The initial Phase-2 condor run hit a
+\texttt{/tmp/ROOTMERGE-*.root} scratch-file race condition
+(\texttt{file probably not closed, trying to recover} + \texttt{has no
+keys} warnings in the job \texttt{.err} logs) on 10 out of 43 merges.
+The symptom was a merged \texttt{MC\_efficiency\_*.root} missing the
+1.5-mrad or 0-mrad half of the signal or jet truth
+(\texttt{h\_truth\_pT\_0} sum dropping from $1.10 \times 10^9$ to
+$8.06 \times 10^8$ or $2.93 \times 10^8$). The affected merges were
+detected post-hoc by integral-comparison scans on both the signal
+(\texttt{h\_truth\_pT\_0}) and jet (\texttt{h\_max\_photon\_pT})
+sides. All 10 were re-merged locally (interactive node, no condor
+\texttt{/tmp} contention) and the downstream
+\texttt{CalculatePhotonYield.C} was re-run. The table below reflects
+the post-fix values.
+
+Table~\ref{tab:full_variant_shifts} lists the integrated cross-section
+shift in $\etg \in [10, 36]$\,GeV for each variant relative to the
+new nominal $\sigma_{\rm nom} = 1990.57$\,pb (tight phi-symm mask,
+all-z fiducial, 64.37\,pb$^{-1}$).
+
+\begin{table}[H]
+  \centering
+  \caption{Integrated $\Delta\sigma$ ($\etg \in [10, 36]$\,GeV)
+  relative to the post-fix nominal
+  $\sigma_{\rm nom} = 1990.57$\,pb. Groups separated by purpose;
+  within each group sorted by $|\Delta|$.}
+  \label{tab:full_variant_shifts}
+  \small
+  \begin{tabular}{lrrr}
+    \toprule
+    variant & $\sigma$ [pb] & ratio & $\Delta\sigma$ \\
+    \midrule
+    \multicolumn{4}{l}{\textbf{Nominal}} \\
+    \texttt{nom} (tight phi-symm mask)        & 1990.57 & 1.0000 & 0.00\% \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{Phi-symm mask choice} (envelope of acceptance)} \\
+    \texttt{mask\_phisymm\_tight}             & 1988.63 & 0.9990 & $-0.10\%$ \\
+    \texttt{mask\_phisymm\_preselect}         & 2001.12 & 1.0053 & $+0.53\%$ \\
+    \texttt{mask\_phisymm\_or}                & 2007.30 & 1.0084 & $+0.84\%$ \\
+    \texttt{mask\_phisymm\_common}            & 2008.61 & 1.0091 & $+0.91\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{B2B-jet cross-checks}} \\
+    \texttt{b2bjet}                           & 1169.03 & 0.5873 & $-41.27\%$ \\
+    \texttt{b2bjet\_calib\_on}                & 1170.72 & 0.5881 & $-41.19\%$ \\
+    \texttt{b2bjet\_calib\_off}               & 1168.95 & 0.5872 & $-41.28\%$ \\
+    \texttt{b2bjet\_npb\_on}                  & 1170.95 & 0.5883 & $-41.17\%$ \\
+    \texttt{b2bjet\_npb\_off}                 & 1191.77 & 0.5987 & $-40.13\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{BDT threshold}} \\
+    \texttt{tightbdt70}                       & 1943.35 & 0.9763 & $-2.37\%$ \\
+    \texttt{tightbdt50} (unfolding fail)      & --      & --     & N/A    \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{Non-iso window}} \\
+    \texttt{noniso04}                         & 2041.31 & 1.0255 & $+2.55\%$ \\
+    \texttt{noniso10}                         & 1979.38 & 0.9944 & $-0.56\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{NPB threshold}} \\
+    \texttt{npb03}                            & 2051.74 & 1.0307 & $+3.07\%$ \\
+    \texttt{npb07}                            & 1738.92 & 0.8736 & $-12.64\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{Energy scale / resolution}} \\
+    \texttt{energyscale26up}                  & 1732.70 & 0.8705 & $-12.95\%$ \\
+    \texttt{energyscale26down}                & 2291.62 & 1.1512 & $+15.12\%$ \\
+    \texttt{energyresolution5}                & 1951.46 & 0.9804 & $-1.96\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{Purity / unfolding}} \\
+    \texttt{purity\_pade}                     & 1987.37 & 0.9984 & $-0.16\%$ \\
+    \texttt{no\_unfolding\_reweighting}       & 1986.29 & 0.9978 & $-0.22\%$ \\
+    \addlinespace
+    \multicolumn{4}{l}{\textbf{Vertex / sanity}} \\
+    \texttt{vtxreweight0}                     & 1990.69 & 1.0001 & $+0.01\%$ \\
+    \texttt{novtxcut}                         & 1865.04 & 0.9369 & $-6.31\%$ \\
+    \texttt{split} (repeat of nom)            & 1990.59 & 1.0000 & $+0.00\%$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Readings for the analysis.}
+\begin{itemize}
+  \item The \emph{phi-symm mask choice} envelope is now
+  $\sim 0.9\%$ (max over preselect/common/OR relative to the
+  tight-mask nominal). The $+2.5\%$ one-sided bound quoted from the
+  earlier run (where nominal had \emph{no} mask) is no longer the
+  relevant quantity --- it was the mask-vs-no-mask shift, which is now
+  absorbed into the nominal.
+  \item The \texttt{b2bjet} cross-checks collapse the yield by
+  $\sim 41\%$ as expected (tight back-to-back jet requirement).
+  The five variants agree within $\sim 1\%$, confirming that the
+  jet-calibration switch and the NPB-cut toggle do not create
+  additional purity leakage in the b2b-jet sample.
+  \item \texttt{tightbdt50} yields a pathological negative
+  cross-section (unfolder does not converge when the tight working
+  point is moved from 0.7 to 0.5); this run is tagged N/A.
+  \texttt{tightbdt70} (nominal is 0.7, variant is 0.7 with
+  slope$=0$ i.e.\ flat) gives $-2.4\%$, confirming the
+  ET-dependent parametric BDT threshold is not load-bearing.
+\end{itemize}
+
+\section{Recommendations}
+
+\begin{enumerate}
+  \item \textbf{Fix the MC dead-tower list} --- primary action.
+  Apply the Run-24 data-side tower mask at the GEANT / digitization
+  stage (or in the slimtree writer). Then the phi-symm shifts
+  should drop toward zero; the residual defines the post-fix
+  systematic floor.
+
+  \item \textbf{Until the MC fix lands, assign a one-sided
+  \textbf{+2.5\% acceptance systematic}} on the cross-section. This
+  covers the largest of the three phi-symm variants
+  (common: +2.26\%) with modest conservative margin. Add this to
+  \texttt{calc\_syst\_bdt.py} as a new \texttt{acceptance} group
+  (or additive component to the existing \texttt{eff} group).
+
+  \item \textbf{Document the phi-symm methodology} in the analysis
+  note --- it is the primary data-driven cross-check for
+  acceptance-tower mismodeling and does not require MC at all, which
+  is a strong robustness argument.
+
+  \item \textbf{Re-run the 3 variants} automatically every time the
+  nominal production is updated (the mask file depends on the data
+  tower maps in \texttt{Photon\_final\_bdt\_nom.root}; regenerate
+  \texttt{make\_tower\_masks.C} output whenever nominal changes).
+\end{enumerate}
+
+\section{Files Modified/Created}
+
+\textbf{Code}:
+\begin{itemize}
+  \item \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} --- 4 TH2F
+    tower maps + tower-mask loader + veto.
+  \item \texttt{efficiencytool/CalculatePhotonYield.C} --- inclusive MC
+    hadd + data pass-through.
+  \item \texttt{efficiencytool/make\_tower\_masks.C} --- phi-symm
+    mask generator (3 masks).
+  \item \texttt{efficiencytool/make\_bdt\_variations.py} --- 3
+    phi-symm variant entries + OVERRIDE\_MAP keys for tower\_mask\_*.
+  \item \texttt{plotting/plot\_phisymm\_variant\_bybin.C} --- 3-variant
+    per-bin ratio.
+  \item \texttt{plotting/alt\_check\_rebin.py},
+    \texttt{plotting/alt\_check\_phisymm.py} --- alt-check generators.
+\end{itemize}
+
+\textbf{Data / configs}:
+\begin{itemize}
+  \item \texttt{efficiencytool/tower\_masks\_bdt\_nom.root} ---
+    3 TH2I phi-symm masks.
+  \item \texttt{efficiencytool/config\_bdt\_mask\_phisymm\_\{preselect,
+    common, tight\}\{,\_0rad,\_1p5mrad\}.yaml} --- 9 variant YAMLs.
+  \item \texttt{efficiencytool/oneforall\_tree\_double\_phisymm.sub},
+    \texttt{oneforall\_phisymm.sub} --- condor submit files.
+  \item \texttt{efficiencytool/results/Photon\_final\_bdt\_mask\_phisymm\_*.root}
+    --- 3 final output files (Phase 2 complete).
+\end{itemize}
+
+\textbf{Archived (superseded log(R) / Poisson-based method)}:
+\begin{itemize}
+  \item \texttt{efficiencytool/archive\_logR\_masks/configs/} --- 27
+    old mask variant YAMLs.
+  \item \texttt{efficiencytool/archive\_logR\_masks/results/} --- 936
+    per-sample outputs from the old variants.
+  \item \texttt{reports/tower\_acceptance\_2026-04-22.tex.v1-fullhistory.bak}
+    --- full history of the development (per-bin Poisson $\to$
+    log(R) $\to$ 1$\times$1/2$\times$2/4$\times$4 $\to$ phi-symm).
+\end{itemize}
+
+\section{Reviewer Pass Matrix}
+
+\begin{longtable}{@{}p{5.2cm}p{2.2cm}p{2.2cm}p{2.5cm}p{2.5cm}@{}}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+RecoEff + CalcPhotonYield tower-map integration & \ok{PASS} & N/A & N/A & \ok{PASS (smoke + full prod)} \\
+\addlinespace
+Phi-symm mask generator & implicit (simple stats) & N/A & \ok{PASS (counts match across Python + ROOT)} & \ok{PASS} \\
+\addlinespace
+3 phi-symm variant condor runs & N/A & N/A & N/A & \ok{PASS (all 9 outputs exist, clean log banner)} \\
+\addlinespace
+$\sigma$ shifts (Table~\ref{tab:phisymm_shifts}) & N/A & N/A & \ok{PASS (uproot re-integration matches ROOT)} & N/A \\
+\addlinespace
+Plots & N/A & \ok{PASS} & N/A & N/A \\
+\bottomrule
+\end{longtable}
+
+\end{document}

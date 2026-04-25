@@ -1,0 +1,559 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+
+\newcommand{\etg}{$E_T^\gamma$}
+\newcommand{\pT}{$p_T$}
+\newcommand{\isoET}{$E_T^{\rm iso}$}
+\newcommand{\crit}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\info}[1]{\textcolor{blue}{#1}}
+\newcommand{\ok}[1]{\textcolor{green!50!black}{\textbf{#1}}}
+
+\title{Cross-Section Pipeline Cut--Efficiency Audit\\
+\large Do all data-side cuts have a matching correction?}
+\author{PPG12 Analysis Team (automated audit)}
+\date{2026-04-21}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+
+A three-wave agent audit of the PPG12 isolated-photon cross-section
+pipeline (\texttt{config\_bdt\_nom.yaml}, 1.5\,mrad and all-range)
+was run to identify any selection cut applied to data that lacks a
+corresponding efficiency correction. The cross-section formula is
+\[
+\frac{d^2\sigma}{dp_T\,d\eta}
+= \frac{N_{\rm iso\,prompt}}{\mathcal{L}\cdot \varepsilon_{\rm reco}\cdot \varepsilon_{\rm iso}\cdot \varepsilon_{\rm id}\cdot \varepsilon_{\rm vtx+MBD}\cdot \Delta\eta\cdot \Delta p_T}\,,
+\]
+where $N_{\rm iso\,prompt}$ is the ABCD-subtracted, unfolded signal
+yield.
+
+\textbf{Primary findings.} Most cuts are properly absorbed --- the
+common-block (NPB, $e_{11}/e_{33}$, $w_{r,{\rm cog}x}$,
+$w_{\eta,{\rm cog}x}$), the tight shape/BDT block, the reco isolation,
+the reco-vertex $|z|<60$\,cm cut, and the run/lumi weighting are all
+accounted for in the $\varepsilon$ chain or absorbed by denominator
+construction.
+
+Three concerns:
+\begin{enumerate}
+  \item \crit{HIGH}\ --- \textbf{The Photon-4-GeV L1 trigger efficiency
+  is not applied in the code.} The $\sim$99.1\% plateau is documented
+  in the analysis note (\texttt{selection.tex:93}, \texttt{Figures/etc/Photon\_4\_GeV\_ConstantFit.pdf})
+  but never injected into the yield. The factor conventionally named
+  $\varepsilon_{\rm vtx+MBD}$ in the code
+  (\texttt{CalculatePhotonYield.C:1031}, called \texttt{vertex\_eff\_val})
+  corrects only the MBD N$\&$S coincidence $\times$ reco-vertex cut, not
+  the EMCal-tower L1 threshold.
+  \item \crit{HIGH}\ --- \textbf{Note-vs-code trigger-bit mismatch.}
+  \texttt{config\_bdt\_nom.yaml:50} uses \texttt{trigger\_used: 30};
+  \texttt{PPG12-analysis-note/selection.tex:93} states ``trigger bit
+  26'' is used. Either these bits are aliases of the same physical
+  Photon-4-GeV + MBD-NS trigger in two trigger maps, or one of the two
+  is stale. This needs resolution before the note can be trusted on
+  trigger content.
+  \item \warn{WARN}\ --- \textbf{Latent pileup-veto ordering bug.} The
+  \texttt{mbd\_avg\_sigma} veto at \texttt{RecoEffCalculator\_TTreeReader.C:1920--1927}
+  is applied \emph{after} the truth-denominator histograms are filled
+  (lines 1801--1830). Currently inactive in nominal and all on-disk
+  configs (no config sets \texttt{mbd\_avg\_sigma\_max}), so current
+  cross-section results are unaffected. But the code is a latent trap:
+  any future pileup-metric systematic (the deleted
+  \texttt{config\_bdt\_mbdrms\{01,03,05\}.yaml} family, or a fresh scan)
+  would silently bias $\varepsilon_{\rm vtx+MBD}$.
+\end{enumerate}
+
+\noindent\textbf{Overall status.} The nominal cross-section is
+internally consistent for every cut currently applied \emph{except} the
+L1 Photon-4-GeV trigger plateau, which is an unjustified $\sim$1\%
+under-correction on the yield. Impact on the central value:
+the divisor \texttt{total\_eff} lacks the $\varepsilon_{\rm trig}
+\approx 0.991$ factor, so the current \texttt{total\_eff} is
+$1/0.991 \approx 1.009\times$ \emph{larger} than it should be, and the
+cross-section $\sigma_{\rm code} = N_{\rm iso}/(\varepsilon_{\rm code}
+\cdot\mathcal{L}\cdot\Delta\eta\cdot\Delta p_T)$ comes out
+$\sim$0.9\% \emph{lower} than the correct
+$\sigma_{\rm true} = \sigma_{\rm code}/\varepsilon_{\rm trig}$. In
+other words: cross-section biased \emph{low} by $(1-\varepsilon_{\rm trig})
+\approx 0.9\%$ above 10\,GeV, potentially larger in the 8--10\,GeV
+underflow bin where the plateau is not yet reached.
+Additionally, the systematic envelope advertised as ``MBD trigger
+efficiency $\pm$5\%'' (\texttt{systematics.tex:129--137}, implemented via
+\texttt{mbd\_eff\_scale}) covers the \emph{MBD side only} and does not
+cover the missing EMCal-side plateau correction.
+
+\medskip
+\noindent\textbf{Scope.} This audit covers only \emph{selection cuts}
+and their efficiency corrections. Out of scope: (i) cross-check of
+signal-leakage corrections $c_B, c_C, c_D$ in the ABCD method (whether
+the same tight/iso cuts applied on data also populate the MC-based
+leakage templates); (ii) internal consistency of the RooUnfold response
+matrix beyond the truth-fiducial mirror check
+(\texttt{RecoEff:1620--1660, 2704} --- noted but not exercised);
+(iii) luminosity-normalization correctness (the \texttt{trigger\_used:
+30} vs note's ``bit 26'' is flagged under HIGH-2, but the 16.6 pb$^{-1}$
+vs 48.93 pb$^{-1}$ choice between 1.5\,mrad and all-range per
+\texttt{wiki/reference/constants-sync.md} is not re-audited here);
+(iv) truth-vertex reweight (\texttt{truth\_vertex\_reweight\_on}) as a
+per-event weight on MC, distinct from a cut-efficiency correction.
+
+\section{Findings Table}
+
+\begin{longtable}{@{}p{1.9cm}p{4.8cm}p{5.8cm}p{4.3cm}@{}}
+\toprule
+Severity & Location & Finding & Impact \\
+\midrule
+\crit{HIGH-1} &
+\texttt{CalculatePhotonYield.C:1027--1038};
+\texttt{config\_bdt\_nom.yaml:50};
+\texttt{mbd\_trigger\_efficiency\_study.py} (unused output) &
+No dedicated Photon-4-GeV L1 trigger efficiency is multiplied into
+\texttt{total\_eff}. The only trigger-like factor is the offline
+MBD-NS-coincidence $\times$ reco-vertex-cut ratio
+(\texttt{vertex\_eff\_val}), which does not emulate the EMCal-tower
+threshold. &
+\etg-dependent $\sim$0.5--1\% under-correction on the cross-section
+central value above 10\,GeV (per note plateau of 99.1\%). No
+systematic currently envelopes the residual. \\
+\addlinespace
+\crit{HIGH-2} &
+\texttt{config\_bdt\_nom.yaml:50} (\texttt{trigger\_used: 30}) vs
+\texttt{PPG12-analysis-note/selection.tex:93} (``trigger bit 26'') &
+Note and code disagree on the trigger bit used for Photon-4-GeV. Likely
+reflects different trigger-bit \emph{maps} but needs explicit
+confirmation; otherwise the lumi-list provenance (memory:
+\texttt{Bit30Corr}) is loose. &
+Analysis-note correctness. Either the bit-30 result is wrong and should
+be bit-26, or the note needs updating. Lumi normalization may also be
+implicated if maps differ in effective prescale. \\
+\addlinespace
+\warn{WARN-1} &
+\texttt{RecoEffCalculator\_TTreeReader.C:1801--1830} (truth
+histograms filled) vs \texttt{1920--1927} (MBD-$\sigma$ veto) &
+Pileup veto ordered after the truth-denominator fill. Numerator
+(reco side) would be cut; truth denominator would not. &
+Latent only: no on-disk config activates the veto
+(defaults to $\pm\infty$ via
+\texttt{RecoEffCalculator\_TTreeReader.C:424--427}). Any future
+\texttt{mbd\_avg\_sigma\_max} study resurrects the bias. \\
+\addlinespace
+\info{INFO-1} &
+\texttt{config\_bdt\_nom.yaml:228--236} &
+\texttt{common.e32\_over\_e35\_\{min,max\}} and
+\texttt{common.et1\_\{min,max\}} are parsed but not referenced in
+\texttt{passes\_common\_shape}. Dead fields. &
+None. Source of future confusion; recommend deletion or wiring. \\
+\addlinespace
+\info{INFO-2} &
+\texttt{CalculatePhotonYield.C:155}, 1031 (\texttt{mbd\_eff\_scale}) &
+Nuisance knob nominally $=0$. In \texttt{make\_bdt\_variations.py:287}
+the \texttt{mbd} systematic group is marked ``placeholder'' with no
+concrete up/down variant configs on disk. &
+The 5\% MBD-trigger systematic envelope in the note
+(\texttt{systematics.tex:129--137}) is not yet wired into the pipeline
+configs --- it is asserted, not computed, in the systematic-aggregation
+step. \\
+\addlinespace
+\ok{PASS-1} &
+\texttt{RecoEffCalculator\_TTreeReader.C:2704--2842} &
+\ok{NPB preselection ($> 0.5$), $e_{11}/e_{33} < 0.98$,
+$w_{r,{\rm cog}x} > 0$, $w_{\eta,{\rm cog}x} < 2$ are properly absorbed
+into $\varepsilon_{\rm id}$} because the denominator is
+$\{{\rm reco} \cap {\rm iso}\}$ without the common gate, while the
+numerator carries the common gate (via \texttt{tight} requiring
+\texttt{common\_pass}). Iso classification at line 2303 is
+independent of the common gate; tight classification (line 2331) is
+nested under it. & None. \\
+\addlinespace
+\ok{PASS-2} &
+\texttt{config\_bdt\_nom.yaml:29, 47--48}; \texttt{RecoEffCalculator\_TTreeReader.C:1805, 1808, 1816} &
+\ok{Reco-vertex $|z|<60$\,cm and parametric reco iso have matching
+truth-level partners} (\texttt{vertex\_cut\_truth} defaults to
+\texttt{vertex\_cut}; truth iso $<4$\,GeV fiducial). ABCD regions
+cross-check consistent. & None. \\
+\bottomrule
+\end{longtable}
+
+\section{Cut $\rightarrow$ Correction Mapping}
+
+\begin{longtable}{@{}p{4.0cm}p{4.2cm}p{5.5cm}p{3.2cm}@{}}
+\toprule
+Cut (data side) & Where applied (file:line) & Correction / absorption mechanism & Status \\
+\midrule
+\endhead
+\multicolumn{4}{l}{\textit{Event level}} \\
+\midrule
+Run range \texttt{[run\_min, run\_max]} &
+\texttt{RecoEff:1501--1507} &
+Lumi normalization (non-efficiency); MC prescaled via
+\texttt{lumi\_weight = lumi / lumi\_target}. &
+\ok{OK} \\
+\addlinespace
+Photon-4-GeV L1 trigger bit &
+\texttt{RecoEff:1516--1535} (\texttt{trigger\_used: 30}) &
+\textbf{Missing.} Only the MBD N$\&$S-coincidence piece is in
+\texttt{vertex\_eff\_val}; the EMCal-tower L1 turn-on is not injected.
+Note cites 99.1\% plateau. &
+\crit{MISSING} \\
+\addlinespace
+Reco vertex $|z|<60$\,cm &
+\texttt{RecoEff:1847--1867}; config \texttt{vertex\_cut: 60} &
+$\varepsilon_{\rm vtx+MBD}
+= h_{\rm truth\,pT,\,vtx+MBDcut} / h_{\rm truth\,pT,\,vtxcut}$,
+with truth-side $|z_{\rm truth}|<\texttt{vertex\_cut\_truth}$ (=60
+in nom). \texttt{CalcYield:1031}. &
+\ok{OK} \\
+\addlinespace
+MBD N$\&$S coincidence (trigger component) &
+\texttt{RecoEff:1816--1819} (MC truth-side numerator emulation) &
+Same $\varepsilon_{\rm vtx+MBD}$ factor above. &
+\ok{OK} (MBD side only) \\
+\addlinespace
+MBD $\sigma_t$ pileup veto &
+\texttt{RecoEff:1920--1927} &
+\textbf{Inactive in nominal} (no config sets the keys). If activated,
+no correction mirrors the cut; ordering bug prevents absorption. &
+\warn{LATENT} \\
+\addlinespace
+Trigger prescale weight (data) &
+\texttt{RecoEff:1538--1554} &
+Applied as per-event weight upscaling prescaled events (not an
+efficiency). &
+\ok{OK} \\
+\midrule
+\multicolumn{4}{l}{\textit{Cluster level -- kinematic acceptance}} \\
+\midrule
+$E_T > 5$\,GeV &
+\texttt{RecoEff:1982--1983}; \texttt{CaloAna24.cc:1202} (=5 upstream) &
+Response-matrix unfolding over \texttt{pT\_bins\_truth = [7,\ldots,45]}
+absorbs reco-ET-threshold migration. &
+\ok{OK} \\
+\addlinespace
+$|\eta_{\rm cluster}| \le 0.7$ &
+\texttt{RecoEff:2159--2170}; config \texttt{eta\_bins: [-0.7, 0.7]} &
+Truth side reuses the same \texttt{eta\_bins} array
+(\texttt{RecoEff:1651, 1788}). No separate \texttt{eta\_bins\_truth}.
+Fiducial $=$ reco. &
+\ok{OK} \\
+\midrule
+\multicolumn{4}{l}{\textit{Cluster level -- isolation}} \\
+\midrule
+Reco iso parametric
+$\isoET < b + s\cdot \etg$ &
+\texttt{RecoEff:2300--2306} &
+$\varepsilon_{\rm iso}$ at \texttt{CalcYield:1028} (ratio of
+reco-iso-passed to reco-photon, denominator un-gated on common).
+Truth-fiducial $\isoET^{\rm truth}<4$\,GeV absorbed by the
+response-matrix truth axis. &
+\ok{OK} \\
+\midrule
+\multicolumn{4}{l}{\textit{Cluster level -- shower-shape common cuts}} \\
+\midrule
+NPB $>0.5$ (when \texttt{common\_npb\_cut\_on=1}) &
+\texttt{RecoEff:2320} &
+Absorbed into $\varepsilon_{\rm id}$: denominator $=\{\rm reco\cap iso\}$
+(no common gate); numerator $=\{\rm reco\cap iso\cap tight\cap common\}$. &
+\ok{OK} \\
+\addlinespace
+$e_{11}/e_{33} \le 0.98$ &
+\texttt{RecoEff:2313--2320} (\texttt{passes\_common\_shape}) &
+Same mechanism as NPB $\rightarrow$ $\varepsilon_{\rm id}$. &
+\ok{OK} \\
+\addlinespace
+$w_{r,{\rm cog}x} > 0$ &
+\texttt{RecoEff:2313--2320} &
+Same. &
+\ok{OK} \\
+\addlinespace
+$w_{\eta,{\rm cog}x} < 2$ &
+\texttt{RecoEff:2313--2320} &
+Same. &
+\ok{OK} \\
+\addlinespace
+\texttt{cluster\_prob} $\in [0, 1]$ &
+\texttt{RecoEff:2313--2320} &
+Trivially passed in nom; if activated, absorbed same as other common
+cuts. &
+\ok{OK} (inactive) \\
+\midrule
+\multicolumn{4}{l}{\textit{Cluster level -- tight signal block}} \\
+\midrule
+BDT tight parametric
+$b_{\rm BDT} + s_{\rm BDT}\cdot \etg$ &
+\texttt{RecoEff:2389--2404} &
+Part of \texttt{tight}. $\varepsilon_{\rm id}$ absorbs. Systematic:
+\texttt{tight\_bdt} variant $\rightarrow$ \texttt{eff} group. &
+\ok{OK} \\
+\addlinespace
+10 shape variables in tight windows (\texttt{weta\_cogx}, \texttt{wphi\_cogx}, \texttt{et1--4}, \texttt{e11\_e33}, \texttt{e32\_e35}, \texttt{prob}) &
+\texttt{RecoEff:2339--2407} &
+Part of \texttt{tight} $\rightarrow$ $\varepsilon_{\rm id}$. &
+\ok{OK} \\
+\addlinespace
+Non-tight anti-ID &
+\texttt{RecoEff:2408--2507} &
+Defines ABCD region C/D; pairs with \texttt{noniso} (config shift +0.8). &
+\ok{OK} \\
+\midrule
+\multicolumn{4}{l}{\textit{Cluster level -- not actually used}} \\
+\midrule
+Saturated-tower veto (\texttt{nosat}) &
+\texttt{RecoEff:1984--1988, 2012--2015} &
+\texttt{nosat=0} in nom $\rightarrow$ inactive. &
+\ok{OK} (inactive) \\
+\addlinespace
+\texttt{cluster\_mbd\_time\_min/max} &
+\texttt{RecoEff:2207--2213} &
+Keys not set in nom $\rightarrow$ inactive ($\pm 999$). \texttt{badtime}
+flag never consumed downstream in A/B/C/D fill. &
+\ok{OK} (inactive) \\
+\addlinespace
+$\chi^2$ cut on cluster &
+Nowhere &
+No such cut in the data path. &
+\ok{N/A} \\
+\addlinespace
+$E_1/E_7$ cut &
+Nowhere &
+No such cut. Analysis does not use this shape variable. &
+\ok{N/A} \\
+\addlinespace
+\texttt{common.e32\_over\_e35} /
+\texttt{common.et1} &
+Parsed at \texttt{config:228--236}, never referenced in \texttt{passes\_common\_shape} &
+Dead fields. &
+\info{INFO} \\
+\midrule
+\multicolumn{4}{l}{\textit{Upstream pre-selection}} \\
+\midrule
+\texttt{CaloAna24.cc:616} vertex $|v_z^{\rm MBD}|<200$\,cm &
+DST writer (data only) &
+Looser than the analysis $|z|<60$\,cm; no events lost in the analysis
+range. &
+\ok{OK} \\
+\addlinespace
+\texttt{CaloAna24.cc:1202} \texttt{clusterpTmin=5} GeV &
+DST writer (both) &
+Matches analysis $E_T > 5$\,GeV floor. Any tightening above 5 would
+hit the preselection wall silently. &
+\ok{OK} \\
+\addlinespace
+\texttt{CaloAna24.cc:464--467} bad-event blacklist (2 (run, evt) pairs) &
+DST writer (both) &
+Negligible effect on normalization; applied to data and MC identically. &
+\ok{OK} \\
+\addlinespace
+\texttt{apply\_BDT.C} additional selection &
+None (only adds BDT branches; \texttt{outtree->Fill()} unconditional) &
+No new cuts introduced. &
+\ok{OK} \\
+\bottomrule
+\end{longtable}
+
+\section{Discussion of the HIGH-Severity Findings}
+
+\subsection{HIGH-1: Photon-4-GeV L1 trigger efficiency not applied}
+
+\paragraph{What the code does.} The only ``trigger'' efficiency factor
+in \texttt{CalculatePhotonYield.C} is \texttt{vertex\_eff\_val} at lines
+1031--1033:
+\begin{verbatim}
+  vertex_eff_val = h_truth_pT_vertexcut_mbd_cut->GetBinContent(ibin)
+                 / h_truth_pT_vertexcut->GetBinContent(ibin)
+                 + mbd_eff_scale;
+\end{verbatim}
+The numerator histogram is filled in
+\texttt{RecoEffCalculator\_TTreeReader.C:1816--1819} on MC with the
+requirement
+\texttt{mbdnorthhit>=1 \&\& mbdsouthhit>=1 \&\& |vertexz|<vertexcut}. The
+MBD-coincidence piece is the \emph{offline} N$\&$S N-hit requirement,
+which emulates only the MBD side of the Photon-4-GeV + MBD-NS trigger.
+The EMCal-tower side of the L1 bit (the 4\,GeV tower threshold and its
+turn-on) is not emulated anywhere.
+
+\paragraph{What the note says.} \texttt{PPG12-analysis-note/selection.tex:93}:
+\begin{quote}
+In this analysis, the ``Photon 4 GeV + MBD NS $\geq 1$'' trigger
+(trigger bit 26) is used. This analysis reports photon \etg\ above
+10 GeV (unfolding underflow bin starting from 8 GeV) where the trigger
+efficiency is at a plateau about 99.1\%.
+\end{quote}
+A figure (\texttt{Figures/etc/Photon\_4\_GeV\_ConstantFit.pdf}) shows
+the constant fit. The 0.991 value never appears in any \texttt{.C} or
+\texttt{.py} or \texttt{.yaml} file in the pipeline.
+
+\paragraph{Impact estimate.} The current code computes
+$\sigma_{\rm code} = N_{\rm iso\,prompt}
+/ (\varepsilon_{\rm code}\cdot\mathcal{L}\cdot\Delta)$, where
+$\varepsilon_{\rm code} = \varepsilon_{\rm reco}\cdot
+\varepsilon_{\rm iso}\cdot \varepsilon_{\rm id}\cdot
+\varepsilon_{\rm vtx+MBD}$. The correct divisor is
+$\varepsilon_{\rm true} = \varepsilon_{\rm code}\cdot
+\varepsilon_{\rm trig}$, so the correct cross-section is
+$\sigma_{\rm true} = \sigma_{\rm code}/\varepsilon_{\rm trig}$. With the
+note's plateau $\varepsilon_{\rm trig} \approx 0.991$ for
+$\etg \ge 10$\,GeV, $\sigma_{\rm code}$ is low by
+$(1-0.991)/0.991 \approx 0.9\%$. In the underflow bin 8--10\,GeV the
+plateau is not yet reached, so the bias is \etg-dependent and could
+exceed a few percent there.
+
+\paragraph{Adjacent issue: the 5\% systematic.}
+\texttt{systematics.tex:129--137} assigns a ``MBD trigger efficiency''
+systematic by varying \texttt{mbd\_eff\_scale}
+(\texttt{CalculatePhotonYield.C:155}) by $\pm$5\%. This is a scaling
+of the offline MBD-coincidence efficiency only --- it does not cover
+the missing EMCal-tower plateau correction. Furthermore
+\texttt{make\_bdt\_variations.py:287} marks the \texttt{mbd} syst group
+as ``placeholder'', so no concrete up/down variant configs exist on
+disk; the $\pm 5\%$ number is asserted in the note rather than computed.
+
+\paragraph{Recommendation.} Either (a) inject a Photon-4-GeV trigger
+efficiency histogram (from \texttt{mbd\_trigger\_efficiency\_study.py}
+or the plateau fit in the note) into \texttt{total\_eff} at
+\texttt{CalculatePhotonYield.C:1033}, or (b) \emph{document
+quantitatively} that the trigger plateau is compatible with unity
+within the analysis-range uncertainty and add the residual to the
+systematic budget --- \emph{distinct} from the MBD-$\pm 5\%$
+systematic.
+
+\subsection{HIGH-2: Note-vs-code trigger-bit mismatch}
+
+\texttt{config\_bdt\_nom.yaml:50}: \texttt{trigger\_used: 30}.
+\texttt{PPG12-analysis-note/selection.tex:93}: ``trigger bit 26''.
+
+\noindent Project memory (\texttt{project\_lumi\_list\_provenance.md})
+records that ``bit 30 = Photon\_4\_GeV (Map2)''. Joey's
+\texttt{get\_luminosity\_182630.C} luminosity mapping has columns
+\texttt{Bit\{10,18,22,30\}\{Corr,UC\}}. The analysis note references
+bit 26, which is the Photon-4-GeV bit in a \emph{different} map
+(likely Map1). If the two trigger maps alias the same physical trigger,
+this is a note-update issue; if they do not, then \emph{either} the bit
+used for event selection \emph{or} the lumi used for normalization is
+wrong.
+
+\paragraph{Recommendation.} Resolve the mapping. If bit 26 and bit 30
+are aliases for the same physical trigger across maps, add a one-line
+note in \texttt{selection.tex} clarifying the map correspondence. If
+they are different, determine which is correct for 60cm-fiducial
+lumi-list provenance and fix either the code (\texttt{trigger\_used})
+or the note. Cross-check against
+\texttt{lumi/60cmLumi\_fromJoey.list} headers.
+
+\subsection{WARN-1: Latent pileup-veto ordering}
+
+\texttt{RecoEffCalculator\_TTreeReader.C} fills the truth-vertex
+histograms at lines 1801--1830:
+\begin{verbatim}
+  if (fabs(vertexz_truth) < vertexcut_truth) {
+     h_truth_pT_vertexcut->Fill(particle_Pt, cross_weight);
+     if (mbdnorthhit>=1 && mbdsouthhit>=1 && fabs(vertexz) < vertexcut)
+        h_truth_pT_vertexcut_mbd_cut->Fill(particle_Pt, cross_weight);
+     ...
+  }
+\end{verbatim}
+then applies the MBD-$\sigma_t$ veto at lines 1920--1927:
+\begin{verbatim}
+  if (mbd_avg_sigma < mbd_avg_sigma_min
+      || mbd_avg_sigma > mbd_avg_sigma_max) continue;
+\end{verbatim}
+The \texttt{continue} skips the reco fills below but the truth
+histograms are already set. With the keys not in any on-disk config,
+the defaults ($\pm\infty$) make the veto a no-op today.
+
+\paragraph{Recommendation.} Move the MBD-$\sigma_t$ veto before the
+truth-denominator fills (or equivalently, apply the same veto to the
+truth-fill gate). Even if unused today, the code is a trap for any
+future \texttt{mbdrms} systematic.
+
+\section{Reviewer Pass Matrix}
+
+\begin{longtable}{@{}p{3.0cm}p{2.2cm}p{2.2cm}p{2.4cm}p{2.6cm}@{}}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+Data-path cut inventory (Wave 1a) & \ok{PASS} & N/A & N/A & N/A \\
+Correction chain inventory (Wave 1b) & \ok{PASS} & N/A & N/A & N/A \\
+Truth-fiducial mirror (Wave 1c) & \ok{PASS} & N/A & N/A & N/A \\
+Trigger-efficiency verification (Wave 2) & \ok{CONFIRMED} & N/A & N/A & N/A \\
+Pileup-veto active/inactive (Wave 2) & \ok{CONFIRMED} & N/A & N/A & N/A \\
+NPB/common absorption (Wave 2) & \ok{VERIFIED} & N/A & N/A & N/A \\
+\bottomrule
+\end{longtable}
+
+Notes: this was a read-only audit. No plots were generated and no
+numerical histograms were cited --- so plot-cosmetics (2b) and
+numerical re-derivation (2c) are \texttt{N/A}. No code fix was made
+in this session (\texttt{3.5} \texttt{N/A}), only recommendations. All
+claims in the findings table are backed by three independent agent
+reads of the relevant file ranges.
+
+\section{Files Reviewed}
+
+\begin{itemize}
+  \item \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C}
+  (cluster loop 1950--2510; truth fills 1801--1830; trigger/vertex/veto
+  1493--1927; efficiency fills 2822--2842)
+  \item \texttt{efficiencytool/CalculatePhotonYield.C}
+  (efficiency application 1027--1043; ABCD 376--602; unfolding 842--1015;
+  lumi scaling 1091)
+  \item \texttt{efficiencytool/MergeSim.C} (MC pre-merge)
+  \item \texttt{efficiencytool/config\_bdt\_nom.yaml}
+  \item \texttt{efficiencytool/mbd\_trigger\_efficiency\_study.py}
+  (output not consumed)
+  \item \texttt{efficiencytool/make\_bdt\_variations.py:275--307}
+  (syst taxonomy)
+  \item \texttt{plotting/calc\_syst\_bdt.py} (syst groups)
+  \item \texttt{anatreemaker/source/CaloAna24.cc} +
+  \texttt{.h} (DST preselection)
+  \item \texttt{anatreemaker/macro\_maketree/data/ana521/Fun4All\_runDST.C}
+  \item \texttt{FunWithxgboost/apply\_BDT.C} (no new cuts)
+  \item \texttt{PPG12-analysis-note/selection.tex},
+  \texttt{systematics.tex}
+\end{itemize}
+
+\section{Recommended Next Steps}
+
+\begin{enumerate}
+  \item \textbf{Resolve HIGH-2 first.} Clarify whether
+  \texttt{trigger\_used: 30} (code) and ``trigger bit 26'' (note) refer
+  to the same physical trigger in different maps, or to different
+  triggers. This also constrains the correct 60cm lumi normalization
+  (memory flags possible inconsistency with \texttt{Bit30Corr} sums).
+  \item \textbf{Fix HIGH-1.} Either inject the Photon-4-GeV L1
+  turn-on histogram into \texttt{total\_eff} (preferred, since the
+  machinery is in place via \texttt{mbd\_eff\_scale}-style additive
+  nuisances) or document the residual explicitly as a systematic
+  uncertainty distinct from the MBD $\pm 5\%$. This should be done
+  before the next official cross-section release.
+  \item \textbf{Close WARN-1.} A three-line reorder in
+  \texttt{RecoEffCalculator\_TTreeReader.C} (move the
+  \texttt{mbd\_avg\_sigma} veto before line 1801, or duplicate it into
+  the truth-fill guard). Low effort; removes the trap.
+  \item \textbf{Clean up INFO-1.} Delete
+  \texttt{common.e32\_over\_e35\_\{min,max\}} and
+  \texttt{common.et1\_\{min,max\}} from the config schema, or wire them
+  into \texttt{passes\_common\_shape}.
+  \item \textbf{Close the \texttt{mbd} placeholder systematic
+  (INFO-2).} Replace the asserted $\pm 5\%$ in
+  \texttt{systematics.tex} with an actual
+  \texttt{config\_bdt\_mbdeff\_\{up,dn\}.yaml} pair that perturbs the
+  \texttt{mbd\_eff\_scale} knob, and let
+  \texttt{calc\_syst\_bdt.py} aggregate it like the other systematics.
+\end{enumerate}
+
+\end{document}

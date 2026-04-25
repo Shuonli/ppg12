@@ -93,8 +93,14 @@ Every significant file in the repository with a one-line purpose.
 | `oneforall.sh` | Orchestrate MergeSim + CalculatePhotonYield |
 | `oneforall_tree.sh` | Two-pass RecoEffCalculator orchestration |
 | `oneforall.sub` | HTCondor submit file (one job per config) |
-| `run_showershape_double.sh` | Two-pass double-interaction blending |
+| `submit_showershape_di.sub` | HTCondor submit for single-pass showershape DI pipeline (17 jobs / crossing angle) |
+| `run_showershape_di_job.sh` | Per-job executable for the showershape DI pipeline |
+| `showershape_di_jobs_{0rad,1p5rad}.list` | 17-row job lists (8 SI/DI pairs + 1 data) consumed by `submit_showershape_di.sub` |
+| `run_showershape_double_reco_legacy.sh` | Retired two-pass reco-vertex blending (kept for history) |
 | `run_double_interaction.sh` | Toy double-interaction simulation |
+| `TruthVertexReweightLoader.h` | Loads `h_w_iterative` per-period reweight histogram, applies `w(z)` / `w(z_hard)*w(z_mb)` |
+| `truth_vertex_reweight/fit_truth_vertex_reweight.py` | Iterative data-driven fit producing per-period `reweight.root` |
+| `truth_vertex_reweight/output/{0mrad,1p5mrad}/reweight.root` | Per-period truth-vertex reweight histograms consumed by `ShowerShapeCheck.C` and `RecoEffCalculator_TTreeReader.C` |
 
 ### Python
 

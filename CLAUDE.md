@@ -22,8 +22,15 @@ cd FunWithxgboost && python main_training.py --config config.yaml
 # Apply BDT to data/sim
 root -l -b -q 'apply_BDT.C("config_nom.yaml", "photon5")'
 
-# Run efficiency + yield for one config
+# Run efficiency + yield for one config (per-period dispatches to MergeSim;
+# *_all.yaml dispatches to merge_periods.sh — see wiki/pipeline/full-run-range.md)
 cd efficiencytool && bash oneforall.sh config_bdt_nom.yaml
+
+# Lumi-weighted cross-period MC merge (TFileMerger of pre-scaled per-period
+# outputs into combined all-range MC). Per-event lumi_weight = lumi/lumi_target
+# in RecoEffCalculator does the scaling upstream; this is now a plain hadd.
+# Naming convention: config_bdt_X.yaml (all-range) + config_bdt_X_{0rad,1p5mrad}.yaml (merge-feeders)
+bash merge_periods.sh config_bdt_nom_0rad.yaml config_bdt_nom_1p5mrad.yaml config_bdt_nom.yaml
 
 # Generate 23+ systematic variation configs
 python make_bdt_variations.py config_bdt_nom.yaml

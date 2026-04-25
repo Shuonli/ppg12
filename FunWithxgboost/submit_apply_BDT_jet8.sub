@@ -1,0 +1,11 @@
+universe     = vanilla
+executable   = /sphenix/user/shuhangli/ppg12/FunWithxgboost/run_apply_BDT_mc.sh
+arguments    = jet8
+output       = logs/apply_BDT_jet8_$(Cluster).out
+error        = logs/apply_BDT_jet8_$(Cluster).err
+log          = /tmp/apply_BDT_jet8_$(Cluster).log
+getenv       = true
+request_memory = 16GB
+request_disk   = 30GB
+request_cpus   = 1
+queue

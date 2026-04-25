@@ -1,0 +1,22 @@
+# HTCondor submission for the inner-R scan on the purity MC closure.
+# Runs oneforall_tree_and_yield.sh (RecoEffCalculator + MergeSim + CalculatePhotonYield)
+# for each of the 8 inner-R scan configs.
+
+universe              = vanilla
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+request_memory        = 8GB
+request_disk          = 10GB
+request_cpus          = 1
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+# Queue one job per inner-R scan config (8 total)
+queue cfg matching (config_bdt_innerR_*.yaml)

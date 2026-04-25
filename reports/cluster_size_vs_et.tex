@@ -1,0 +1,362 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+
+\newcommand{\etg}{$E_T$}
+\newcommand{\nown}{$n_{\mathrm{owned}}$}
+\newcommand{\dietag}{$\Delta i_\eta$}
+\newcommand{\diphig}{$\Delta i_\phi$}
+\newcommand{\splitnode}{\texttt{CLUSTERINFO\_CEMC}}
+\newcommand{\nosplitnode}{\texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT}}
+
+\title{Cluster Size vs \etg:\\
+Data vs MC, Split vs No-Split, Single vs Double Interaction}
+\author{PPG12 Analysis Team (automated report)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+%% ---------------------------------------------------------------
+\section{Motivation}
+\label{sec:intro}
+
+Cluster size (the number of EMCal towers associated with a cluster and the
+transverse extent of that set of towers) is a basic shape property that
+underlies every shower-shape-based background discriminant used in PPG12
+(NPB, shower-shape BDT, width variables).  This report inspects how that
+size depends on cluster \etg\ across three orthogonal handles:
+\begin{itemize}
+\item \textbf{Sample}: data, signal MC (isolated prompt photons), background
+  MC (QCD jets).
+\item \textbf{Pileup}: single-interaction MC, full-GEANT double-interaction
+  MC, and the physics-weighted mix at 7.9\% (1.5\,mrad crossing angle)
+  and 22.4\% (0\,mrad).  Only MC is split this way; data is shown as a
+  single curve against the two mixed references.
+\item \textbf{Clusterizer}: the nominal split-cluster container
+  \splitnode\ versus the legacy non-split \nosplitnode.  Both containers
+  are stored in every slimtree, so the comparison is an apples-to-apples
+  rerun of the two CEMC clusterizer modes on the same events.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\section{Definitions}
+\label{sec:defs}
+
+For each cluster $c$ we read the 7$\times$7 tower matrix
+\texttt{cluster\_ownership\_array}$_c$ and extract the set of towers
+marked as owned by the cluster (value~1).  Let $\mathcal{O}_c$ be the
+owned-tower index set, with $|\mathcal{O}_c| = $~\nown.  Each index
+$i \in [0,48]$ corresponds to a position in the 7$\times$7 grid with
+$i_\eta = \lfloor i/7 \rfloor$, $i_\phi = i \bmod 7$, the center tower
+at $(3,3)$ (see \texttt{CaloAna24.cc:1403}).
+
+\begin{itemize}
+\item \nown: $|\mathcal{O}_c|$ --- literal cluster tower count
+\item \dietag: $\max_{i\in\mathcal{O}_c} i_\eta - \min_{i\in\mathcal{O}_c} i_\eta + 1$
+  --- bounding-box extent in $\eta$
+\item \diphig: analogous in $\phi$
+\end{itemize}
+
+Both \splitnode\ and \nosplitnode\ are computed identically.  No
+shower-shape, BDT, NPB, or isolation cut is applied; the only fiducial
+requirement is $|\eta_{\mathrm{reco}}| < 0.7$.
+
+%% ---------------------------------------------------------------
+\section{Samples}
+\label{sec:samples}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llrl}
+\toprule
+Category & Samples & Entries (event)& Notes\\
+\midrule
+Data               & 77 \texttt{part\_*\_with\_bdt\_split.root} & \texttt{DATA\_NEVT} &
+  run 47289--54000 (both crossing angles)\\
+Signal single      & photon5, photon10, photon20 & stitched by truth $p_T^\gamma$ &
+  $\sigma_{\mathrm{ref}} = \sigma_{\mathrm{photon20}}$\\
+Signal double      & photon10\_double & $p_T^\gamma \in [10,100]$ &
+  full-GEANT double interaction\\
+Background single  & jet5, jet8, jet12, jet20, jet30, jet40 &
+  stitched by truth $p_T^{\mathrm{jet}}$ & $\sigma_{\mathrm{ref}} = \sigma_{\mathrm{jet50}}$\\
+Background double  & jet12\_double & $p_T^{\mathrm{jet}} \in [10,100]$ &
+  full-GEANT double interaction\\
+\bottomrule
+\end{tabular}
+\caption{Sample inventory.  Truth $p_T$ windows (from
+\texttt{CrossSectionWeights.h}) are applied in the analysis macro to avoid
+double counting across overlapping generator windows.}
+\end{table}
+
+Per-event cross-section weights are taken from
+\texttt{PPG12::GetSampleConfig} (relative to each class's reference
+sample).  Cluster-level mixing uses a bin-by-bin linear combination of
+profile means:
+\begin{equation}
+\langle y \rangle_{\mathrm{mix}}(E_T) =
+(1-f)\, \langle y \rangle_{\mathrm{single}}(E_T) +
+f\, \langle y \rangle_{\mathrm{double}}(E_T),
+\label{eq:blend}
+\end{equation}
+with $f = 0.079$ (1.5\,mrad) or $f = 0.224$ (0\,mrad).  Note that this
+is a linear combination of the per-bin means, not a weighted merger of
+underlying fills --- the latter would be biased by the relative
+event counts of the single and double samples.
+
+\section{Results}
+\label{sec:results}
+
+%% ---------------------------------------------------------------
+\subsection{Nominal data vs inclusive MC}
+\label{sec:nominal}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/cluster_size/cluster_size_nominal.pdf}
+\caption{Mean cluster size vs \etg\ for data (black), pooled signal MC
+(photon5$+$10$+$20, red) and pooled background MC (jet5$+$8$+$12$+$20$+$30$+$40, blue),
+with MC weights from \texttt{GetSampleConfig}.  Rows: \nown, \dietag, \diphig.
+Columns: split (\splitnode), no-split (\nosplitnode).  Only
+$|\eta_{\mathrm{reco}}| < 0.7$ is applied.}
+\label{fig:nominal}
+\end{figure}
+
+\textbf{Observations.}
+\begin{itemize}
+\item \textbf{In the split container, data is systematically larger than
+  both MC curves} for $n_{\mathrm{owned}}$ and $\Delta i_\eta$.  At
+  $E_T = 20$\,GeV, data has $\langle n_{\mathrm{owned}}\rangle = 15.2$,
+  jet MC has $12.9$, photon MC has $11.0$ --- a data$-$jet-MC gap of
+  \textbf{+2.3 towers} ($\sim$18\%).  The gap grows from
+  $\approx 0$ at $E_T = 5$\,GeV to a peak of $+2.7$ at $E_T = 25$\,GeV.
+\item The $\Delta i_\phi$ panel is the \textbf{exception}: data and jet MC
+  agree within a few percent across the full range.  Only the $\eta$
+  direction is under-modelled.  This asymmetry is consistent with the
+  extra towers being preferentially stretched in $\eta$ --- possibly
+  electronic noise or pedestal drifts on isolated towers that the
+  clusterizer then absorbs into a nearby cluster, plus the larger
+  physical tower pitch in $\eta$ favouring one-tower spillovers.
+\item \textbf{The data$-$MC gap is much smaller in the no-split container}:
+  $\approx +1.0$ tower across $E_T = 10$--$25$\,GeV, shrinking to $+0.4$
+  at $E_T = 30$\,GeV (essentially converged).  The extra towers in data
+  \emph{are} picked up by the no-split clusterizer but not fragmented
+  off by the split one --- consistent with a diffuse, noise-like
+  contribution spread across the 7$\times$7 matrix rather than a
+  separable sub-cluster.  If these were genuine secondary showers, the
+  split algorithm would have removed them, leaving the data$-$MC gap
+  the same in both containers.
+\item Jet clusters (blue) are larger than photon clusters (red) across the
+  full $E_T$ range in every metric, as expected --- jets deposit energy over
+  multiple overlapping subshowers while prompt photons produce a compact
+  EM shower.  The gap widens in \nosplitnode\ because splitting preferentially
+  shrinks jet clusters while leaving photons alone (quantified in
+  Fig.~\ref{fig:split_ratio}).
+\item Both MC populations rise with $E_T$ because the 70\,MeV tower
+  threshold becomes easier to exceed as the total shower energy grows.
+  Data shows the same trend with a slightly steeper slope --- the
+  data$-$jet-MC gap in the split container grows from essentially zero at
+  $E_T = 5$\,GeV to $\sim$2.7 towers at $E_T = 25$\,GeV, then starts
+  levelling off.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\subsection{Single vs double interaction --- photon signal}
+\label{sec:di_photon}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/cluster_size/cluster_size_di_photon10.pdf}
+\caption{Photon MC cluster size vs \etg: single interaction
+(\texttt{photon10\_nom}, blue), pure double interaction
+(\texttt{photon10\_double}, red), and linearly mixed at 7.9\% (green,
+1.5\,mrad) and 22.4\% (magenta, 0\,mrad).  Mixing applied per Eq.~(\ref{eq:blend}).}
+\label{fig:di_photon}
+\end{figure}
+
+\textbf{Observations.}
+\begin{itemize}
+\item Double interaction shifts photon cluster size \textit{upwards} by
+  $\Delta\langle n_{\mathrm{owned}}\rangle \approx +0.15$ to $+0.22$
+  towers above single across $E_T \in [15, 30]$\,GeV.  The effect is
+  real but small --- pile-up adds a few soft neighbours to an otherwise
+  compact EM shower.
+\item The bounding-box widths (\dietag, \diphig) shift by $\lesssim 0.1$
+  between single and double; the 1\textsuperscript{st}-order effect of
+  double interaction on photon shower width is at the sub-0.1 index level.
+\item Mixed curves at 7.9\% (1.5\,mrad) and 22.4\% (0\,mrad) sit between
+  single and pure-DI at the corresponding fractions.  The mixed-7.9\%
+  curve is nearly indistinguishable from single --- consistent with the
+  shower-shape BDT being pile-up-robust in the 1.5\,mrad regime.
+\item The dip near $E_T = 9$\,GeV is the energy-resolution tail of the
+  $p_T^{\gamma,\mathrm{truth}} > 10$ generator window; below-threshold
+  reco clusters here are dominated by leakage, not peak showers.
+\item The split vs no-split containers behave almost identically for
+  photon MC (see Fig.~\ref{fig:split_ratio}), so the DI effect is also
+  essentially independent of the clusterizer.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\subsection{Single vs double interaction --- jet background}
+\label{sec:di_jet}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/cluster_size/cluster_size_di_jet12.pdf}
+\caption{Jet MC cluster size vs \etg, same format as
+Fig.~\ref{fig:di_photon} but for \texttt{jet12\_nom} vs \texttt{jet12\_double}.}
+\label{fig:di_jet}
+\end{figure}
+
+\textbf{Observations.}
+\begin{itemize}
+\item Double interaction inflates \textit{jet} cluster size much more
+  strongly than photon cluster size: $\Delta\langle n_{\mathrm{owned}}\rangle
+  \approx +0.5$ to $+1.3$ towers in the split container at $E_T > 15$\,GeV,
+  roughly $4\times$ larger than the photon response.
+\item Physically: a jet cluster already has multiple soft neighbouring
+  towers from accompanying hadrons, and DI adds more of the same; the
+  probability that DI overlay lands on a low-$E$ tower and pushes it
+  over the 70\,MeV threshold is much higher in a jet environment than
+  for a clean photon.
+\item The DI-induced broadening is partially absorbed by the no-split
+  container (right column), which already inflates jet clusters via
+  overlap, so the relative DI effect is smaller there.
+\item At $E_T > 30$\,GeV the \texttt{jet12} sample runs out of statistics
+  (truth $p_T^{\mathrm{jet}} \in [14,21]$\,GeV window), producing the
+  noisy tail seen in every jet12 DI panel.
+\item Because jets enter both the fake-photon and anti-tight control
+  regions of the ABCD, this DI effect is a non-trivial input to the
+  background-template closure: in 0\,mrad running (22.4\% DI), the jet
+  template mean cluster size shifts upward by $\sim$0.3--0.4 towers,
+  which affects the shower-shape BDT input distribution and therefore
+  the background rejection rate.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\subsection{No-split / split ratio}
+\label{sec:ratio}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/cluster_size/cluster_size_split_ratio.pdf}
+\caption{Ratio of mean cluster size in the no-split container to that
+in the split container, vs \etg.  Solid black: data.  Red: pooled photon MC.
+Blue: pooled jet MC.  A flat ratio of~1 would mean the two clusterizer modes
+are indistinguishable.}
+\label{fig:split_ratio}
+\end{figure}
+
+\textbf{Observations.}
+\begin{itemize}
+\item \textbf{Photon MC (red)} has a nearly flat ratio of $1.01$--$1.04$
+  in every panel: splitting has essentially no effect on clean
+  single-photon clusters.
+\item \textbf{Jet MC (blue)} shows a clear $E_T$-dependent effect:
+  $n_{\mathrm{owned}}$ ratio rises from $\approx$1.10 at $E_T = 7$\,GeV
+  to $\approx$1.30 at $E_T \gtrsim 20$\,GeV.  The bounding-box widths
+  (\dietag, \diphig) show the same trend at a milder level, saturating
+  around $1.16$--$1.18$.  Splitting removes $\sim$30\% of jet cluster
+  towers at $E_T > 15$\,GeV.
+\item \textbf{Data (black) sits between photon MC and jet MC},
+  with a split/no-split ratio of $\approx$1.10--1.17 for $n_{\mathrm{owned}}$
+  --- below the jet-MC expectation of 1.30.  This means the extra towers
+  that data has compared to MC (Sec.~\ref{sec:nominal}) are \emph{not}
+  being removed by the split clusterizer --- they are distributed
+  diffusely, not as separable sub-clumps.  Physically consistent with
+  noise/threshold contamination rather than genuine secondary showers.
+\item The data $n_{\mathrm{owned}}$ ratio peaks near $E_T = 15$--20\,GeV
+  and declines slightly at higher $E_T$, whereas jet MC stays flat
+  or gently rises.  Data is approaching the 49-tower matrix cap in
+  \nosplitnode\ at $E_T \gtrsim 30$\,GeV, so the ratio numerator
+  saturates before the denominator.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\section{Summary}
+\label{sec:summary}
+
+Four findings matter for the PPG12 analysis:
+
+\begin{enumerate}
+\item \textbf{Data is systematically larger than jet MC in the split
+  container} in $\langle n_{\mathrm{owned}}\rangle$ and $\langle \Delta i_\eta\rangle$
+  by +1 to +2.7 towers ($\sim$10--20\% of the mean) across $E_T = 10$--30\,GeV.
+  The data$-$MC gap is $\sim$3$\times$ smaller in the no-split container.
+  $\langle \Delta i_\phi\rangle$ data-MC agreement is \textit{much} better.
+  This is the single biggest finding: the clusterizer MC does not
+  reproduce the tower-multiplicity of real data.  Most plausible causes
+  are noise-threshold miscalibration or un-modelled underlying-event /
+  zero-bias contamination; electronic noise is the likeliest root cause
+  given the $\eta$-only asymmetry and the absence of a matching shift
+  in $\phi$.
+
+\item \textbf{The extra data-MC towers are diffuse, not clumped}.
+  In the no-split/split ratio (Fig.~\ref{fig:split_ratio}), data sits
+  \emph{below} jet MC:  extra towers in data do not form separable
+  sub-clusters that the split algorithm could fragment off, so splitting
+  has less to remove.  The implication for the PPG12 shower-shape BDT is
+  that it should be trained and validated against data-like (not
+  MC-like) cluster morphology to avoid over-tightening at high $E_T$.
+
+\item \textbf{Cluster splitting is a photon-safe jet shrinker}. The
+  split clusterizer removes $\sim$30\% of jet cluster towers at
+  $E_T > 15$\,GeV while leaving photon cluster size unchanged to within
+  a few percent (red curve in Fig.~\ref{fig:split_ratio}).  This is
+  the physical mechanism by which \splitnode\ improves
+  signal-background shape separation and motivates the nominal
+  pipeline's choice of the split container.
+
+\item \textbf{Double interaction broadens jet clusters much more than
+  photon clusters}.  Pure DI adds $\sim$0.5--1.3 towers to jet cluster
+  size (4--10\% of the mean) and only $\sim$0.2 towers to photon
+  cluster size (2\% of the mean).  At 1.5\,mrad running (7.9\% DI), the effect
+  on the weighted mean is absorbed by systematics, but at 0\,mrad
+  (22.4\% DI) the jet-cluster shift is a concrete mechanism for the DI
+  systematic on the background template shape.  Photon DI is sub-leading.
+\end{enumerate}
+
+\subsection*{Follow-ups suggested by this study}
+
+\begin{itemize}
+\item \textbf{Investigate the data-MC cluster-size gap}.  Cross-check
+  by running the same macro on a \texttt{minbias}-triggered data
+  subset, with and without a $|t_{\mathrm{MBD}}| < 25$\,ns cut, to
+  isolate whether the gap is from noise, underlying event, or
+  pile-up.
+\item Compare the noise-tower distributions between data and MC
+  (per-channel RMS, hit rates above the 70\,MeV threshold in empty
+  fiducial regions) to quantify the noise-contamination hypothesis.
+\item Once the noise/threshold question is settled, decide whether
+  the BDT training sample should include a data-like noise overlay.
+\end{itemize}
+
+%% ---------------------------------------------------------------
+\section*{Reproducibility}
+
+Generation:
+\begin{verbatim}
+cd efficiencytool && bash run_cluster_size.sh
+cd ../plotting && root -l -b -q plot_cluster_size.C+
+\end{verbatim}
+
+Key macros:
+\begin{itemize}
+\item \texttt{efficiencytool/ClusterSizeStudy.C} --- computes \nown,
+  \dietag, \diphig\ per cluster, both cluster nodes, with truth-$p_T$
+  sample stitching and fiducial $|\eta_{\mathrm{reco}}|<0.7$.
+\item \texttt{efficiencytool/run\_cluster\_size.sh} --- driver (6-way parallel).
+\item \texttt{plotting/plot\_cluster\_size.C} --- figures.
+\end{itemize}
+
+\end{document}

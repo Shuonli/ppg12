@@ -1,0 +1,200 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\setlist{nosep}
+
+\title{Impact of MC z-Vertex Reweighting on the Nominal\\Isolated-Photon Cross Section and MBD Efficiency}
+\author{PPG12}
+\date{\today}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\noindent\textbf{Question.}
+For the full cross-section pipeline, does the nominal result change appreciably with vs.\ without MC-to-data z-vertex reweighting?
+Does the MBD (+ vertex) efficiency change appreciably?
+Is the MBD efficiency calculated correctly when vertex reweighting is applied?
+
+\vspace{0.4em}
+\noindent\textbf{Answer (short).}
+\begin{itemize}
+\item \textbf{Yes, the cross section changes a lot} ($\sim\!30$--$75\%$ higher without reweighting, monotonically growing with $E_T$).
+\item \textbf{Yes, the MBD$\times$vertex efficiency changes a lot} (nominal $0.85$--$0.91$; no-reweight drops to $0.51$--$0.70$; 29\%--68\% difference vs.\ nominal, growing with $E_T$).
+\item \textbf{The code is correct under vertex reweighting}: both numerator and denominator of the MBD-efficiency ratio are filled with the same per-event weight \texttt{cross\_weight $\times$ vertex\_weight}, so reweighting is applied coherently. The large observed difference is physically expected because the cuts defining the numerator ($|z_{\rm reco}|<60$\,cm and MBD-N, MBD-S hits $\ge 1$) are strongly correlated with the vertex position, and the GEANT MC beam profile (rms $49.5$\,cm) is much wider than data (rms $19.6$\,cm).
+\end{itemize}
+
+\noindent\textbf{Bottom line:} vertex reweighting is not optional. Turning it off mis-calibrates the MC vertex distribution, which mis-estimates the vertex+MBD acceptance, which mis-corrects the cross section by 30--40\%. Do \emph{not} treat this as a ``systematic size'' --- it is the baseline correction.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\linewidth]{figures/vtxreweight/vtxreweight_comparison.pdf}
+\caption{Left: MBD$\times$vertex efficiency ($g_{\rm mbd\_eff}$) from the nominal (\texttt{bdt\_nom}, vertex reweight on) and no-reweight (\texttt{bdt\_vtxreweight0}) configs. Right: ratio of the final unfolded cross section (no-reweight / nominal) from \texttt{h\_unfold\_sub\_result}. Source macro: \texttt{plotting/plot\_vtxreweight\_comparison.C}.}
+\label{fig:vtxrwt_cmp}
+\end{figure}
+
+%% =====================================================================
+\section*{1. MBD $\times$ vertex efficiency, bin by bin}
+\vspace{-0.5em}
+
+Values read from the TGraphAsymmErrors \texttt{g\_mbd\_eff} in
+\texttt{efficiencytool/results/Photon\_final\_bdt\_\{nom,vtxreweight0\}.root}.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{rrrrr}
+\toprule
+$E_T^\gamma$ [GeV] & $\varepsilon_{\rm MBD}^{\rm nom}$ & $\varepsilon_{\rm MBD}^{\rm noRwt}$ & nom/noRwt & $\Delta$ [\%]\\
+\midrule
+ 7.5 & 0.911 & 0.705 & 1.29 & +29.2 \\
+ 9.0 & 0.908 & 0.696 & 1.31 & +30.5 \\
+11.0 & 0.904 & 0.686 & 1.32 & +31.7 \\
+13.0 & 0.901 & 0.673 & 1.34 & +33.8 \\
+15.0 & 0.899 & 0.664 & 1.35 & +35.5 \\
+17.0 & 0.898 & 0.654 & 1.37 & +37.3 \\
+19.0 & 0.897 & 0.645 & 1.39 & +39.2 \\
+21.0 & 0.888 & 0.626 & 1.42 & +41.9 \\
+23.0 & 0.890 & 0.619 & 1.44 & +43.8 \\
+25.0 & 0.879 & 0.600 & 1.46 & +46.4 \\
+27.0 & 0.874 & 0.585 & 1.49 & +49.3 \\
+30.0 & 0.867 & 0.579 & 1.50 & +49.9 \\
+34.0 & 0.865 & 0.546 & 1.59 & +58.5 \\
+40.5 & 0.853 & 0.507 & 1.68 & +68.3 \\
+\bottomrule
+\end{tabular}
+\caption{Per-bin MBD$\times$vertex efficiency. The binning is \texttt{pT\_bins\_truth} (14 bins, extended on both sides of the 12 reco fiducial bins for unfolding overflow), which is why Table~\ref{tab:mbdeff} has 14 rows but Table~\ref{tab:xs} is read on the reco 12-bin partition. The difference grows monotonically with $E_T$ because high-$E_T$ clusters are correlated with higher-$|z_{\rm vtx}|$ events (wider MC distribution keeps more events far from $z=0$).}
+\label{tab:mbdeff}
+\end{table}
+
+%% =====================================================================
+\section*{2. Cross section, bin by bin}
+\vspace{-0.5em}
+
+Values from \texttt{h\_unfold\_sub\_result} (unfolded spectrum after efficiency correction).
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{rrrrr}
+\toprule
+$p_T$ [GeV] & XS$^{\rm nom}$ & XS$^{\rm noRwt}$ & noRwt/nom & $\Delta$ [\%] \\
+\midrule
+  7--8    & 6.90e+02 & 9.51e+02 & 1.378 & +37.8 \\
+  8--10   & 1.03e+03 & 1.42e+03 & 1.371 & +37.1 \\
+ 10--12   & 5.19e+02 & 7.36e+02 & 1.419 & +41.9 \\
+ 12--14   & 2.38e+02 & 3.45e+02 & 1.451 & +45.1 \\
+ 14--16   & 1.07e+02 & 1.58e+02 & 1.478 & +47.8 \\
+ 16--18   & 4.60e+01 & 6.94e+01 & 1.510 & +51.0 \\
+ 18--20   & 2.08e+01 & 3.19e+01 & 1.534 & +53.4 \\
+ 20--22   & 9.59e+00 & 1.52e+01 & 1.581 & +58.1 \\
+ 22--24   & 5.19e+00 & 8.14e+00 & 1.567 & +56.7 \\
+ 24--26   & 2.42e+00 & 3.91e+00 & 1.614 & +61.4 \\
+ 26--28   & 9.40e-01 & 1.57e+00 & 1.673 & +67.3 \\
+ 28--32   & 4.31e-01 & 6.92e-01 & 1.605 & +60.5 \\
+ 32--36   & 1.86e-01 & 3.15e-01 & 1.697 & +69.7 \\
+ 36--45   & 1.89e-02 & 3.31e-02 & 1.746 & +74.6 \\
+\bottomrule
+\end{tabular}
+\caption{Per-bin unfolded cross section (\texttt{h\_unfold\_sub\_result}, same arbitrary-units normalisation in both files --- the ratio is what matters). Mean ratio over the 12 reco fiducial bins ($8 \le p_T \le 36$): \textbf{1.53}. Max deviation: \textbf{+70\%} at $p_T = 32$--$36$\,GeV. The XS ratio is slightly \emph{larger} than $1/\varepsilon_{\rm MBD}^{\rm nom/noRwt}$ because the unfolding response matrix also carries a vertex-dependent kinematic smearing that is re-calibrated by the reweight.}
+\label{tab:xs}
+\end{table}
+
+\noindent\textbf{Invariants across the two configs} (verified by numerical re-derivation):
+\begin{itemize}
+\item Data A-region yield $h_{\rm tight\_iso\_cluster\_0}$ --- bit-identical (reweight does not touch data).
+\item ABCD $R$ factor $h_R$ --- bit-identical.
+\item Purity \texttt{gpurity} (bins 1--11) --- max change 0.7\% at $p_T=25$\,GeV (bin 12 is the pathologically-empty top-$p_T$ extrapolation, ignore).
+\end{itemize}
+So the full XS shift propagates through \emph{only} the MC-derived efficiencies (MBD$\times$vertex plus the unfolding response).
+
+%% =====================================================================
+\section*{3. Code review: MBD efficiency under vertex reweighting}
+
+\noindent\textbf{Definition} (\texttt{CalculatePhotonYield.C:1011}):
+\[
+\varepsilon_{\rm MBD}(i) \;=\;
+\frac{h_{\rm truth\_pT\_vertexcut\_mbd\_cut}(i)}{h_{\rm truth\_pT\_vertexcut}(i)} \;+\; \texttt{mbd\_eff\_scale}
+\]
+\begin{itemize}
+\item Denominator (\texttt{RecoEffCalculator\_TTreeReader.C:1774}): truth-photon fill with $|z_{\rm vtx}^{\rm truth}|<60$\,cm.
+\item Numerator (\texttt{RecoEffCalculator\_TTreeReader.C:1785}): same plus $|z_{\rm vtx}^{\rm reco}|<60$\,cm AND $N_{\rm hit}^{\rm MBD\,N}\!\ge\!1$ AND $N_{\rm hit}^{\rm MBD\,S}\!\ge\!1$.
+\item \texttt{mbd\_eff\_scale} (default 0.0, \texttt{CalculatePhotonYield.C:135}): unused in the nominal.
+\item \texttt{mbdcorr = 25.2/42/0.57 $\approx 1.053$} at \texttt{CalculatePhotonYield.C:54} is \textbf{dead code} --- defined but never referenced. Wiki article \texttt{wiki/pipeline/04-efficiency-yield.md} still documents it as the live MBD correction; needs updating.
+\end{itemize}
+
+\noindent\textbf{Vertex reweighting application} (\texttt{RecoEffCalculator\_TTreeReader.C:1388--1426}):
+\[
+  w_{\rm vtx}(\textrm{event}) \;=\; \left\{ \begin{array}{ll}
+    h_{\rm vtx\_reweight}\mathrm{.Interpolate}(z_{\rm vtx}^{\rm reco}) & \text{if } z_{\rm vtx}^{\rm reco}\in[X_{\rm min},X_{\rm max}] \\
+    0 & \text{otherwise}
+  \end{array} \right.
+\]
+where $h_{\rm vtx\_reweight}$ is the smoothed, rebinned ($\Delta z = 5$\,cm), unit-integral-normalised data/MC $z$-vertex histogram loaded from the Pass\,1 \texttt{vtxscan} files, and $[X_{\rm min},X_{\rm max}]$ is the histogram's axis range (typically $|z|\lesssim 100$\,cm; the value at runtime is determined dynamically from the loaded histogram). The event-level product \texttt{weight $= $ cross\_weight $\times$ vertex\_weight} is applied to \emph{every} histogram fill in Pass\,2, including both \texttt{h\_truth\_pT\_vertexcut[\_mbd\_cut]} histograms.
+
+\noindent\textbf{Correctness under reweighting.}
+\begin{enumerate}
+\item[(a)] \textcolor{blue}{PASS.} Numerator and denominator both use the reweighted per-event weight (see lines 1774, 1785). The reweight is applied coherently.
+\item[(b)] \textcolor{blue}{PASS.} Fills are per-truth-photon-event, with one \texttt{vertex\_weight} per event applied uniformly to all fills.
+\item[(c)] \textcolor{blue}{PASS.} Vertex fiducial cuts ($|z_{\rm reco}|<60$ in numerator, $|z_{\rm truth}|<60$ in denominator) are consistent: this is the intended definition (``fraction of truth-fiducial events that also pass the reco vertex + MBD trigger cut'').
+\item[(d)] \textcolor{blue}{PASS.} The reweight window ($|z|\le 100$\,cm) strictly encloses the fiducial cut ($|z|<60$\,cm), and events outside the reweight window get $w_{\rm vtx}=0$ on both sides of the ratio --- symmetric zeroing.
+\item[(e)] \textcolor{blue}{PASS.} Reweight is \texttt{PDF\_data / PDF\_sim} with both normalised to unit integral, so $E[w_{\rm vtx}]\simeq 1$ over the MC and yields are preserved to first order; the ratio is doubly coherent against residual normalisation drift.
+\end{enumerate}
+
+\noindent\textbf{Config knob}: \texttt{analysis.vertex\_reweight\_on: 1} (nominal) \textrightarrow\ \texttt{0} (off). Already registered as a systematic variant in \texttt{make\_bdt\_variations.py} line 128 (\texttt{syst\_type: vtx\_reweight}, \texttt{syst\_role: one\_sided}). Pre-made config: \texttt{efficiencytool/config\_bdt\_vtxreweight0.yaml}.
+
+%% =====================================================================
+\section*{4. Why the change is so large (physics)}
+
+The vertex reweight is \emph{strong}: the MC $h_{\rm vertexz}$ rms is $49.5$\,cm (read from \texttt{h\_vertexz} in the photon5+10+20 Pass-1 vtxscan files, GEANT truth beam plus rec smearing); data is $19.6$\,cm (from \texttt{data\_histo\_bdt\_vtxreweight0\_vtxscan.root}). Weights range over $0.06$--$3.48$, with $w(z=0) \approx 3.48$. MC has $\sim\!60\%$ of its events at $|z|>30$\,cm where both the vertex cut and the MBD-trigger acceptance degrade; reweighting pulls the effective distribution to the narrow data peak, where acceptance is high. The efficiency correction, by construction, reflects the beam profile of the events one is correcting --- in this case, data. Without reweighting, MC is correcting the data with \emph{MC's own} much-broader beam, which is nonsensical.
+
+The mismatch grows with $E_T$ because higher-$E_T$ reconstructed clusters have larger $|z|$ sensitivity through the $\eta$ acceptance: a cluster at fixed tower position maps to larger $|\eta|$ for larger $|z|$, which moves it off the barrel acceptance. The ET-dependent $\varepsilon_{\rm MBD}^{\rm noRwt}$ drop (0.71 $\to$ 0.51 from 7.5 to 40.5 GeV) reflects this geometric correlation.
+
+%% =====================================================================
+\section*{Reviewer pass matrix}
+
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+CalculatePhotonYield.C (eff formula)      & PASS & N/A & N/A  & N/A \\
+RecoEffCalculator\_TTreeReader.C (weight) & PASS & N/A & N/A  & N/A \\
+g\_mbd\_eff (TGraph, both files)          & N/A  & N/A & PASS & N/A \\
+h\_unfold\_sub\_result (both files)       & N/A  & N/A & PASS & N/A \\
+vtxreweight\_comparison.pdf               & N/A  & PASS& N/A  & N/A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{No code changes were needed --- this was a read-only investigation} (fix-validator marked N/A throughout).
+
+%% =====================================================================
+\section*{Recommendations}
+
+\begin{enumerate}
+\item \textbf{Keep vertex reweighting ON in the nominal} --- the 30--40\% shift is the \emph{correction}, not an uncertainty.
+\item \textbf{Update wiki} \texttt{wiki/pipeline/04-efficiency-yield.md} to remove the stale \texttt{mbdcorr = 25.2/42/0.57} documentation: that factor is present in code but unused. The live MBD$\times$vertex correction is the per-bin \texttt{vertex\_eff\_val} from \texttt{g\_mbd\_eff} (lines 1011--1013).
+\item \textbf{Add a code comment} near \texttt{CalculatePhotonYield.C:1011} explaining that the denominator uses $|z_{\rm truth}|<60$ while the numerator uses $|z_{\rm reco}|<60$ + MBD --- the asymmetry is intentional (it measures the combined reco-vertex + MBD-trigger efficiency referenced to truth-fiducial events) but is easy to miss when reading.
+\item \textbf{Remove dead code} \texttt{mbdcorr} at \texttt{CalculatePhotonYield.C:54} or clearly mark it legacy. It is misleading to anyone grepping for "mbd" in this file.
+\item \textbf{Optional: report vertex reweighting as a systematic.} It is registered as \texttt{syst\_type: vtx\_reweight} in \texttt{make\_bdt\_variations.py}, but this is \emph{not} the right way to propagate it --- the ``off'' variant is not a plausible physics hypothesis, so its deviation is not a Gaussian-like uncertainty. If keeping it as a systematic for book-keeping, document that this is a closure-test bound, not a statistical uncertainty. The real systematic should instead be the shape uncertainty of the data $z$-vertex PDF (e.g., from run-to-run variation or statistical fluctuations of the vtxscan histogram).
+\end{enumerate}
+
+%% =====================================================================
+\section*{Files touched}
+\begin{itemize}
+\item \texttt{plotting/plot\_vtxreweight\_comparison.C} --- new macro (2-panel comparison plot)
+\item \texttt{plotting/figures/vtxreweight\_comparison.pdf} --- figure output
+\item \texttt{reports/figures/vtxreweight/vtxreweight\_comparison.pdf} --- copy for this report
+\item \texttt{reports/vtxreweight\_impact.tex} --- this report
+\item Python re-derivation scripts staged at \texttt{/tmp/nom\_vs\_vtxreweight0\_extract.py} and \texttt{/tmp/extract\_mbd\_and\_vtxw.py} (not committed).
+\end{itemize}
+
+\end{document}

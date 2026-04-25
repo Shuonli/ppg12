@@ -1,0 +1,32 @@
+slimtree-based all-z luminosity cross-check (Photon_4_GeV = bit 30)
+========================================================================
+Runs in slimtree output: 1432
+  0 mrad   (RN <  51274): 748 runs
+  1.5 mrad (RN >= 51274): 684 runs
+
+Aggregate totals (pb^-1):
+  All      : UC   slim=  58.5484  joey=  58.1417  ratio=1.0070
+  All      : Corr slim=  64.8032  joey=  64.3718  ratio=1.0067
+  0 mrad   : UC   slim=  41.8653  joey=  41.5934  ratio=1.0065
+  0 mrad   : Corr slim=  47.5000  joey=  47.2076  ratio=1.0062
+  1.5 mrad : UC   slim=  16.6832  joey=  16.5483  ratio=1.0081
+  1.5 mrad : Corr slim=  17.3032  joey=  17.1642  ratio=1.0081
+
+Per-run ratio slim/joey (UC):   median=1.0000  mean=1.0091  std=0.1122
+Per-run ratio slim/joey (Corr): median=1.0000  mean=1.0091  std=0.1122
+Runs with UC ratio in [0.95, 1.05]: 1409 / 1428
+Runs with UC ratio > 1.10:          11 / 1428
+Runs with UC ratio < 0.90:          1 / 1428
+
+Top 10 UC outliers (|ratio - 1| largest):
+  RN      L_UC_slim    L_UC_joey    ratio    PS_phot  nevt_slim
+  52436    0.006847    0.001799    3.806     2.00  12793
+  52459    0.038899    0.013103    2.969     1.00  34909
+  52418    0.010653    0.003662    2.909     1.00  9428
+  52437    0.030140    0.016117    1.870     1.00  28152
+  52458    0.051881    0.028853    1.798     1.00  47791
+  52419    0.020674    0.011730    1.762     1.00  18208
+  52438    0.048115    0.033557    1.434     1.00  43823
+  52415    0.016971    0.011990    1.415     1.00  15170
+  53647    0.005217    0.008369    0.623     3.00  20960
+  52440    0.006036    0.004767    1.266     1.00  5498

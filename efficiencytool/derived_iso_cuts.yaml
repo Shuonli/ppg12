@@ -1,0 +1,4 @@
+# Derived iso cuts (target efficiency 0.7) -- see derive_iso_cuts.py
+donutExcl_noinner:
+  reco_iso_max_b: 0.07160025704038137
+  reco_iso_max_s: 0.01624313291612557

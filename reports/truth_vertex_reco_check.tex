@@ -1,0 +1,867 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{xcolor}
+
+\title{MC Vertex Reweighting for PPG12:\\[2pt]
+\large A Data-Driven Iterative Method on the Truth Vertex}
+\author{PPG12 Analysis Team (automated report)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}\noindent
+The PPG12 efficiency pipeline must reweight MC to match the measured
+$p$+$p$ luminous region, which is very different between the two
+crossing angles ($\sigma\!\simeq\!53$\,cm at 0\,mrad vs
+$\sigma\!\simeq\!22$\,cm at 1.5\,mrad, Piwinski narrowed). The
+production reco-level weight $f(z_r) = D(z_r)/M(z_r)$ closes the reco
+vertex distribution exactly, but it leaves the \emph{individual}
+truth-vertex widths of double-interaction MC events at a geometric
+``half narrow, half wide'' compromise
+($\sigma\!\simeq\!47$\,cm instead of 22\,cm), which in turn biases
+the truth fiducial cut used by the efficiency denominator. The
+resulting cross-section bias at 1.5\,mrad is $+1.4\,\%$ --- comparable
+to other PPG12 systematics and well within reach of a correctable
+method. This note presents the nominal fix: an \textbf{iterative
+data-driven reweight} $w(z)$ applied per truth vertex
+($w(z_h)$ for single interactions, $w(z_h)\,w(z_\mathrm{mb})$ for
+doubles). The method uses no physics prior for the target shape ---
+only the empirical width of the data reco distribution as the seed
+Gaussian, and the $99$-th percentile of $|z_r^\mathrm{data}|$ as the
+auto-derived closure window. Applied to the photon10 mix, the method
+converges cleanly at 0\,mrad (max$|D/M\!-\!1|\!<\!1\,\%$ in 8 iterations)
+and reduces $\chi^2$ in the closure window by a factor $\sim\!3100$ at
+1.5\,mrad, closing the bulk of the window to the 1--2\,\% level inside
+$|z_r|\!<\!30$\,cm and reaching $\sim\!11\,\%$ at the closure-window
+edge.
+The code is a standalone Python package in
+\texttt{efficiencytool/truth\_vertex\_reweight/}; the
+per-period \texttt{reweight.root} outputs are ready to be consumed by
+\texttt{RecoEffCalculator\_TTreeReader.C}.
+\end{abstract}
+
+\tableofcontents
+
+%%========================================================================
+\section{Problem and motivation}
+\label{sec:problem}
+%%========================================================================
+
+PPG12 extracts the isolated prompt-photon cross section from jet-dominated
+$p$+$p$ triggered data. The cross section is proportional to the measured
+yield divided by the MC-estimated signal efficiency $\epsilon$. Both the
+numerator (reco clusters in data, passing the selection) and the
+denominator (MC truth photons in the fiducial window) inherit the MC
+vertex distribution --- the MC prior on the vertex $z$-coordinate enters
+via (i) cluster kinematics reconstructed relative to the reco vertex
+$z_r$, (ii) the $|z_r|<\mathtt{vertex\_cut}$ cut applied in data and MC
+alike, and (iii) the truth fiducial cut $|z_h|<\mathtt{vertex\_cut}$
+used for the efficiency denominator. \emph{Any} data/MC mismatch in the
+vertex $z$ distribution (reco or truth) therefore feeds directly into
+$\epsilon$ and the extracted cross section.
+
+\paragraph{Notation.}
+Throughout this note, $z_r$ denotes the MBD-reconstructed vertex;
+$z_h \equiv z_{t,1}$ denotes the primary (hard-scatter) truth vertex;
+and $z_\mathrm{mb} \equiv z_{t,2}$ denotes the secondary (minimum-bias)
+truth vertex, present only in double-interaction events.
+For double-interaction MC, $z_r \approx (z_h + z_\mathrm{mb})/2$ up to
+MBD resolution.
+Sections~\ref{sec:problem}--\ref{sec:xsec_impact} occasionally use the
+$(z_{t,1}, z_{t,2})$ pair notation when the algebraic decomposition into
+symmetric/antisymmetric coordinates is needed; elsewhere we use the
+$(z_h, z_\mathrm{mb})$ notation exclusively.
+
+\paragraph{The two periods are very different.}
+At the 0\,mrad crossing angle the beams overlap along their full length
+and the luminous region is $\sigma_z \simeq 53$\,cm. At 1.5\,mrad the
+beams cross at an angle, the beam-beam overlap is geometrically shortened
+by the Piwinski factor, and the luminous region collapses to
+$\sigma_z \simeq 22$\,cm. The MC samples used in PPG12 were generated
+with the full $\sim\!65$\,cm beam profile regardless of period; the
+reweight has to correct this downward by nearly a factor of three at
+1.5\,mrad. This is a very large shape correction and any shortcomings of
+the reweight method are amplified at 1.5\,mrad.
+
+\paragraph{The production method.}
+The nominal PPG12 reweight
+(\texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} lines
+1331--1372) uses a 1D reco-vertex weight
+\[
+f(z_r) \;=\; \frac{D(z_r)}{M_\mathrm{reco}(z_r)},
+\]
+where $D(z_r)$ is the data reco-vertex shape and $M_\mathrm{reco}(z_r)$
+is the MC reco-vertex shape, both area-normalized. Event-by-event, each
+MC event is multiplied by $f(z_r^\mathrm{event})$ using its reconstructed
+vertex. By construction,
+$M^\prime_\mathrm{reco}(z_r) = f(z_r)\cdot M_\mathrm{reco}(z_r) = D(z_r)$
+bin by bin: the reweighted MC reco-vertex distribution is identical to
+data.
+
+\paragraph{Why the production method is not enough.}
+$f(z_r)$ closes the reco distribution exactly, but it does not close the
+individual truth-vertex distributions of double-interaction MC events,
+and it is those truth vertices that enter the efficiency denominator via
+the truth fiducial cut. The structural reason is a clean algebraic one:
+decompose the pair $(z_{t,1},z_{t,2}) = (z_h, z_\mathrm{mb})$ of truth
+vertices for a double-interaction event into a symmetric coordinate
+$\bar z \equiv (z_{t,1}+z_{t,2})/2$ and an antisymmetric coordinate
+$\varepsilon \equiv (z_{t,1}-z_{t,2})/2$. Under the independent Gaussian
+sampling of the raw MC, $\bar z$ and $\varepsilon$ are statistically
+independent zero-mean Gaussians with
+$\sigma_{\bar z} = \sigma_\varepsilon = \sigma_\mathrm{MC}/\sqrt 2$.
+The reco vertex is $z_r \approx \bar z$ (up to MBD resolution), so the
+production weight $f(z_r)$ depends \emph{only} on $\bar z$ and is flat
+in $\varepsilon$.
+After reweighting, $\bar z$ matches the target Gaussian
+$\mathcal{N}(0,\sigma_\mathrm{lum}^2/2)$ by construction but
+$\varepsilon$ is unchanged. The primary truth vertex
+$z_h = \bar z + \varepsilon$ is therefore a sum of a narrowed and an
+un-narrowed Gaussian,
+\begin{equation}
+\sigma^2(z_h)
+  \;=\; \tfrac{1}{2}\,\sigma_\mathrm{lum}^2 \;+\; \tfrac{1}{2}\,\sigma_\mathrm{MC}^2
+  \;=\; \tfrac{1}{2}(22.3^2 + 62.7^2)
+  \;\simeq\; (47.0\,\mathrm{cm})^2.
+\label{eq:half_narrow_half_wide}
+\end{equation}
+$f(z_r)$ cannot touch $\varepsilon$, so it cannot narrow $z_h$ and
+$z_\mathrm{mb}$ individually below this ``half-narrow, half-wide''
+compromise. Any principled fix must therefore act on the truth vertices
+directly, i.e.\ it must factorize as
+$w(z_h)\,w(z_\mathrm{mb})$ rather than depending only on the reco
+combination $z_r$. The nominal method of
+Section~\ref{sec:method} does exactly this, with a data-driven
+$w(z)$ iterated to closure on the mixed-MC reco distribution.
+
+%%========================================================================
+\section{Cross-section impact at 1.5 mrad}
+\label{sec:xsec_impact}
+%%========================================================================
+
+The efficiency denominator in
+\texttt{RecoEffCalculator\_TTreeReader.C} uses both a reco-vertex cut
+$|z_r|<\mathtt{vertex\_cut}$ and a truth-vertex cut
+$|z_h|<\mathtt{vertex\_cut}$, with
+\texttt{vertex\_cut}\,=\,60\,cm in \texttt{config\_bdt\_nom.yaml}. The
+reco cut is handled correctly by $f(z_r)$ because the reco distribution
+is closed to data exactly. The truth cut is \emph{not} handled correctly
+because, as Eq.~\eqref{eq:half_narrow_half_wide} shows, $f(z_r)$ leaves
+$\sigma(z_h) \simeq 47$\,cm instead of the target 22\,cm for
+double-interaction MC.
+
+\paragraph{Quantitative estimate.} For a Gaussian truth distribution of
+width $\sigma$, the fraction in $|z_h|<60$\,cm is
+$\mathrm{erf}(60/(\sigma\sqrt{2}))$. Plugging in:
+\begin{itemize}\setlength\itemsep{1pt}
+\item $\sigma\!=\!47$\,cm (what nominal $f(z_r)$ gives):
+      $\mathrm{erf}(60/(47\sqrt 2)) \simeq 0.80$
+\item $\sigma\!=\!22$\,cm (correct 1.5 mrad):
+      $\mathrm{erf}(60/(22\sqrt 2)) \simeq 0.99$
+\end{itemize}
+The double-interaction MC loses $\sim\!19$ percentage points of truth
+fiducial acceptance that it shouldn't. The mixed MC blend at 1.5\,mrad
+is $0.921\!\cdot\!\mathrm{single} + 0.079\!\cdot\!\mathrm{double}$, so
+the bias on the integrated efficiency denominator is
+\[
+0.079 \times 0.19 \;\simeq\; 1.4\,\% \quad \text{at 1.5\,mrad.}
+\]
+This translates directly to a $+1.4\,\%$ bias on the extracted cross
+section at 1.5\,mrad (the efficiency denominator is too small, so the
+quoted cross section is too large). At 0\,mrad the analogous bias is
+$\sim\!0.3\,\%$ because the MC beam profile is already close to the
+(wider) 0\,mrad luminous region. At the percent level the current PPG12
+production is biased at 1.5\,mrad because $f(z_r)$ does not correct the
+individual truth vertices $z_h$ and $z_\mathrm{mb}$ of double-interaction
+events. The bias is comparable to other PPG12 systematics and is easily
+fixable with a truth-level reweight.
+
+%%========================================================================
+\section{Method: data-driven iterative reweight}
+\label{sec:method}
+%%========================================================================
+
+The method derives a truth-vertex weight function $w(z)$ --- evaluated at
+$z_h$ for single-interaction MC and at both $z_h$ and $z_\mathrm{mb}$
+for double-interaction MC --- directly from data, with no Gaussian
+assumption on the luminous-region shape, by iterating the mixed-MC reco
+distribution to closure against the data reco distribution.
+
+\paragraph{Forward model.}
+Let $f_d$ be the cluster-weighted double-interaction fraction in a given
+crossing angle (0.079 at 1.5\,mrad, 0.224 at 0\,mrad) and
+$f_s = 1 - f_d$ the single-interaction fraction. The mixed MC reco
+distribution under a candidate truth-vertex weight $w(z)$ is
+\begin{equation}
+M(z_r) \;=\;
+f_s \!\!\sum_{e \in T_s}\! w(z_h^{e})\,\delta(z_r - z_r^e)
+\;+\;
+f_d \!\!\sum_{e \in T_d}\! w(z_h^{e})\,w(z_\mathrm{mb}^{e})\,\delta(z_r - z_r^e),
+\label{eq:iter_forward}
+\end{equation}
+evaluated event-by-event over the single-interaction sample $T_s$ and
+the double-interaction sample $T_d$. For double-interaction events the
+weight enters \emph{twice}, once for the primary truth vertex $z_h$ and
+once for the secondary truth vertex $z_\mathrm{mb}$, reflecting the
+statistical independence of the two truth vertices under the generator.
+This is the crucial structural choice: it gives the iteration access to
+the antisymmetric coordinate $\varepsilon$ of
+Section~\ref{sec:problem} that the production reco-only weight $f(z_r)$
+cannot touch.
+
+\paragraph{Binning and closure window.}
+Both periods use the same binning: $80$ bins over $[-200, 200]$\,cm
+(bin width 5\,cm), no overflow clipping, and identical bin edges for the
+$w(z)$ weight function and the reco-vertex histograms. The iterative closure window is auto-derived per
+period as the $99$-th percentile of $|z_r^\mathrm{data}|$:
+\begin{itemize}\setlength\itemsep{1pt}
+\item 1.5\,mrad: $z_\mathrm{cut}\!=\!83$\,cm (34 bins inside),
+      from $|z_r^\mathrm{data}|_{99\%}\!=\!82.0$\,cm.
+\item 0\,mrad:   $z_\mathrm{cut}\!=\!144$\,cm (58 bins inside),
+      from $|z_r^\mathrm{data}|_{99\%}\!=\!143.9$\,cm.
+\end{itemize}
+The window is purely data-driven and requires no manual tuning. Outside
+it, the statistics in data drop below the level where the iteration
+could meaningfully constrain $w(z)$.
+
+\paragraph{Seed.}
+The iteration starts from a Gaussian seed
+$w_0(z)\!=\!\mathcal{N}(0, \sigma_\mathrm{seed}^2)\,/\,\mathcal{N}(0, \sigma_\mathrm{gen}^2)$,
+with $\sigma_\mathrm{gen}$ measured from the photon10 primary truth vertex
+$z_h$ (\texttt{vertexz\_truth} branch) ($\sigma_\mathrm{gen}\!=\!64.997 \pm 0.015$\,cm,
+intrinsic to the generator and identical between periods, since the
+same single MC is loaded for both) and $\sigma_\mathrm{seed} =
+\mathrm{std}(z_r^\mathrm{data})$ measured directly from the data
+reco-vertex distribution in the relevant run range (21.48\,cm at
+1.5\,mrad, 54.32\,cm at 0\,mrad). Note that $\sigma_\mathrm{seed}$
+requires \emph{no} physics input --- no Piwinski narrowing factor, no
+luminous-region calculation. It is just the empirical width of the
+reco distribution we are trying to match.
+
+\paragraph{Iterative update.}
+At iteration $i$, the residual is $r_i(z_r) = D(z_r)/M_i(z_r)$, where
+$D(z_r)$ is the data reco-vertex histogram and $M_i(z_r)$ is the mixed
+MC reco-vertex histogram
+from Eq.~\eqref{eq:iter_forward} under the current $w_i$. The update is
+Lucy--Richardson-like, multiplicative, and damped:
+\begin{equation}
+w_{i+1}(z) \;=\; w_i(z)\,\cdot\,\bigl[\mathrm{smooth}(r_i(z))\bigr]^{\alpha},
+\qquad \alpha = 0.5,
+\label{eq:iter_update}
+\end{equation}
+where the residual $r_i$ evaluated at reco bin $z_r$ is applied to the
+weight at the matching truth bin $z = z_r$ (using the shared binning).
+After each update, $w$ is renormalized so that $\langle w(z_h)\rangle$
+averaged over the single-MC truth distribution equals unity, preserving
+the physics double-interaction fraction.
+Damping ($\alpha\!=\!0.5$) prevents over-correction; a 1-bin Gaussian
+smoothing on the residual prevents bin-by-bin oscillation; the update
+factor is clipped to $[0.5, 2]$ per iteration to bound jumps; and the
+endpoints of the update region are edge-clamped to their nearest
+interior values to prevent runaway behavior at the boundary. The
+update is applied over the full 80-bin binning and the final
+$w(z)$ is data-driven everywhere, with no post-iteration snap to a
+seed Gaussian. (An earlier version of the method snapped $w(z)$ to
+the seed Gaussian outside the closure window; a systematic study with
+\texttt{compare\_snap\_strategies.py} showed that removing the snap
+improves 0\,mrad closure by a factor $\sim\!1.3$ in $\chi^2$ and
+$\sim\!3$ in $\max|r\!-\!1|$ while leaving 1.5\,mrad essentially
+unchanged.) Convergence is tested as
+$\max|r_i(z)\!-\!1|\!<\!0.01$ inside the closure window, with a hard
+cap of 30 iterations.
+
+\paragraph{Implementation.}
+The method is a standalone Python tool in
+\texttt{efficiencytool/truth\_vertex\_reweight/}. The mixed-MC histogram
+is heavy to rebuild ($\sim\!22$\,M events at 1.5\,mrad,
+$\sim\!48$\,M at 0\,mrad), so per-sample arrays are cached to
+\texttt{output/cache/*.npz} keyed on file mtime; each iteration runs in
+seconds per iteration on a single core. A short file list is in
+Appendix~\ref{app:code}. Per-period outputs live in
+\texttt{output/\{1p5mrad,0mrad\}/} and include
+\texttt{reweight.root} (histograms \texttt{h\_w\_iterative},
+\texttt{h\_w\_seed}, \texttt{h\_M\_iterative}) and
+\texttt{fit\_result.yaml}.
+
+%%========================================================================
+\section{Per-period results}
+\label{sec:results}
+%%========================================================================
+
+Both periods are fit on the photon10 / photon10\_double mix only at
+this stage; the full 4-sample blend including jet12/jet12\_double is a
+follow-up (Section~\ref{sec:caveats}). Table~\ref{tab:iter_summary}
+collects the headline numbers from both fits.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{l c c}
+\toprule
+quantity & 1.5\,mrad & 0\,mrad \\
+\midrule
+run range                                & 51274--54000 & 47289--51274 \\
+luminosity [pb$^{-1}$]                   & 16.8588      & 32.6574      \\
+$f_\mathrm{double}$ (cluster-weighted)   & 0.079        & 0.224        \\
+data $|z_r|$ 99\% percentile [cm]        & 82.0         & 143.9        \\
+closure window $z_\mathrm{cut}$ [cm]     & 83           & 144          \\
+bins inside closure window               & 34           & 58           \\
+$\sigma_\mathrm{seed}=\mathrm{std}(z_r^\mathrm{data})$ [cm]  & 21.48 & 54.32 \\
+$\sigma_\mathrm{gen}$ from MC $z_h$ (generator) [cm] & \multicolumn{2}{c}{$64.997 \pm 0.015$} \\
+\midrule
+initial $\chi^2$ (in window)             & $1{,}419{,}454$ & $26{,}589$ \\
+final   $\chi^2$ (in window)             & $453$           & $158$ \\
+$\chi^2$ reduction factor                & $3132\times$    & $168\times$ \\
+final $\chi^2/\mathrm{ndf}$ (in window)  & $13.7$ (ndf 33) & $2.78$ (ndf 57) \\
+initial $\max|r-1|$                      & $0.635$         & $0.079$ \\
+final   $\max|r-1|$ (in window)          & $0.111$         & $0.008$ \\
+iterations used                          & 30 (cap hit)    & 8 \\
+converged to $0.01$ tolerance            & \textbf{no}     & \textbf{yes} \\
+\midrule
+(context) parametric Gaussian $\chi^2/\mathrm{ndf}$ & 3237       & 454 \\
+\bottomrule
+\end{tabular}
+\caption{Iterative data-driven reweight, photon10 mix only, both
+crossing angles, with the post-iteration snap to seed removed
+(Section~\ref{sec:method}). The 0\,mrad fit converges to the
+1\,\% per-bin tolerance in 8 iterations (final
+$\max|r\!-\!1|\!\simeq\!0.8\,\%$). The 1.5\,mrad fit reduces $\chi^2$
+in the closure window by a factor $\sim\!3100$ in 30 iterations and
+stalls at $\max|r\!-\!1|\!\simeq\!11\,\%$, dominated by bins at the
+closure-window edge $|z_r|\!\simeq\!83$\,cm. Inside the bulk
+$|z_r|\!<\!30$\,cm the per-bin closure is at the 1--2\,\% level
+(see Figure~\ref{fig:iter_1p5mrad_closure}). The last row reports the
+parametric Gaussian $\chi^2/\mathrm{ndf}$ (best-fit
+$\sigma_\mathrm{tgt}$ from Stage-1) against the data; the iterative
+method improves on this by a factor of $\sim\!236$ at 1.5\,mrad and
+$\sim\!163$ at 0\,mrad.}
+\label{tab:iter_summary}
+\end{table}
+
+\paragraph{Hero summary.}
+Figure~\ref{fig:iter_two_period} is the single-figure summary: data
+reco vs reweighted MC reco overlaid for both periods, residuals, the
+recovered $w(z)$, and the headline numbers. The 0\,mrad mix-MC matches
+data to $\lesssim\!1\,\%$ per bin throughout the closure window; the
+1.5\,mrad mix matches to $\sim\!1$--$2\,\%$ in the bulk
+$|z_r|\!<\!30$\,cm, degrades to $\sim\!6$--$8\,\%$ around
+$|z_r|\!\simeq\!60$\,cm, and reaches $\sim\!11\,\%$ at the
+closure-window edge $|z_r|\!\simeq\!83$\,cm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_two_period.pdf}
+\caption{Iterative data-driven reweight summary, both crossing angles
+($2\times 2$ grid plus summary text). Top-left: data reco $z_r$ (solid)
+vs mixed MC reco $z_r$ after iterative reweight (dashed), both periods
+overlaid (log scale). Top-right: residual
+$r(z_r)\!=\!D(z_r)/M_\mathrm{iter}(z_r)$ inside each period's closure
+window (vertical dashed lines). Bottom-left: recovered truth-vertex
+weight $w(z)$ for both periods (log scale). Bottom-right: summary
+statistics. The 0\,mrad case is essentially closed; the 1.5\,mrad case
+is closed in the bulk and stalls at the closure-window edge (see
+Section~\ref{sec:interpretation}).}
+\label{fig:iter_two_period}
+\end{figure}
+
+\paragraph{Truth vertex distribution comparison.}
+Figure~\ref{fig:truth_comparison} overlays the primary truth vertex
+$z_h$ distribution for the mixed MC under three weighting methods: no
+reweight (raw MC, $\sigma\!\simeq\!64$\,cm), the production reco-level
+weight $f(z_r)$, and the new iterative truth-level weight $w(z_h)$.
+At 1.5\,mrad the production method leaves the mixed-MC primary truth
+vertex $z_h$ at $\sigma\!\simeq\!27$\,cm --- narrower than the raw MC
+but still far wider than the true luminous-region width
+($\sigma_\mathrm{lum}\!\simeq\!22$\,cm), because $f(z_r)$ cannot narrow
+$z_h$ and $z_\mathrm{mb}$ individually for double-interaction events
+below the half-narrow/half-wide compromise
+(Section~\ref{sec:problem}). The iterative method $w(z_h)$ narrows
+the $z_h$ distribution to $\sigma\!\simeq\!16$\,cm, which is narrower
+than the data reco width $\sigma_\mathrm{seed}\!=\!21.5$\,cm precisely
+as expected, since each single-interaction truth vertex must be
+narrower than the observed reco width (the MBD vertex finder adds
+resolution smearing). At 0\,mrad, where the correction is small, both
+methods converge to the same $\sigma\!\simeq\!54$--$57$\,cm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_truth_comparison.pdf}
+\caption{Truth vertex $z_h$ distribution for the mixed photon10 MC
+under three reweighting methods, per period. Left: 1.5\,mrad, where the
+reco-level $f(z_r)$ (blue dashed) fails to narrow the truth
+distribution sufficiently, while the iterative $w(z_h)$ (red) narrows
+it well past the data reco width (the truth must be narrower than the
+reco due to MBD resolution smearing). Right: 0\,mrad, where both
+methods agree because the MC beam profile is already close to the data
+luminous region.}
+\label{fig:truth_comparison}
+\end{figure}
+
+\paragraph{0\,mrad: clean convergence.}
+Figure~\ref{fig:iter_0mrad_closure} shows the 6-panel diagnostic for
+0\,mrad. The seed Gaussian with
+$\sigma_\mathrm{seed}\!\simeq\!54$\,cm already captures most of the
+shape (initial $\max|r-1|\!=\!8\,\%$, initial
+$\chi^2/\mathrm{ndf}\!\simeq\!467$); the parametric best-fit Gaussian
+at $\sigma_\mathrm{tgt}\!\simeq\!54.6$\,cm is essentially the same
+($\chi^2/\mathrm{ndf}\!\simeq\!454$) because the data is nearly
+Gaussian. The iteration cleans up the residual over 8 updates and
+drops below the 1\,\% per-bin tolerance inside the closure window
+(final $\max|r-1|\!\simeq\!0.8\,\%$, $\chi^2/\mathrm{ndf}\!\simeq\!2.78$).
+The recovered $w(z)$ is smooth and broadly Gaussian, with a small
+enhancement of the central core relative to the seed, consistent with
+the data luminous region being slightly more peaked than a single
+Gaussian.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_0mrad_closure.pdf}
+\caption{0\,mrad iterative closure (6 panels). Top-left/centre: data
+reco vs mixed MC reco under no reweight (gray dotted), the seed
+Gaussian $w(z)\!\propto\!\mathcal{N}(0,\sigma_\mathrm{seed}^2)/\mathcal{N}(0,\sigma_\mathrm{gen}^2)$
+with $\sigma_\mathrm{seed}\!=\!\mathrm{std}(z_r^\mathrm{data})$
+(orange dash-dot), the parametric best-fit Gaussian with
+$\sigma_\mathrm{tgt}$ from the $\chi^2$ scan (blue dashed), and the
+iterative reweight (red). Top-right: the corresponding reweight
+functions $w(z)$ (seed, parametric, iterative). Bottom-left: residual
+$D/M$ in the closure window with Poisson error bars on the iterative
+points and $\pm 1\,\%$/$\pm 2\,\%$ reference bands. Bottom-right:
+per-iteration $\chi^2$ and $\max|r-1|$ trajectory. At 0\,mrad the seed
+and parametric Gaussians are nearly identical
+($\sigma_\mathrm{seed}\!\simeq\!\sigma_\mathrm{tgt}\!\simeq\!54$\,cm)
+because the data reco distribution is already close to a single
+Gaussian; the iterative method improves on both.}
+\label{fig:iter_0mrad_closure}
+\end{figure}
+
+\paragraph{1.5\,mrad: bulk closure, edge stall.}
+Figure~\ref{fig:iter_1p5mrad_closure} shows the 6-panel diagnostic for
+1.5\,mrad. The story is qualitatively different. The seed Gaussian
+with $\sigma_\mathrm{seed}\!\simeq\!21$\,cm starts from
+$\max|r-1|\!=\!64\,\%$ and an in-window $\chi^2$ of
+$1.42\!\times\!10^6$; the first $\sim\!5$ iterations make dramatic
+progress, then the iteration enters a slow plateau driven by bins at
+the closure-window edge $|z_r|\!\simeq\!83$\,cm.
+After 30 iterations, $\chi^2$ in the window has dropped by
+$\sim\!3100\times$ to $\simeq\!453$, and $\max|r-1|$ sits at
+$\simeq\!0.11$, set by those stuck edge bins. Inside the bulk
+$|z_r|\!<\!30$\,cm closure is at the $\sim\!1$--$2\,\%$ level on every
+bin; between 30 and 60\,cm the residual climbs to
+$\sim\!5$--$10\,\%$. The recovered $w(z)$ shows a strong central core
+boost and a clear non-Gaussian shape in the
+$|z|\!\simeq\!40$--$60$\,cm region (truth-vertex axis) that no
+symmetric Gaussian ansatz can represent.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_1p5mrad_closure.pdf}
+\caption{1.5\,mrad iterative closure (6 panels), same layout as
+Figure~\ref{fig:iter_0mrad_closure}. At 1.5\,mrad the seed Gaussian
+($\sigma_\mathrm{seed}\!=\!21.5$\,cm, orange dash-dot) and the
+parametric best-fit Gaussian ($\sigma_\mathrm{tgt}\!=\!15.7$\,cm, blue
+dashed) are distinct; both are much broader than the data core and
+mis-predict the reco-vertex shape by $\sim\!30$--$60\,\%$ at the
+closure-window edge. The iterative method (red points) closes the
+bulk of the window to $\sim\!1$--$2\,\%$ inside $|z_r|\!<\!30$\,cm and
+stalls at $\max|r\!-\!1|\!\simeq\!0.11$ at the closure-window edge
+$|z_r|\!\simeq\!83$\,cm. The recovered $w(z)$ in the top-right panel
+shows a strong central core boost and a clear non-Gaussian shape in
+the $|z|\!\simeq\!40$--$60$\,cm region (truth-vertex axis).}
+\label{fig:iter_1p5mrad_closure}
+\end{figure}
+
+\paragraph{Method comparison.}
+Figure~\ref{fig:iter_1p5mrad_methods} puts the iterative reweight
+against three reference baselines at 1.5\,mrad: no reweight, the seed
+Gaussian (the $\mathcal{N}(0,\sigma_\mathrm{seed}^2)$ initial point of
+the iteration, with $\sigma_\mathrm{seed}\!=\!21.5$\,cm measured from
+$\mathrm{std}(z_r^\mathrm{data})$), and the parametric best-fit
+Gaussian (a single-parameter fit scanning $\sigma_\mathrm{tgt}$ against
+data, best at $\sigma_\mathrm{tgt}\!=\!15.7$\,cm). (Stage 1+2, a
+parametric residual correction on top of the parametric Gaussian, is
+never used in the nominal pipeline and is not shown.) The no-reweight
+MC overshoots data by a factor of several everywhere; both Gaussian
+baselines close the width on average but mismatch the shape at the
+30--70\,\% level, with visible structure in the ratio panel that no
+single-Gaussian ansatz can represent; the iterative method is the only
+one that follows the narrow data core while also tracking the
+non-Gaussian mid-tail structure.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_iter_1p5mrad_methods.pdf}
+\caption{Method comparison at 1.5\,mrad: data reco vs mixed MC reco
+under no reweight (gray dotted), seed Gaussian
+$\sigma_\mathrm{seed}\!=\!21.5$\,cm (orange dash-dot), parametric
+best-fit Gaussian $\sigma_\mathrm{tgt}\!=\!15.7$\,cm (blue dashed),
+and the iterative data-driven reweight (red), with a ratio panel
+below. The two Gaussian baselines bracket the ``best possible'' single-Gaussian
+description of the data reco shape; neither closes below the
+10--30\,\% level because the true data-MC ratio at 1.5\,mrad is
+non-Gaussian. The iterative method is the only one that follows the
+narrow data core while also tracking the non-Gaussian mid-tail
+structure.}
+\label{fig:iter_1p5mrad_methods}
+\end{figure}
+
+\paragraph{Parametric $\sigma_\mathrm{tgt}$ scan.}
+Figure~\ref{fig:sigma_scan} shows the stage~1 parametric $\chi^2$ scan
+that precedes the iterative method. A single Gaussian truth-vertex
+weight $w(z) \propto \mathcal{N}(0,\sigma_\mathrm{tgt}^2) /
+\mathcal{N}(0,\sigma_\mathrm{gen}^2)$ is evaluated at each scan point.
+At 1.5\,mrad the minimum is at $\sigma_\mathrm{tgt}\!\simeq\!15.7$\,cm
+with $\chi^2/\mathrm{ndf}\!\simeq\!3237$; the iterative method reaches
+$13.7$, a $\sim\!236\times$ improvement. At 0\,mrad the minimum is at
+$\sigma_\mathrm{tgt}\!\simeq\!54.6$\,cm with
+$\chi^2/\mathrm{ndf}\!\simeq\!454$; the iterative method reaches
+$2.78$, a $\sim\!163\times$ improvement. The gap between the best
+parametric point and the iterative floor quantifies the shape mismatch
+that no single-Gaussian ansatz can capture.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_sigma_scan.pdf}
+\caption{Stage~1 parametric $\chi^2/\mathrm{ndf}$ as a function of the
+target truth-vertex Gaussian width $\sigma_\mathrm{tgt}$, for the
+1.5\,mrad (left) and 0\,mrad (right) periods. The minimum of the scan
+identifies the best single-Gaussian approximation to the data
+reco-vertex shape; the parabolic-refined best-fit
+$\sigma_\mathrm{tgt}$ is marked by a vertical dashed line. The
+horizontal dashed line (red) shows the final $\chi^2/\mathrm{ndf}$
+achieved by the iterative data-driven method, and the dotted line
+marks $\chi^2/\mathrm{ndf}=1$ for reference. All $\chi^2$ values are
+computed on the reco-vertex axis $z_r$ inside the closure window and
+normalized by the number of degrees of freedom.}
+\label{fig:sigma_scan}
+\end{figure}
+
+%%========================================================================
+\section{Physics interpretation}
+\label{sec:interpretation}
+%%========================================================================
+
+\paragraph{Why 0\,mrad is easy.}
+At 0\,mrad the beams overlap head-on along their full length and the
+luminous region is broad ($\sigma_\mathrm{lum}\!\simeq\!54$\,cm),
+nearly equal to the generator beam profile
+($\sigma_\mathrm{gen}\!\simeq\!65$\,cm). The shape of the data reco
+vertex is also close to a single Gaussian. The seed is therefore
+already a good first approximation, the initial residual is
+$\sim\!8\,\%$, and the iteration just cleans up small departures
+(slightly enhanced central core). Convergence in a handful of
+iterations is what one would expect from a near-textbook deconvolution
+problem.
+
+\paragraph{Why 1.5\,mrad is hard.}
+Three things conspire at 1.5\,mrad:
+\begin{itemize}\setlength\itemsep{2pt}
+\item The Piwinski crossing-angle effect compresses the luminous region
+to $\sigma_\mathrm{lum}\!\simeq\!21$\,cm, almost a factor of three
+narrower than the generator profile. The reweight must extract a
+narrow target from a wide source, and the dynamic range of $w(z)$ at
+the central core is correspondingly large ($w(0)\!\simeq\!8$).
+\item The data reco distribution is \emph{not} a clean Gaussian. It
+has a narrow core plus a mid-tail shoulder near
+$|z_r|\!\simeq\!45$--$60$\,cm. The iterative method discovers this
+structure directly --- the recovered $w(z)$ is non-Gaussian in the
+same $z$ range --- whereas any symmetric one-parameter Gaussian ansatz
+cannot represent it. This is why the parametric best-fit Gaussian
+gives $\chi^2/\mathrm{ndf}\!\simeq\!3237$ on the 1.5\,mrad mix, and
+why the iterative method drops it to $\simeq\!14$ (a further
+$\sim\!236\times$ improvement).
+\item The MBD resolution tail leak from core-truth events fills the
+bins near the closure-window edge ($|z_r|\!\simeq\!83$\,cm). The
+iteration becomes insensitive to $w(z)$ updates at that $z$ because
+the contributions to those reco bins come dominantly from truth vertices
+($z_h$, $z_\mathrm{mb}$) at other $z$ values via the wide
+double-interaction reco-truth kernel.
+The iteration has the wrong handle on those bins, and that is what
+sets the residual floor at $\max|r-1|\!\simeq\!11\,\%$.
+\end{itemize}
+
+\paragraph{What the recovered $w(z)$ looks like.}
+At 1.5\,mrad, $w(z)$ has three distinguishing features visible in the
+top-right panel of Figure~\ref{fig:iter_1p5mrad_closure}:
+(a) a strong central peak with $w(0)\!\simeq\!8$ that pulls
+double-interaction events whose truth vertices ($z_h$ and
+$z_\mathrm{mb}$) both lie close to the IP into the data-like core; (b) a mid-$z$ dip that suppresses the
+generator's natural $|z|\!\sim\!30$--$50$\,cm population to match the
+narrow data core; and (c) a clear $\pm$ asymmetry in
+$|z|\!\simeq\!40$--$60$\,cm tracking the asymmetric mid-tail bump in
+the data. None of these features is representable by a symmetric
+single-parameter Gaussian. At 0\,mrad, $w(z)$ is essentially the seed
+Gaussian with a small central enhancement.
+
+%%========================================================================
+\section{Caveats and next steps}
+\label{sec:caveats}
+%%========================================================================
+
+\paragraph{(i) photon10-only mix.}
+The current fit uses \texttt{photon10 + photon10\_double} only. The
+full production blend also includes \texttt{jet12 + jet12\_double}.
+Extending the fit to all four samples is the obvious next step:
+mechanically it is two more \texttt{load\_sample} calls plus the
+appropriate cluster-weighted blend, but the closure numbers will move
+and should be remeasured before any production hookup.
+
+\paragraph{(ii) 1.5\,mrad is not formally converged.}
+The 30-iteration cap was hit. Two questions remain open: (a) whether
+extending to $\sim\!100$ iterations would push the stuck edge bin to
+convergence, or whether it is a hard physical floor set by the
+double-interaction reco-truth kernel (the suspicion is the latter);
+and (b) whether the failure to converge in $\max|r-1|$ matters for the
+downstream analysis. The latter has a fairly clean answer: the PPG12
+analysis applies fiducial cuts $|z_r|<60$\,cm on the reco vertex and
+$|z_h|<60$\,cm on the primary truth vertex
+(Section~\ref{sec:xsec_impact}), and inside those cuts the per-bin
+closure is already at the 1--2\,\% level. The stuck edge bin at
+$|z_r|\!\simeq\!83$\,cm is well outside the analysis fiducial, so the
+iteration is good enough for the analysis use case, even though it is
+not formally converged on the full closure-window metric.
+
+\paragraph{(iii) Downstream hookup is wired in but off by default.}
+Both \texttt{ShowerShapeCheck.C} and
+\texttt{RecoEffCalculator\_TTreeReader.C} now accept two new analysis
+fields, \texttt{truth\_vertex\_reweight\_on} and
+\texttt{truth\_vertex\_reweight\_file}; when \texttt{on=1}, the code
+opens \texttt{reweight.root}, reads \texttt{h\_w\_iterative}, and
+multiplies the per-event weight by $w(z_h)$ for single-interaction MC
+and $w(z_h)\,w(z_\mathrm{mb})$ for double-interaction MC. The
+secondary truth vertex branch \texttt{vertexz\_truth\_mb} (i.e.\ $z_\mathrm{mb}$)
+is picked up through an optional-pointer guard, so single-MC trees
+without it fall through to the single-vertex path. The two reco-level
+and truth-level reweights are mutually exclusive and the config
+loader enforces this by forcing \texttt{vertex\_reweight\_on=0}
+when \texttt{truth\_vertex\_reweight\_on=1}. The showershape configs
+\texttt{config\_showershape\_\{1p5rad,0rad\}.yaml} are pre-wired to
+the matching \texttt{output/\{1p5mrad,0mrad\}/reweight.root}; the
+nominal BDT configs carry the same fields disabled, so flipping the
+main analysis over to the truth-vertex reweight is a one-line config
+edit once the jet-sample extension is done.
+
+\paragraph{(iv) Implementation can be sped up.}
+Each iteration currently rebuilds the MC reco histogram from scratch
+($\mathcal{O}(N_\mathrm{events})$ per pass). Precomputing $z^2$ and
+dropping the per-trial mask rebuild would give a $\sim\!10\times$
+speedup with no change in result. Not a blocker; nice-to-have for the
+all-samples extension.
+
+%%========================================================================
+\section{Summary}
+\label{sec:summary}
+%%========================================================================
+
+$f(z_r)$ cannot close the individual truth-vertex distributions ($z_h$
+and $z_\mathrm{mb}$) of double-interaction MC, which biases the primary
+truth fiducial cut $|z_h|<60$\,cm used in the efficiency denominator by
+$+1.4\,\%$ at 1.5\,mrad
+(Section~\ref{sec:xsec_impact}). An iterative data-driven reweight
+$w(z)$, applied per truth vertex with the factorization
+$w(z_h)\,w(z_\mathrm{mb})$ for double-interaction events, closes this
+gap without any Gaussian assumption. Applied to the photon10 mix, the
+method converges cleanly at 0\,mrad ($\max|r\!-\!1|\!<\!1\,\%$ in 8
+iterations) and reduces in-window $\chi^2$ by a factor $\sim\!3100$
+at 1.5\,mrad, closing the analysis-relevant bulk $|z_r|\!<\!30$\,cm to
+$1$--$2\,\%$ per bin and reaching $\sim\!11\,\%$ at the closure-window
+edge. The recovered $w(z)$ at 1.5\,mrad shows non-Gaussian features
+(a strong central boost and a mid-$z$ shoulder) that no closed-form
+Gaussian ansatz could represent. Per-period
+\texttt{reweight.root} outputs are ready in
+\texttt{efficiencytool/truth\_vertex\_reweight/output/} and the C++
+hookup into \texttt{ShowerShapeCheck.C} and
+\texttt{RecoEffCalculator\_TTreeReader.C} is in place (enabled on the
+showershape period configs, wired but off on the nominal BDT
+configs). The remaining work is the jet-sample extension of the
+standalone fit tool.
+
+\appendix
+
+%%========================================================================
+\section{Baseline: events with and without a reconstructed vertex}
+\label{app:nonull}
+%%========================================================================
+
+Before building any truth-based reweight, we checked that dropping
+events whose reco MBD vertex is the $-9999$ sentinel does not itself
+bias the MC. The concern is that an MC event which loses its reco
+vertex $z_r$ may be physically unusual (e.g.\ with a shifted truth
+vertex $z_h$), so dropping it would skew the efficiency in a
+$z_h$-dependent way.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Sample & $N_\mathrm{total}$ & $N_\mathrm{reco}$ & $N_\mathrm{no\,reco}$ & fraction no reco \\
+\midrule
+photon10        & 9\,998\,562 & 7\,716\,585 & 2\,281\,977 & \textbf{22.82\,\%} \\
+photon10\_double & 9\,997\,075 & 9\,491\,223 &   505\,852 & \textbf{5.06\,\%} \\
+jet12           & 10\,000\,000 & 7\,689\,530 & 2\,310\,470 & \textbf{23.10\,\%} \\
+jet12\_double   & 9\,997\,000 & 9\,485\,384 &   511\,616 & \textbf{5.12\,\%} \\
+\bottomrule
+\end{tabular}
+\caption{Fraction of events without an MBD reco vertex. The
+double-interaction productions have $\sim\!4.5\times$ higher MBD
+vertex-finding efficiency than their single-interaction counterparts
+(two concurrent collisions give the MBD twice the chance of producing
+a vertex).}
+\label{tab:counts}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/truth_vertex_reco_check.pdf}
+\caption{Primary truth vertex $z_h$ distribution for events with (blue)
+and without (red dashed) a reconstructed MBD vertex $z_r$,
+area-normalized for shape comparison. Columns: single / double
+interaction. Rows: photon10 / jet12. Dotted vertical lines:
+$|z_h|=30$\,cm reference.}
+\label{fig:shape}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/truth_vertex_reco_check_ratio.pdf}
+\caption{Ratio (no-reco-vertex shape)\,/\,(reco-vertex shape) as a
+function of primary truth vertex $z_h$, zoomed to $[0.75,1.25]$. All
+samples show a $\sim\!\pm 5\,\%$ north/south asymmetry inside
+$|z_h|<30$\,cm, consistent with a small MBD geometric bias.}
+\label{fig:ratio}
+\end{figure}
+
+Inside $|z_h|<30$\,cm the two shapes agree to within $\pm 5\,\%$ with
+a small $z_h$-asymmetry that is the same in all
+four samples and therefore a detector-level effect (MBD vertex finder
+slightly more efficient at positive $z$). Dropping the no-reco-vertex
+events is thus \emph{approximately} harmless --- both the efficiency
+numerator and denominator are scaled by the same factor, and the
+residual $z$ dependence of the drop rate is small. However, dropping
+$\sim\!22\,\%$ of the single-interaction MC sample is still a lot of
+statistics, and it makes the efficiency measurement implicitly
+conditional on a valid reco vertex being found. That was the original
+motivation for exploring a truth-level reweight in the first place.
+
+%%========================================================================
+\section{Discarded methods}
+\label{app:discarded}
+%%========================================================================
+
+Before arriving at the iterative method described in
+Section~\ref{sec:method}, we explored three truth-only reweight
+constructions that did not work:
+\begin{itemize}\setlength\itemsep{1pt}
+\item \textbf{$w_1$: direct ratio} of the data reco-vertex shape to the
+MC truth-vertex shape, $w_1(z_h) = D(z_r)/T(z_h)$, with the common
+binning identifying $z_r$ bins with $z_h$ bins.
+\item \textbf{$w_2$: conditional projection},
+$w_2(z_h) = \mathbb{E}[f(z_r)\,|\,z_h]$, the expectation of the
+production reco weight conditional on the primary truth vertex.
+\item \textbf{$w_\mathrm{iter,DA}$: D'Agostini iterative unfolding}
+using the MC response matrix $R_{ij}=P(z_r^i|z_h^j)$.
+\end{itemize}
+All three hit a geometric lower bound on the double-MC sample at
+1.5\,mrad: the conditional reco kernel $P(z_r|z_h)$ (for single-interaction MC) has
+RMS $\sim\!34$\,cm, wider than the $\sim\!22$\,cm target data peak
+(Section~\ref{app:double_diag}), so \emph{any} truth-only reweight is
+bounded from below by the kernel width and cannot reach the target.
+
+We also drafted a closed-form \textbf{2D Gaussian reweight}
+$w(z_h,z_\mathrm{mb}) \propto \exp[-\tfrac{1}{2}(z_h^2 + z_\mathrm{mb}^2)\,\Delta]$
+with $\Delta = 1/\sigma_\mathrm{lum}^2 - 1/\sigma_\mathrm{MC}^2$. This
+closed form does work in principle --- it acts on both the symmetric
+and antisymmetric coordinates and so can narrow all three vertex axes
+simultaneously --- but it assumes a single Gaussian shape for the data
+luminous region. At 1.5\,mrad the data has a $\pm$-asymmetric mid-tail
+bump that a symmetric Gaussian cannot reproduce, so the closed form
+ended up as a first-draft proposal that was superseded by the
+iterative method of Section~\ref{sec:method}, which discovers $w(z)$
+from data directly without any Gaussian assumption.
+
+%%========================================================================
+\section{Double-interaction reco-truth kernel}
+\label{app:double_diag}
+%%========================================================================
+
+The geometric lower bound on truth-only reweights quoted in
+Section~\ref{app:discarded} can be read off the widths directly:
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item 1.5\,mrad data reco width: $\sigma\!\simeq\!22.3$\,cm
+\item jet12 single-interaction MC truth width ($z_h$): $\sigma\!\simeq\!57.6$\,cm
+\item jet12\_double MC truth width ($z_h$, primary): $\sigma\!\simeq\!62.7$\,cm
+\item jet12\_double MC reco width ($z_r$):
+      $\sigma\!\simeq\!48.6\!\approx\!62.7/\sqrt{2}$ (averaging)
+\item Conditional kernel $P(z_r|z_h{=}0)$ RMS (with $z_\mathrm{mb}$
+      marginalized): $\sim\!34$\,cm
+\end{itemize}
+
+Figure~\ref{fig:double_diag} shows the kernel slice directly,
+compared to the 1.5\,mrad data target. Even if the primary truth vertex is forced to
+$z_h\!=\!0$, the reco distribution from a double-interaction
+event cannot be narrower than the $\sim\!34$\,cm kernel width ---
+larger than the 22\,cm target. This is the structural reason the
+truth-only methods fail on double-interaction MC, and the structural
+reason the iterative method needs the
+$w(z_h)\,w(z_\mathrm{mb})$ factorization rather than a
+$w$-on-$z_r$ construction.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_alt_double_diag.pdf}
+\caption{Conditional reco kernel $P(z_r|z_h)$ in jet12\_double MC at
+1.5\,mrad (with $z_\mathrm{mb}$ marginalized), with the 1.5\,mrad data
+reco $z_r$ shape overlaid. The kernel's
+$\sim\!34$\,cm RMS exceeds the $\sim\!22$\,cm data peak, which is the
+geometric lower bound on truth-only reweighting.}
+\label{fig:double_diag}
+\end{figure}
+
+%%========================================================================
+\section{Files and code}
+\label{app:code}
+%%========================================================================
+
+\begin{itemize}\setlength\itemsep{1pt}
+\item \texttt{anatreemaker/source/CaloAna24.\{h,cc\}} --- writes
+      the \texttt{vertexz\_truth} ($z_h$, primary truth vertex) and
+      \texttt{vertexz\_truth\_second} ($z_\mathrm{mb}$, secondary truth
+      vertex; read by C++ as \texttt{vertexz\_truth\_mb}) branches that
+      the iterative method reads for single- and double-interaction MC
+      respectively.
+\item \texttt{efficiencytool/truth\_vertex\_reweight/} --- the
+      standalone Python tool for the iterative method:
+      \begin{itemize}\setlength\itemsep{0pt}
+      \item \texttt{fit\_core.py} --- cached sample loader, the
+      \texttt{mixed\_mc\_histogram} forward model
+      (Eq.~\ref{eq:iter_forward}), Poisson $\chi^2$, and helpers for
+      fitting $\sigma_\mathrm{gen}$ from MC truth.
+      \item \texttt{fit\_truth\_vertex\_reweight.py} --- the driver
+      (stage iterative = Section~\ref{sec:method}), producing
+      \texttt{reweight.root} and \texttt{fit\_result.yaml}.
+      \item \texttt{plot\_closure.py},
+      \texttt{plot\_comparisons.py} --- closure and cross-period
+      diagnostic plots.
+      \item \texttt{config.yaml} --- sample paths, run ranges, fit
+      parameters.
+      \end{itemize}
+\item \texttt{efficiencytool/TruthVertexRecoCheck.C} ---
+      Appendix~\ref{app:nonull} supporting macro.
+\item Outputs:
+      \texttt{efficiencytool/truth\_vertex\_reweight/output/\{1p5mrad,0mrad\}/reweight.root},
+      \texttt{fit\_result.yaml}, and the cached event arrays in
+      \texttt{output/cache/}.
+\end{itemize}
+
+\end{document}

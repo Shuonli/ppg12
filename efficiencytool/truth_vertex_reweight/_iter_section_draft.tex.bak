@@ -1,0 +1,496 @@
+%%========================================================================
+\section{Data-driven iterative reweight (empirical follow-up)}
+\label{sec:iter}
+%%========================================================================
+
+The 2D Gaussian proposal of Section~\ref{sec:proposal} is the principled
+fix for the double-interaction truth-vertex bias, but it bakes in two
+priors: that the luminous region is Gaussian, and that
+$\sigma_\mathrm{lum}$ measured from data is the right scalar to use. The
+1.5\,mrad data reco distribution is in fact \emph{not} a clean Gaussian
+--- it has a narrow core plus a $\pm$-asymmetric mid-tail bump near
+$|z_r|\!\simeq\!45$--$60$\,cm that no symmetric one-parameter ansatz can
+reproduce. This section documents an empirical follow-up: instead of
+\emph{assuming} a closed form for $w(z)$, we derive it directly from
+data by iterating the mixed-MC reco distribution to closure with the
+data reco distribution. The construction uses no physics prior on
+$\sigma_\mathrm{lum}$ and discovers shape features that a Gaussian
+ansatz cannot represent.
+
+The method is implemented as a standalone Python tool that reads the
+slimtrees, builds the mixed forward model, runs the iteration, and
+writes a \texttt{reweight.root} per crossing angle. It is not yet hooked
+into the production efficiency pipeline; that is a downstream merge
+step. The point of this section is to demonstrate, on the
+photon10/photon10\_double mix, that a data-driven $w(z)$ exists that
+closes the 1.5\,mrad reco distribution far better than any
+single-parameter Gaussian, and to characterize how well it converges.
+
+\subsection{Method}
+\label{sec:iter:method}
+
+\paragraph{Forward model.}
+Let $f_d$ be the cluster-weighted double-interaction fraction in a given
+crossing angle (0.079 at 1.5\,mrad, 0.224 at 0\,mrad) and
+$f_s = 1 - f_d$ the single-interaction fraction. The mixed MC reco
+distribution under a candidate truth-vertex weight $w(z)$ is
+\begin{equation}
+M(z_r) \;=\;
+f_s \!\!\sum_{e \in T_s}\! w(z_h^{e})\,\delta(z_r - z_r^e)
+\;+\;
+f_d \!\!\sum_{e \in T_d}\! w(z_h^{e})\,w(z_\mathrm{mb}^{e})\,\delta(z_r - z_r^e),
+\label{eq:iter_forward}
+\end{equation}
+evaluated event-by-event over the photon10 single-interaction sample
+$T_s$ and the photon10\_double sample $T_d$. For double-interaction
+events the weight enters \emph{twice}, once for the primary truth vertex
+$z_h$ and once for the secondary truth vertex $z_\mathrm{mb}$, mirroring
+the algebraic decomposition of Section~\ref{sec:toy_decomposition}: the
+two truth vertices are statistically independent under the generator,
+so the joint weight factorizes as $w(z_{t,1})w(z_{t,2})$. This is the
+crucial structural choice --- it gives the iteration access to the
+antisymmetric coordinate $\varepsilon$ that the production reco-only
+weight $f(z_r)$ cannot touch.
+
+\paragraph{Binning and closure window.}
+Both periods use the same binning: $80$ bins over $[-200, 200]$\,cm
+(bin width 5\,cm), no overflow clipping, and identical edges for truth
+and reco histograms. The iterative closure window is auto-derived per
+period as the 99-th percentile of $|z_r^\mathrm{data}|$:
+\begin{itemize}\setlength\itemsep{1pt}
+\item 1.5\,mrad: $z_\mathrm{cut}\!=\!83$\,cm (34 bins inside),
+      from $|z_r^\mathrm{data}|_{99\%}\!=\!82.0$\,cm.
+\item 0\,mrad:   $z_\mathrm{cut}\!=\!144$\,cm (58 bins inside),
+      from $|z_r^\mathrm{data}|_{99\%}\!=\!143.9$\,cm.
+\end{itemize}
+The window is purely data-driven and requires no manual tuning; outside
+it, statistics in data drop below the level where the iteration could
+constrain $w(z)$.
+
+\paragraph{Seed.}
+The iteration starts from a Gaussian seed
+$w_0(z)\!=\!\mathcal{N}(0, \sigma_\mathrm{seed}^2)\,/\,\mathcal{N}(0, \sigma_\mathrm{gen}^2)$,
+with $\sigma_\mathrm{gen}$ measured from the photon10
+\texttt{vertexz\_truth} (we get $\sigma_\mathrm{gen}\!=\!64.997 \pm 0.015$\,cm,
+intrinsic to the generator and identical between periods) and
+$\sigma_\mathrm{seed}\!=\!\mathrm{std}(z_r^\mathrm{data})$ measured
+directly from the data reco-vertex distribution in the relevant run
+range (21.48\,cm at 1.5\,mrad, 54.32\,cm at 0\,mrad). Note that
+$\sigma_\mathrm{seed}$ requires \emph{no} physics input ---
+no Piwinski-narrowing factor, no luminous-region calculation. It is just
+the empirical width of the reco distribution that we are trying to
+match.
+
+\paragraph{Iterative update.}
+At iteration $i$, the residual is
+$r_i(z) \!=\! D(z)\,/\,M_i(z)$ inside the update window, where
+$D(z)$ is the data reco histogram and $M_i(z)$ is the mixed MC reco
+histogram from Eq.~\eqref{eq:iter_forward} under $w_i$. The update is
+Lucy--Richardson-like, multiplicative, and damped:
+\begin{equation}
+w_{i+1}(z) \;=\; w_i(z)\,\cdot\,\bigl[\mathrm{smooth}(r_i(z))\bigr]^{\alpha},
+\qquad \alpha = 0.5.
+\label{eq:iter_update}
+\end{equation}
+Damping ($\alpha\!=\!0.5$) prevents over-correction; a 1-bin Gaussian
+smoothing on the residual prevents bin-by-bin oscillation; the update
+factor is clipped to $[0.5, 2]$ per iteration to bound jumps; the
+endpoints of the update region are edge-clamped to their nearest
+interior values to prevent runaway behavior at the boundary. The
+update is applied over the \emph{full} 80-bin binning; once the
+iteration finishes, the bins outside the closure window are snapped
+back to the seed Gaussian, so $w(z)$ is data-driven inside
+$|z|\!<\!z_\mathrm{cut}$ and a clean Gaussian extrapolation outside.
+Convergence is tested as $\max|r_i(z)\!-\!1|\!<\!0.01$ inside the
+closure window, with a hard cap of 30 iterations.
+
+\subsection{Implementation}
+\label{sec:iter:impl}
+
+The tool is a standalone Python package living in
+\texttt{efficiencytool/truth\_vertex\_reweight/}:
+\begin{itemize}\setlength\itemsep{1pt}
+\item \texttt{fit\_core.py} --- shared primitives:
+\texttt{load\_sample}, the cached uproot reader, the
+\texttt{mixed\_mc\_histogram} forward model
+(Eq.~\ref{eq:iter_forward}), the Poisson $\chi^2$, and helpers to fit
+$\sigma_\mathrm{gen}$ from MC truth.
+\item \texttt{fit\_truth\_vertex\_reweight.py} --- the driver. Runs a
+prior \emph{stage 1} (single-parameter Gaussian fit) and \emph{stage 2}
+(parametric residual correction) for context, then the iterative stage
+of Section~\ref{sec:iter:method}, and writes a per-period
+\texttt{reweight.root}, \texttt{fit\_result.yaml}, and a JSON summary.
+\item \texttt{plot\_closure.py} --- per-period 6-panel diagnostic
+(closure, residual, $w(z)$, convergence trace, pull, and method
+comparison).
+\item \texttt{plot\_comparisons.py} --- the cross-period overlay
+(Fig.~\ref{fig:iter_two_period}).
+\item \texttt{config.yaml} --- run-range, sample paths, fit options
+(damping, smoothing, max iterations, convergence tolerance).
+\end{itemize}
+The mixed-MC histogram is heavy to rebuild ($\sim\!22$\,M events at
+1.5\,mrad, $\sim\!48$\,M at 0\,mrad), so per-sample arrays are cached
+to \texttt{output/cache/*.npz} keyed on file mtime. Each iteration is
+$\mathcal{O}(N_\mathrm{events})$ in the current implementation and
+runs in seconds per iteration on a single core. Output for each period
+lives in
+\texttt{efficiencytool/truth\_vertex\_reweight/output/\{0mrad,1p5mrad\}/}
+and includes a \texttt{reweight.root} histogram set
+(\texttt{h\_w\_iterative}, \texttt{h\_w\_seed}, \texttt{h\_M\_iterative})
+ready to be hooked into the efficiency pipeline.
+
+\subsection{Per-period results}
+\label{sec:iter:results}
+
+Both periods are fit on the photon10/photon10\_double mix only at this
+stage; the full 4-sample blend including jet12/jet12\_double is left as
+a follow-up (Section~\ref{sec:iter:caveats}). Table~\ref{tab:iter_summary}
+collects the headline numbers from both fits.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{l c c}
+\toprule
+quantity & 1.5\,mrad & 0\,mrad \\
+\midrule
+run range                                & 51274--54000 & 47289--51273 \\
+luminosity [pb$^{-1}$]                   & 16.8588      & 32.6574      \\
+$f_\mathrm{double}$ (cluster-weighted)   & 0.079        & 0.224        \\
+data $|z_r|$ 99\% percentile [cm]        & 82.0         & 143.9        \\
+closure window $z_\mathrm{cut}$ [cm]     & 83           & 144          \\
+bins inside closure window               & 34           & 58           \\
+$\sigma_\mathrm{seed}=\mathrm{std}(z_r^\mathrm{data})$ [cm]  & 21.48 & 54.32 \\
+$\sigma_\mathrm{gen}$ from MC truth [cm] & \multicolumn{2}{c}{$64.997 \pm 0.015$} \\
+\midrule
+initial $\chi^2$ (in window)             & $1{,}419{,}454$ & $26{,}589$ \\
+final   $\chi^2$ (in window)             & $689$           & $212$ \\
+$\chi^2$ reduction factor                & $2060\times$    & $125\times$ \\
+final $\chi^2/\mathrm{ndf}$ (in window)  & $20.9$ (ndf 33) & $3.72$ (ndf 57) \\
+initial $\max|r-1|$                      & $0.635$         & $0.079$ \\
+final   $\max|r-1|$                      & $0.147$         & $0.010$ \\
+iterations used                          & 30 (cap hit)    & 7 \\
+converged to $0.01$ tolerance            & \textbf{no}     & \textbf{yes} \\
+stage 1 parametric $\chi^2/\mathrm{ndf}$ & 3237            & 7.96 \\
+stage 2 residual max $|r-1|$              & 0.614           & 0.031 \\
+\bottomrule
+\end{tabular}
+\caption{Iterative data-driven reweight, photon10 mix only, both
+crossing angles. The 0\,mrad fit converges to the 1\,\% per-bin
+tolerance in 7 iterations. The 1.5\,mrad fit reduces $\chi^2$ in the
+closure window by a factor 2060 in 30 iterations and stalls at
+$\max|r-1|\!\simeq\!15\,\%$, dominated by a small number of stuck
+bins at the closure-window edge $|z|\!\simeq\!83$\,cm. Inside the bulk
+$|z|\!<\!60$\,cm the per-bin closure is at the 1--2\,\% level
+(see Figure~\ref{fig:iter_1p5mrad_closure}). The last two rows show the
+stage 1 parametric Gaussian and stage 1+2 (parametric + residual
+correction) results on the same in-window metric, for context. The
+iterative method improves on stage 1 by a factor of $\sim\!155$ at
+1.5\,mrad and $\sim\!2.1$ at 0\,mrad.}
+\label{tab:iter_summary}
+\end{table}
+
+\paragraph{Hero summary.}
+Figure~\ref{fig:iter_two_period} is the single-figure summary: data
+reco vs reweighted MC reco overlaid for both periods, residuals, the
+recovered $w(z)$, and the headline numbers of
+Table~\ref{tab:iter_summary}. The 0\,mrad mix-MC matches data to
+$\sim\!1\,\%$ per bin throughout the closure window; the 1.5\,mrad mix
+matches to $\sim\!1$--$2\,\%$ in the bulk and degrades to $\sim\!15\,\%$
+only in the handful of bins right at the closure-window edge
+$|z|\!\simeq\!83$\,cm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_two_period.pdf}
+\caption{Iterative data-driven reweight summary, both crossing angles.
+Top row: data reco (black) vs mixed MC reco after iterative reweight
+(red) for 1.5\,mrad and 0\,mrad. Middle row: residual
+$r(z)\!=\!D/M_\mathrm{iter}$ inside the closure window (vertical
+dashed lines). Bottom row: recovered $w(z)$, with the seed Gaussian
+overlaid for context. The 0\,mrad case is essentially closed; the
+1.5\,mrad case is closed in the bulk and stalls at the closure-window
+edge (see Section~\ref{sec:iter:interpretation}).}
+\label{fig:iter_two_period}
+\end{figure}
+
+\paragraph{0\,mrad: clean convergence.}
+Figure~\ref{fig:iter_0mrad_closure} shows the 6-panel diagnostic for
+0\,mrad. The seed Gaussian with $\sigma_\mathrm{seed}\!\simeq\!54$\,cm
+already captures most of the shape (initial $\max|r-1|\!=\!8\,\%$,
+initial $\chi^2/\mathrm{ndf}\!\simeq\!467$); the iteration cleans up
+the residual over 7 updates and drops below the 1\,\% tolerance at
+iteration 6. The recovered $w(z)$ is smooth and broadly Gaussian, with
+a small enhancement of the central core relative to the seed --- this
+is consistent with the data luminous region being slightly more peaked
+than a single Gaussian. A stat-only pull diagnostic is written to the
+fit output directory (\texttt{output/0mrad/pull\_distribution.pdf}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_0mrad_closure.pdf}
+\caption{0\,mrad iterative closure (6 panels). Top-left: data reco
+vs mixed MC reco after iteration. Top-middle: residual inside the
+closure window. Top-right: recovered $w(z)$ vs seed Gaussian.
+Bottom-left: per-iteration $\max|r-1|$ trajectory. Bottom-middle:
+per-iteration $\chi^2$. Bottom-right: comparison of the iterative
+reweight to no-reweight, parametric Gaussian (stage 1), and stage 1+2.
+The iterative method reaches the 1\,\% per-bin tolerance at
+iteration 6, after a total of 7 iterations (the tolerance is checked
+at the end of each update).}
+\label{fig:iter_0mrad_closure}
+\end{figure}
+
+\paragraph{1.5\,mrad: bulk closure, edge stall.}
+Figure~\ref{fig:iter_1p5mrad_closure} shows the 6-panel diagnostic for
+1.5\,mrad. The story is qualitatively different. The seed Gaussian
+with $\sigma_\mathrm{seed}\!\simeq\!21$\,cm starts from
+$\max|r-1|\!=\!63\,\%$ and an in-window $\chi^2$ of $1.4\!\times\!10^6$;
+the first $\sim\!5$ iterations make dramatic progress, then the
+iteration enters a slow plateau driven by a small cluster of bins at
+the closure-window edge $|z|\!\simeq\!83$\,cm (one dominant, one or
+two others close behind). After 30 iterations, $\chi^2$ in the window
+has dropped by $2060\times$ to 689 (in-window
+$\chi^2/\mathrm{ndf}\!=\!20.9$, ndf 33), but $\max|r-1|$ sits at
+$0.15$, set by those stuck edge bins. Inside the bulk
+$|z|\!<\!60$\,cm closure is at the $\sim\!1$--$2\,\%$ level on every
+bin --- see the residual panel of Figure~\ref{fig:iter_1p5mrad_closure}.
+The recovered $w(z)$ shows a strong central core boost
+($w(0)\!\simeq\!8$), a mid-$z$ dip, and a clear $\pm$ asymmetry in the
+$|z|\!\simeq\!40$--$60$\,cm region that no symmetric Gaussian ansatz can
+represent.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/vertex_reweight_iter_1p5mrad_closure.pdf}
+\caption{1.5\,mrad iterative closure (6 panels). Same layout as
+Figure~\ref{fig:iter_0mrad_closure}. The bulk of the residual closes
+to $\sim\!1$--$2\,\%$ inside $|z|\!<\!60$\,cm; the iteration stalls on
+a small cluster of bins at the closure-window edge
+$|z|\!\simeq\!83$\,cm where the double-interaction MBD resolution
+kernel starts to dominate the bin content
+(Section~\ref{sec:iter:interpretation}). The recovered $w(z)$
+in the top-right panel shows a central core boost, a mid-$z$ dip, and
+a clear $\pm$ asymmetry in the $|z|\!\simeq\!40$--$60$\,cm region that
+no symmetric Gaussian ansatz can represent.}
+\label{fig:iter_1p5mrad_closure}
+\end{figure}
+
+Figure~\ref{fig:iter_1p5mrad_convergence} shows the convergence
+trajectory in detail: $\max|r-1|$ and $\chi^2$ as a function of
+iteration, on a log-log scale. The two curves track the same physical
+story --- a fast power-law drop for the first $\sim\!5$ updates, then a
+near-flat plateau where each additional iteration moves $\chi^2$ by
+$\lesssim 1\,\%$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/vertex_reweight_iter_1p5mrad_convergence.pdf}
+\caption{1.5\,mrad convergence trajectory: $\max|r-1|$ in the closure
+window (top) and in-window $\chi^2$ (bottom) as a function of iteration.
+The iteration makes dramatic progress in the first 4--5 updates, then
+enters a plateau where a small cluster of stuck edge bins near
+$|z|\!\simeq\!83$\,cm prevents further $\max|r-1|$ progress. The
+30-iteration cap is hit without reaching the 1\,\% convergence
+tolerance.}
+\label{fig:iter_1p5mrad_convergence}
+\end{figure}
+
+\paragraph{Method comparison.}
+Figure~\ref{fig:iter_0mrad_methods} shows the four reweight methods
+ranked on the 0\,mrad mix: no reweight, parametric Gaussian
+(\emph{stage 1}, equivalent to the closed-form 2D Gaussian of
+Section~\ref{sec:proposal} restricted to a single-parameter $\sigma$
+fit on the truth axis), parametric plus residual correction
+(\emph{stage 2}), and the iterative method. The ordering is
+\begin{equation*}
+\text{iterative} \;<\; \text{stage 1+2} \;<\; \text{stage 1} \;<\; \text{no reweight},
+\end{equation*}
+with each step bringing measurable improvement. The analogous plot at
+1.5\,mrad is Figure~\ref{fig:iter_1p5mrad_methods}: the same ordering
+holds but with much larger gaps between the methods --- the parametric
+stage 1 alone gives $\chi^2/\mathrm{ndf}\!\simeq\!3237$ in the closure
+window, and the iterative reweight brings it down to 20.9, a
+$\sim\!155\times$
+improvement on top of the parametric fit.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_iter_0mrad_methods.pdf}
+\caption{Method comparison at 0\,mrad: data reco vs mixed MC reco under
+no reweight (gray), parametric Gaussian stage 1 (blue), parametric plus
+residual stage 2 (green), and the iterative data-driven reweight (red).
+Ratio panel below. The iterative method is the closest match across
+the closure window; all four agree at the 1--2\,\% level inside the
+bulk, with the parametric stages diverging mildly at $|z|\!\gtrsim\!100$\,cm.}
+\label{fig:iter_0mrad_methods}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/vertex_reweight_iter_1p5mrad_methods.pdf}
+\caption{Method comparison at 1.5\,mrad, same layout as
+Figure~\ref{fig:iter_0mrad_methods}. The spread between methods is
+much larger here. Stage 1 (blue) has a visible +50\,cm bump in the
+ratio panel and a global $\chi^2/\mathrm{ndf}\!\simeq\!3237$; stage 1+2
+(green) reduces the bump partially but still leaves $\sim\!60\,\%$
+residuals at the edges; the iterative method (red) closes the bulk
+$|z|\!<\!60$\,cm to $1$--$2\,\%$ and stalls only at the edge. The
+headline number is the $\sim\!155\times$ in-window $\chi^2/\mathrm{ndf}$
+improvement from stage 1 to iterative.}
+\label{fig:iter_1p5mrad_methods}
+\end{figure}
+
+\subsection{Physics interpretation}
+\label{sec:iter:interpretation}
+
+\paragraph{Why 0\,mrad is easy.}
+At 0\,mrad the beams overlap head-on along their full length and the
+luminous region is broad ($\sigma_\mathrm{lum}\!\simeq\!54$\,cm),
+nearly equal to the generator beam profile
+($\sigma_\mathrm{gen}\!\simeq\!65$\,cm). The shape of the data
+reco vertex is also close to a single Gaussian. The seed Gaussian is
+therefore already a good first approximation, the initial residual is
+$\sim\!8\,\%$, and the iteration just cleans up small departures
+(slightly enhanced central core). Convergence in a handful of
+iterations is what one would expect from a near-textbook
+deconvolution problem.
+
+\paragraph{Why 1.5\,mrad is hard.}
+At 1.5\,mrad three things conspire:
+\begin{itemize}\setlength\itemsep{2pt}
+\item The Piwinski crossing-angle effect compresses the luminous region
+to $\sigma_\mathrm{lum}\!\simeq\!21$\,cm, almost a factor of three
+narrower than the generator profile. The reweight has to extract a
+narrow target from a wide source, and the dynamic range of $w(z)$ at
+the central core is correspondingly large
+($w(0)\!\simeq\!8$).
+\item The data reco distribution is \emph{not} a clean Gaussian. It has
+a narrow core plus a $\pm$-asymmetric mid-tail bump near
+$|z_r|\!\simeq\!45$--$60$\,cm. The iterative method discovers this
+asymmetry directly --- the recovered $w(z)$ is asymmetric in the same
+$z$ range --- whereas a single-parameter Gaussian (the existing
+report's stage 1, equivalent to the closed-form 2D Gaussian fit of
+Section~\ref{sec:proposal}) cannot represent it. This is exactly why
+stage 1 alone gives $\chi^2/\mathrm{ndf}\!\simeq\!3237$ on the
+1.5\,mrad mix, and why the iterative method drops it to $\simeq\!21$.
+\item The MBD resolution tail leak from core-truth events fills the
+bins near the closure-window edge ($|z|\!\simeq\!83$\,cm), and the
+iteration becomes insensitive to $w(z)$ updates at that $z$:
+contributions to those bins come dominantly from \emph{other}
+truth-$z$ values via the wide double-interaction reco-truth kernel.
+The iteration has the wrong handle on those bins, and that is what
+sets the residual floor at $\max|r-1|\!\simeq\!15\,\%$.
+\end{itemize}
+
+\paragraph{What the recovered $w(z)$ looks like.}
+At 1.5\,mrad, $w(z)$ has three distinguishing features visible in the
+top-right panel of Figure~\ref{fig:iter_1p5mrad_closure}:
+(a) a strong central peak with $w(0)\!\simeq\!8$ that pulls
+double-interaction events whose truth vertices lie close to the IP
+into the data-like core; (b) a mid-$z$ dip that suppresses the
+generator's natural $|z|\!\sim\!30$--$50$\,cm population to match the
+narrow data core; and (c) a clear $\pm$ asymmetry in
+$|z|\!\simeq\!40$--$60$\,cm tracking the asymmetric mid-tail bump in
+the data. None of these features is representable by a symmetric
+single-parameter Gaussian. The 2D Gaussian proposal of
+Section~\ref{sec:proposal} captures (a) and (b) implicitly through
+the closed-form ratio of Gaussians, but cannot represent (c). At
+0\,mrad, $w(z)$ is essentially the seed Gaussian with a small central
+enhancement, and the symmetric Gaussian ansatz is a good
+approximation.
+
+\paragraph{Relationship to the 2D Gaussian proposal.}
+The iterative method is a direct generalization of the 2D Gaussian
+proposal (Section~\ref{sec:proposal}). Both use the factorization
+$w(z_{t,1})\,w(z_{t,2})$ for double-interaction events that comes from
+the algebraic argument of Section~\ref{sec:toy_decomposition}, both
+operate on truth vertices, and both close all three vertex axes
+(primary truth, secondary truth, reco) by construction. The difference
+is that the 2D Gaussian assumes a closed-form Gaussian ratio with
+$(\sigma_\mathrm{MC}, \sigma_\mathrm{lum})$ taken as scalar inputs,
+while the iterative method discovers $w(z)$ on the bin grid from the
+data. When the data luminous region is well approximated by a single
+Gaussian, the iterative $w(z)$ \emph{reduces} to the 2D Gaussian form
+(the seed already does most of the work; iterations are small
+corrections, as seen at 0\,mrad). When the data is not Gaussian, the
+iterative method generalizes naturally and the closed-form proposal
+does not.
+
+\paragraph{Why parametric stage 1 fails at 1.5\,mrad.}
+The single-parameter Gaussian ansatz has only $\sigma_\mathrm{tgt}$
+to play with. It can match the central core (by setting
+$\sigma_\mathrm{tgt}\!\sim\!16$\,cm, which is the data-fitted value
+that minimizes the global $\chi^2$) or the tails (by setting it
+larger), but not both. With the data showing a narrow core
+$+$ a non-Gaussian mid-tail bump, the best-fit single Gaussian is
+incompatible with the bin-by-bin shape at the few-tens-of-percent
+level: $\chi^2/\mathrm{ndf}\!\simeq\!3237$ in the closure window. Adding
+the parametric residual correction (stage 2) reduces this substantially
+but still leaves $\sim\!60\,\%$ residuals. The iterative method, with
+80 free parameters (one $w$ per bin, smoothed and damped to suppress
+overfitting), finally captures the actual data shape.
+
+\subsection{Caveats and next steps}
+\label{sec:iter:caveats}
+
+\paragraph{(i) photon10-only mix.}
+The current fit uses photon10 + photon10\_double only. The full
+production blend also includes jet12 + jet12\_double (jet sample
+weights, finer truth $z$ shape on the jet side). Extending the fit to
+all four samples is the obvious next step; mechanically it is two more
+\texttt{load\_sample} calls plus the appropriate
+cluster-weighted blend, but the closure numbers will move and should
+be remeasured before any production hookup.
+
+\paragraph{(ii) 1.5\,mrad did not fully converge.}
+The 30-iteration cap was hit. Two questions are open: (a) whether
+extending to $\sim\!100$ iterations would push the stuck edge bin to
+convergence or whether it really is a hard physical floor (the
+suspicion is the latter, because the stuck bin sits where the
+double-interaction MBD reco-truth kernel dominates); and (b) whether
+the failure to converge in $\max|r-1|$ matters for the downstream
+analysis. The latter question has a fairly clean answer: the PPG12
+analysis applies a fiducial cut $|z|\!<\!60$\,cm on both the reco and
+truth vertex (Section~\ref{sec:xsec_impact}), and inside that cut the
+per-bin closure is already at the 1--2\,\% level. The stuck edge bin
+at $|z|\!\simeq\!83$\,cm is well outside the analysis fiducial. The
+iteration is therefore good enough for the analysis use case, even
+though it is not formally converged on the full closure-window
+metric.
+
+\paragraph{(iii) Downstream hookup is not done here.}
+The output \texttt{reweight.root} histograms
+(\texttt{h\_w\_iterative}, \texttt{h\_w\_seed},
+\texttt{h\_M\_iterative}) are written and ready to be consumed by
+\texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} and
+\texttt{ShowerShapeCheck.C}, but the C++ side has not been touched yet.
+The hookup is the same shape as the 2D Gaussian proposal hookup of
+Section~\ref{sec:proposal}: read $w(z)$ from the ROOT file and apply it
+to the per-event MC weight, with double-interaction events getting
+$w(z_{t,1})\,w(z_{t,2})$. This requires the same
+\texttt{vertexz\_truth\_second} branch from the staged
+\texttt{CaloAna24.cc} patch to access the secondary truth vertex.
+
+\paragraph{(iv) Implementation can be sped up.}
+The current iteration rebuilds the MC reco histogram from scratch on
+each pass, which is $\mathcal{O}(N_\mathrm{events})$ per iteration.
+Precomputing $z^2$ and dropping the per-trial mask rebuild are
+obvious optimizations and would give a $\sim\!10\times$ speedup with no
+change in result. Not a blocker; just nice-to-have for the
+all-samples extension.
+
+\paragraph{(v) Relation to the ``Final recommendation''.}
+The ``Final recommendation'' of Section~\ref{sec:why_matters} proposed
+the closed-form 2D Gaussian as the method of choice. The iterative
+data-driven method described here is a direct generalization: at
+0\,mrad the two methods agree (and the iterative $w(z)$ reduces to the
+2D Gaussian form up to small central-core corrections), while at
+1.5\,mrad the iterative method captures asymmetric structure that the
+closed-form Gaussian cannot. The pragmatic recommendation is therefore
+to use the closed-form 2D Gaussian as the default nominal for both
+periods, and to use the iterative $w(z)$ from
+\texttt{efficiencytool/truth\_vertex\_reweight/} as the 1.5\,mrad
+systematic variant, taking the difference as a vertex-shape modeling
+uncertainty. The final number should be quoted after the
+all-samples mix is run.

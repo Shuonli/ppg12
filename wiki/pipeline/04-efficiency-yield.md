@@ -26,9 +26,11 @@ void RecoEffCalculator_TTreeReader(
 
 ### Two-Pass Architecture
 
-**Pass 1** (`do_vertex_scan=true`): Only fills `h_vertexz`. Output: `{outfile}_vtxscan.root`.
+**Pass 1** (`do_vertex_scan=true`): Only fills `h_vertexz`. Output: `{outfile}_vtxscan.root`. Used by Pass 2 to compute `vertex_weight = h_vertexz->Interpolate(vertexz)` for the legacy reco-vertex reweight.
 
 **Pass 2** (`do_vertex_scan=false`): Reads vtxscan files for vertex reweighting, runs full analysis with all cuts and histogram filling.
+
+**Pass 1 auto-skip**: under `analysis.truth_vertex_reweight_on=1` (current production), the reco-vertex reweight branch is force-disabled in `RecoEffCalculator_TTreeReader.C` and the vtxscan output is never read. `oneforall_tree_double.sh` auto-detects this and skips Pass 1 + the vtxscan hadd, halving the per-config wall-clock (~45 min → ~22 min). Pass 2 then receives an empty `vtxscan_sim_override` argument. Legacy configs with `truth_vertex_reweight_on=0` still run both passes.
 
 ### Cross-Section Weighting
 

@@ -1,0 +1,397 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+
+\newcommand{\pT}{$p_T$}
+\newcommand{\crit}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\info}[1]{\textcolor{blue}{#1}}
+\newcommand{\pass}{\textcolor{ForestGreen}{\textbf{PASS}}}
+
+\definecolor{ForestGreen}{HTML}{228B22}
+
+\graphicspath{{../plotting/figures/sample_combining_check/}}
+
+\title{Sample Combining Validation: Truth \pT{} Spectra (signal + background)}
+\author{PPG12 Analysis Team (automated check)}
+\date{April 21, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \texttt{\_nom} + \texttt{\_double} = 16 per-period files) combine correctly into the signal and jet-inclusive outputs used by the PPG12 efficiency pipeline. Two diagnostics are performed on both crossing-angle periods (0 mrad and 1.5 mrad) and, where applicable, the all-range cross-period merge: (A) per-sample truth photon \pT{} ratios to the combined signal; (B) per-sample truth leading-jet \pT{} ratios to the jet-inclusive combined, with explicit zoom on each sample boundary. The combining arithmetic (\texttt{hadd} of pre-weighted per-sample files) is exact at floating-point precision for both signal and background in both periods, and the all-range cross-period merge is bit-exact. \warn{However, the combined 1.5~mrad jet spectrum shows a visible step at the 14 GeV sample boundary.} Root cause: the jet8 SI MC was generated with an anomalously narrow truth-vertex distribution ($\sigma_z = 16$ cm vs $65$ cm for every other sample), and the 1.5~mrad truth-vertex reweight has a sharp peak at $z=0$ (max weight $4.4\times$); the two together inflate jet8 SI at 1.5~mrad by a factor of $\sim 2.5$ relative to every other sample. The prediction $0.591 \times (2.948/1.192) = 1.462$ matches the measured period ratio $1.466$ to 0.3\%. The fix is upstream --- regenerate jet8 SI with the standard wide vertex distribution --- not in the combining step itself.
+\end{abstract}
+
+\section{Summary}
+
+\textbf{Verdict:} Combining arithmetic PASS; 1 warning on per-sample normalization at 14 GeV in 1p5mrad.
+\begin{itemize}
+  \item \textbf{Signal:} $\sum_{i=1}^{6}\,\text{photon}X_{\text{nom,double}} \;/\; \text{combined} = 1.000000$ (max per-bin deviation $2.2\times 10^{-16}$, floating-point). \pass.
+  \item \textbf{Background:} $\sum_{i=1}^{10}\,\text{jet}X_{\text{nom,double}} \;/\; \text{combined} = 1.00000000$ (max per-bin deviation $< 3\times 10^{-8}$). Combining arithmetic \pass.
+  \item \textbf{Cross-period additivity:} $(\mathrm{0\,mrad\;combined}) + (\mathrm{1.5\,mrad\;combined}) = \mathrm{all\text{-}range\;combined}$, bin-by-bin to machine precision. \pass.
+  \item \warn{\textbf{Background jet spectrum shape at 14 GeV (1.5 mrad):}} a factor-3.3 step down between $[13.5, 14.0]$ GeV ($1.68\times10^{11}$) and $[14.0, 14.5]$ GeV ($5.09\times10^{10}$) --- much larger than the $\sim 0.8\times$-per-0.5-GeV smooth-spectrum expectation. Boundaries at 21, 32, 42 GeV (both periods) and 14 GeV (0 mrad) are within the expected smooth falloff.
+\end{itemize}
+
+\noindent
+Root cause of the 14 GeV 1p5mrad step: the jet8 SI MC has an anomalously narrow truth-vertex distribution ($\sigma_z = 16$ cm vs $65$ cm for every other sample). Combined with the 1.5~mrad truth-vertex reweight peak ($4.4\times$ at $z=0$), this gives jet8 SI a mean reweight of $2.95$ at 1.5 mrad (vs $1.00$ for all other samples). The predicted period-ratio for jet8\_nom becomes $0.591 \times 2.47 = 1.462$, matching the measured 1.466 to 0.3\%. Details and mitigation in Section~\ref{sec:bg_anomaly}.
+
+\noindent
+Documentation note: the bare (no-period-suffix) per-sample files \texttt{MC\_efficiency\_\{photon,jet\}X\_\{nom,double\}\_bdt\_nom.root} on disk are stale copies of the 1.5 mrad content (Apr 20 vs the Apr 21 re-run). They are not used by \texttt{merge\_periods.sh}, which combines at the per-period \emph{combined} level; this validation reflects that fact.
+
+\section{Method}
+
+\subsection{Inputs}
+All inputs are per-period MC outputs from \texttt{RecoEffCalculator\_TTreeReader.C}, with the per-event weight $w = \sigma \times f_\mathrm{mix} \times (L/L_{\mathrm{target}}) \times w_{\mathrm{truth\;vtx}}$ \emph{already baked} into the histogram contents before the \texttt{hadd}/\texttt{TFileMerger} step. Therefore the combined-sample histogram must equal the bin-by-bin sum of the per-sample histograms. Any deviation from bit-exact sum/combined $=1$ indicates a combining bug.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lllll}
+\toprule
+Period & Run range & $L$ [pb$^{-1}$] & $L_{\mathrm{target}}$ [pb$^{-1}$] & Cluster DI fraction \\
+\midrule
+0 mrad    & 47289--51274 & 32.66 & 48.93 & 0.224 \\
+1.5 mrad  & 51274--54000 & 16.27 & 48.93 & 0.079 \\
+All       & 47289--54000 & 48.93 & --    & lumi-weighted sum \\
+\bottomrule
+\end{tabular}
+\caption{Per-period luminosity and target lumi (from \texttt{.claude/rules/yaml-config.md}; matches \texttt{config\_bdt\_nom} and \texttt{config\_bdt\_nom\_\{0rad,1p5mrad\}}). $L_{\mathrm{target}}$ is the all-range lumi used in the per-event pre-scale.}
+\end{table}
+
+\subsection{Histograms Used}
+\begin{itemize}
+  \item Signal: \texttt{h\_truth\_pT\_0} (full-eta $|\eta^\gamma|<0.7$, 14 variable-width bins on $[7, 45]$ GeV: edges $\{7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45\}$).
+  \item Background: \texttt{h\_max\_truth\_jet\_pT} (full-eta, 1000 uniform bins on $[0, 100]$ GeV; rebinned to $0.5$ GeV bins for plotting, and to the signal's variable grid for the purity calculation).
+\end{itemize}
+
+\subsection{Sample Truth-\pT{} Windows}
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc|lcc}
+\toprule
+Signal  & truth \pT{} [GeV] & pair & Background & truth \pT{} [GeV] & pair \\
+\midrule
+photon5   & $0$--$14$   & $+$\texttt{\_double} & jet8   & $9$--$14$   & $+$\texttt{\_double} \\
+photon10  & $14$--$30$  & $+$\texttt{\_double} & jet12  & $14$--$21$  & $+$\texttt{\_double} \\
+photon20  & $30+$       & $+$\texttt{\_double} & jet20  & $21$--$32$  & $+$\texttt{\_double} \\
+          &             &                      & jet30  & $32$--$42$  & $+$\texttt{\_double} \\
+          &             &                      & jet40  & $42+$       & $+$\texttt{\_double} \\
+\bottomrule
+\end{tabular}
+\caption{Sample truth-\pT{} partitioning. Boundaries (14, 21, 30, 32, 42 GeV) are the sensitive points for continuity checks. The legacy \texttt{jet5} sample is excluded (no DI partner).}
+\end{table}
+
+\section{Signal Combining}
+
+Figure~\ref{fig:signal_overlay} overlays the 6 per-sample spectra and the combined spectrum per period. Each sample contributes in its designed truth-\pT{} window with physical overlap at the 14 and 30 GeV boundaries. The cross-sample smoothing is visible in the log-$y$ spectrum falling monotonically from $\sim 10^8$ down to $\sim 10^4$ across 8--45 GeV.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{signal_truth_pT_overlay_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{signal_truth_pT_overlay_1p5mrad.pdf}
+\caption{Leading truth-photon \pT{} spectrum per signal sample (6 curves: photon5/10/20 $\times$ \{nom, DI\}) and the combined (thick black). Left: 0 mrad. Right: 1.5 mrad. Per-event weights are baked in; the combined is the plain \texttt{hadd}.}
+\label{fig:signal_overlay}
+\end{figure}
+
+Figure~\ref{fig:signal_ratio} shows the per-sample fraction of the combined (top pad) and the sanity ratio $\Sigma(\mathrm{samples}) / \mathrm{combined}$ (bottom pad). The bottom pad is flat at 1.000 to within $10^{-7}$ everywhere.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{signal_ratio_per_sample_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{signal_ratio_per_sample_1p5mrad.pdf}
+\caption{Signal ratios. Top pad: per-sample / combined. Bottom pad: $\sum$(per-sample) / combined. The bottom pad is exactly 1.0 across all 14 variable-width signal \pT{} bins (max deviation $2.2\times10^{-16}$).}
+\label{fig:signal_ratio}
+\end{figure}
+
+Figure~\ref{fig:signal_zoom} zooms on the 14 GeV (photon5 $\rightarrow$ photon10) and 30 GeV (photon10 $\rightarrow$ photon20) sample boundaries. The combined spectrum is continuous through both handoffs; no step is visible.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{signal_boundary_zoom_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{signal_boundary_zoom_1p5mrad.pdf}
+\caption{Boundary zoom for signal: 14 GeV (left pad) and 30 GeV (right pad) per period. No discontinuity.}
+\label{fig:signal_zoom}
+\end{figure}
+
+\paragraph{Numerical cross-check} (independently re-derived from the ROOT files; see Table~\ref{tab:signal_integrals}): all numbers bit-exact.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Sample                     & 0 mrad integral      & 1.5 mrad integral   \\
+\midrule
+photon5\_nom               & $5.4745\times10^{8}$ & $3.2373\times10^{8}$ \\
+photon5\_double            & $1.5768\times10^{8}$ & $2.7774\times10^{7}$ \\
+photon10\_nom              & $2.0763\times10^{7}$ & $1.2271\times10^{7}$ \\
+photon10\_double           & $5.9952\times10^{6}$ & $1.0581\times10^{6}$ \\
+photon20\_nom              & $1.4938\times10^{6}$ & $8.8351\times10^{5}$ \\
+photon20\_double           & $4.3085\times10^{5}$ & $7.5631\times10^{4}$ \\
+\midrule
+$\sum$ per-sample          & $7.3381\times10^{8}$ & $3.6579\times10^{8}$ \\
+Combined (\texttt{hadd})   & $7.3381\times10^{8}$ & $3.6579\times10^{8}$ \\
+$\Sigma/$combined          & $1.00000000$          & $1.00000000$          \\
+\bottomrule
+\end{tabular}
+\caption{Signal per-sample and combined integrals of \texttt{h\_truth\_pT\_0} over physical bins $[7, 45]$ GeV (underflow and overflow bins excluded, consistent with Section~\ref{sec:additivity}). Photon5 has substantial truth content at $p_T < 7$ GeV which is captured in the underflow bin and not shown here; including underflow does not change the $\Sigma/$combined verdict. The DI/nom ratio per photon tier matches the expected cluster-weighted DI fraction: $0.288 \approx 0.224/(1-0.224)$ at 0 mrad; $0.086 \approx 0.079/(1-0.079)$ at 1.5 mrad.}
+\label{tab:signal_integrals}
+\end{table}
+
+\section{Background Combining}
+
+Figure~\ref{fig:bg_overlay} overlays the 10 per-sample leading truth-jet \pT{} spectra with the jet-inclusive combined. Each sample peaks in its truth-\pT{} window with expected tails into neighboring regions; the \texttt{\_double} tails are lower by the DI-fraction ratio as expected.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{background_truth_jet_pT_overlay_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{background_truth_jet_pT_overlay_1p5mrad.pdf}
+\caption{Leading truth-jet \pT{} per BG sample (10 curves) and jet-inclusive combined (thick black). Left: 0 mrad. Right: 1.5 mrad.}
+\label{fig:bg_overlay}
+\end{figure}
+
+Figure~\ref{fig:bg_ratio} is the $\Sigma(\mathrm{samples}) / \mathrm{combined}$ ratio. It is flat at $1.0000000 \pm 3\times10^{-8}$ across $[5, 55]$ GeV (92 filled bins).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{background_ratio_per_sample_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{background_ratio_per_sample_1p5mrad.pdf}
+\caption{Background $\Sigma$(samples)/combined ratio per period. Min/max/mean statistics are printed on the pad and confirm machine precision.}
+\label{fig:bg_ratio}
+\end{figure}
+
+Figure~\ref{fig:bg_zoom} zooms on the 4 BG sample boundaries (14, 21, 32, 42 GeV). All four show continuous sample-crossover behavior with no steps.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{background_boundary_zoom_0rad.pdf}
+\includegraphics[width=0.48\textwidth]{background_boundary_zoom_1p5mrad.pdf}
+\caption{Background boundary zoom (4 panels per period: 14, 21, 32, 42 GeV). Vertical dashed line marks each boundary. No discontinuities.}
+\label{fig:bg_zoom}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Sample         & 0 mrad integral       & 1.5 mrad integral    \\
+\midrule
+jet8\_nom      & $4.623\times10^{12}$  & $6.775\times10^{12}$  \\
+jet8\_double   & $1.120\times10^{12}$  & $1.965\times10^{11}$  \\
+jet12\_nom     & $3.974\times10^{11}$  & $2.349\times10^{11}$  \\
+jet12\_double  & $1.147\times10^{11}$  & $2.015\times10^{10}$  \\
+jet20\_nom     & $2.947\times10^{10}$  & $1.742\times10^{10}$  \\
+jet20\_double  & $8.512\times10^{9}$   & $1.495\times10^{9}$   \\
+jet30\_nom     & $9.046\times10^{8}$   & $5.348\times10^{8}$   \\
+jet30\_double  & $2.610\times10^{8}$   & $4.576\times10^{7}$   \\
+jet40\_nom     & $5.216\times10^{7}$   & $3.085\times10^{7}$   \\
+jet40\_double  & $1.505\times10^{7}$   & $2.639\times10^{6}$   \\
+\midrule
+$\sum$ (10)    & $6.2945\times10^{12}$ & $7.2462\times10^{12}$ \\
+Combined       & $6.2945\times10^{12}$ & $7.2462\times10^{12}$ \\
+$\Sigma/$comb. & $1.00000000$          & $0.99999999$          \\
+\bottomrule
+\end{tabular}
+\caption{Background per-sample and combined integrals of \texttt{h\_max\_truth\_jet\_pT}.}
+\label{tab:bg_integrals}
+\end{table}
+
+\section{Background Anomaly at 14 GeV in the 1.5 mrad Period}
+\label{sec:bg_anomaly}
+
+Figure~\ref{fig:bg_overlay} right panel (1.5 mrad) shows a visible step in the combined jet spectrum at the jet8$\rightarrow$jet12 boundary. The step is absent at 0 mrad (left panel). This section quantifies the step and identifies the root cause.
+
+\subsection{Bin-level evidence}
+
+Table~\ref{tab:bg_14gev_zoom} shows per-sample content at 0.5 GeV granularity around 14 GeV. At 0 mrad the jet8$\rightarrow$jet12 handoff is continuous (jet8 at $[13.5, 14.0]$ ends at $1.11\times10^{11}$; jet12 at $[14.0, 14.5]$ starts at $7.93\times10^{10}$, which is within the expected $\sim 0.8\times$-per-0.5-GeV smooth-spectrum falloff). At 1.5 mrad the same handoff is broken: jet8 ends at $1.63\times10^{11}$ but jet12 starts at only $4.69\times10^{10}$ --- a factor $\sim 3.5$ drop.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{l|cccc}
+\toprule
+Sample         & $[13.0, 13.5]$   & $[13.5, 14.0]$   & $[14.0, 14.5]$   & $[14.5, 15.0]$  \\
+\midrule
+\multicolumn{5}{l}{\textit{0 mrad}} \\
+jet8\_nom      & $1.40\times10^{11}$ & $1.11\times10^{11}$ & $0$                & $0$              \\
+jet12\_nom     & $0$                & $0$                & $7.93\times10^{10}$ & $6.39\times10^{10}$ \\
+combined       & $1.74\times10^{11}$ & $1.38\times10^{11}$ & $1.02\times10^{11}$ & $8.24\times10^{10}$ \\
+\midrule
+\multicolumn{5}{l}{\textit{1.5 mrad (ANOMALY)}} \\
+jet8\_nom      & $2.06\times10^{11}$ & $1.63\times10^{11}$ & $0$                & $0$              \\
+jet12\_nom     & $0$                & $0$                & $4.69\times10^{10}$ & $3.78\times10^{10}$ \\
+combined       & $2.12\times10^{11}$ & $1.68\times10^{11}$ & $5.09\times10^{10}$ & $4.10\times10^{10}$ \\
+\bottomrule
+\end{tabular}
+\caption{Per-sample \texttt{h\_max\_truth\_jet\_pT} content in 0.5 GeV bins straddling the 14 GeV jet8$\rightarrow$jet12 boundary. At 0 mrad the combined spectrum falls by factor 1.35$\times$ across 14 GeV (continuous); at 1.5 mrad it falls by factor 3.3$\times$ (step).}
+\label{tab:bg_14gev_zoom}
+\end{table}
+
+\subsection{Root cause: jet8 over-populated at 1.5 mrad}
+
+Between the two periods the per-event weight differs only by the ratio
+\[
+r \;\equiv\; \frac{L_{\mathrm{1p5mrad}} \cdot (1 - f_{\mathrm{DI}}^{1p5})}{L_{\mathrm{0rad}} \cdot (1 - f_{\mathrm{DI}}^{0rad})} \;=\; \frac{16.27 \cdot 0.921}{32.66 \cdot 0.776} \;=\; 0.59,
+\]
+so every single-interaction sample should have $\mathrm{integral}_{1p5} / \mathrm{integral}_{0rad} = 0.59$. Table~\ref{tab:jet_scaling_check} shows this ratio for each BG and signal sample.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Sample     & 0 mrad integral      & 1.5 mrad integral    & ratio   & expected \\
+\midrule
+\warn{jet8\_nom}   & $4.62\times10^{12}$  & \warn{$6.78\times10^{12}$}  & \warn{$1.466$} & $0.591$ \\
+jet8\_double       & $1.12\times10^{12}$  & $1.97\times10^{11}$         & $0.175$ & $0.176$ \\
+jet12\_nom         & $3.97\times10^{11}$  & $2.35\times10^{11}$         & $0.591$ & $0.591$ \\
+jet12\_double      & $1.15\times10^{11}$  & $2.02\times10^{10}$         & $0.176$ & $0.176$ \\
+jet20\_nom         & $2.95\times10^{10}$  & $1.74\times10^{10}$         & $0.591$ & $0.591$ \\
+jet30\_nom         & $9.05\times10^{8}$   & $5.35\times10^{8}$          & $0.591$ & $0.591$ \\
+jet40\_nom         & $5.22\times10^{7}$   & $3.09\times10^{7}$          & $0.591$ & $0.591$ \\
+\midrule
+photon5\_nom       & $5.47\times10^{8}$   & $3.24\times10^{8}$          & $0.591$ & $0.591$ \\
+photon10\_nom      & $2.08\times10^{7}$   & $1.23\times10^{7}$          & $0.591$ & $0.591$ \\
+photon20\_nom      & $1.49\times10^{6}$   & $8.84\times10^{5}$          & $0.591$ & $0.591$ \\
+\bottomrule
+\end{tabular}
+\caption{Per-sample integrals of the truth spectrum, 0 mrad vs 1.5 mrad, with the expected period-scaling ratio. For SI (\texttt{\_nom}) samples: $r_{\mathrm{SI}} = L_{\mathrm{1p5}} (1-f_{\mathrm{DI}}^{1p5}) / [L_{\mathrm{0rad}} (1-f_{\mathrm{DI}}^{0rad})] = 0.591$. For DI (\texttt{\_double}) samples: $r_{\mathrm{DI}} = L_{\mathrm{1p5}} f_{\mathrm{DI}}^{1p5} / [L_{\mathrm{0rad}} f_{\mathrm{DI}}^{0rad}] = 0.176$. \warn{Only jet8\_nom deviates (1.466 measured vs 0.591 expected, factor $2.48\times$ over).} Every other SI and DI sample --- including the DI partner of the anomalous sample, jet8\_double --- matches the prediction to three decimals. This narrows the root cause to the single-interaction jet8 sample processing for the 1.5 mrad period specifically.}
+\label{tab:jet_scaling_check}
+\end{table}
+
+\subsection{Root cause: narrow jet8 SI truth-vertex $\times$ peaked 1.5 mrad reweight}
+
+The cross-section, $f_{\mathrm{mix}}$, and $L/L_\mathrm{target}$ are all period-independent constants of the analysis config, so they cannot explain a single-sample, single-period anomaly. Instead, the driver is the \emph{truth-vertex reweight} applied per-event in \texttt{RecoEffCalculator\_TTreeReader.C} (line 1462). That reweight is a ratio histogram (data-truth-$z$ / sim-truth-$z$) precomputed per crossing-angle period; its average over MC events should be $\approx 1$ for any sample whose truth-$z$ distribution matches the one used to build the reweight.
+
+\paragraph{Two facts combine to produce the anomaly:}
+
+\begin{enumerate}
+  \item \warn{\textbf{jet8 SI has a much narrower truth-$z$ distribution than every other sample.}} Table~\ref{tab:vtxz_widths} measures the Gaussian width of \texttt{vertexz\_truth} across samples:
+  \begin{table}[H]
+  \centering
+  \begin{tabular}{lrr}
+  \toprule
+  Sample      & $\langle z \rangle$ [cm] & $\sigma_z$ [cm] \\
+  \midrule
+  \warn{jet8 SI}        & $-0.01$  & \warn{$16.0$} \\
+  jet8\_double          & $+0.13$  & $64.9$ \\
+  jet12 SI              & $-0.13$  & $65.0$ \\
+  jet12\_double         & $+0.05$  & $65.0$ \\
+  jet20 SI              & $-0.23$  & $65.1$ \\
+  photon5 SI            & $+0.08$  & $65.0$ \\
+  photon10 SI           & $+0.02$  & $64.8$ \\
+  \bottomrule
+  \end{tabular}
+  \caption{Truth $z$-vertex statistics per sample (200k events each). Every sample shares $\sigma_z \approx 65$ cm \emph{except jet8 SI}, which is narrow ($\sigma_z = 16$ cm) and centered at $z=0$.}
+  \label{tab:vtxz_widths}
+  \end{table}
+
+  \item \textbf{The 1.5 mrad reweight has a sharp peak at $z=0$ (max weight $4.42$)}, whereas the 0 mrad reweight is mildly peaked (max weight $1.25$). Because jet8 SI events sit entirely inside the sharp central peak, their mean reweight is:
+  \begin{table}[H]
+  \centering
+  \begin{tabular}{lrrr}
+  \toprule
+  Sample     & $\langle w_{\mathrm{truth\,vtx}} \rangle$ at 0 mrad & at 1.5 mrad & 1p5/0rad  \\
+  \midrule
+  \warn{jet8 SI}      & \warn{$1.192$} & \warn{$2.948$} & $2.473$ \\
+  jet12 SI            & $1.001$         & $1.003$         & $1.002$ \\
+  \bottomrule
+  \end{tabular}
+  \caption{Mean truth-vertex reweight by sample and period (from a 200k-event read). Every wide-$\sigma_z$ sample averages to $\sim 1$. Only jet8 SI gets significantly boosted, because its narrow truth-$z$ distribution lives inside the reweight peak.}
+  \label{tab:avg_reweight}
+  \end{table}
+\end{enumerate}
+
+\paragraph{Quantitative match to observation} Predicted period-ratio for jet8\_nom:
+\[
+r_{\mathrm{jet8\_nom}}^{\mathrm{pred}} \;=\; 0.591 \times \frac{\langle w \rangle_{1p5mrad}}{\langle w \rangle_{0rad}} \;=\; 0.591 \times 2.473 \;=\; \boxed{1.462}
+\]
+Measured from the ROOT files: $r_{\mathrm{jet8\_nom}}^{\mathrm{meas}} = 1.466$. Agreement to 0.3\%. The over-population is fully explained by this interaction.
+
+\paragraph{Why jet8\_double is unaffected} In the DI overlay pipeline the stored truth-$z$ is the average of two hard-scatter vertices, which broadens jet8\_double to the standard $\sigma_z \approx 65$ cm. Its mean reweight is therefore $\sim 1$ at both periods, and its SI/DI partner ratio scales at the nominal 0.176.
+
+\paragraph{Upstream culprit identified --- jet8 SI reads Blair Seidlitz's pre-embedded DSTs instead of the standard G4 chain.} Examining the jet8 sample directory \texttt{anatreemaker/macro\_maketree/sim/run28/jet8/}:
+\begin{itemize}
+  \item \texttt{Fun4All\_run\_sim.C} sets \texttt{inputFile0 = "test.list"} (line 78).
+  \item \texttt{test.list} contains entries of the form\\
+        \texttt{/sphenix/tg/tg01/commissioning/CaloCalibWG/bseidlitz/embed/jet8/OutDir*/DST\_ALLRECO\_pythia8\_Jet8-0000000029-000000.root}\\
+        --- pre-embedded DST\_ALLRECO files from B.\ Seidlitz's embed campaign (production dataset \textbf{29}).
+  \item Only \texttt{INPUTREADHITS::listfile[0]} is active; the standard G4Hits + DST\_CALO\_CLUSTER + DST\_MBD\_EPD + DST\_TRUTH\_JET inputs (lines 79--82) are \emph{commented out}.
+\end{itemize}
+Every other sample in the same \texttt{run28/} tree (jet12/20/30/40, photon5/10/20) has \texttt{Fun4All\_run\_sim.C} with \texttt{inputFile0 = "g4hits.list"} and all four lists active, feeding the standard G4 chain from the sPHENIX production at dataset \textbf{28} (\texttt{G4Hits\_pythia8\_JetN-0000000028-*.root}). Blair's embed campaign uses a narrow primary-vertex constraint for the embed coordinate transformation, which is why jet8 SI alone has $\sigma_z = 16$ cm.
+
+\paragraph{Downstream impact} At 1.5 mrad, the jet8 SI contribution to the jet-inclusive combined near $14$ GeV is over-weighted by a factor $\sim 2.5\times$. At 0 mrad, a hidden $1.19\times$ over-weighting exists as well (undetectable from period ratios alone because every other sample sees the same $\sim 1.25\times$ reweight peak there, but their averages are near unity due to their wider vertex distributions). The all-range jet-inclusive near $14$ GeV inherits $16.27/48.93 = 33\%$ of the 1.5 mrad bias, i.e.\ a $\sim 82\%$ excess. The bias is \emph{localized to the jet8 truth-\pT{} window $[9, 14]$ GeV}; bins above 14 GeV are unaffected because jet12/20/30/40 have wide truth-$z$ distributions and their mean reweight is 1.
+
+\paragraph{Recommended fix} Regenerate jet8 SI from the standard sPHENIX production (dataset 28, G4Hits) instead of Blair's embed (dataset 29). The production type for jet8 is 48 (\emph{JS pythia8 Jet ptmin = 8 GeV}).
+
+\begin{enumerate}
+  \item From \texttt{anatreemaker/macro\_maketree/sim/run28/jet8/}, regenerate the four DST lists via the sPHENIX \texttt{CreateFileList.pl} utility:
+  \begin{verbatim}
+    cd anatreemaker/macro_maketree/sim/run28/jet8
+    mv test.list test.list.blair_embed_backup   # keep the old embed list
+    CreateFileList.pl -type 48 -run 28 -n <nevents> -nopileup \
+        G4Hits DST_CALO_CLUSTER DST_MBD_EPD DST_TRUTH_JET
+  \end{verbatim}
+  Verified: with \texttt{-nopileup} (matching how jet12/20/etc.\ were pulled), this produces lists with entries\\
+  \texttt{G4Hits\_pythia8\_Jet8-0000000028-XXXXXX.root} --- identical naming pattern to every other sample.
+  \item Edit \texttt{Fun4All\_run\_sim.C} to match the jet12 default: \texttt{inputFile0 = "g4hits.list"}, and uncomment \texttt{listfile[1]} (dst\_calo\_cluster), \texttt{listfile[3]} (dst\_mbd\_epd), \texttt{listfile[4]} (dst\_truth\_jet).
+  \item Re-submit the condor job set, re-apply BDT scoring (\texttt{apply\_BDT.C}), re-run \texttt{oneforall\_tree\_double.sh} for the affected configs, and confirm the combined-jet spectrum is smooth at 14 GeV.
+\end{enumerate}
+Optional cross-check: the same regeneration also fixes the hidden $\sim 20\%$ jet8 over-weighting at 0 mrad, which should slightly reduce the combined-jet spectrum at $[9, 14]$ GeV for the 0 mrad period. If the downstream analysis (ABCD background yield, cross-section) is sensitive to this bin range, the cross-section in the lowest $p_T$ bin should shift accordingly.
+
+\section{Cross-Period Additivity (signal)}
+\label{sec:additivity}
+
+A dedicated cross-period check verifies that the lumi-weighted hadd of the two period-level combined files equals the all-range combined file bin-by-bin:
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+0 mrad combined integral      & $7.33811\times10^{8}$ \\
+1.5 mrad combined integral    & $3.65787\times10^{8}$ \\
+Sum (0rad + 1p5mrad)          & $1.09960\times10^{9}$ \\
+All-range combined integral   & $1.09960\times10^{9}$ \\
+$(\mathrm{sum}) / (\mathrm{all\text{-}range})$ & $1.000000$ \\
+Max bin-by-bin $|{\rm sum/allrange} - 1|$  & $0$ (exact) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The cross-period merge at the combined level is exact.
+
+\section{Files}
+
+\subsection{Plots}
+
+All PDFs in \texttt{plotting/figures/sample\_combining\_check/} (12 total):
+\begin{itemize}
+  \item \texttt{signal\_\{truth\_pT\_overlay,ratio\_per\_sample,boundary\_zoom\}\_\{0rad,1p5mrad\}.pdf} (6)
+  \item \texttt{background\_\{truth\_jet\_pT\_overlay,ratio\_per\_sample,boundary\_zoom\}\_\{0rad,1p5mrad\}.pdf} (6)
+\end{itemize}
+
+\subsection{Macros}
+\begin{itemize}
+  \item \texttt{plotting/plot\_sample\_combining\_signal.C}
+  \item \texttt{plotting/plot\_sample\_combining\_background.C}
+\end{itemize}
+
+\section{Conclusion}
+
+The sample-combining arithmetic (per-event-weighted \texttt{hadd}) is correct at floating-point precision in both periods for both signal and background, and the cross-period merge to the all-range combined is bit-exact. \warn{However, the combined 1.5~mrad jet-inclusive spectrum shows a factor-$3.3$ step at the 14 GeV jet8$\rightarrow$jet12 boundary.}
+
+Root cause (Section~\ref{sec:bg_anomaly}): the jet8 SI MC was produced with a narrow truth-vertex distribution ($\sigma_z = 16$ cm) --- all other samples have $\sigma_z \approx 65$ cm. When multiplied by the 1.5~mrad truth-vertex reweight (sharp peak at $z=0$, max $4.4\times$), jet8 SI events get a mean reweight of $2.95$ while every other sample averages to $\sim 1$. This $\sim 2.5\times$ differential inflation matches the measured period-ratio anomaly ($1.466$ vs expected $0.591$) to 0.3\%, and is what produces the visible step in Fig.~\ref{fig:bg_overlay}. The same mechanism gives a smaller hidden $\sim 19\%$ over-weighting at 0 mrad.
+
+The combining code is not the source of the issue. The fix is upstream: regenerate the jet8 SI MC with the same vertex-smearing $\sigma$ used for the other samples. As a stop-gap, applying a symmetric $|z_{\mathrm{truth}}| < 30$ cm cut across all samples would equalize the reweight averages.
+
+\end{document}

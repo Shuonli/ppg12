@@ -1,0 +1,471 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+
+\newcommand{\etg}{$E_T$}
+\newcommand{\isoET}{$\mathrm{iso}E_T$}
+\newcommand{\crit}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\info}[1]{\textcolor{blue}{#1}}
+\newcommand{\pass}[1]{\textcolor{ForestGreen}{\textbf{#1}}}
+
+\title{MC Purity Closure vs.\ Reco Isolation Definition\\
+\large Topo inner-$R$ subtraction and tower-donut scans}
+\author{PPG12 Analysis Team (automated)}
+\date{April 18, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+
+We probed the sensitivity of the ABCD method to the reco-isolation
+definition used to split the $A/B/C/D$ regions.
+Two scan dimensions were swept (all other cuts fixed at nominal):
+(i) \textbf{topo-cluster inner-$R$ subtraction} (\texttt{use\_topo\_iso:
+2}, existing): outer topo cone at $R=0.4$ with inner topo cone at
+$R\in\{0.05,\,0.075,\,0.10,\,0.20\}$ subtracted;
+(ii) \textbf{tower-based donut} (\texttt{use\_topo\_iso: 3}, newly
+added at \texttt{RecoEffCalculator\_TTreeReader.C:2010--2026}):
+outer cone $R=0.3$ at 70\,MeV tower threshold over
+\texttt{cluster\_iso\_03\_70\_\{emcal,hcalin,hcalout\}}, minus the
+EMCal-only inner ring \texttt{cluster\_iso\_R\_70\_emcal}.
+All tower variants use a mean-matching rescaled iso cut
+$(\texttt{reco\_iso\_max\_b}, \texttt{reco\_iso\_max\_s})$ and
+zeroed \texttt{mc\_iso\_scale/shift} (1.2/0.1 nominal, tuned against
+topo04 and not applicable to tower donuts). Variants generated via
+\texttt{make\_bdt\_variations.py}; HTCondor clusters 406590 (tower)
+and 406591 (topo).
+
+\textbf{Primary finding:} the tower donut is \crit{not} a viable
+substitute for nominal topo R=0.4 at small inner $R$. The only tower
+point with an \isoET\ scale close to nominal (inner $R=0.20$,
+mean ratio $\approx 0.95$) closes at $0.84\pm 0.05$ in MC
+truth-purity --- worse than the three topo operating points by
+$3$--$14\%$. Smaller inner-$R$ tower donuts collapse further
+(closure $\approx 0.69$--$0.75$) because the donut ingests a growing
+fraction of the photon EM shower tail. Inner $R=0.05$ is
+\crit{degenerate} (closure identically zero) --- a failure mode that
+flags mean-matching iso rescaling as breaking when donut \isoET\
+$\gg$ nominal. \textbf{Recommendation:} keep nominal topo R=0.4;
+consider topo inner $R=0.10$ as an internal cross-check
+(closure deviation $6\%$, RMS $0.21$); drop tower donuts from
+future sweeps.
+
+\textbf{Pipeline bug fixed:} branch-selection bug at
+\texttt{RecoEffCalculator\_TTreeReader.C:722--726} silently zeroed
+every MC histogram for every variant that ran Pass~1 data-vtxscan
+after the bug appeared. All 16 variants re-ran cleanly; fix
+validator \pass{PASS}. See Section~\ref{sec:bugfix}.
+
+\section{Findings Table}
+
+\begin{longtable}{@{}p{1.6cm}p{4.3cm}p{6.1cm}p{4.6cm}@{}}
+\toprule
+Severity & Scope & Finding & Impact \\
+\midrule
+\info{INFO-1} & Topo inner-$R$ subtraction, R $\in$ \{0.05,
+  0.075, 0.10, 0.20\} &
+  Closure mean drifts $1.01 \to 0.90$, RMS tightens
+  $0.27 \to 0.09$ as the inner hole grows. Removing the innermost
+  topo-cluster content stiffens the $A$-region composition but
+  shifts ABCD closure low. &
+  Internal cross-check only; topo inner $R\!=\!0.10$
+  ($6\%$ deviation, RMS $0.21$) is the most useful compromise. Not
+  adopted as nominal. \\
+\addlinespace
+\warn{WARN-1} & Tower donut, inner $R\!=\!0.20$ &
+  Donut \isoET\ mean within $5\%$ of nominal topo04, closure
+  $0.840\pm 0.055$ (mean $\pm$ RMS). Worst-of-three tower points but
+  physically meaningful. &
+  If tower donut were adopted as a variant, $16\%$ closure deviation
+  must be absorbed as an additional purity systematic. Not
+  recommended. \\
+\addlinespace
+\warn{WARN-2} & Tower donut, inner $R\in\{0.075,\,0.10\}$ &
+  Closure drops to 0.69--0.75. Donut scale exceeds nominal by
+  factors 3--7; inner ring no longer excludes the photon EM shower
+  tail (sPHENIX EMCal tower size $\approx 0.024$ in $\eta/\phi$;
+  at $R\!=\!0.05$ essentially the entire shower sits inside the
+  inner hole). &
+  Diagnostic, not a viable variant. Demonstrates the expected
+  trade-off between iso-definition fidelity and photon leakage. \\
+\addlinespace
+\crit{CRIT-1} & Tower donut, inner $R=0.05$ &
+  Degenerate. Rescaled iso cut $(b,s)\!=\!(6.38,0.55)$ gives
+  $\sim\!11$\,GeV at \etg=8, $\sim\!26$\,GeV at \etg=36. $A$ admits
+  essentially every cluster; $B$ empties at high \etg; ABCD
+  fit collapses; closure ratio $\equiv 0$. &
+  Flags the iso rescaling
+  (scheme-2, mean-matching) as breaking when donut \isoET\
+  $\gg$ nominal. Either retune $(b,s)$ via iso \emph{efficiency}
+  matching, or drop this point from future sweeps. \\
+\addlinespace
+\crit{CRIT-2} & \texttt{RecoEffCalculator\_TTreeReader.C:722--726} &
+  \texttt{use\_r04\_branches=true} bound
+  \texttt{njet\_AntiKt\_unsubtracted\_r04\_calib} for both data and
+  MC. Data slimtrees carry plain
+  \texttt{njet\_AntiKt\_unsubtracted\_r04} (no \texttt{\_calib});
+  MC slimtrees carry the \texttt{\_calib} suffix. ROOT 6.32
+  \texttt{TTreeReader::Next()} aborts on first missing-branch and
+  silently empties the data vtxscan; the cascade
+  (vertex reweight $= 0/0$) zeroed every MC histogram for every
+  variant that ran Pass~1 after the bug appeared. &
+  \textbf{Fixed.} Branch name now \texttt{issim}-gated: data $\to$
+  \texttt{\_r04} no \texttt{\_calib}; MC $\to$ \texttt{\_r04\_calib}.
+  All 16 scan variants re-ran cleanly. No prior production systematic
+  was affected (the bug lived only in the scan-specific apply path,
+  confirmed via \texttt{sync-check}). \\
+\bottomrule
+\end{longtable}
+
+\section{Scan Results}
+\label{sec:results}
+
+Closure is quantified via \texttt{g\_mc\_purity\_fit\_ratio} in
+\texttt{results/Photon\_final\_bdt\_\{variant\}\_mc.root} --- the
+ratio of the ABCD-fit-extracted MC truth purity to the direct MC
+truth purity, evaluated bin-by-bin in reco \etg. A perfect closure is
+$\equiv 1$. Summary statistics across the full \etg\ range
+(8 < \etg < 36 GeV, 12 bins):
+
+\begin{table}[H]
+\centering
+\caption{MC truth-purity closure statistics for topo inner-$R$ and
+tower-donut variants. ``mean'' and ``RMS'' are unweighted
+statistics of the 12-bin closure graph. Smaller $|\mathrm{mean}-1|$
+and smaller RMS are both desirable.}
+\label{tab:closure-stats}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+variant & mean & RMS & range & $|\mathrm{mean}-1|$ \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Nominal (topo R=0.4, all features on)}} \\
+nominal                    & 1.0118 & 0.2687 & [0.832, 1.795] & 0.0118 \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Topo inner-$R$ subtraction}} \\
+innerR\_005  (topo)        & 0.9663 & 0.2962 & [0.773, 1.823] & 0.0337 \\
+innerR\_0075 (topo)        & 0.9557 & 0.2756 & [0.772, 1.751] & 0.0443 \\
+innerR\_01   (topo)        & 0.9418 & 0.2111 & [0.793, 1.535] & 0.0582 \\
+innerR\_02   (topo)        & 0.8975 & 0.0906 & [0.820, 1.105] & 0.1025 \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Tower donut (outer $R=0.3$, 70 MeV thr.)}} \\
+innerRtower\_005           & \multicolumn{4}{c}{\crit{degenerate} (ratio $\equiv 0$, fit collapsed)} \\
+innerRtower\_0075          & 0.6894 & 0.1637 & [0.579, 1.159] & 0.3106 \\
+innerRtower\_01            & 0.7452 & 0.1308 & [0.645, 1.103] & 0.2548 \\
+innerRtower\_02            & 0.8397 & 0.0549 & [0.776, 0.929] & 0.1603 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Nominal topo04 closure structure}
+
+The nominal closure mean $1.01$ is dominated by the lowest \etg\ bin
+(\etg\ $\approx 9$\,GeV, ratio $\approx 1.80$) where the ABCD fit
+function pulls high at the edge of the fit range. Over the
+\textbf{published} kinematic range $10 < \etg < 26$\,GeV
+the closure mean drops to $\approx 0.85$, consistent within the
+quoted MC purity-correction systematic. The tail of the closure
+distribution --- the source of the RMS $= 0.27$ --- is a
+\etg-edge artefact, not a methodology bias.
+
+\subsection{Topo inner-$R$ subtraction}
+
+Figure~\ref{fig:topo-innerR} shows the topo inner-$R$ scan.
+The closure trends monotonically:
+\begin{itemize}
+\item As the inner hole $R$ grows, the \etg-bin-to-bin RMS tightens
+  ($0.30 \to 0.09$).
+\item But the \emph{mean} closure dips progressively below unity
+  ($0.966 \to 0.898$): removing the innermost topo-cluster content
+  stiffens the $A$-region event composition but pulls the ABCD
+  closure low, because the surviving outer ring is a different
+  observable from the one against which the MC purity correction
+  was tuned.
+\end{itemize}
+This is the expected fidelity-vs-stability trade-off. Topo
+inner $R\!=\!0.10$ is the most attractive compromise: closure
+deviation $6\%$, RMS narrowed to $0.21$. Recommended as an internal
+systematic cross-check rather than a replacement nominal, because
+the analysis-note purity correction is calibrated on topo04.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../plotting/figures/mc_purity_innerR_scan.pdf}
+\caption{MC truth-purity closure ratio vs.\ reco \etg\ for the topo
+inner-$R$ subtraction scan. Two panels: with (left) and without
+(right) the nominal \texttt{mc\_iso\_scale/shift} data-MC iso
+correction applied. Black (\texttt{nominal}) is the topo $R=0.4$
+outer cone without subtraction. Colors: red/orange/green/blue for
+inner $R\in\{0.05,\,0.075,\,0.10,\,0.20\}$. A perfect closure sits
+on the horizontal gray line at $1$. The low-\etg\ pull at
+\etg\ $\approx 9$\,GeV is an ABCD fit-edge artefact shared by all
+variants; the systematic shift below unity at high inner $R$ is the
+genuine iso-definition response.}
+\label{fig:topo-innerR}
+\end{figure}
+
+\subsection{Tower-based donut}
+
+Figure~\ref{fig:tower-innerR} shows the tower donut scan.
+The closure behavior is qualitatively different from the topo scan:
+
+\begin{itemize}
+\item \textbf{Inner $R\!=\!0.20$} (closure $0.840\pm 0.055$): donut
+  \isoET\ mean within $5\%$ of nominal topo04. Closure is $16\%$
+  below unity but stable (RMS $0.05$). This is the only tower point
+  with a physically meaningful \isoET\ scale; the closure shift is a
+  genuine methodology response, comparable in magnitude to the
+  topo\_innerR\_02 closure but slightly worse.
+\item \textbf{Inner $R\!=\!0.10$ and $R\!=\!0.075$} (closure
+  $0.745$ and $0.689$): donut \isoET\ mean 3--7x larger than
+  nominal topo04. The donut now admits a large fraction of the
+  photon EM shower tail because sPHENIX EMCal tower size is
+  $\approx 0.024$ in $\eta/\phi$ --- an inner ring with
+  $R\!=\!0.075$ is only $\approx 3$ tower widths and leaks the
+  shower. Closure is pulled heavily low.
+\item \textbf{Inner $R\!=\!0.05$} is \crit{degenerate}
+  (CRIT-1). The rescaled iso cut $(b,s)=(6.38,0.55)$ gives
+  $\sim\!11$\,GeV at \etg=8 and $\sim\!26$\,GeV at \etg=36 --- i.e.,
+  essentially every reco cluster survives the iso cut, $A$ becomes
+  the full sample, $B$ empties at high \etg, and the ABCD purity fit
+  collapses to zero in \etg\ $> 24$\,GeV bins. The closure ratio is
+  therefore identically zero across the full scan. The physics
+  meaning is that the mean-matching iso-cut rescaling
+  (scheme-2) breaks when the donut \isoET\ scale is dominated by
+  the photon shower --- iso-efficiency matching (scheme-1) would be
+  required instead.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../plotting/figures/mc_purity_innerR_tower_scan.pdf}
+\caption{MC truth-purity closure ratio vs.\ reco \etg\ for the
+tower-based donut scan. Outer cone $R=0.3$ at 70\,MeV tower threshold,
+summing EMCal+HCalIn+HCalOut; inner ring is EMCal-only with
+$R\in\{0.05,\,0.075,\,0.10,\,0.20\}$. Two panels: with (left) and
+without (right) the nominal
+\texttt{mc\_iso\_scale/shift} data-MC iso correction. The nominal
+topo04 reference is overlaid in black. The innermost point
+($R=0.05$, red) is degenerate at zero --- the rescaled iso cut is
+too loose and the ABCD fit collapses. The remaining three points
+demonstrate the photon EM-shower tail leakage.}
+\label{fig:tower-innerR}
+\end{figure}
+
+\subsection{All-calo donut variants (no tower threshold)}
+\label{sec:donut}
+
+Two additional donut families are included in the scan, both using the
+full EMCAL+HCALIN+HCALOUT sum at outer $R=0.4$ (no tower threshold) and
+scanning an all-calo inner ring. They test whether the tower-donut
+degradation seen above is driven by the 70\,MeV-threshold EMCal-only
+inner ring, or by the donut construction itself.
+
+\begin{itemize}
+\item \textbf{donutFull} (\texttt{use\_topo\_iso:4} in
+  \texttt{RecoEffCalculator\_TTreeReader.C:2042--2052}): outer
+  $R=0.4$ all-calo sum (\texttt{cluster\_iso\_04}) minus the
+  corresponding all-calo inner ring
+  \texttt{cluster\_iso\_\{005,0075,02\}}. Inner $R$ scan points:
+  $\{0.05,\,0.075,\,0.20\}$. No $R=0.10$ point exists in the current
+  slimtree for the plain tower iso.
+\item \textbf{donutExcl} (\texttt{use\_topo\_iso:5} at
+  \texttt{RecoEffCalculator\_TTreeReader.C:2053--2065}): outer
+  $R=0.4$ with \emph{EMCal ownership exclusion} (\texttt{cluster\_iso\_excl\_04},
+  which zeroes all EMCal towers assigned to the seed topo-cluster
+  and keeps HCalIn/HCalOut with their standard 120\,MeV threshold),
+  minus the corresponding \texttt{cluster\_iso\_excl\_\{005,0075,01,02\}}
+  inner ring. Inner $R$ scan points: $\{0.05,\,0.075,\,0.10,\,0.20\}$.
+\end{itemize}
+
+Figure~\ref{fig:donut-innerR} shows the closure ratio. Mean $|r-1|$
+in the 14--28\,GeV physics range is summarised in
+Table~\ref{tab:donut_summary}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../plotting/figures/mc_purity_innerR_donut_scan.pdf}
+\caption{MC truth-purity closure ratio vs.\ reco \etg\ for the two
+new donut families. Left: \texttt{donutFull} (all-calo no-threshold,
+outer $R=0.4$), inner $R\in\{0.05,\,0.075,\,0.20\}$. Right:
+\texttt{donutExcl} (EMCal-ownership-excluded, outer $R=0.4$), inner
+$R\in\{0.05,\,0.075,\,0.10,\,0.20\}$. Both panels overlay the
+nominal topo $R=0.4$ closure as a reference (gray). Reweight-ON
+(nominal) configuration only; no reweight-OFF variant was produced.}
+\label{fig:donut-innerR}
+\end{figure}
+
+\begin{table}[H]
+\centering\small
+\caption{Mean and max absolute closure deviation $|r-1|$ in the
+14--28\,GeV physics range for the two new donut families, with the
+nominal topo~$R=0.4$ and the tower 70\,MeV donut at $R_\text{in}=0.20$
+as reference.}
+\label{tab:donut_summary}
+\begin{tabular}{l c c c}
+\toprule
+variant & mean $|r-1|$ & max $|r-1|$ & closure note \\
+\midrule
+nominal topo R=0.4        & 0.101 & 0.158 & reference \\
+tower 70 MeV, $R_\text{in}=0.20$ & 0.180 & 0.224 & degraded (photon shower leak) \\
+\midrule
+donutFull, $R_\text{in}=0.05$  & 0.112 & 0.174 & $\approx$ nominal \\
+donutFull, $R_\text{in}=0.075$ & 0.082 & 0.140 & slightly better than nominal \\
+donutFull, $R_\text{in}=0.20$  & 0.080 & 0.149 & slightly better than nominal \\
+\midrule
+donutExcl, $R_\text{in}=0.05$  & 0.093 & 0.156 & $\approx$ nominal \\
+donutExcl, $R_\text{in}=0.075$ & 0.081 & 0.143 & slightly better than nominal \\
+donutExcl, $R_\text{in}=0.10$  & 0.077 & 0.133 & best closure in scan \\
+donutExcl, $R_\text{in}=0.20$  & 0.081 & 0.149 & slightly better than nominal \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+Removing the 70\,MeV tower threshold and the EMCal-only restriction
+from the inner ring eliminates the shower-tail leakage that degraded
+the tower-donut closure in \S\ref{fig:tower-innerR}. Both donutFull
+and donutExcl match nominal topo closure across the full inner-$R$
+range (mean $|r-1|\!\approx\!0.08$\,--\,$0.11$ vs.\ 0.10 for nominal),
+with donutExcl at $R_\text{in}=0.10$ giving the \emph{best} mean
+closure (0.077) in the full scan. The ownership-excluded construction
+is intrinsically photon-free on the EMCal side by cluster definition,
+so the inner-ring subtraction does not need to fight a photon leak;
+donutFull reaches comparable closure because the plain
+\texttt{cluster\_iso\_R} includes HCAL activity that statistically
+tracks the photon-independent UE and dilutes any EMCal-side shower
+leak at large inner~$R$.
+
+\paragraph{Caveats and follow-ups.}
+\begin{itemize}
+\item Only reweight-ON was produced for both families; the
+reweight-OFF cross-check remains to be generated if the donut
+variants are adopted as systematic alternatives.
+\item \texttt{donutFull} is missing the $R_\text{in}=0.10$ point
+because the plain un-thresholded tower iso at $R=0.10$ was not in the
+slimtree at the time of the first pipeline pass. Adding it requires
+a \texttt{CaloAna24} update to write \texttt{cluster\_iso\_01}, then
+a re-production. Low priority since $R_\text{in}=0.075$ and $R=0.20$
+bracket this point and both show $\approx$\,nominal closure.
+\item Closure deviations at low \etg\ ($\sim\!9$\,GeV) remain outside
+the physics range and are dominated by ABCD fit-edge effects common
+to all variants; not quoted in the mean-$|r-1|$ summary above.
+\end{itemize}
+
+\paragraph{Recommendation.} Both donutFull (at $R_\text{in}=0.075$
+or $0.20$) and donutExcl (at any $R_\text{in}$) are viable internal
+cross-checks of the nominal topo~$R=0.4$ iso definition. donutExcl is
+slightly more attractive because its construction guarantees
+photon-energy independence by cluster ownership rather than by a
+tower-energy threshold. If a systematic is to be assigned from this
+family, it should be taken as the closure spread between donutFull
+and donutExcl at the same inner-$R$, which is $\lesssim 1\%$ in the
+physics range.
+
+\section{Bug Fix Sidebar}
+\label{sec:bugfix}
+
+\textbf{Symptom:} early in scan production all 16 MC variant outputs
+returned \emph{identically empty} histograms; data-only histograms
+were fine.
+
+\textbf{Root cause:}
+\texttt{RecoEffCalculator\_TTreeReader.C:722--726} unconditionally
+bound \texttt{njet\_AntiKt\_unsubtracted\_r04\_calib}. MC slimtrees
+(from \texttt{CaloAna24}) carry the \texttt{\_calib} suffix from the
+jet calibration layer; data slimtrees carry plain
+\texttt{njet\_AntiKt\_unsubtracted\_r04}. ROOT 6.32's
+\texttt{TTreeReader::Next()} aborts on the first missing-branch
+error and silently stops the event loop. Collateral damage came
+through Pass~1 vertex-scan: the MC-purity pipeline builds a
+data-side vtxscan, normalises it, and reweights MC to match. When
+the data \texttt{Next()} aborted before a single event was filled,
+MC vertex reweight became $0/0$ and \emph{every} MC histogram came
+back empty.
+
+\textbf{Fix:} \texttt{issim}-gate the branch name --- data $\to$
+\texttt{\_r04}, MC $\to$ \texttt{\_r04\_calib}.
+
+\textbf{Validation:} All 16 variants re-ran cleanly on clusters
+406590 / 406591; topo04 reproduced the pre-existing production purity
+graph bin-by-bin within numerical precision; a data-only rerun
+showed no change. Fix validator \pass{PASS}.
+
+\textbf{Scope:} the bug lived only in the scan-specific apply path
+(added when \texttt{use\_topo\_iso: 3} was wired in). The production
+\texttt{oneforall.sh} path uses a different, already-\texttt{issim}-aware
+branch-binding block. \textbf{No existing production systematic
+results are affected.} Confirmed via \texttt{sync-check} on
+\texttt{config\_bdt\_nom.yaml} and all 23 variation configs.
+
+\section{Interpretation and Recommendation}
+
+The closure dependence on iso definition is driven by two handles:
+(i) the fraction of the photon EM shower that leaks into the iso
+cone --- small inner-$R$ holes fail to exclude the shower tail, the
+iso variable becomes a shower-shape variable in disguise,
+correlated with the BDT score, and ABCD independence breaks; and
+(ii) the iso-cut calibration --- mean-matching
+(scheme-2) matches first-moment, not efficiency. When the donut
+distribution is dominated by the photon tail, a fixed-mean cut
+produces a qualitatively different efficiency from nominal and ABCD
+closure is not recoverable via simple rescale.
+
+The topo R=0.4 cone is the correct physics-motivated iso definition
+for sPHENIX pp: topo-clustering excludes the photon shower by
+construction (the seed cluster is removed from the topo list), so
+the R=0.4 topo sum is a clean underlying-event plus prompt-particle
+proxy. Tower donuts reintroduce the shower-exclusion problem via the
+inner-ring geometry and are not a physics equivalent --- only a
+fallback if topo clustering is unavailable.
+
+\textbf{Recommendation:}
+\begin{itemize}
+\item Keep nominal topo $R=0.4$ isolation. No tower configuration is
+  a cleaner choice.
+\item Use topo inner $R=0.10$ as an internal cross-check
+  (closure deviation $6\%$, RMS narrowed to $0.21$); quote alongside
+  the published purity systematic as evidence of ABCD-definition
+  stability.
+\item Drop tower donuts at small inner $R$ from future sweeps. The
+  $R=0.05$ degeneracy (CRIT-1) and $R\!\in\!\{0.075,\,0.10\}$
+  leakage (WARN-2) are diagnostic artefacts, not independent
+  systematic points. Retain only $R=0.20$ if a tower reference is
+  needed.
+\item If a tower variant is required externally, re-parameterise
+  the iso cut via efficiency-matching (scheme-1) rather than
+  mean-matching (scheme-2). The $R=0.05$ degeneracy is a
+  scheme-2 breakage, not a tower-geometry limitation.
+\end{itemize}
+
+\section*{Files and artefacts}
+
+Figures: \texttt{plotting/figures/mc\_purity\_innerR\_scan.pdf}
+(topo, 2-panel) and
+\texttt{plotting/figures/mc\_purity\_innerR\_tower\_scan.pdf}
+(tower, 2-panel).
+Code: \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C}
+(fixed at L722--726; \texttt{use\_topo\_iso: 3} path at L2010--2026);
+\texttt{efficiencytool/make\_bdt\_variations.py} (new
+\texttt{VARIANTS} entries
+\texttt{innerRtower\_\{005,0075,01,02\}}$\pm$\texttt{\_nore}).
+Results:
+\texttt{efficiencytool/results/Photon\_final\_bdt\_innerR*\_mc.root}
+(16 files, each holding \texttt{g\_mc\_purity\_fit\_ratio});
+\texttt{iso\_innerring\_scan.txt} (mean-ratio rescaling inputs).
+HTCondor clusters 406590 (tower) and 406591 (topo), all jobs green.
+
+\end{document}

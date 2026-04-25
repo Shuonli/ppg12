@@ -1,0 +1,20 @@
+# HTCondor submission for BDT-model cross-check variants (base_v0, base_v0E).
+# Runs oneforall_tree_and_yield.sh (RecoEffCalculator + MergeSim + CalculatePhotonYield).
+
+universe              = vanilla
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+request_memory        = 8GB
+request_disk          = 10GB
+request_cpus          = 1
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg matching (config_bdt_bdtmodel_*.yaml)

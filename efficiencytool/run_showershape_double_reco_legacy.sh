@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Usage: bash run_showershape_double.sh [config_name] [double_frac]
+# LEGACY: two-pass reco-vertex showershape blending. The primary single-pass
+# truth-vertex showershape pipeline is now submit_showershape_di.sub +
+# showershape_di_jobs_{0rad,1p5rad}.list. Kept as a reference / cross-check.
+# Renamed from run_showershape_double.sh.
+#
+# Usage: bash run_showershape_double_reco_legacy.sh [config_name] [double_frac]
 #   config_name  — YAML config file name (default: config_showershape.yaml)
 #   double_frac  — cluster-weighted double-interaction fraction (default: 0.224 = 22.4%, 0 mrad)
 #                  Use 0.079 for 1.5 mrad beam runs (7.9%)

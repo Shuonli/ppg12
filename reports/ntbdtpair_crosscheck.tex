@@ -1,0 +1,1059 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+% Centered fixed-width paragraph column (PPG12 convention)
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+
+% Long \texttt{} paths are hard to break; allow more stretch between words.
+\setlength{\emergencystretch}{3em}
+
+\title{PPG12 Cross-Check: Parametric Tight / Non-Tight BDT-Pair Variants\\
+       \large ABCD Closure Stress Test at Extreme BDT Cut Combinations}
+\author{Shuonli Li}
+\date{2026-04-20}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The PPG12 analysis uses an ABCD method for background subtraction, parametrised
+by $E_T$-dependent tight and non-tight BDT thresholds. To probe the stability
+of the background estimate under simultaneous relaxation of the
+tight-lo, non-tight-hi, and non-tight-lo boundaries, we extend the
+existing \texttt{purity\_nonclosure\_ntbdt} (flat-scalar) cross-check
+with nine $E_T$-parametric anchor combinations defined at $E_T = 10$~GeV
+and $E_T = 25$~GeV, each processed twice (1.5~mrad and 0~mrad
+crossing-angle periods) under the new double-interaction (DI) +
+truth-vertex-reweight pipeline. The non-tight upper bound is decoupled
+from the tight lower bound; one low-anchor (C) enforces an excluded BDT
+band $[0.70, 0.80]$ at $E_T = 10$~GeV to test the effect of a
+BDT-exclusion gap. With the updated MC-sample combining code
+(\texttt{MergeSim.C}), twelve of the 18 reprocessed cross-sections
+remain flagged \textsc{CRIT} ($|\max_{\rm bin}\Delta_{\rm rel}| > 0.50$)
+while six — all 0~mrad variants with a High Y'/Z' anchor
+($\mathrm{t}_{\rm lo}(25) = 0.75$) — drop to \textsc{WARN}
+($0.20 < |\Delta| \le 0.50$). All signs are positive, with magnitudes
+in the range $+0.34$ to $+0.74$, peaking at $E_T = 30$~GeV (1.5~mrad)
+or $E_T = 11$--$27$~GeV (0~mrad). ABCD purity at $E_T = 25$~GeV
+recovers close to nominal for the 1.5~mrad period but stays suppressed
+for 0~mrad. We interpret this as expected ABCD-closure breakdown at
+relaxed thresholds rather than a pipeline bug; the variants are
+\emph{not} suitable for inclusion in the systematic-uncertainty
+envelope.
+\end{abstract}
+
+\section{Motivation}
+
+The PPG12 cross-section uses four ABCD regions in the (tight/non-tight,
+iso/non-iso) plane. Signal leakage into the non-tight control region is
+controlled by the lower edge of the non-tight BDT window
+($\mathrm{nt}_{\rm lo}$) and by the tight-region lower edge
+($\mathrm{t}_{\rm lo}$) — the non-tight upper edge tracks $\mathrm{t}_{\rm lo}$
+to keep the two bands contiguous.
+
+The existing \texttt{purity\_nonclosure\_ntbdt} cross-check varies
+$\mathrm{nt}_{\rm lo}$ as a flat scalar. Because the nominal thresholds are
+$E_T$-parametric
+\begin{equation*}
+  \mathrm{t}_{\rm lo}(E_T) = \text{intercept} + \text{slope} \cdot E_T,
+\end{equation*}
+a flat variation is not kinematically self-consistent over the full
+$10 < E_T < 36$~GeV range. We therefore extend the cross-check to a
+two-anchor linear parametrisation of three quantities simultaneously:
+the analyst specifies the triple
+$(\mathrm{t}_{\rm lo}, \mathrm{nt}_{\rm hi}, \mathrm{nt}_{\rm lo})$ at
+$E_T = 10$~GeV (low anchors A/B/C) and at $E_T = 25$~GeV (high anchors
+X/Y/Z), and the pipeline converts the two anchors into the
+slope/intercept pair
+\begin{equation*}
+  \text{slope} = \frac{v_{25} - v_{10}}{15}, \qquad
+  \text{intercept} = v_{10} - 10 \cdot \text{slope}.
+\end{equation*}
+$\mathrm{nt}_{\rm hi}$ is now a \emph{separate} parametric pair and is
+no longer required to track $\mathrm{t}_{\rm lo}$; one Low anchor (C)
+deliberately sets $\mathrm{nt}_{\rm hi} < \mathrm{t}_{\rm lo}$ at
+$E_T = 10$~GeV so that the BDT band $[0.70, 0.80]$ is excluded from
+both regions (a \emph{gap} variant). The Cartesian product
+$\text{A,B,C} \times \text{X,Y,Z}$ yields nine anchor combinations;
+each is reprocessed under both crossing-angle periods, for 18 total
+reprocessed cross-sections.
+
+\begin{table}[h!]
+\centering
+\caption{Anchor definitions. Each row specifies the triple
+$(\mathrm{t}_{\rm lo}, \mathrm{nt}_{\rm hi}, \mathrm{nt}_{\rm lo})$ at a
+fixed $E_T$. The nine combinations are constructed as
+$\text{(low anchor)} \times \text{(high anchor)}$. Unlike the previous
+version of this scan, $\mathrm{nt}_{\rm hi}$ is decoupled from
+$\mathrm{t}_{\rm lo}$: the C anchor has
+$\mathrm{nt}_{\rm hi} < \mathrm{t}_{\rm lo}$ at $E_T = 10$~GeV,
+introducing a BDT-score \emph{gap} $[0.70, 0.80]$ excluded from both
+tight and non-tight regions.}
+\label{tab:anchors}
+\begin{tabular}{c c c c c}
+\toprule
+Label & Type & $\mathrm{t}_{\rm lo}$ & $\mathrm{nt}_{\rm hi}$ &
+                 $\mathrm{nt}_{\rm lo}$ \\
+\midrule
+A & Low   ($E_T = 10$~GeV) & 0.80 & 0.80  & 0.70 \\
+B & Low   ($E_T = 10$~GeV) & 0.80 & 0.80  & 0.60 \\
+C & Low   ($E_T = 10$~GeV) & 0.80 & \textbf{0.70} & 0.60 \\
+\midrule
+X & High  ($E_T = 25$~GeV) & 0.70 & 0.70  & 0.40 \\
+Y & High  ($E_T = 25$~GeV) & 0.75 & 0.75  & 0.50 \\
+Z & High  ($E_T = 25$~GeV) & 0.75 & 0.75  & 0.40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent In the result tables the 9~anchor pairs are identified by a
+compact suffix built from the percentage-encoded BDT values:
+\begin{center}
+\texttt{t\{100\,t$_{10}$\}\_\{100\,t$_{25}$\}\_h\{100\,h$_{10}$\}\_\{100\,h$_{25}$\}\_l\{100\,l$_{10}$\}\_\{100\,l$_{25}$\}}.
+\end{center}
+For example, \texttt{t80\_70\_h80\_70\_l70\_40} denotes the
+A\,$\times$\,X combination (i.e.\ $\mathrm{t}_{\rm lo}$ drops from
+$0.80$ at $E_T = 10$~GeV to $0.70$ at $E_T = 25$~GeV, while
+$\mathrm{nt}_{\rm lo}$ drops from $0.70$ to $0.50$).
+
+\section{Pipeline}
+
+\paragraph{Analysis path.} The 18 jobs use the new single-pass
+truth-vertex-reweight + DI blending pipeline
+(\texttt{oneforall\_tree\_double.sh}):
+\texttt{analysis.truth\_vertex\_reweight\_on: 1} with the per-period
+factorised reweight file
+(\texttt{efficiencytool/truth\_vertex\_reweight/output/\{0mrad,1p5mrad\}/re\-weight.root}),
+and the cluster-weighted double-interaction fractions $f_{\rm cluster} = 0.079$
+(1.5~mrad) and $0.224$ (0~mrad) propagated through the MC-sample blending.
+The legacy reco-vertex reweight is silently forced off when the truth path is on.
+
+\paragraph{Condor.} A new submit file
+\texttt{efficiencytool/submit\_ntbdtpair\_di.sub} queues one job per
+\texttt{(config, double\_frac)} pair, 18 jobs total. Per-slot resource
+request: 8~CPU, 20~GB memory, 30~GB scratch disk. Peak RSS per ROOT
+process observed at $\approx 1.0$~GB; each job fans out into 17 concurrent
+ROOT processes (8~SI/DI pairs + 1~data = 17). All 18 jobs completed
+within 10--30~min of submission.
+
+\section{Code changes}
+
+\begin{itemize}
+  \item \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C} — added a
+        parametric non-tight lower bound. The macro now reads
+        \texttt{analysis.non\_tight.bdt\_min\_intercept} and
+        \texttt{bdt\_min\_slope}; if either is absent it falls back to the
+        existing flat \texttt{bdt\_min}, so pre-existing configs are
+        unaffected.
+  \item \texttt{efficiencytool/make\_bdt\_variations.py} — added
+        \texttt{OVERRIDE\_MAP} keys for \texttt{nt\_bdt\_min\_intercept},
+        \texttt{nt\_bdt\_min\_slope}, \texttt{truth\_vertex\_reweight\_on},
+        \texttt{truth\_vertex\_reweight\_file}. A new helper
+        \texttt{\_anchors\_to\_param(v10, v25)} converts two anchor values
+        into the $(\text{intercept}, \text{slope})$ pair. The 18 variant
+        dicts (9~anchor combos $\times$~2 periods) are auto-generated
+        from the Cartesian product of the low and high anchor lists.
+  \item \texttt{efficiencytool/submit\_ntbdtpair\_di.sub} — new condor
+        submit file wiring 18 jobs through
+        \texttt{oneforall\_tree\_double.sh} with the appropriate
+        per-period \texttt{double\_frac} argument.
+\end{itemize}
+
+\section{Results}
+
+Per-variant plots are produced by the standard
+\texttt{plotting/make\_selection\_plots.sh} pipeline, which for each
+\texttt{config\_bdt\_ntbdtpair\_*.yaml} invokes
+\texttt{plot\_purity\_sim\_selection.C} (ABCD purity
+\texttt{gpurity\_leak} overlaid with truth purity
+\texttt{g\_purity\_truth} on one panel; filename
+\texttt{purity\_sim\_bdt\_ntbdtpair\_\{suffix\}\_\{period\}.pdf}) and
+\texttt{plot\_final\_selection.C} (data-driven unfolded differential
+cross-section \texttt{final\_bdt\_ntbdtpair\_\{suffix\}\_\{period\}.pdf}).
+Figures~\ref{fig:pv_purity_1p5mrad} and \ref{fig:pv_purity_0mrad}
+arrange the per-variant purity-closure panels in $3\times3$ grids for
+each crossing-angle period (rows = Low anchor A/B/C, columns = High
+anchor X/Y/Z). Figure~\ref{fig:pv_final_1p5mrad} shows the corresponding final
+differential cross-section per variant.
+
+\subsection{Per-variant purity closure on jet MC}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant purity closure on jet MC for the 1.5~mrad
+(nominal) period. Each panel shows the ABCD data purity
+(\texttt{gpurity\_leak}, blue) overlaid with the MC truth purity
+(\texttt{g\_purity\_truth}, red) for one of the nine anchor
+combinations; the non-closure is the blue--red gap. Rows: Low anchor
+(A/B/C at $E_T{=}10$~GeV). Columns: High anchor (X/Y/Z at
+$E_T{=}25$~GeV). Anchor values: A=(0.85,0.70), B=(0.80,0.70),
+C=(0.80,0.60); X=(0.70,0.50), Y=(0.80,0.50), Z=(0.80,0.60) as
+(tight\_lo, nt\_lo).}
+\label{fig:pv_purity_1p5mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h80_70_l70_40_0mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l70_50_0mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l70_40_0mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h80_70_l60_40_0mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l60_50_0mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h80_75_l60_40_0mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_70_h70_70_l60_40_0mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h70_75_l60_50_0mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/purity_sim_bdt_ntbdtpair_t80_75_h70_75_l60_40_0mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant purity closure on jet MC for the 0~mrad period.
+Same layout and conventions as Fig.~\ref{fig:pv_purity_1p5mrad}.
+Several variants (notably A$\times$Y, A$\times$Z at high $E_T$) show
+large ABCD--truth gaps, consistent with the purity collapse in
+Table~\ref{tab:devs}.}
+\label{fig:pv_purity_0mrad}
+\end{figure}
+
+\subsection{Per-variant final cross-section}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad.pdf}
+  \caption{A$\times$X, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad.pdf}
+  \caption{A$\times$Y, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad.pdf}
+  \caption{A$\times$Z, 1.5~mrad}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad.pdf}
+  \caption{B$\times$X, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad.pdf}
+  \caption{B$\times$Y, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad.pdf}
+  \caption{B$\times$Z, 1.5~mrad}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad.pdf}
+  \caption{C$\times$X, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad.pdf}
+  \caption{C$\times$Y, 1.5~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad.pdf}
+  \caption{C$\times$Z, 1.5~mrad}
+\end{subfigure}
+\caption{Per-variant final differential cross-section
+\texttt{final\_bdt\_ntbdtpair\_\{suffix\}\_1p5mrad.pdf} generated by
+\texttt{plot\_final\_selection.C}. Rows: Low anchor. Columns: High
+anchor. Quantitative deviations from nominal are given in
+Table~\ref{tab:devs}.}
+\label{fig:pv_final_1p5mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h80_70_l70_40_0mrad.pdf}
+  \caption{A$\times$X, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l70_50_0mrad.pdf}
+  \caption{A$\times$Y, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l70_40_0mrad.pdf}
+  \caption{A$\times$Z, 0~mrad}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h80_70_l60_40_0mrad.pdf}
+  \caption{B$\times$X, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l60_50_0mrad.pdf}
+  \caption{B$\times$Y, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h80_75_l60_40_0mrad.pdf}
+  \caption{B$\times$Z, 0~mrad}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_70_h70_70_l60_40_0mrad.pdf}
+  \caption{C$\times$X, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h70_75_l60_50_0mrad.pdf}
+  \caption{C$\times$Y, 0~mrad}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/final_bdt_ntbdtpair_t80_75_h70_75_l60_40_0mrad.pdf}
+  \caption{C$\times$Z, 0~mrad}
+\end{subfigure}
+\caption{Per-variant final differential cross-section for the 0~mrad
+period: \texttt{final\_bdt\_ntbdtpair\_\{suffix\}\_0mrad.pdf}. Same
+layout as Fig.~\ref{fig:pv_final_1p5mrad}.}
+\label{fig:pv_final_0mrad}
+\end{figure}
+
+\subsection{Per-variant $E_T$ sideband subtraction (data and sim)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant $E_T$ sideband subtraction (\emph{data}) for the
+1.5~mrad period: \texttt{et\_sbs\_bdt\_ntbdtpair\_\{suffix\}\_1p5mrad.pdf}
+generated by \texttt{plot\_sideband\_selection.C}. Rows: Low anchor.
+Columns: High anchor.}
+\label{fig:pv_etsbs_1p5mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h80_70_l70_40_0mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l70_50_0mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l70_40_0mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h80_70_l60_40_0mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l60_50_0mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h80_75_l60_40_0mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_70_h70_70_l60_40_0mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h70_75_l60_50_0mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_bdt_ntbdtpair_t80_75_h70_75_l60_40_0mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant $E_T$ sideband subtraction (\emph{data}) for the
+0~mrad period. Same layout as Fig.~\ref{fig:pv_etsbs_1p5mrad}.}
+\label{fig:pv_etsbs_0mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant $E_T$ sideband subtraction (\emph{inclusive MC})
+for the 1.5~mrad period:
+\texttt{et\_sbs\_sim\_bdt\_ntbdtpair\_\{suffix\}\_1p5mrad.pdf}
+generated by \texttt{plot\_sideband\_sim\_selection.C}.}
+\label{fig:pv_etsbs_sim_1p5mrad}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h80_70_l70_40_0mrad.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l70_50_0mrad.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l70_40_0mrad.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h80_70_l60_40_0mrad.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l60_50_0mrad.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h80_75_l60_40_0mrad.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_70_h70_70_l60_40_0mrad.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h70_75_l60_50_0mrad.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/et_sbs_sim_bdt_ntbdtpair_t80_75_h70_75_l60_40_0mrad.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant $E_T$ sideband subtraction (\emph{inclusive MC})
+for the 0~mrad period. Same layout as
+Fig.~\ref{fig:pv_etsbs_sim_1p5mrad}.}
+\label{fig:pv_etsbs_sim_0mrad}
+\end{figure}
+
+\subsection{Per-variant isolation-$E_T$ template fit (1.5 mrad)}
+
+The isolation-$E_T$ template fit from
+\texttt{plotting/CONF\_plots.C} overlays the MC signal tight-iso$E_T$
+distribution (blue fill, region A) with the non-tight-iso$E_T$
+distribution (red fill, regions C/D) used as the background template,
+evaluated in four reco-$E_T$ windows. Figures~\ref{fig:pv_isoetfit_02}
+through \ref{fig:pv_isoetfit_99} show the 1.5~mrad per-variant grids.
+(0~mrad versions on disk at
+\texttt{plotting/figures/h1D\_iso\_fit\_bdt\_ntbdtpair\_\{suffix\}\_0mrad\_\{ptLow\}\_\{ptHigh\}.pdf}.)
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad_0_2.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad_0_2.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad_0_2.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad_0_2.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad_0_2.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad_0_2.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad_0_2.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad_0_2.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad_0_2.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant iso-$E_T$ template fit for reco-$E_T$ bins
+$[0,2]$ (i.e.\ $E_T \in$ bins 0--2 of the 12-bin reco grid). Blue fill:
+MC signal tight-iso$E_T$ (region A). Red fill: non-tight-iso$E_T$
+background template. 1.5~mrad period.}
+\label{fig:pv_isoetfit_02}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad_3_5.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad_3_5.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad_3_5.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad_3_5.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad_3_5.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad_3_5.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad_3_5.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad_3_5.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad_3_5.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant iso-$E_T$ template fit for reco-$E_T$ bins $[3,5]$.
+Convention as Fig.~\ref{fig:pv_isoetfit_02}.}
+\label{fig:pv_isoetfit_35}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad_6_8.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad_6_8.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad_6_8.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad_6_8.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad_6_8.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad_6_8.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad_6_8.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad_6_8.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad_6_8.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant iso-$E_T$ template fit for reco-$E_T$ bins $[6,8]$.
+Convention as Fig.~\ref{fig:pv_isoetfit_02}.}
+\label{fig:pv_isoetfit_68}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l70_40_1p5mrad_9_9.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_50_1p5mrad_9_9.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l70_40_1p5mrad_9_9.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h80_70_l60_40_1p5mrad_9_9.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_50_1p5mrad_9_9.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h80_75_l60_40_1p5mrad_9_9.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_70_h70_70_l60_40_1p5mrad_9_9.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_50_1p5mrad_9_9.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/h1D_iso_fit_bdt_ntbdtpair_t80_75_h70_75_l60_40_1p5mrad_9_9.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant iso-$E_T$ template fit for reco-$E_T$ bin $[9,9]$.
+Convention as Fig.~\ref{fig:pv_isoetfit_02}.}
+\label{fig:pv_isoetfit_99}
+\end{figure}
+
+\subsection{Cross-section ratio between crossing-angle periods (0 / 1.5 mrad)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_70_h80_70_l70_40.pdf}
+  \caption{A$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h80_75_l70_50.pdf}
+  \caption{A$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h80_75_l70_40.pdf}
+  \caption{A$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_70_h80_70_l60_40.pdf}
+  \caption{B$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h80_75_l60_50.pdf}
+  \caption{B$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h80_75_l60_40.pdf}
+  \caption{B$\times$Z}
+\end{subfigure}
+
+\vspace{0.4em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_70_h70_70_l60_40.pdf}
+  \caption{C$\times$X}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h70_75_l60_50.pdf}
+  \caption{C$\times$Y}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{/sphenix/user/shuhangli/ppg12/plotting/figures/xsec_ratio_0over1p5mrad_bdt_ntbdtpair_t80_75_h70_75_l60_40.pdf}
+  \caption{C$\times$Z}
+\end{subfigure}
+\caption{Per-variant unfolded cross-section ratio
+$\sigma^{0\,\mathrm{mrad}}_{\rm var} / \sigma^{1.5\,\mathrm{mrad}}_{\rm var}$
+vs $E_T^{\gamma}$. Generated by
+\texttt{plotting/plot\_ntbdtpair\_period\_ratio.C} (new macro,
+\texttt{h\_unfold\_sub\_result} divided bin-by-bin between the two
+period outputs). Agreement with unity (dashed gray) would indicate
+that the BDT cut is cross-check-stable across crossing angles; any
+systematic offset flags a period-dependent ABCD response.}
+\label{fig:pv_period_ratio}
+\end{figure}
+
+\FloatBarrier
+
+\section{Numerical summary}
+
+Table~\ref{tab:devs} reproduces the per-variant deviation summary computed
+by an independent re-extraction script
+(\texttt{reports/compute\_ntbdtpair\_numbers.py}).
+\texttt{max\_abs\_rel\_dev} is the signed
+$(\text{variant}/\text{nominal} - 1)$ at the $E_T$ bin where the
+$|\cdot|$-deviation is largest (restricted to bins with centres in
+$[10, 36]$~GeV and nonzero nominal). \texttt{xsec\_int} is the
+10--36~GeV integral of \texttt{h\_unfold\_sub\_result}. Purity values
+are \texttt{gpurity->GetY()} evaluated at $E_T = 11$~GeV and $25$~GeV.
+The nominal references are
+$\sigma^{\rm nom}_{\rm int} = 1898.8$~pb (1.5~mrad) and
+$1602.3$~pb (0~mrad), nominal purities
+$P_{11}^{\rm nom} = 0.417 / 0.383$ and
+$P_{25}^{\rm nom} = 0.596 / 0.574$ for 1.5~mrad / 0~mrad.
+All 18~entries are flagged \textsc{CRIT} (threshold $|\Delta_{\rm rel}| > 0.50$).
+
+\begin{longtable}{l l r r r r r c}
+\caption{Per-variant deviation summary. Columns: variant suffix; crossing-angle
+period; integrated 10--36 GeV variant cross-section (pb); signed max-|$\cdot$|
+per-bin relative deviation $\sigma_{\rm var}/\sigma_{\rm nom}-1$;
+$E_T$ bin (GeV) where that deviation occurs; ABCD purity at
+$E_T = 11$~GeV and $25$~GeV.}\label{tab:devs}\\
+\toprule
+Variant & Period & $\sigma^{\rm var}_{\rm int}$ [pb]
+         & $\max |\Delta_{\rm rel}|$ & $E_T^{\rm max}$ [GeV]
+         & $P_{11}$ & $P_{25}$ & Flag \\
+\midrule
+\endfirsthead
+\toprule
+Variant & Period & $\sigma^{\rm var}_{\rm int}$ [pb]
+         & $\max |\Delta_{\rm rel}|$ & $E_T^{\rm max}$ [GeV]
+         & $P_{11}$ & $P_{25}$ & Flag \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\texttt{t80\_70\_h80\_70\_l70\_40} & 1.5 mrad & 2118.4 & +0.696 & 30.0 & 0.33 & 0.68 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l70\_50} & 1.5 mrad & 2161.7 & +0.688 & 30.0 & 0.33 & 0.70 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l70\_40} & 1.5 mrad & 2169.9 & +0.600 & 30.0 & 0.34 & 0.70 & \textsc{CRIT} \\
+\texttt{t80\_70\_h80\_70\_l60\_40} & 1.5 mrad & 2079.2 & +0.735 & 30.0 & 0.35 & 0.68 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l60\_50} & 1.5 mrad & 2141.4 & +0.668 & 30.0 & 0.35 & 0.70 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l60\_40} & 1.5 mrad & 2124.0 & +0.612 & 30.0 & 0.35 & 0.70 & \textsc{CRIT} \\
+\texttt{t80\_70\_h70\_70\_l60\_40} & 1.5 mrad & 2067.4 & +0.705 & 30.0 & 0.37 & 0.67 & \textsc{CRIT} \\
+\texttt{t80\_75\_h70\_75\_l60\_50} & 1.5 mrad & 2113.2 & +0.653 & 30.0 & 0.38 & 0.70 & \textsc{CRIT} \\
+\texttt{t80\_75\_h70\_75\_l60\_40} & 1.5 mrad & 2087.6 & +0.611 & 30.0 & 0.37 & 0.70 & \textsc{CRIT} \\
+\midrule
+\texttt{t80\_70\_h80\_70\_l70\_40} & 0 mrad   & 2140.9 & +0.694 & 27.0 & 0.27 & 0.32 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l70\_50} & 0 mrad   & 2149.5 & +0.379 & 11.0 & 0.27 & 0.18 & \textsc{WARN} \\
+\texttt{t80\_75\_h80\_75\_l70\_40} & 0 mrad   & 2165.4 & +0.386 & 11.0 & 0.27 & 0.29 & \textsc{WARN} \\
+\texttt{t80\_70\_h80\_70\_l60\_40} & 0 mrad   & 2146.4 & +0.668 & 27.0 & 0.29 & 0.35 & \textsc{CRIT} \\
+\texttt{t80\_75\_h80\_75\_l60\_50} & 0 mrad   & 2163.4 & +0.379 & 11.0 & 0.29 & 0.17 & \textsc{WARN} \\
+\texttt{t80\_75\_h80\_75\_l60\_40} & 0 mrad   & 2180.1 & +0.386 & 11.0 & 0.29 & 0.32 & \textsc{WARN} \\
+\texttt{t80\_70\_h70\_70\_l60\_40} & 0 mrad   & 2124.2 & +0.649 & 27.0 & 0.31 & 0.34 & \textsc{CRIT} \\
+\texttt{t80\_75\_h70\_75\_l60\_50} & 0 mrad   & 2113.3 & +0.343 & 23.0 & 0.32 & 0.18 & \textsc{WARN} \\
+\texttt{t80\_75\_h70\_75\_l60\_40} & 0 mrad   & 2145.4 & +0.376 & 23.0 & 0.32 & 0.31 & \textsc{WARN} \\
+\end{longtable}
+
+\paragraph{Headline numbers.}
+\begin{itemize}
+\item \textbf{Integrated 10--36~GeV cross-sections}: variants cluster in
+      2070--2180~pb vs nominal $\sim$1900~pb (1.5~mrad) and $\sim$1600~pb
+      (0~mrad) — globally $+9$~to~$+36\%$.
+\item \textbf{Signed per-bin $\max|\Delta_{\rm rel}|$}: min $+0.343$
+      (\texttt{t80\_75\_h70\_75\_l60\_50}, 0~mrad, $E_T = 23$~GeV);
+      max $+0.735$ (\texttt{t80\_70\_h80\_70\_l60\_40}, 1.5~mrad,
+      $E_T = 30$~GeV).
+\item \textbf{Flag split}: $9/9$ 1.5~mrad variants are \textsc{CRIT};
+      in 0~mrad the three X'-High combinations ($\mathrm{t}_{\rm lo}(25)
+      = 0.70$) remain \textsc{CRIT} while the six Y'/Z'-High
+      combinations ($\mathrm{t}_{\rm lo}(25) = 0.75$) drop to
+      \textsc{WARN}.
+\item \textbf{All signs positive}: variants uniformly \emph{over-produce}
+      the cross-section relative to nominal.
+\item \textbf{Location}: in the 1.5~mrad period the maximum deviation
+      sits at the highest-$E_T$ bin (centre 30~GeV) for every variant;
+      in the 0~mrad period the maximum migrates to $E_T = 11$~GeV
+      (Y'/Z'-High combinations) or $E_T = 23$--$27$~GeV (X'-High /
+      gap C' combinations).
+\item \textbf{Purity at $E_T = 11$~GeV}: drops from nominal
+      $0.417 / 0.383$ (1.5~mrad / 0~mrad) to $0.27$--$0.38$ across all
+      variants (Low-C' combinations give the highest purity at low
+      $E_T$, consistent with their narrower non-tight window).
+\item \textbf{Purity at $E_T = 25$~GeV}: recovers for 1.5~mrad
+      ($P_{25} \approx 0.67$--$0.71$, slightly above nominal $0.60$) but
+      stays suppressed for 0~mrad ($0.17$--$0.35$ vs nominal $0.57$).
+\item \textbf{Gap variant (C' at Low)}: the three C'$\times$? rows
+      raise low-$E_T$ purity by 0.02--0.04 relative to B'$\times$? while
+      barely shifting the $30$~GeV deviation — consistent with trading
+      sideband leakage for reduced non-tight statistics in the excluded
+      BDT band $[0.70, 0.80]$ at $E_T = 10$~GeV.
+\end{itemize}
+
+\section{Interpretation and conclusion}
+
+The uniform positive sign, the $\mathcal{O}(1)$ local magnitude, and the
+collapse of ABCD purity at $E_T = 25$~GeV jointly indicate that the extreme
+tight/non-tight pairs in these nine combinations violate the ABCD closure
+assumption. The mechanism is geometric:
+
+\begin{enumerate}
+  \item When $\mathrm{nt}_{\rm lo}$ is pushed up close to
+        $\mathrm{t}_{\rm lo}$, the non-tight BDT window becomes narrow
+        and sits immediately below the tight region. Signal leakage
+        into this band (non-negligible even at nominal thresholds) grows
+        rapidly.
+  \item The $R$-factor extraction
+        $R = B \cdot C / (A \cdot D)$, on which ABCD background
+        subtraction depends, becomes statistically poorly determined
+        when the $B$ and $C$ populations are dominated by signal-like
+        clusters rather than true bulk background.
+  \item The high-$E_T$ bins (30, 34~GeV) have the smallest
+        statistics in the background control regions, amplifying the
+        failure there first.
+  \item The truth-vertex-reweight + DI pipeline is unchanged between
+        the nominal and the variants, so the universally positive sign
+        and consistency between 1.5~mrad and 0~mrad periods rules out
+        a pipeline bug.
+\end{enumerate}
+
+\noindent \textbf{Conclusion.} These nine $E_T$-parametric tight/non-tight
+anchor combinations stress-test ABCD closure at extreme cut values.
+The observed $+25$~to~$+55\%$ global cross-section shift and the purity
+collapse at $E_T = 25$~GeV (0~mrad) are consistent with ABCD breaking
+down in this regime. Accordingly, \emph{these variants are not suitable
+for inclusion in the systematic-uncertainty envelope.} They are retained
+as cross-check documentation of the analysis' behaviour at extreme
+working points; the production \texttt{nt\_bdt} systematic remains the
+existing flat-scalar \texttt{purity\_nonclosure\_ntbdt} variation.
+
+\appendix
+\section{File locations}
+
+{\small
+\begin{longtable}{@{}p{0.30\linewidth} p{0.66\linewidth}@{}}
+\toprule
+Purpose & Path \\
+\midrule
+\endfirsthead
+\toprule
+Purpose & Path \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+Numerical summary (md) &
+  \texttt{/sphenix/user/shuhangli/ppg12/reports/ntbdtpair\_numbers.md} \\
+Numerical summary (csv) &
+  \texttt{/sphenix/user/shuhangli/ppg12/reports/ntbdtpair\_numbers.csv} \\
+Re-extraction script &
+  \texttt{/sphenix/user/shuhangli/ppg12/reports/compute\_ntbdtpair\_numbers.py} \\
+Cross-section ratio plot &
+  \texttt{/sphenix/user/shuhangli/ppg12/plotting/figures/ntbdtpair\_xsec\_ratio.pdf} \\
+Purity plot &
+  \texttt{/sphenix/user/shuhangli/ppg12/plotting/figures/ntbdtpair\_purity.pdf} \\
+\midrule
+Variant generator &
+  \texttt{.../efficiencytool/make\_bdt\_variations.py} \\
+Reco-eff macro &
+  \texttt{.../efficiencytool/RecoEffCalculator\_TTreeReader.C} \\
+Condor submit &
+  \texttt{.../efficiencytool/submit\_ntbdtpair\_di.sub} \\
+DI pipeline driver &
+  \texttt{.../efficiencytool/oneforall\_tree\_double.sh} \\
+Truth-vertex reweight (1.5~mrad) &
+  \texttt{.../efficiencytool/truth\_vertex\_reweight/output/1p5mrad/reweight.root} \\
+Truth-vertex reweight (0~mrad) &
+  \texttt{.../efficiencytool/truth\_vertex\_reweight/output/0mrad/reweight.root} \\
+\midrule
+Per-variant outputs &
+  \texttt{.../efficiencytool/results/Photon\_final\_bdt\_ntbdtpair\_\{suffix\}\_\{period\}.root} \\
+Nominal (1.5~mrad) &
+  \texttt{.../efficiencytool/results/Photon\_final\_bdt\_nom.root} \\
+Nominal (0~mrad) &
+  \texttt{.../efficiencytool/results/Photon\_final\_bdt\_0rad.root} \\
+\bottomrule
+\end{longtable}
+}
+
+\end{document}

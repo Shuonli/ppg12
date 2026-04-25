@@ -106,7 +106,10 @@ Two distinct YAML schemas exist:
 | `pT_bins_truth` | `[7..36,45]` | -- | Truth pT bins (extended) |
 | `fit_option` | 1 | **0** | **0=erf (default), 1=Pade** |
 | `mc_purity_correction` | 0 | 0 | Apply MC purity correction |
-| `lumi` | 16.2735 | 49.562 | Luminosity (pb^-1) |
+| `lumi` | 16.2735 | 49.562 | Data luminosity (pb⁻¹). Used by CalculatePhotonYield for 1/binwidth/lumi data normalization. |
+| `lumi_target` | (= lumi) | (= lumi) | **NEW**: target lumi for the per-event MC scaling `weight *= lumi/lumi_target`. Default = lumi → no scaling (standalone per-period). Set to `sum(L_periods)` in merge-feeder configs so plain hadd reproduces all-range MC. See `wiki/pipeline/full-run-range.md`. |
+| `vertex_cut` | 60.0 | -- | Max |z_reco| (cm). Applied to data + MC events and the MBD-eff numerator. |
+| `vertex_cut_truth` | (= vertex_cut) | (= vertex_cut) | **NEW**: max |z_truth| (cm) for the MBD-eff denominator only (`RecoEffCalculator_TTreeReader.C:1785`). Decouples the truth-vertex cut from the reco fiducial cut. Set to 9999 for the allz cross-check. |
 | `run_min` / `run_max` | 51274 / 54000 | -1 / -1 | Run range filter |
 | `vertex_reweight_on` | 1 | 1 | Enable vertex reweighting |
 | `n_nt_fail` | 0 | 1 | Cuts to fail for non-tight |
@@ -121,18 +124,20 @@ Two distinct YAML schemas exist:
 
 Both sections have identical field names. Key fields:
 
+**Current nominal: ntbdtpair `t80_70_h70_70_l60_40` (April 2026).** Tight cut goes 0.80 → 0.70 (ET=10 → 25 GeV); non-tight is bounded above by a flat 0.70 cap and below by a parametric floor 0.60 → 0.40.
+
 | Field | Tight nominal | Non-tight nominal | Purpose |
 |-------|---------------|-------------------|---------|
-| `bdt_min` | 0.7 | 0.02 | Flat BDT lower bound |
-| `bdt_max` | 1.0 | 0.5 | Flat BDT upper bound |
-| `bdt_min_slope` | -0.015 | -0.015 | Parametric BDT slope |
-| `bdt_min_intercept` | 0.80 | 0.80 | Parametric BDT intercept |
-| `bdt_max_slope` | (not set) | (not set) | Parametric upper BDT slope |
-| `bdt_max_intercept` | (not set) | (not set) | Parametric upper BDT intercept |
+| `bdt_min` | 0.7 | 0.02 | Flat BDT lower bound (legacy fallback when parametric fields absent) |
+| `bdt_max` | 1.0 | 0.5 | Flat BDT upper bound (legacy fallback) |
+| `bdt_min_slope` | -0.00667 | -0.01333 | Parametric BDT lower-bound slope (tight: cut on tight ABCD; non-tight: floor of non-tight window) |
+| `bdt_min_intercept` | 0.8667 | 0.7333 | Parametric BDT lower-bound intercept |
+| `bdt_max_slope` | n/a | 0.0 | Parametric upper BDT slope (non-tight: ceiling of non-tight window) |
+| `bdt_max_intercept` | n/a | 0.7 | Parametric upper BDT intercept |
 | `weta_cogx_min/max` | 0.0 / 1.0 | 0.0 / 1.0 | Width bounds (flat) |
 | `weta_cogx_max_b/max_s` | 1.0 / 0.0 | 1.0 / 0.0 | Width bounds (parametric) |
 
-**Config/code mismatch in non_tight:** The config file (config_bdt_nom.yaml) has `bdt_min_slope` and `bdt_min_intercept` under `non_tight` (lines 205-206), but the code (`RecoEffCalculator_TTreeReader.C` line 479) reads `bdt_max_slope` and `bdt_max_intercept` for the non_tight upper boundary. Since these fields do not exist in the config, the code falls back to defaults: `bdt_max_slope=0` (flat) and `bdt_max_intercept=bdt_max` (0.5). This means the non_tight parametric upper BDT boundary is effectively flat at 0.5, not the intended parametric `-0.015*ET + 0.80`.
+**Code support:** `RecoEffCalculator_TTreeReader.C` and `ShowerShapeCheck.C` both read all six parametric fields (slope+intercept for tight.bdt_min, non_tight.bdt_max, non_tight.bdt_min). Older macros (`RecoEffCalculator.C`, `EtaMigrationStudy.C`, `Cluster_rbr.C`, `NPB_PurityStudy.C`, `DoubleInteractionCheck.C`) still only read the flat `bdt_min` and apply ET-independent cuts.
 
 ### analysis.common
 
@@ -154,17 +159,33 @@ Both sections have identical field names. Key fields:
 
 ## Run Period / Luminosity
 
-| Period | run_min | run_max | lumi (pb^-1) |
-|--------|---------|---------|-------------|
-| 0 mrad | 47289 | 51274 | 32.6574 |
-| 1.5 mrad (nominal) | 51274 | 54000 | 16.2735 |
-| All runs | 47289 | 54000 | 49.562 |
-| No filter | -1 | -1 | depends |
+|z|<60 fiducial lumi (`60cmLumi_fromJoey.list`):
+
+| Period | run_min | run_max | lumi (pb⁻¹) | lumi_target (pb⁻¹) |
+|--------|---------|---------|-------------|--------------------|
+| 0 mrad merge-feeder | 47289 | 51274 | 32.6574 | 48.9309 |
+| 1.5 mrad merge-feeder (nominal base) | 51274 | 54000 | 16.2735 | 48.9309 |
+| All runs (analysis target) | 47289 | 54000 | 48.9309 | (= lumi) |
+| No filter | -1 | -1 | depends | — |
+
+Beam-delivered lumi (`allzLumi_fromJoey.list`, used by allz cross-check):
+
+| Period | run_min | run_max | lumi (pb⁻¹) | lumi_target (pb⁻¹) |
+|--------|---------|---------|-------------|--------------------|
+| 0 mrad allz | 47289 | 51274 | 47.2076 | 64.3718 |
+| 1.5 mrad allz | 51274 | 54000 | 17.1642 | 64.3718 |
+| All allz (analysis target) | 47289 | 54000 | 64.3718 | (= lumi) |
+
+Per-period merge-feeders use `lumi_target = sum(L_periods)` so per-event
+`lumi_weight = lumi/lumi_target` pre-scales MC fills; plain hadd of two
+merge-feeder outputs reproduces the all-range expectation. See
+`wiki/pipeline/full-run-range.md`.
 
 ## Critical Sync Requirements
 
 - `var_type` must be unique per config (prevents silent overwrite)
-- `tight.bdt_min_intercept` should match `non_tight.bdt_max_intercept`
 - `bdt_et_bin_edges` needs N+1 entries for N entries in `bdt_et_bin_models`
 - `pT_bins` should match `plotcommon.h:ptRanges` for consistent plotting
 - 25 features in training config must match feature vectors in `apply_BDT.C`
+- Configs ending in `_all.yaml` are dispatched by `oneforall.sh` to `merge_periods.sh` instead of `MergeSim.C`. The substitution `_all.yaml → _0rad.yaml + _1p5mrad.yaml` (with the bare `config_bdt_all.yaml` mapping to `_nom.yaml`) names the per-period merge-feeder pair.
+- Merge-feeder configs MUST set `lumi_target = sum(L_periods)`. `make_bdt_variations.py:apply_overrides` auto-defaults `lumi_target := lumi` for variants WITHOUT explicit override, so systematic variants regenerated from a merge-feeder base do NOT inherit `lumi_target` and stay as standalone per-period systematics.

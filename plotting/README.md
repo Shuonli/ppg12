@@ -164,8 +164,8 @@ root -l -b -q 'plot_showershapes_variations.C("config_showershape.yaml", true)'
 
 When `use_mixed=true`:
 
-- Signal MC: `MC_efficiencyshower_shape_photon10_combined_showershape.root`
-- Background MC: `MC_efficiencyshower_shape_jet12_combined_inclusive_showershape.root` (inclusive only; no non-inclusive combined file exists — the code falls back to the inclusive file gracefully)
+- Signal MC: `MC_efficiencyshower_shape_signal_combined_showershape.root`
+- Background MC: `MC_efficiencyshower_shape_jet_inclusive_combined_showershape.root` (inclusive only; no non-inclusive combined file exists — the code falls back to the inclusive file gracefully)
 - Figure filename prefix: `dis_mixed_` (vs `dis_` normally)
 
 The `use_mixed` flag is available on both `plotOneConfig()` (internal) and the top-level function.
@@ -191,7 +191,7 @@ Discovers all `config_showershape*.yaml` variants, collects the PDFs from `figur
 | Prefix | Label in report |
 |--------|----------------|
 | `dis` | Nominal |
-| `dis_mixed` | Double-interaction mixed (0.813 × single + 0.187 × double) |
+| `dis_mixed` | Double-interaction mixed (0.776 × single + 0.224 × double) |
 
 When multiple prefixes are active (e.g. `dis` + `dis_mixed`), the report adds a `\subsection` per prefix and demotes cut sections to `\subsubsection`. Figure captions include the prefix label.
 

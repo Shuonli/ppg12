@@ -1,0 +1,19 @@
+# Condor submit: re-run oneforall_tree.sh for bdt_nom and bdt_vtxreweight0
+# to pick up the new h_truth_pT_novtx histogram and compare vertex reweight on vs off.
+
+universe              = vanilla
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "oneforall_tree.sh $(cfg)"
+
+log                   = logs/rerun_$(cfg).log
+output                = logs/rerun_$(cfg).out
+error                 = logs/rerun_$(cfg).err
+
+request_memory        = 12GB
+request_cpus          = 10
+request_disk          = 10GB
+getenv                = true
+
+queue cfg in (config_bdt_nom.yaml, config_bdt_vtxreweight0.yaml)

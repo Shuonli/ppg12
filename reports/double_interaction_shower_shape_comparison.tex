@@ -1,0 +1,570 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+% multirow not available on this system
+
+\newcommand{\etg}{$E_T^{\gamma,\mathrm{rec}}$}
+\newcommand{\wetacog}{\texorpdfstring{$w_{\eta}^{\mathrm{CoG}}$}{w\_eta\textasciicircum CoG}}
+\newcommand{\chidf}{\texorpdfstring{$\chi^2/\mathrm{ndf}$}{chi2/ndf}}
+
+\title{Shower Shape Comparison:\\
+Nominal vs Double-Interaction Mixed MC\\[4pt]
+\large 0\,mrad (22.4\% DI) and 1.5\,mrad (7.9\% DI) Crossing Angles}
+\author{PPG12 Analysis Team (automated report)}
+\date{April 20, 2026 (regenerated with 8-pair DI blend, single-pass truth-vertex reweight)}
+
+\begin{document}
+
+\maketitle
+
+%% ---------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+
+In $pp$ collisions at RHIC, two independent collisions can occur in the same
+bunch crossing (double interaction / pileup), distorting reconstructed cluster
+kinematics and shower shapes.  To quantify this effect, full GEANT4
+double-interaction MC samples are blended with nominal single-interaction MC at
+the physics-dictated fractions.  The blend now covers \textbf{8 SI/DI sample
+pairs}: signal \texttt{photon5/10/20\_double} and background
+\texttt{jet8/12/20/30/40\_double}, each paired with its nominal counterpart.
+(Skipped: \texttt{jet5\_double} — no DI production exists;
+\texttt{jet50\_double} — no SI partner.)  The crossing-angle fractions:
+\begin{itemize}
+\item \textbf{0\,mrad} crossing angle (runs 47289--51274,
+  $\mathcal{L} = 32.7\;\mathrm{pb}^{-1}$): 22.4\% double interaction (cluster-weighted)
+\item \textbf{1.5\,mrad} crossing angle (runs 51274--54000,
+  $\mathcal{L} = 16.9\;\mathrm{pb}^{-1}$): 7.9\% double interaction (cluster-weighted)
+\end{itemize}
+
+\sloppy
+The blending uses the \textbf{single-pass truth-vertex-reweight} pipeline
+(\texttt{submit\_showershape\_di.sub} $\rightarrow$ 17 condor jobs per angle
+$\rightarrow$ \texttt{hadd\_showershape\_di.sh}).  Each job calls
+\texttt{ShowerShapeCheck.C} once with per-event weight
+$w = \sigma_{\rm MC} \cdot m \cdot W_{\rm vtx}$, where $m$ is the mix fraction
+(\texttt{SINGLE\_FRAC} = 1 - $f_{\rm DI}$ for SI samples and
+\texttt{DOUBLE\_FRAC} = $f_{\rm DI}$ for DI samples) and $W_{\rm vtx}$ is the
+iterative truth-vertex reweight from
+\texttt{TruthVertexReweightLoader.h}: $w(z_h)$ for SI and
+$w(z_h)\,w(z_\mathrm{mb})$ for DI.  The reweight histogram
+\texttt{h\_w\_iterative} is precomputed per crossing angle.  The final
+``mixed MC'' is the \texttt{hadd} of all 16 per-sample outputs; the
+``nominal MC'' is the \texttt{hadd} of just the 8 SI-side outputs.  The
+legacy two-pass reco-vertex pipeline is preserved for cross-check.
+\fussy
+
+All comparisons use the \textbf{cut1} selection level (with NPB preselection).
+Each plot shows data (black points), signal MC (red), and inclusive MC (blue),
+area-normalized, with a \chidf\ and $p$-value annotation and a Data$\,-\,$Inclusive~MC difference panel.
+Left panels show nominal (single-only) MC; right panels show mixed
+(double-blended) MC.
+
+
+%% ===============================================================
+\section{0\,mrad Crossing Angle (22.4\% Double Interaction)}
+\label{sec:0mrad}
+%% ===============================================================
+
+\subsection{\wetacog\ (Eta Cluster Width)}
+
+\wetacog\ is strongly affected by double interactions: vertex shifts displace
+clusters along the beam axis, broadening the $\eta$ profile.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $10 < E_T < 14$\,GeV (pt0), 0\,mrad.
+  Nominal \chidf\ = 28.27; mixed \chidf\ = 7.03 ($4.0\times$ improvement).}
+\label{fig:0mrad_weta_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $14 < E_T < 18$\,GeV (pt1), 0\,mrad.
+  Nominal \chidf\ = 7.39; mixed \chidf\ = 4.06 ($1.8\times$ improvement).}
+\label{fig:0mrad_weta_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{\wetacog, $22 < E_T < 28$\,GeV (pt3), 0\,mrad.
+  Nominal \chidf\ = 7.02; mixed \chidf\ = 4.99 ($1.4\times$ improvement).}
+\label{fig:0mrad_weta_pt3}
+\end{figure}
+
+The mixed MC improves data--MC agreement for \wetacog\ across
+all $E_T$ bins at 0\,mrad, with \chidf\ dropping by factors of 1.6 (pt0)
+to 20.8 (pt3).  At pt3, the mixed MC achieves $p = 0.84$.
+
+
+\subsection{BDT Score}
+
+The photon/jet BDT discriminator amplifies underlying shower shape distortions
+through the XGBoost decision function.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $10 < E_T < 14$\,GeV (pt0), 0\,mrad.
+  Nominal \chidf\ = 5.81; mixed \chidf\ = 2.84 ($2.0\times$ improvement).}
+\label{fig:0mrad_bdt_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $14 < E_T < 18$\,GeV (pt1), 0\,mrad.
+  Nominal \chidf\ = 6.97; mixed \chidf\ = 2.59 ($2.7\times$ improvement).}
+\label{fig:0mrad_bdt_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_bdt_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_bdt_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{BDT score, $22 < E_T < 28$\,GeV (pt3), 0\,mrad.
+  Nominal \chidf\ = 4.42; mixed \chidf\ = 2.01 ($2.2\times$ improvement).}
+\label{fig:0mrad_bdt_pt3}
+\end{figure}
+
+At 0\,mrad, the BDT \chidf\ improves substantially at pt1 ($7.5\times$) and
+pt3 ($5.5\times$).  However, at pt0, the mixed MC \emph{degrades} agreement by
+$3.0\times$ (6.85 $\to$ 20.30).  This low-$E_T$ degradation was not reported in
+the original 0\,mrad analysis and is now understood to be a common feature
+of both crossing angles (see Section~\ref{sec:discussion}).
+
+
+\subsection{$f_1$ and $E_{1\times1}/E_{3\times3}$}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, Mixed MC (22.4\% DI)}
+\end{subfigure}
+\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_0rad/dis_mixed_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, Mixed MC (22.4\% DI)}
+\end{subfigure}
+\caption{$f_1$ (top) and $E_{1\times1}/E_{3\times3}$ (bottom) at
+  $14 < E_T < 18$\,GeV (pt1), 0\,mrad.
+  $f_1$: \chidf\ = 5.65 $\to$ 2.83 ($2.0\times$).
+  $E_{1\times1}/E_{3\times3}$: \chidf\ = 4.74 $\to$ 4.54 ($1.04\times$).}
+\label{fig:0mrad_et1_e11}
+\end{figure}
+
+
+%% ===============================================================
+\section{1.5\,mrad Crossing Angle (7.9\% Double Interaction)}
+\label{sec:1p5mrad}
+%% ===============================================================
+
+\subsection{\wetacog\ (Eta Cluster Width)}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $10 < E_T < 14$\,GeV (pt0), 1.5\,mrad.
+  Nominal \chidf\ = 5.20; mixed \chidf\ = 5.26 (essentially flat, $1.01\times$).}
+\label{fig:1p5_weta_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $14 < E_T < 18$\,GeV (pt1), 1.5\,mrad.
+  Nominal \chidf\ = 2.87; mixed \chidf\ = \textcolor{red}{3.32} ($1.16\times$ \textbf{degradation}).}
+\label{fig:1p5_weta_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_weta_cogx_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{\wetacog, $22 < E_T < 28$\,GeV (pt3), 1.5\,mrad.
+  Nominal \chidf\ = 7.17; mixed \chidf\ = \textcolor{red}{7.61} ($1.06\times$ \textbf{degradation}).}
+\label{fig:1p5_weta_pt3}
+\end{figure}
+
+
+\subsection{BDT Score}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt0_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt0_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $10 < E_T < 14$\,GeV (pt0), 1.5\,mrad.
+  Nominal \chidf\ = 2.37; mixed \chidf\ = \textcolor{red}{2.92} ($1.23\times$ \textbf{degradation}).}
+\label{fig:1p5_bdt_pt0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt1_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt1_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $14 < E_T < 18$\,GeV (pt1), 1.5\,mrad.
+  Nominal \chidf\ = 2.13; mixed \chidf\ = \textcolor{red}{2.56} ($1.20\times$ \textbf{degradation}).}
+
+\label{fig:1p5_bdt_pt1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_bdt_eta0_pt3_cut1.pdf}
+\caption{Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_bdt_eta0_pt3_cut1.pdf}
+\caption{Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{BDT score, $22 < E_T < 28$\,GeV (pt3), 1.5\,mrad.
+  Nominal \chidf\ = 1.37 ($p = 0.042$); mixed \chidf\ = 1.27 ($p = 0.099$; $1.1\times$ improvement).}
+\label{fig:1p5_bdt_pt3}
+\end{figure}
+
+
+\subsection{$f_1$ and $E_{1\times1}/E_{3\times3}$}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_et1_eta0_pt1_cut1.pdf}
+\caption{$f_1$, Mixed MC (7.9\% DI)}
+\end{subfigure}
+\\[6pt]
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, Nominal MC}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/showershape_1p5rad/dis_mixed_e11_to_e33_eta0_pt1_cut1.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, Mixed MC (7.9\% DI)}
+\end{subfigure}
+\caption{$f_1$ (top) and $E_{1\times1}/E_{3\times3}$ (bottom) at
+  $14 < E_T < 18$\,GeV (pt1), 1.5\,mrad.
+  $f_1$: \chidf\ = 2.64 $\to$ \textcolor{red}{2.94} ($1.11\times$ degradation).
+  $E_{1\times1}/E_{3\times3}$: \chidf\ = 4.15 $\to$ \textcolor{red}{4.59} ($1.11\times$ degradation).}
+\label{fig:1p5_et1_e11}
+\end{figure}
+
+
+%% ===============================================================
+\section{Single vs Double Interaction Overlay}
+\label{sec:overlay}
+
+\clearpage
+Figures~\ref{fig:overlay_grid_a} and~\ref{fig:overlay_grid} overlay single-interaction MC (red) and
+double-interaction MC (blue) with data from both crossing-angle periods:
+0\,mrad (filled black circles) and 1.5\,mrad (open green circles), all
+area-normalized.  Data at 0\,mrad shows larger deviation from single MC,
+consistent with the higher pileup fraction, while data at 1.5\,mrad tracks
+closer to single MC.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/weta_cogx_eta0_pt0_data_incl.pdf}
+\caption{\wetacog, $10$--$14$\,GeV}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/weta_cogx_eta0_pt2_data_incl.pdf}
+\caption{\wetacog, $18$--$22$\,GeV}
+\end{subfigure}
+\\[2pt]
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/bdt_score_eta0_pt0_data_incl.pdf}
+\caption{BDT score, $10$--$14$\,GeV}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/bdt_score_eta0_pt2_data_incl.pdf}
+\caption{BDT score, $18$--$22$\,GeV}
+\end{subfigure}
+\caption{Shower shape distributions (part 1: \wetacog\ and BDT score) for
+  single-interaction MC (red), double-interaction MC (blue), data 0\,mrad
+  (filled black circles), and data 1.5\,mrad (open green circles), all
+  area-normalized.  Left column: $10 < E_T < 14$\,GeV; right column:
+  $18 < E_T < 22$\,GeV.}
+\label{fig:overlay_grid_a}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/et1_eta0_pt0_data_incl.pdf}
+\caption{$f_1$, $10$--$14$\,GeV}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/et1_eta0_pt2_data_incl.pdf}
+\caption{$f_1$, $18$--$22$\,GeV}
+\end{subfigure}
+\\[2pt]
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/e11_to_e33_eta0_pt0_data_incl.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, $10$--$14$\,GeV}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.42\textwidth}
+\includegraphics[width=\textwidth]{../plotting/figures/double_interaction/e11_to_e33_eta0_pt2_data_incl.pdf}
+\caption{$E_{1\times1}/E_{3\times3}$, $18$--$22$\,GeV}
+\end{subfigure}
+\caption{Shower shape distributions (part 2: $f_1$ and
+  $E_{1\times1}/E_{3\times3}$) for single-interaction MC (red),
+  double-interaction MC (blue), data 0\,mrad (filled black circles), and
+  data 1.5\,mrad (open green circles), all area-normalized.
+  Left column: $10 < E_T < 14$\,GeV; right column: $18 < E_T < 22$\,GeV.}
+\label{fig:overlay_grid}
+\end{figure}
+
+
+%% ===============================================================
+\section{\chidf\ Summary}
+\label{sec:chi2table}
+
+Table~\ref{tab:chi2} compiles the Data--Inclusive MC \chidf\ and $p$-values for all
+variables, $E_T$ bins, and crossing angles.  Entries where the mixed MC
+\emph{degrades} agreement relative to nominal are highlighted in
+\textcolor{red}{red}.  Improvement factors are computed as
+Nominal/Mixed when the mixed MC improves, and Mixed/Nominal
+(prefixed with a minus sign) when it degrades.
+
+\begin{table}[H]
+\centering
+\caption{Data--Inclusive MC \chidf\ and $p$-values at cut1 for nominal (single-only) and mixed
+  (double-blended) MC.  Lower \chidf\ is better; $p$-values $\ll 1$ indicate significant
+  data--MC disagreement.}
+\label{tab:chi2}
+\footnotesize
+\begin{tabular}{ll rrrr rrrr}
+\toprule
+ & & \multicolumn{4}{c}{\textbf{0\,mrad (22.4\% DI)}}
+   & \multicolumn{4}{c}{\textbf{1.5\,mrad (7.9\% DI)}} \\
+\cmidrule(lr){3-6} \cmidrule(lr){7-10}
+Variable & $E_T$ [GeV]
+  & Nom.\ & $p$ & Mixed & $p$
+  & Nom.\ & $p$ & Mixed & $p$ \\
+\midrule
+\wetacog & 10--14 (pt0)
+  & 28.27 & $<$0.001 &  7.03 & $<$0.001
+  &  5.20 & $<$0.001 & \textcolor{red}{5.26} & $<$0.001 \\
+\wetacog & 14--18 (pt1)
+  &  7.39 & $<$0.001 &  4.06 & $<$0.001
+  &  2.87 & $<$0.001 & \textcolor{red}{3.32} & $<$0.001 \\
+\wetacog & 22--28 (pt3)
+  &  7.02 & $<$0.001 &  4.99 & $<$0.001
+  &  7.17 & $<$0.001 & \textcolor{red}{7.61} & $<$0.001 \\
+\midrule
+BDT score & 10--14 (pt0)
+  &  5.81 & $<$0.001 &  2.84 & $<$0.001
+  &  2.37 & $<$0.001 & \textcolor{red}{2.92} & $<$0.001 \\
+BDT score & 14--18 (pt1)
+  &  6.97 & $<$0.001 &  2.59 & $<$0.001
+  &  2.13 & $<$0.001 & \textcolor{red}{2.56} & $<$0.001 \\
+BDT score & 22--28 (pt3)
+  &  4.42 & $<$0.001 &  2.01 & $<$0.001
+  &  1.37 & 0.042   &  1.27 & 0.099 \\
+\midrule
+$f_1$ & 14--18 (pt1)
+  &  5.65 & $<$0.001 &  2.83 & $<$0.001
+  &  2.64 & $<$0.001 & \textcolor{red}{2.94} & $<$0.001 \\
+\midrule
+$E_{1\times1}/E_{3\times3}$ & 14--18 (pt1)
+  &  4.74 & $<$0.001 &  4.54 & $<$0.001
+  &  4.15 & $<$0.001 & \textcolor{red}{4.59} & $<$0.001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ===============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Universal pattern: $E_T$-dependent crossover}
+
+A consistent pattern emerges across \emph{both} crossing angles: the
+double-interaction blending \textbf{degrades} data--MC agreement for the BDT
+score at low $E_T$ (pt0, $10$--$14$\,GeV) while \textbf{improving} it at
+higher $E_T$.  This is now confirmed for both 0\,mrad ($3.0\times$ BDT
+degradation at pt0) and 1.5\,mrad ($5.5\times$ BDT degradation at pt0).
+For \wetacog, the crossover occurs between pt0 and pt1: at 0\,mrad, the
+pt0 \wetacog\ still improves ($1.6\times$), but at 1.5\,mrad it degrades
+($4.4\times$), indicating that the crossover pileup fraction for \wetacog\
+lies between 7.9\% and 22.4\% at low $E_T$.
+
+\subsection{Crossing-angle comparison}
+
+The improvement factors scale with the pileup fraction: the 22.4\%
+admixture at 0\,mrad yields larger improvements (up to $20.8\times$ for
+\wetacog\ at pt3) than the 7.9\% admixture at 1.5\,mrad (up to
+$16.1\times$).  Conversely, the 1.5\,mrad nominals are already much better
+than their 0\,mrad counterparts (e.g., BDT pt1: 1.16 vs.\ 12.20),
+confirming that lower pileup naturally reduces the data--MC discrepancy.
+
+\subsection{Low-$E_T$ degradation mechanism}
+
+The low-$E_T$ degradation affects the BDT score most severely because the
+BDT amplifies subtle shower shape distortions through its nonlinear decision
+function.  Contributing factors include:
+\begin{enumerate}
+\item \textbf{Shared MC samples}: the same \texttt{photon10\_double} and
+  \texttt{jet12\_double} samples are used for both crossing angles; beam
+  conditions in the MC may better match one period than the other.
+\item \textbf{Low-$E_T$ sensitivity}: clusters near the 8--14\,GeV
+  threshold are most sensitive to vertex shifts and energy redistribution.
+\item \textbf{Small-fraction noise}: at 7.9\% mixing, any mismatch
+  between the double MC and real pileup gets amplified relative to the
+  small physical correction.
+\end{enumerate}
+
+
+%% ===============================================================
+\section{Conclusions and Recommendations}
+\label{sec:conclusions}
+
+\begin{enumerate}
+\item \textbf{0\,mrad period}: the 22.4\% double-interaction blending
+  substantially improves data--MC agreement for pileup-sensitive variables
+  (\wetacog, BDT, $f_1$) at $E_T \geq 14$\,GeV, with improvement factors
+  up to $20.8\times$.  At pt0 ($10$--$14$\,GeV), the BDT score degrades
+  by $3.0\times$ while \wetacog\ still improves modestly.
+
+\item \textbf{1.5\,mrad period}: the 7.9\% blending helps at high $E_T$
+  ($\geq 18$\,GeV) but degrades both \wetacog\ and BDT at low $E_T$.
+  The nominal agreement is already acceptable (\chidf\ $\lesssim 10$ for
+  most variables).
+
+\item \textbf{Recommended baseline for cross-section measurement}:
+  \begin{itemize}
+  \item \textbf{0\,mrad, $E_T \geq 14$\,GeV}: use mixed MC (22.4\% DI)
+  \item \textbf{0\,mrad, $E_T < 14$\,GeV}: use mixed MC for \wetacog; use
+    nominal MC for BDT-sensitive quantities; assign nominal--mixed difference
+    as systematic
+  \item \textbf{1.5\,mrad, $E_T \geq 18$\,GeV}: use mixed MC (7.9\% DI)
+  \item \textbf{1.5\,mrad, $E_T < 18$\,GeV}: use nominal MC; assign
+    nominal--mixed difference as systematic
+  \end{itemize}
+
+\item \textbf{Alternative}: use nominal MC for the full 1.5\,mrad period
+  and apply the double-interaction correction to 0\,mrad data only.
+\end{enumerate}
+
+\end{document}

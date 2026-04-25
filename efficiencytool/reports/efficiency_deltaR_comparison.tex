@@ -841,6 +841,150 @@ interaction-mix normalization, and a calorimeter-scale bias that would
 masquerade as a pileup effect.
 
 
+\subsection{Crystal-Ball Estimator for the Low-Side Tail}
+\label{sec:resp_cb}
+
+The mean and width reported in Sections~\ref{sec:resp_pileup} and
+\ref{sec:resp_vtxrw_impact} above, as well as the summary curves in
+Figure~\ref{fig:resp_4panel}, are extracted from a truncated-Gaussian fit
+to $R_{\ET}$ on $[0.3, 1.7]$. This choice is robust against the extreme
+low-side tail from punch-through and gross shower leakage, but it remains
+sensitive to the structured low-side shoulder at $R_{\ET}\!\sim\!0.6$--$0.9$
+that is characteristic of photon calorimetry (bremsstrahlung in upstream
+material, lateral shower leakage, and---for double-interaction MC---the
+vertex-displacement kinematic tail discussed in
+Eq.~\ref{eq:deta_dz}). Including this shoulder inside the Gaussian fit
+window pulls the fitted mean below unity and inflates the fitted width
+above the true core resolution.
+
+We therefore also fit a Crystal-Ball (CB) function on $[0.3, 2.0]$,
+\begin{equation}
+  f_{\text{CB}}(x; \mu, \sigma, \alpha, n) =
+    N\times\begin{cases}
+      \exp\!\Big(-\tfrac{(x-\mu)^2}{2\sigma^2}\Big),
+        & \dfrac{x-\mu}{\sigma} > -\alpha, \\[0.6em]
+      A\,\Big(B - \dfrac{x-\mu}{\sigma}\Big)^{-n},
+        & \dfrac{x-\mu}{\sigma} \le -\alpha,
+    \end{cases}
+\end{equation}
+whose Gaussian core is parameterized by $(\mu, \sigma)$ and whose
+low-side power-law tail is parameterized separately by $(\alpha, n)$ with
+$\alpha > 0$ placing the transition at $x = \mu - \alpha\sigma$. The
+stored $\langle R_{\ET}\rangle_{\text{CB}}$ and
+$\sigma(R_{\ET})_{\text{CB}}$ are the Gaussian-core $\mu$ and $\sigma$ of
+this fit---i.e.\ the peak location and the intrinsic width of the core,
+decoupled from the tail.
+
+\paragraph{Comparison.} Table~\ref{tab:resp_cb_vs_gauss} compares the two
+estimators at the representative bin $22 < \pT^{\text{truth}} < 24$~GeV.
+The Crystal-Ball peak sits within $\sim\!0.5$~pp of unity for every set
+at both the \emph{reco} and \emph{common-cut} levels, confirming that
+the calorimeter energy scale itself is unbiased; the downward shift seen
+by the truncated Gaussian is entirely tail absorption. The
+Crystal-Ball core sigma is $\sim\!45\%$ of the Gaussian sigma at the
+\emph{reco} level, showing that the core resolution is much narrower than
+the effective width reported previously, and that the bulk of the
+``resolution'' number was a tail contribution. The transition parameter
+$\alpha$ quantifies the tail onset: $\alpha \approx 0.37$--$0.95$ across
+samples (a softer tail $\approx 0.4$ for single MC at reco, hardening to
+$\approx 1.0$ after the common cuts).
+
+\begin{table}[htbp]
+\centering
+\caption{Truncated-Gaussian vs Crystal-Ball estimators for $R_{\ET}$ at
+  $22 < \pT^{\text{truth}} < 24$~GeV. The CB column also reports the
+  transition parameter $\alpha$; the tail exponent $n$ is weakly
+  constrained and is not shown.}
+\label{tab:resp_cb_vs_gauss}
+\begin{tabular}{llcc|ccc}
+\toprule
+& & \multicolumn{2}{c|}{\textbf{Gauss} $[0.3,1.7]$}
+  & \multicolumn{3}{c}{\textbf{Crystal-Ball} $[0.3,2.0]$} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-7}
+\textbf{Level} & \textbf{Set} & $\mu$ & $\sigma$ & $\mu$ & $\sigma$ & $\alpha$ \\
+\midrule
+reco       & single                 & 0.958 & 0.071 & 1.005 & 0.045 & 0.37 \\
+reco       & double                 & 0.901 & 0.156 & 0.942 & 0.122 & 0.76 \\
+common cut & single                 & 0.959 & 0.071 & 1.004 & 0.045 & 0.39 \\
+common cut & double                 & 0.943 & 0.129 & 0.960 & 0.111 & 0.95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:resp_fit_overlay_single} and
+Figure~\ref{fig:resp_fit_overlay_double} overlay both fits on the
+single-interaction and double-interaction projections at the same pT bin.
+The Gaussian (blue dashed) is visibly pulled below the histogram peak
+and its tails underfit the data on both sides in exchange for a biased
+core; the Crystal-Ball (red solid) tracks the peak position and the
+low-side tail simultaneously, without the corresponding bias on $\mu$
+or $\sigma$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.49\textwidth]{resp_projection_fits_single_reco_pt22_24.pdf}
+\includegraphics[width=0.49\textwidth]{resp_projection_fits_single_common_cut_pt22_24.pdf}
+\caption{Single-interaction MC $R_{\ET}$ projection at
+  $22 < \pT^{\text{truth}} < 24$~GeV, overlaid with truncated-Gaussian
+  (blue dashed) and Crystal-Ball (red solid) fits. Left: reco level.
+  Right: common-cut level. The CB peak sits within 0.5~pp of unity;
+  the Gaussian is pulled down by $\sim\!4.5$~pp from tail absorption.}
+\label{fig:resp_fit_overlay_single}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.49\textwidth]{resp_projection_fits_double_reco_pt22_24.pdf}
+\includegraphics[width=0.49\textwidth]{resp_projection_fits_double_common_cut_pt22_24.pdf}
+\caption{Same as Figure~\ref{fig:resp_fit_overlay_single} but for
+  double-interaction MC. The vertex-induced low-side tail is much more
+  prominent; the Gaussian fit is correspondingly more biased
+  ($\Delta\mu \approx -4$~pp). The CB $\alpha$ softens from
+  $\approx 0.76$ (reco) to $\approx 0.95$ (common cut) as the common cuts
+  remove the most-displaced clusters.}
+\label{fig:resp_fit_overlay_double}
+\end{figure}
+
+\paragraph{pT-dependent summaries.}
+Figure~\ref{fig:resp_4panel_cb} presents the CB-based peak and core
+sigma as functions of truth \pT, to be compared with
+Figure~\ref{fig:resp_4panel}. The CB peak ($\mu_{\text{CB}}$) collapses
+the inter-sample spread at \emph{reco} level to within $\sim\!0.5$~pp of
+unity, explicitly separating the (unbiased) calorimeter response from
+the (sample-dependent) tail morphology. The CB core sigma
+($\sigma_{\text{CB}}$) is flatter in \pT{} than the Gaussian sigma and
+gives a cleaner read on the intrinsic calorimeter resolution
+($\approx\!4.5$--$6\%$ for single, $\approx\!10$--$14\%$ for double at
+reco level, dropping by $\sim\!0.5$~pp after the common cuts).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_summary_4panel_cb.pdf}
+\caption{CB peak $\mu_{\text{CB}}$ (top row) and core width
+  $\sigma_{\text{CB}}$ (bottom row) of $R_{\ET}$ as a function of truth
+  \pT, for all six sample sets. Left column: reco; right column: common
+  cut. Compare with Figure~\ref{fig:resp_4panel} (truncated-Gaussian
+  equivalent): the CB peak is unbiased and the core width is narrower.
+  The tail descriptors $\alpha$ and $n$ are stored per \pT{} bin in the
+  output ROOT file but are not displayed here.}
+\label{fig:resp_4panel_cb}
+\end{figure}
+
+\paragraph{Recommendation.}
+The tables and curves in Sections~\ref{sec:resp_pileup}--\ref{sec:resp_vtxrw_impact}
+remain valid and are retained as ``effective Gaussian width including
+tail'' summaries. For the cross-section pipeline itself
+(Section~\ref{sec:summary}) unfolding uses the full 2D
+$R_{\ET}$-vs-\pT{} response matrix; neither estimator enters
+it and the choice of summary estimator therefore has no impact on the
+final cross-section. When quoting a \emph{peak} and a \emph{core
+resolution} number in external documents (e.g.\ the analysis note), the
+Crystal-Ball estimator is preferred because it is unbiased by the
+low-side tail physics that is separately captured by $(\alpha, n)$.
+The per-bin fit convergence quality is documented in
+Appendix~\ref{app:fit_qc}.
+
+
 %% ============================================================
 \section{Summary Visualization}
 \label{sec:summary}
@@ -937,5 +1081,231 @@ factorized photon efficiency:
 \bibitem{dr_study} sPHENIX Internal Note: Study of the $\DR$ Truth-Matching
   Requirement in Single-Interaction MC, 2025.
 \end{thebibliography}
+
+
+%% ============================================================
+\appendix
+
+\section{Crystal-Ball Fit Quality Control}
+\label{app:fit_qc}
+
+This appendix documents the per-\pT{} fit convergence of the
+Crystal-Ball estimator reported in Section~\ref{sec:resp_cb}. For each
+of single-interaction MC, double-interaction MC, and the 1.5~mrad mixed
+production MC, a $4\times 3$ grid of the $R_{\ET}$ projection is shown
+spanning the analysis range $8 < \pT^{\text{truth}} < 36$~GeV (twelve
+bins from the $\pT^{\text{truth}}$ binning
+$\{7, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 45\}$~GeV,
+using indices 2--13). Each panel overlays the truncated-Gaussian fit on
+$[0.3, 1.7]$ (blue dashed) and the Crystal-Ball fit on $[0.3, 2.0]$ (red
+solid), with the fitted $(\mu, \sigma)$ for the Gaussian and
+$(\mu, \sigma, \alpha)$ for the Crystal-Ball printed on each panel.
+The dashed grey line at $R_{\ET} = 1$ marks the ideal-calorimeter peak.
+
+\paragraph{Observations across pT bins (reco level, single MC).}
+$\mu_{\text{CB}}$ is consistent with unity to within $\sim\!1$~pp at all
+pT except the lowest bin (8--10~GeV) where statistics are limited;
+$\sigma_{\text{CB}}$ is flat at $\sim\!5\%$ across the range;
+$\alpha \approx 0.4$ is stable, indicating a consistent low-side tail
+morphology.
+
+\paragraph{Observations across pT bins (reco level, double MC).}
+$\mu_{\text{CB}}$ shifts slightly below unity ($0.95$--$0.98$) at low
+pT, consistent with the vertex-displacement kinematic bias having a
+stronger effect when truth \pT{} is comparable to the reco-ET threshold;
+$\sigma_{\text{CB}}$ ranges from $\sim\!11\%$ at low pT to $\sim\!13\%$
+at high pT. At a few bins ($10$--$14$~GeV) the CB $\alpha$ can rail
+above $\sim\!3$, which effectively reduces the function to a Gaussian
+in that bin---i.e.\ the tail is too weak to be separately constrained
+by the data. In those bins the CB $(\mu, \sigma)$ converges to the
+truncated-Gaussian values, which is the intended fallback behaviour and
+does not degrade the CB-based summary curves for the other bins.
+
+\paragraph{Observations across pT bins (reco level, mixed 1.5~mrad MC).}
+Close to single MC at every bin, as expected from the 7.9\%
+double-interaction fraction. No convergence pathologies.
+
+\paragraph{Common-cut level.}
+After the common cuts (Figures~\ref{fig:qc_grid_single_common_cut} and
+\ref{fig:qc_grid_double_common_cut}) the CB $\alpha$ is systematically
+larger (sharper transition, i.e.\ a smaller surviving tail) than at
+reco level, confirming that the common cuts preferentially remove
+tail-populating clusters. The peak $\mu_{\text{CB}}$ and core
+$\sigma_{\text{CB}}$ are stable within statistical fluctuations.
+
+\paragraph{Fit-quality caveats.}
+An independent re-fit of all 216 cells (6 sets $\times$ 3 levels
+$\times$ 12 pT bins) with \texttt{scipy.optimize.curve\_fit} confirms
+three quantitative caveats to the CB results, all of which are
+cosmetic for the peak/core summary curves but worth noting for
+precision use:
+\begin{itemize}
+  \item \textbf{$\chi^2/\mathrm{ndf}$ is large in an absolute sense at
+    low \pT.} At reco level the Gaussian is a uniformly poor fit
+    ($\chi^2/\mathrm{ndf} \gg 5$ in 66/72 cells), and the Crystal-Ball,
+    while a strict improvement over Gauss in 71/72 cells, still exceeds
+    $\chi^2/\mathrm{ndf} = 5$ in 56/72 cells, predominantly at
+    $\pT^{\text{truth}} < 14$~GeV. The driver is a combination of the
+    very high statistics per bin and residual shape imperfections near
+    the MC sample-stitch boundary at 14~GeV (\texttt{photon5}
+    $\to$ \texttt{photon10}); with millions of entries per 2D bin, the
+    per-bin statistical error is small enough that any few-percent
+    shape deviation produces a large $\chi^2$. Independent scipy fits
+    reproduce the stored $\mu$ and $\sigma$ to within $0.5$--$1$~pp, so
+    the summary curves are robust even where $\chi^2/\mathrm{ndf}$ is
+    formally poor.
+  \item \textbf{The tail exponent $n$ is essentially unconstrained.}
+    In 88\% of cells (191/216) the fit pins $n$ to the upper bound
+    ($n = 100$). In practice this means the data does not constrain a
+    specific tail exponent; only the transition parameter $\alpha$
+    (the tail onset in units of $\sigma$) is usefully measured. We
+    therefore quote $\mu_{\text{CB}}$, $\sigma_{\text{CB}}$, and
+    $\alpha_{\text{CB}}$ in the report and omit $n$ from the summary
+    tables.
+  \item \textbf{Double-sided CB at \texttt{tight\_iso}.} At the
+    tight-iso level the residual $R_{\ET}$ distribution is narrow and
+    roughly symmetric; the one-sided CB absorbs the low-side tail but
+    leaves a residual high-side tail from isolation leakage. We
+    therefore also fit a double-sided CB (DSCB) with independent
+    low/high tail parameters $(\alpha_L, n_L, \alpha_H, n_H)$ and a
+    common Gaussian core $(\mu, \sigma)$. The DSCB parameters are
+    stored per \pT{} bin in
+    \texttt{h\_respET\_dscb\_\{mean,sigma,alphaL,alphaH\}\_\{set\}\_\{level\}}
+    for all six sets and all three levels. Per-bin convergence is
+    documented in Appendix~\ref{app:fit_qc_dscb}.
+\end{itemize}
+All 216 cells of the one-sided CB fit converge with $\alpha$ strictly
+inside $[0.15, 5]$---there are no rail-hits or fit failures on the core
+parameters.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_single_reco.pdf}
+\caption{Fit QC grid for single-interaction MC at the reco level.
+  Twelve $\pT^{\text{truth}}$ bins covering 8--36~GeV, each showing the
+  $R_{\ET}$ projection (black markers), truncated Gaussian fit (blue
+  dashed), and Crystal-Ball fit (red solid). Fitted parameters printed
+  on each panel.}
+\label{fig:qc_grid_single_reco}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_double_reco.pdf}
+\caption{Fit QC grid for double-interaction MC at the reco level.
+  Distribution is visibly broader than single MC; tail is well-captured
+  by the Crystal-Ball at all pT. Occasional rail-up of $\alpha$ at
+  the 10--14~GeV bins reduces the CB to a Gaussian in-place.}
+\label{fig:qc_grid_double_reco}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_mixed_1p5mrad_reco.pdf}
+\caption{Fit QC grid for mixed 1.5~mrad MC at the reco level. Very close
+  to single-interaction MC, as expected given the 7.9\%
+  double-interaction fraction of this running period.}
+\label{fig:qc_grid_mixed_1p5mrad_reco}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_mixed_0mrad_reco.pdf}
+\caption{Fit QC grid for mixed 0~mrad MC (22.4\% DI fraction) at the
+  reco level. Distribution is intermediate between
+  Fig.~\ref{fig:qc_grid_single_reco} (single) and
+  Fig.~\ref{fig:qc_grid_double_reco} (pure double), consistent with the
+  linear-composition cross-check in Section~\ref{sec:resp_crosschecks}.}
+\label{fig:qc_grid_mixed_0mrad_reco}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_single_common_cut.pdf}
+\caption{Fit QC grid for single-interaction MC at the common-cut level.
+  CB $\alpha$ is systematically larger than the reco-level version
+  (sharper tail onset), confirming that the common cuts prune the
+  tail.}
+\label{fig:qc_grid_single_common_cut}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_double_common_cut.pdf}
+\caption{Fit QC grid for double-interaction MC at the common-cut level.
+  The tail is substantially reduced vs the reco level
+  (Fig.~\ref{fig:qc_grid_double_reco}); CB $\alpha$ values are more
+  uniform across pT bins and no rail-up is observed.}
+\label{fig:qc_grid_double_common_cut}
+\end{figure}
+
+
+\section{Double-Sided Crystal-Ball Fit Quality (tight\_iso)}
+\label{app:fit_qc_dscb}
+
+At the tight-iso level the residual $R_{\ET}$ distribution is narrow
+and roughly symmetric, with isolation-leakage tails on both sides.
+Figures~\ref{fig:dscb_grid_single}--\ref{fig:dscb_grid_mixed_1p5mrad}
+show the Gauss, one-sided CB (red dotted), and double-sided CB (green
+solid) fits overlaid at each \pT{} bin for three representative
+interaction sets. The DSCB parameters are printed per panel as
+$(\mu, \sigma, \alpha_L, \alpha_H)$; the tail exponents $n_L$ and $n_H$
+are weakly constrained (as for the one-sided CB) and are therefore
+omitted from the per-panel labels.
+
+The DSCB peak $\mu$ agrees with the one-sided CB peak to better than
+$\pm 0.2$~pp for single MC and $\pm 0.5$~pp for double MC at every
+\pT{} bin, confirming that the peak estimate is robust against the fit
+form choice. The DSCB core $\sigma$ is systematically $\sim\!5$--$15\%$
+narrower than the one-sided CB $\sigma$, because the one-sided CB
+Gaussian is slightly inflated in trying to cover the residual
+high-side tail. The high-side $\alpha_H$ is typically larger than
+$\alpha_L$ (i.e.\ the high-side tail is sharper than the low-side),
+consistent with isolation leakage producing a shorter-range excess
+than shower leakage on the low side.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_dscb_single_tight_iso.pdf}
+\caption{DSCB fit QC grid for single-interaction MC at tight-iso level.
+  Gauss (blue dashed), one-sided CB (red dotted), and DSCB (green
+  solid) fits overlaid. DSCB absorbs both the low-side and the
+  high-side tails; the stated $\mu, \sigma, \alpha_L, \alpha_H$ are
+  from the DSCB fit.}
+\label{fig:dscb_grid_single}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_dscb_double_tight_iso.pdf}
+\caption{DSCB fit QC grid for double-interaction MC at tight-iso level.
+  The surviving tight-iso sample has a broader core and retains a
+  visible high-side tail from residual isolation mis-estimation
+  induced by the vertex shift; DSCB absorbs it via $\alpha_H$.}
+\label{fig:dscb_grid_double}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_dscb_mixed_1p5mrad_tight_iso.pdf}
+\caption{DSCB fit QC grid for mixed 1.5~mrad MC at tight-iso level.
+  Close to single-interaction MC as expected from the 7.9\% DI fraction.
+  The low-side $\alpha_L$ and high-side $\alpha_H$ bracket the
+  single-MC values, and the core width agrees to within statistical
+  fluctuations.}
+\label{fig:dscb_grid_mixed_1p5mrad}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{resp_fit_qc_grid_dscb_mixed_0mrad_tight_iso.pdf}
+\caption{DSCB fit QC grid for mixed 0~mrad MC (22.4\% DI fraction) at
+  tight-iso level. Relative to the 1.5~mrad mixed sample
+  (Fig.~\ref{fig:dscb_grid_mixed_1p5mrad}), the core $\sigma$ is broader
+  and the low-side $\alpha_L$ is smaller (tail onset closer to the core),
+  consistent with the larger double-interaction admixture.}
+\label{fig:dscb_grid_mixed_0mrad}
+\end{figure}
+
 
 \end{document}

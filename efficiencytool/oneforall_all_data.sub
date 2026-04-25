@@ -1,0 +1,27 @@
+# oneforall_all_data.sub
+#
+# Phase 2-fix: data-side RecoEffCalculator + CalculatePhotonYield for the 2
+# all-range configs (config_bdt_all.yaml, config_bdt_allz_all.yaml). Phase 2
+# (oneforall_all.sub) handled the MC merge + MC-closure CalculatePhotonYield
+# but did NOT run RecoEffCalculator on data — oneforall.sh's RecoEff calls
+# are commented out and merge_periods.sh only handles MC. So the data-side
+# Photon_final outputs were either stale (bdt_all reused Apr 11's data_histo
+# with old cuts) or missing entirely (bdt_allz_all segfaulted).
+#
+# This sub queues 2 jobs that run oneforall_all_data.sh = data RecoEff +
+# CalculatePhotonYield(false). Memory: 4GB (single ROOT process).
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_all_data.sh $(cfg)"
+
+log                   = logs/$(cfg).all_data.log
+output                = logs/$(cfg).all_data.out
+error                 = logs/$(cfg).all_data.err
+
+queue cfg in ( config_bdt_all.yaml config_bdt_allz_all.yaml )

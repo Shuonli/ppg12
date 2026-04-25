@@ -1,0 +1,137 @@
+# Truth vertex reweight fit configuration.
+#
+# Fill in the "path" fields under inputs.* after the condor reprocess
+# completes. All paths must be absolute GPFS paths.
+#
+# Cross-section weights and lumi values follow the existing conventions
+# in CrossSectionWeights.h and .claude/rules/yaml-config.md.
+
+branches:
+  tree_name:           "slimtree"
+  vertexz_truth:       "vertexz_truth"
+  vertexz_truth_mb:    "vertexz_truth_mb"
+  vertexz_truth_embed: "vertexz_truth_embed"
+  vertexz_truth_mb_embed: "vertexz_truth_mb_embed"
+  vertexz_reco:        "vertexz"
+  runnumber:           "runnumber"
+
+# Trigger bit applied to data only. Mirrors the analysis pipeline's
+# `trigger_used` field so the fit data shape matches the post-trigger
+# data h_vertexz used downstream. 30 = Photon_4_GeV (Map2). null skips
+# the cut and reverts to the trigger-inclusive behaviour (legacy).
+data_trigger_bit: 30
+
+# Binning defines the **derivation window** for the iterative reweight:
+# w(z) is updated and saved at every bin inside this range. Set wide
+# enough to cover essentially all data (max |z| in our data is exactly
+# 200 cm — the MBD vertex finder caps there). The **closure window**
+# (where convergence and χ² are evaluated) is set per-period below via
+# z_cut / z_cut_percentile, and is typically much narrower than the
+# binning so the high-stats core drives convergence.
+#
+# Truth and reco share the same edges (identity-map stage-2 requirement).
+binning:
+  z_min:  -200.0
+  z_max:   200.0
+  n_bins:   80              # 5 cm per bin
+  overflow_clip: false
+
+# Inputs. Paths are placeholders until condor reprocess completes.
+# xs and n_gen fields are per-sample; per-event weight = xs / n_gen
+# so that sum(weights) is proportional to integrated cross section.
+# Values from CrossSectionWeights.h (pb); n_gen is the approximate
+# number of events generated (use the actual count after reprocess).
+inputs:
+  # Single MC does NOT need reprocessing — existing production
+  # combined.root files already have vertexz, vertexz_truth, and
+  # runnumber. The missing vertexz_truth_mb branch is handled by the
+  # loader (only read if present in the tree) and is never used in
+  # build_T_s anyway.
+  single_mc:
+    photon10:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/photon10/condorout/combined.root"
+      xs:   6944.675          # photon10cross (pb)
+      n_gen: 9998562          # verified from existing production file
+    jet12:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet12/condorout/combined.root"
+      xs:   1490300.0         # jet12cross (pb)
+      n_gen: 10000000         # verified from existing production file
+
+  # Double MC — reprocessed through rebuilt anatreemaker (Apr 14 2026).
+  # vertexz_truth_mb / embed flags are populated on all events.
+  double_mc:
+    photon10_double:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/photon10_double/condorout/combined.root"
+      xs:   6944.675
+      n_gen: 9937080             # verified from reprocessed file
+    jet12_double:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet12_double/condorout/combined.root"
+      xs:   1490300.0
+      n_gen: 9997000             # verified from reprocessed file
+
+  data:
+    # Data slimtree — 77 part files, ~47M total events. Glob pattern
+    # is expanded by load_sample(). No reprocess needed: vertexz and
+    # runnumber already present; truth branches are sentinels.
+    path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/data/ana521/condorout/part_*_with_bdt_split.root"
+
+# Period definitions — runs are split at 51274. Values match
+# .claude/rules/yaml-config.md.
+#
+# z_cut is the |z_reco| cut applied to BOTH the stage-1 χ² and the
+# stage-2 residual correction. Bins outside |z| < z_cut do not enter
+# the fit and receive c(z) = 1 (no correction). Choose z_cut to match
+# the analysis fiducial window for the period.
+periods:
+  1p5mrad:
+    run_min: 51274
+    run_max: 54000
+    lumi:    16.8588     # pb^-1
+    f_double: 0.079      # cluster-weighted DI fraction (from calc_pileup_range.C)
+    z_cut:   100.0       # explicit fallback (used when z_cut_percentile is null)
+    z_cut_percentile: 99.0  # null to use explicit z_cut; otherwise derive
+  0mrad:
+    run_min: 47289
+    run_max: 51274
+    lumi:    32.6574     # pb^-1
+    f_double: 0.224      # cluster-weighted DI fraction
+    z_cut:   180.0       # explicit fallback
+    z_cut_percentile: 99.0
+
+# Fit parameters.
+fit:
+  # σ_gen options: null → measure from nominal MC (recommended)
+  #                float → hardcoded value, skip the measurement
+  sigma_gen: null
+
+  # Stage 1 parametric scan
+  sigma_tgt_range: [15.0, 60.0]
+  sigma_tgt_step:   0.5
+
+  # Stage 2 residual handling
+  residual_clip:        [0.1, 10.0]
+  residual_smooth_bins: 1               # Gaussian kernel width in bins
+  residual_edge_clamp:  true            # force c(edge) = c(edge-1) on outer bins
+  residual_renormalize: true            # keep total mixed MC unchanged
+
+  # Apply c(z) at half-power per vertex for double MC events. Off by
+  # default; enable if 0 mrad closure shows visible over-correction.
+  half_power_double: false
+
+  # Iterative data-driven stage. Replaces stage 2 with a Lucy–Richardson
+  # style multiplicative update inside the window. Seed is a parametric
+  # Gaussian with σ_tgt = std(data reco vertex), extrapolated outside the
+  # window and never updated there.
+  iterative:
+    enabled: true
+    max_iterations: 30
+    damping: 0.5             # α in w *= r^α
+    convergence_max_resid: 0.01   # max |D/M - 1| inside window
+    residual_smooth_bins: 1
+    update_clip: [0.5, 2.0]  # per-iteration update clip on r^α
+
+# Output.
+output:
+  # base_dir is relative to this config file.
+  base_dir: "output"
+  per_period_subdir: true

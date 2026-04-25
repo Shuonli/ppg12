@@ -1,0 +1,1008 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{alltt}
+\usepackage{xcolor}
+\definecolor{diffadd}{rgb}{0.0, 0.50, 0.15}
+\definecolor{diffdel}{rgb}{0.75, 0.10, 0.10}
+\definecolor{diffhunk}{rgb}{0.10, 0.30, 0.70}
+\definecolor{difffile}{rgb}{0.40, 0.40, 0.40}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{BDT Config Comparisons}
+\lhead{\nouppercase{\leftmark}}
+\rfoot{\thepage}
+
+\begin{document}
+
+\title{Selection Plots: Config Comparisons}
+\date{\today}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{\texttt{bdt\_nom} vs \texttt{bdt\_vtxreweight0}}
+
+\subsection*{Config diff (A $\to$ B)}
+
+\begin{alltt}\small
+\textcolor{difffile}{--- config\_bdt\_nom.yaml}
+\textcolor{difffile}{+++ config\_bdt\_vtxreweight0.yaml}
+\textcolor{diffhunk}{@@ -20,5 +20,5 @@}
+   response\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response"
+   data\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data\_histo"
+\textcolor{diffdel}{-  var\_type: "bdt\_nom"}
+\textcolor{diffadd}{+  var\_type: "bdt\_vtxreweight0"}
+   final\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon\_final"
+ 
+\textcolor{diffhunk}{@@ -73,5 +73,5 @@}
+   mc\_iso\_shift: 0.1
+   mc\_iso\_scale: 1.2
+\textcolor{diffdel}{-  vertex\_reweight\_on: 1}
+\textcolor{diffadd}{+  vertex\_reweight\_on: 0}
+   \# Path to data vertex scan output file (h\_vertexz). Used for on-the-fly vertex reweighting.
+   \# Leave empty ("") to use the pre-made vertex\_reweight\_file instead.
+\end{alltt}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Purity (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Purity (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Efficiency}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Isolation efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Isolation efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Identification efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Identification efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Total efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Total efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_nom.pdf}}
+  \hfill
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Final result}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Final cross section result --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Final cross section result --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[All correction steps --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_nom.pdf}}
+  \hfill
+  \subfloat[All correction steps --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation fit (CONF)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_9_9.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_9_9.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation ET}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_vtxreweight0.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_nom} vs \texttt{bdt\_truthvtxreweight}}
+
+\subsection*{Config diff (A $\to$ B)}
+
+\begin{alltt}\small
+\textcolor{difffile}{--- config\_bdt\_nom.yaml}
+\textcolor{difffile}{+++ config\_bdt\_truthvtxreweight.yaml}
+\textcolor{diffhunk}{@@ -20,5 +20,5 @@}
+   response\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response"
+   data\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data\_histo"
+\textcolor{diffdel}{-  var\_type: "bdt\_nom"}
+\textcolor{diffadd}{+  var\_type: "bdt\_truthvtxreweight"}
+   final\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon\_final"
+ 
+\textcolor{diffhunk}{@@ -73,5 +73,5 @@}
+   mc\_iso\_shift: 0.1
+   mc\_iso\_scale: 1.2
+\textcolor{diffdel}{-  vertex\_reweight\_on: 1}
+\textcolor{diffadd}{+  vertex\_reweight\_on: 0}
+   \# Path to data vertex scan output file (h\_vertexz). Used for on-the-fly vertex reweighting.
+   \# Leave empty ("") to use the pre-made vertex\_reweight\_file instead.
+\textcolor{diffhunk}{@@ -82,5 +82,5 @@}
+   \# Flip truth\_vertex\_reweight\_on to 1 to switch the nominal 1.5 mrad
+   \# analysis from the f(z\_r) reco-level reweight to the truth-level one.
+\textcolor{diffdel}{-  truth\_vertex\_reweight\_on: 0}
+\textcolor{diffadd}{+  truth\_vertex\_reweight\_on: 1}
+   truth\_vertex\_reweight\_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth\_vertex\_reweight/output/1p5mrad/reweight.root"
+   fit\_option: 1
+\end{alltt}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Purity (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Purity (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Efficiency}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Isolation efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Isolation efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Identification efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Identification efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Total efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Total efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_nom.pdf}}
+  \hfill
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Final result}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Final cross section result --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Final cross section result --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_nom.pdf}}
+  \hfill
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[All correction steps --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_nom.pdf}}
+  \hfill
+  \subfloat[All correction steps --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation fit (CONF)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_nom_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_9_9.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_nom_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_9_9.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation ET}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_nom}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_nom.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\section{\texttt{bdt\_vtxreweight0} vs \texttt{bdt\_truthvtxreweight}}
+
+\subsection*{Config diff (A $\to$ B)}
+
+\begin{alltt}\small
+\textcolor{difffile}{--- config\_bdt\_vtxreweight0.yaml}
+\textcolor{difffile}{+++ config\_bdt\_truthvtxreweight.yaml}
+\textcolor{diffhunk}{@@ -20,5 +20,5 @@}
+   response\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC\_response"
+   data\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data\_histo"
+\textcolor{diffdel}{-  var\_type: "bdt\_vtxreweight0"}
+\textcolor{diffadd}{+  var\_type: "bdt\_truthvtxreweight"}
+   final\_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon\_final"
+ 
+\textcolor{diffhunk}{@@ -82,5 +82,5 @@}
+   \# Flip truth\_vertex\_reweight\_on to 1 to switch the nominal 1.5 mrad
+   \# analysis from the f(z\_r) reco-level reweight to the truth-level one.
+\textcolor{diffdel}{-  truth\_vertex\_reweight\_on: 0}
+\textcolor{diffadd}{+  truth\_vertex\_reweight\_on: 1}
+   truth\_vertex\_reweight\_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth\_vertex\_reweight/output/1p5mrad/reweight.root"
+   fit\_option: 1
+\end{alltt}
+
+\subsection{Sideband (Data)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Sideband (MC)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Sideband ET spectrum (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Sideband ET ratio (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/et_sbs_ratio_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Leakage fraction vs ET (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/leakage_fraction_et_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Purity}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (data) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Purity (data) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/purity_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Purity (MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Purity (MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/purity_sim_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Efficiency}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Reconstruction efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_reco_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Isolation efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Isolation efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_iso_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Identification efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Identification efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_id_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Total efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Total efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_total_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[MBD trigger efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_mbd_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Combined photon efficiency --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/eff_photon_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Final result}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Final cross section result --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Final cross section result --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Comparison with PHENIX --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_phenix_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Common cluster yield (data vs MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_common_cluster_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[Tight iso cluster yield (data vs MC) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_tight_iso_cluster_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[All correction steps --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[All correction steps --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/final_all_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation fit (CONF)}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 0\textendash 2) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_0_2.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 0\textendash 2) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_0_2.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 3\textendash 5) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_3_5.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 3\textendash 5) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_3_5.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 6\textendash 8) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_6_8.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 6\textendash 8) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_6_8.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_vtxreweight0_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET template (pT bins 9\textendash 9) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_bdt_truthvtxreweight_9_9.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_vtxreweight0_9_9.pdf}}
+  \hfill
+  \subfloat[IsoET fit template (pT bins 9\textendash 9) --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/h1D_iso_fit_bdt_truthvtxreweight_9_9.pdf}}
+\end{figure}
+
+\clearpage
+
+\subsection{Isolation ET}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 0 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt0_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 1 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt1_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 2 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt2_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 3 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt3_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 4 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt4_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 5 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt5_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 6 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt6_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 7 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt7_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 8 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt8_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 9 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt9_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 10 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt10_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_vtxreweight0}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_vtxreweight0.pdf}}
+  \hfill
+  \subfloat[IsoET Tight, pT bin 11 --- \texttt{bdt\_truthvtxreweight}]{\includegraphics[width=0.48\linewidth]{figures/iso_ET_tight_pt11_bdt_truthvtxreweight.pdf}}
+\end{figure}
+
+\clearpage
+
+\end{document}

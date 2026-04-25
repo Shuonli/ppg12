@@ -1,0 +1,441 @@
+Vertex range: -40 to -30
+Eta range: -0.9 to -0.6
+ET range: 5 to 10
+Method: CutsGA_bin_v0_eta0_ET0
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET0   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.106967
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.110279
+                         : Cut[ 1]:   0.313424 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.492026 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.918402 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.445614 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.161457 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.872461
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.222419
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.45484
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET0   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0675795
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0555874
+                         : Cut[ 1]:   0.304502 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:    0.68944 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.475121 <               et1 <=      1e+30
+                         : Cut[ 4]:   -0.40804 <               et2 <=      1e+30
+                         : Cut[ 5]: 0.00410212 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.922121
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.180111
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.939128
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET0   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0687072
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0815199
+                         : Cut[ 1]:   0.637143 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:    0.27169 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.623083 <               et1 <=      1e+30
+                         : Cut[ 4]:  0.0699476 <               et2 <=      1e+30
+                         : Cut[ 5]:   -0.10751 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.877106
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.180111
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.63851
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.9 to -0.6
+ET range: 10 to 20
+Method: CutsGA_bin_v0_eta0_ET1
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET1   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.127864
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.131521
+                         : Cut[ 1]:  0.0923123 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.671383 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:    0.93225 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.434399 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.187005 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.538561
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.218292
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.75608
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET1   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0896773
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0694409
+                         : Cut[ 1]:  0.0890484 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.367496 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.926865 <               et1 <=      1e+30
+                         : Cut[ 4]:   0.286626 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.416895 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.422081
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.377137
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.403736
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET1   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0554324
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.142525
+                         : Cut[ 1]:   0.431893 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.502563 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.640989 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.371562 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.348571 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.908409
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.138534
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.237684
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.9 to -0.6
+ET range: 20 to 50
+Method: CutsGA_bin_v0_eta0_ET2
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET2   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.307506
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.177238
+                         : Cut[ 1]:   0.235123 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.659189 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.548113 <               et1 <=      1e+30
+                         : Cut[ 4]: -0.0463295 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.373387 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.29402
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.218589
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    0.26062
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET2   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.210654
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=    0.23053
+                         : Cut[ 1]:   0.313543 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.580326 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:    0.85696 <               et1 <=      1e+30
+                         : Cut[ 4]:    0.33153 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.309748 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.60951
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.192591
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.217749
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta0_ET2   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.171913
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=    1.66325
+                         : Cut[ 1]:   0.427601 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.543964 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.800112 <               et1 <=      1e+30
+                         : Cut[ 4]:    0.33153 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.455362 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.70193
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.160296
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.217749
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.6 to -0.3
+ET range: 5 to 10
+Method: CutsGA_bin_v0_eta1_ET0
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET0   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.0808847
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.119563
+                         : Cut[ 1]:     0.1758 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.926551 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:    0.30437 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.322193 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.361961 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.33596
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.222914
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.804779
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET0   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0518243
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0571058
+                         : Cut[ 1]:  0.0986519 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:    0.90273 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.909229 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.322193 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.535454 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.29618
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.222914
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    0.41578
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET0   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0539635
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0809375
+                         : Cut[ 1]:  0.0877537 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.362643 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.957866 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.569496 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.359658 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.452544
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.348315
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.97227
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.6 to -0.3
+ET range: 10 to 20
+Method: CutsGA_bin_v0_eta1_ET1
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET1   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.115603
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=       0.22
+                         : Cut[ 1]:  0.0412684 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.947343 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.933501 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.274095 <               et2 <=      1e+30
+                         : Cut[ 5]:   -0.35975 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.30812
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.209171
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.262682
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET1   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0627823
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0938244
+                         : Cut[ 1]:   0.158712 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.367187 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.933501 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.257772 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.247739 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.08027
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.183242
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.548255
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET1   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0443646
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0695634
+                         : Cut[ 1]:  0.0653339 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.397928 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.933501 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.257772 <               et2 <=      1e+30
+                         : Cut[ 5]:   0.185431 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.08027
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.183242
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.675593
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.6 to -0.3
+ET range: 20 to 50
+Method: CutsGA_bin_v0_eta1_ET2
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET2   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.340909
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.130964
+                         : Cut[ 1]:  0.0883371 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.717223 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.924409 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.358112 <               et2 <=      1e+30
+                         : Cut[ 5]:   -0.30416 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.982527
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.229868
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.451237
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET2   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.257955
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0786041
+                         : Cut[ 1]:   0.211385 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.952736 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.408102 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.392332 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.419761 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.27992
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.229868
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.905241
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta1_ET2   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.192045
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.210534
+                         : Cut[ 1]:   0.162419 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.783715 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.948065 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.426847 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.134803 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.696559
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.212931
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    0.63273
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.3 to 0
+ET range: 5 to 10
+Method: CutsGA_bin_v0_eta2_ET0
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET0   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.0697356
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.102735
+                         : Cut[ 1]:  0.0208588 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.928583 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.605914 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.519945 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.588902 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.888124
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.221334
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.23989
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET0   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0499088
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.082724
+                         : Cut[ 1]:   0.244484 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.928583 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:    0.41238 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.345994 <               et2 <=      1e+30
+                         : Cut[ 5]:   -0.53525 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.888124
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.173896
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.68795
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET0   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0467183
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0326122
+                         : Cut[ 1]:   0.184589 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.928583 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.404318 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.221602 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.300281 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.44454
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=    1.16014
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.03454
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.3 to 0
+ET range: 10 to 20
+Method: CutsGA_bin_v0_eta2_ET1
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET1   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.105608
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=   0.127794
+                         : Cut[ 1]:  0.0944496 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.945396 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.913426 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.543539 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.586701 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.403679
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=    0.22774
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.33276
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET1   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.0596201
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0666516
+                         : Cut[ 1]:   0.226812 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.944145 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.932034 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.541824 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.496081 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.969501
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.236529
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.55623
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET1   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.0380805
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=  0.0567629
+                         : Cut[ 1]:   0.168125 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.563075 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.941611 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.304431 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.519857 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.593965
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.199024
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=     1.5084
+                         : -----------------------------------------------------
+Vertex range: -40 to -30
+Eta range: -0.3 to 0
+ET range: 20 to 50
+Method: CutsGA_bin_v0_eta2_ET2
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET2   : Cut values for requested signal efficiency: 0.9
+                         : Corresponding background efficiency       : 0.291977
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=    1.70711
+                         : Cut[ 1]:  0.0328989 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.952419 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.925305 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.287616 <               et2 <=      1e+30
+                         : Cut[ 5]:  -0.336324 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.877585
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.215009
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.37469
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET2   : Cut values for requested signal efficiency: 0.8
+                         : Corresponding background efficiency       : 0.219189
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=    1.72002
+                         : Cut[ 1]:  0.0123989 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.884735 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.945292 <               et1 <=      1e+30
+                         : Cut[ 4]:  -0.229333 <               et2 <=      1e+30
+                         : Cut[ 5]:   -0.43232 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=    1.58498
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.424782
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=    1.58992
+                         : -----------------------------------------------------
+                         : -----------------------------------------------------
+CutsGA_bin_v0_eta2_ET2   : Cut values for requested signal efficiency: 0.7
+                         : Corresponding background efficiency       : 0.177006
+                         : Transformation applied to input variables : None
+                         : -----------------------------------------------------
+                         : Cut[ 0]:     -1e+30 < hcalet33_to_ettot <=    1.45417
+                         : Cut[ 1]:   0.242704 <        e11_to_e33 <=      1e+30
+                         : Cut[ 2]:   0.960168 <        e32_to_e35 <=      1e+30
+                         : Cut[ 3]:   0.924767 <               et1 <=      1e+30
+                         : Cut[ 4]:   0.177249 <               et2 <=      1e+30
+                         : Cut[ 5]:   0.216443 <               et3 <=      1e+30
+                         : Cut[ 6]:     -1e+30 <               et4 <=   0.736574
+                         : Cut[ 7]:     -1e+30 <         weta_cogx <=   0.331104
+                         : Cut[ 8]:     -1e+30 <         wphi_cogx <=   0.204322
+                         : -----------------------------------------------------

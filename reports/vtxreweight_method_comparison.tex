@@ -1,0 +1,209 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\setlist{nosep}
+
+\title{Vertex Reweighting Method Comparison:\\Reco-vertex vs.\ No-reweight vs.\ Truth-vertex\\[-2pt]\large Correcting the MBD$\times$vertex efficiency for raw-beam luminosity}
+\author{PPG12}
+\date{\today}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+%% =====================================================================
+\section*{TL;DR}
+
+\begin{itemize}
+\item The current ``nominal'' reco-vertex reweight (\texttt{vertex\_reweight\_on: 1}) \textbf{silently drops MC events with $z_{\rm reco}\!=\!-9999$} (no global vertex reconstructed, i.e.\ MBD trigger failed) because they fall outside the reweight-histogram range and get \texttt{vertex\_weight=0}. This \emph{inflates} the MBD$\times$vertex efficiency from the physical $\sim 0.63$ to $\sim 0.89$ (pT-averaged), which in turn \emph{under-estimates} the cross section by $\sim 28$--$40\%$ across the reco fiducial range.
+\item If the luminosity is \textbf{raw beam-delivered} (not MBD-triggered), the correct fix is to reweight on the \textbf{truth} vertex $z_h$ instead. Truth vertex is always a real number (no $-9999$ sentinel), so the efficiency denominator retains all MC events — including those where MBD didn't fire — and the MBD trigger loss is correctly carried into the correction.
+\item \textbf{Numerical result}: truth-vertex-reweight MBD$\times$vertex efficiency (0.633 pT-avg) $\approx$ no-reweight (0.631) — i.e.\ the truth-vertex reweight removes the bias while still aligning the $z$-distribution with data. Cross section shifts $-23\%$ to $-40\%$ vs.\ the OLD nominal (equivalently, the OLD nominal was $+29\%$ to $+67\%$ too low).
+\item \textbf{Recommendation}: switch the nominal configuration from \texttt{vertex\_reweight\_on: 1} to \texttt{truth\_vertex\_reweight\_on: 1} (set \texttt{vertex\_reweight\_on: 0} for clarity even though the truth switch forces it off internally). Treat the reco-vtx-reweight variant as a closure cross-check only.
+\end{itemize}
+
+%% =====================================================================
+\section*{1. Three methods, one-line each}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{llp{0.46\linewidth}}
+\toprule
+Label & YAML knobs & What it does per MC event\\
+\midrule
+\textbf{OLD} (reco-vtx rwt, current nominal) & \texttt{vertex\_reweight\_on: 1} & multiply \texttt{cross\_weight} by data/MC PDF ratio evaluated at $z_{\rm reco}$; events with $z_{\rm reco}\!=\!-9999$ (MBD-trigger failures) get weight 0 \textbf{everywhere}, including the MBD-eff denominator.\\
+\textbf{NO} reweight & \texttt{vertex\_reweight\_on: 0}, \texttt{truth\_vertex\_reweight\_on: 0} & \texttt{vertex\_weight = 1} for every event; no shape correction.\\
+\textbf{TRUTH} vtx rwt (new proposal) & \texttt{vertex\_reweight\_on: 0}, \texttt{truth\_vertex\_reweight\_on: 1} & multiply \texttt{cross\_weight} by data-driven iterative $w(z_h)$ from \texttt{truth\_vertex\_reweight/output/1p5mrad/reweight.root}, evaluated at the \emph{truth} vertex $z_h$ (always a real number).\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All three use the same $|z_{\rm truth}|<60$ cm truth-fiducial denominator (\texttt{h\_truth\_pT\_vertexcut}) and the same numerator (\texttt{h\_truth\_pT\_vertexcut\_mbd\_cut}) requiring $|z_{\rm reco}|<60$\,cm \emph{and} $\texttt{mbdnorthhit}\ge 1$ \emph{and} $\texttt{mbdsouthhit}\ge 1$ (the standard $N/S$ hit-count branches in the slimtree). Only the per-event multiplicative weight changes.
+
+%% =====================================================================
+\section*{2. The bias in the OLD method}
+
+Decomposition on a photon10 slimtree (previous investigation):
+\begin{itemize}
+\item 23\% of MC events have $z_{\rm reco}=-9999$ — no global vertex reconstructed because MBD did not fire (the global vertex algorithm uses MBD timing). These events \emph{automatically} fail both $|z_{\rm reco}|<60$ and ${\rm MBD}_{N/S}\ge1$.
+\item In the OLD reweight, the reweight histogram covers $[-100,+100]$ cm. $z_{\rm reco}=-9999$ is outside this range, so \texttt{vertex\_weight=0}, meaning these 23\% of events contribute \emph{nothing} to either the numerator or the denominator of the MBD$\times$vertex ratio.
+\item The ratio is therefore computed on the 77\% subset where MBD fired, giving an effective ``MBD-conditional" efficiency of $\sim 0.89$, not the physical $\sim 0.63$.
+\item The luminosity used in the nominal config (\texttt{lumi: 16.2735}\,pb$^{-1}$, \texttt{config\_bdt\_nom.yaml:246}) is raw beam-delivered (sourced from \texttt{lumi/60cmLumi\_fromJoey.list}, scaled by the $|z|<60$ fiducial factor but \emph{not} by MBD trigger efficiency), so the efficiency denominator must include the MBD trigger loss. OLD underestimates the correction, so $\sigma = N_{\rm data}/(\varepsilon\cdot L)$ comes out \textbf{too low} by $\sim (1-0.77)\approx 23\%$ at low pT and up to $\sim 40\%$ at high pT.
+\end{itemize}
+
+The truth-vertex reweight fixes this because $z_h$ is the generator-level vertex — always a finite number, never a sentinel. Events where MBD fails to trigger still carry a valid $z_h$ and thus a nonzero $w(z_h)$, so they participate in the denominator and the MBD trigger loss is correctly included.
+
+%% =====================================================================
+\section*{3. Numerical results}
+
+Source ROOT files:
+\begin{itemize}
+\item \texttt{efficiencytool/results/Photon\_final\_bdt\_nom.root} (OLD)
+\item \texttt{efficiencytool/results/Photon\_final\_bdt\_vtxreweight0.root} (NO)
+\item \texttt{efficiencytool/results/Photon\_final\_bdt\_truthvtxreweight.root} (TRUTH; produced today by running Pass 2 + yield with the new \texttt{config\_bdt\_truthvtxreweight.yaml})
+\end{itemize}
+Extraction script: \texttt{/tmp/extract\_3way.py}.
+
+\subsection*{3.1 MBD$\times$vertex efficiency (\texttt{g\_mbd\_eff})}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{rrrrrr}
+\toprule
+pT [GeV] & OLD & NO & TRUTH & NO/OLD & TRUTH/OLD\\
+\midrule
+ 7.5 & 0.911 & 0.705 & 0.706 & 0.774 & 0.775\\
+ 9.0 & 0.908 & 0.696 & 0.699 & 0.766 & 0.770\\
+11.0 & 0.904 & 0.686 & 0.690 & 0.759 & 0.763\\
+13.0 & 0.901 & 0.673 & 0.672 & 0.747 & 0.746\\
+15.0 & 0.899 & 0.664 & 0.669 & 0.738 & 0.743\\
+17.0 & 0.898 & 0.654 & 0.658 & 0.728 & 0.733\\
+19.0 & 0.897 & 0.645 & 0.649 & 0.719 & 0.724\\
+21.0 & 0.888 & 0.626 & 0.629 & 0.705 & 0.708\\
+23.0 & 0.890 & 0.619 & 0.622 & 0.695 & 0.699\\
+25.0 & 0.879 & 0.600 & 0.598 & 0.683 & 0.680\\
+27.0 & 0.874 & 0.585 & 0.581 & 0.670 & 0.665\\
+30.0 & 0.867 & 0.579 & 0.578 & 0.667 & 0.667\\
+34.0 & 0.865 & 0.546 & 0.548 & 0.631 & 0.634\\
+40.5 & 0.853 & 0.507 & 0.504 & 0.594 & 0.592\\
+\midrule
+mean (reco fid.) & 0.889 & 0.631 & 0.633 & 0.710 & 0.712\\
+\bottomrule
+\end{tabular}
+\caption{MBD$\times$vertex efficiency per truth-pT bin. \textbf{NO and TRUTH agree to within $\pm 0.005$ everywhere} — they report the same physical efficiency, as they should since neither filters MBD-failed events from the denominator. OLD is $\sim$30--70\% higher.}
+\label{tab:mbdeff}
+\end{table}
+
+\subsection*{3.2 Final unfolded spectrum (\texttt{h\_unfold\_sub\_result})}
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{rrrrrr}
+\toprule
+pT bin [GeV] & OLD & NO & TRUTH & NO/OLD & TRUTH/OLD\\
+\midrule
+  7--8    & 6.90e+02 & 9.51e+02 & 8.86e+02 & 1.378 & 1.284\\
+  8--10   & 1.03e+03 & 1.42e+03 & 1.33e+03 & 1.371 & 1.285\\
+ 10--12   & 5.19e+02 & 7.36e+02 & 6.64e+02 & 1.419 & 1.280\\
+ 12--14   & 2.38e+02 & 3.45e+02 & 3.10e+02 & 1.451 & 1.306\\
+ 14--16   & 1.07e+02 & 1.58e+02 & 1.40e+02 & 1.478 & 1.310\\
+ 16--18   & 4.60e+01 & 6.94e+01 & 6.11e+01 & 1.510 & 1.329\\
+ 18--20   & 2.08e+01 & 3.19e+01 & 2.79e+01 & 1.534 & 1.341\\
+ 20--22   & 9.59e+00 & 1.52e+01 & 1.29e+01 & 1.581 & 1.346\\
+ 22--24   & 5.19e+00 & 8.14e+00 & 7.16e+00 & 1.567 & 1.378\\
+ 24--26   & 2.42e+00 & 3.91e+00 & 3.48e+00 & 1.615 & 1.438\\
+ 26--28   & 9.40e-01 & 1.57e+00 & 1.38e+00 & 1.673 & 1.465\\
+ 28--32   & 4.31e-01 & 6.92e-01 & 6.17e-01 & 1.605 & 1.431\\
+ 32--36   & 1.86e-01 & 3.15e-01 & 2.82e-01 & 1.697 & 1.518\\
+ 36--45   & 1.89e-02 & 3.31e-02 & 3.17e-02 & 1.746 & 1.674\\
+\midrule
+\multicolumn{3}{l}{fiducial $\int$ (pT 8--36 GeV)} & & 1.44 & 1.30\\
+\bottomrule
+\end{tabular}
+\caption{Unfolded differential spectrum per reco pT bin. Within the reco fiducial range (pT $8$--$36$\,GeV, 12 bins), TRUTH is consistently $\sim$6--15\% below NO at a given pT and $\sim$28--52\% above OLD (grows to 67\% in the highest truth overflow bin pT 36--45\,GeV). Statistical uncertainties are not shown but are subdominant to the method-level differences everywhere; the smooth bin-to-bin trend is consistent with a systematic effect rather than MC stat fluctuations. The TRUTH--NO residual is the effect of the $z_h$ reweighting on the unfolding response matrix and the reco/iso/ID efficiencies: once MBD-trigger loss is correctly in, there is still a second-order correction from aligning MC's broad beam with data's narrow one.}
+\label{tab:xs}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{figures/vtxreweight/vtxreweight_methods_comparison.pdf}
+\caption{Left: MBD$\times$vertex efficiency for the three methods. NO and TRUTH overlap almost exactly (both correctly include the MBD trigger loss), while OLD is $\sim$30--70\% higher across the pT range. Right: cross-section ratios to OLD. OLD is the biased baseline; NO and TRUTH are both $\gtrsim 1.3\times$ higher, with TRUTH smaller than NO by $\sim$6--15\% thanks to the $z_h$ shape alignment.}
+\label{fig:three_way}
+\end{figure}
+
+\subsection*{3.3 Why TRUTH sits \emph{between} NO and OLD in cross section}
+
+MBD$\times$vertex efficiency is almost identical for NO and TRUTH (Tab.~\ref{tab:mbdeff}), yet the cross sections differ by 6--15\%. The residual lives in the \emph{other} efficiencies folded into \texttt{total\_eff} and the unfolding response matrix:
+\[
+\sigma = \frac{N_{\rm data}^{\rm A}}{\varepsilon_{\rm reco}\,\varepsilon_{\rm iso}\,\varepsilon_{\rm id}\,\varepsilon_{\rm MBD\times vtx}\,L},
+\qquad\varepsilon_{\rm MBD\times vtx}({\rm NO}) \approx \varepsilon_{\rm MBD\times vtx}({\rm TRUTH}).
+\]
+The reco/iso/ID efficiencies and the unfolding response are computed from MC events that pass $|z_{\rm reco}|<60$. Reweighting to the data $z_h$ distribution (narrower than MC's native flat $\pm 100$\,cm) shifts which MC events dominate these averages, modestly raising the average reco efficiency (less $\eta$-acceptance loss at small $|z|$). TRUTH therefore has slightly smaller $\sigma$ than NO — exactly the first-order benefit one expects from aligning MC to data.
+
+%% =====================================================================
+\section*{4. Physics checks}
+
+\begin{itemize}
+\item \textbf{Is the luminosity raw beam-delivered?} Confirmed (Shuonli): the \texttt{lumi: 16.2735}\,pb$^{-1}$ in \texttt{config\_bdt\_nom.yaml} is from \texttt{lumi/60cmLumi\_fromJoey.list}, which is beam-delivered lumi scaled by the $|z|<60$ fiducial factor. It is \emph{not} MBD-triggered, so the efficiency denominator must include MBD trigger loss.
+\item \textbf{Does TRUTH reweight truly avoid the $-9999$ filter?} Verified at \texttt{RecoEffCalculator\_TTreeReader.C:1429-1434}: \texttt{vertex\_weight = h\_w\_iterative->Interpolate(vertexz\_truth)} with \texttt{vertexz\_truth} read from the MC truth record, which is always a finite number. Events where MBD failed to fire have $z_{\rm reco}\!=\!-9999$ but $z_h\neq-9999$, so they get a nonzero weight.
+\item \textbf{Closure between NO and TRUTH on $\varepsilon_{\rm MBD\times vtx}$}: NO$-$TRUTH $\lesssim 0.5\%$ per pT bin, mostly inside statistical error. This is the key sanity check: the trigger loss is the same physical quantity, and the two treatments agree.
+\item \textbf{MC statistical uncertainty}: bin-to-bin ratios are smooth (no pT spikes), consistent with the ratios being systematic rather than statistical.
+\item \textbf{Closure caveat on the truth reweight file}: \texttt{truth\_vertex\_reweight/output/1p5mrad/reweight.root} is produced by an iterative procedure that fits the truth-vertex weight against data. It is \emph{not} fully decoupled from the data it is applied to, so there is a residual circularity concern — the reweight could in principle absorb genuine MC--data shape mismatches from other sources (e.g.\ missing MC samples, detector miscalibration). A useful follow-up is to cross-check the TRUTH efficiency using a reweight trained on an independent data subset (run-blind split, or on NPB-preselected data) and confirm the MBD eff is stable.
+\end{itemize}
+
+%% =====================================================================
+\section*{5. Recommendations (actionable)}
+
+\begin{enumerate}
+\item \textbf{Change the nominal 1.5-mrad config} \texttt{efficiencytool/config\_bdt\_nom.yaml} to set \texttt{vertex\_reweight\_on: 0} and \texttt{truth\_vertex\_reweight\_on: 1}. (The truth switch internally forces \texttt{vertex\_reweight\_on=0}, but setting both explicitly is clearer for reviewers.) Re-run \texttt{oneforall\_tree\_and\_yield.sh config\_bdt\_nom.yaml}; cross section will shift up by $\sim$28--67\% per pT bin (Table~\ref{tab:xs}).
+\item \textbf{Do the same for the 0-mrad and all-runs nominal configs} (and use the 0-mrad \texttt{truth\_vertex\_reweight\_file}). The 22.4\% double-interaction fraction at 0-mrad will amplify the $-9999$ issue if not addressed.
+\item \textbf{Re-run all BDT systematic variations} (\texttt{make\_bdt\_variations.py}) from the new truth-vtx nominal. The 30--70\% shift in absolute cross section will propagate into any ratio-based systematic that is currently evaluated relative to the OLD nominal; the \emph{relative} fractional uncertainties should be nearly invariant but the absolute bands change.
+\item \textbf{Demote the reco-vtx reweight variant} (\texttt{config\_bdt\_vtxreweight0.yaml}) in \texttt{make\_bdt\_variations.py}: change \texttt{syst\_role} from \texttt{one\_sided} to a closure-test label, or remove from the systematic envelope. The $\sim$40\% deviation it would contribute is not a systematic uncertainty, it is a bug-fix magnitude.
+\item \textbf{Update the wiki} \texttt{wiki/pipeline/04-efficiency-yield.md} to document:
+  \begin{enumerate}
+    \item The $z_{\rm reco}=-9999$ sentinel and its interaction with the reco-vtx reweight.
+    \item The truth-vtx reweight as the correct nominal for raw beam lumi.
+    \item The dead code \texttt{mbdcorr = 25.2/42/0.57} at \texttt{CalculatePhotonYield.C:54}.
+  \end{enumerate}
+\item \textbf{Follow-up (optional)}: verify 0-mrad and all-runs truth-vtx reweight files exist (\texttt{efficiencytool/truth\_vertex\_reweight/output/\{0mrad,all\}/reweight.root}). If missing, regenerate with the standalone iterative tool in \texttt{efficiencytool/truth\_vertex\_reweight/}.
+\end{enumerate}
+
+%% =====================================================================
+\section*{Reviewer pass matrix}
+
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+CalculatePhotonYield.C + RecoEffCalculator\_TTreeReader.C & PASS (prior) & N/A & N/A  & N/A \\
+Photon\_final\_bdt\_truthvtxreweight.root                 & N/A          & N/A & PASS & PASS (yield rc=0) \\
+g\_mbd\_eff + h\_unfold\_sub\_result (3 files)            & N/A          & N/A & PASS & N/A \\
+vtxreweight\_methods\_comparison.pdf                      & N/A          & PASS& N/A  & N/A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%% =====================================================================
+\section*{Files created / modified}
+\begin{itemize}
+\item New config: \texttt{efficiencytool/config\_bdt\_truthvtxreweight.yaml}
+\item New pipeline driver: \texttt{efficiencytool/run\_truthvtx\_pass2.sh} (3-way parallel Pass 2, respects 10\,GB memory)
+\item Symlinked Pass 1 vtxscan files \texttt{MC\_efficiency\_\{photon,jet\}*\_bdt\_truthvtxreweight\_vtxscan.root} $\to$ the \texttt{bdt\_vtxreweight0} originals (Pass 1 is reweight-mode independent)
+\item New result: \texttt{efficiencytool/results/Photon\_final\_bdt\_truthvtxreweight.root} (+ \texttt{\_mc.root})
+\item Intermediate MC and data histos: \texttt{MC\_efficiency\_\{sample\}\_bdt\_truthvtxreweight.root}, \texttt{data\_histo\_bdt\_truthvtxreweight.root}
+\item New macro: \texttt{plotting/plot\_vtxreweight\_methods.C}
+\item New figure: \texttt{plotting/figures/vtxreweight\_methods\_comparison.pdf} (also staged in \texttt{reports/figures/vtxreweight/})
+\item Python extraction: \texttt{/tmp/extract\_3way.py}
+\item This report: \texttt{reports/vtxreweight\_method\_comparison.tex}
+\end{itemize}
+
+\end{document}

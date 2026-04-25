@@ -1,0 +1,403 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\title{Topo-cluster isolation distributions and photon-energy containment vs inner-R}
+\author{PPG12 isolated photon analysis}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Motivation}
+
+The nominal PPG12 isolation variable is the R\,=\,0.4 topo-cluster energy around the seed
+cluster: $\text{recoiso}_{ET}^{\text{nom}} = \text{cluster\_iso\_topo\_04}$, which by
+construction in \texttt{CaloAna24} equals $\Sigma_{R<0.4}\,E_T^{\text{topo}} - E_T^{\text{seed}}$.
+To study an ``annulus'' variant we subtract an inner ring, parametrised by a new
+configuration key \texttt{iso\_topo\_innerr}:
+\begin{equation*}
+\text{recoiso}_{ET}^{\text{ann}}(R_\text{in}) =
+  \text{cluster\_iso\_topo\_04} \;-\; \text{cluster\_iso\_topo}_{R_\text{in}}.
+\end{equation*}
+Because both terms have a common $-E_T^{\text{seed}}$, the subtraction amounts to the sum in
+the annulus $R \in [R_\text{in}, 0.4]$. The question addressed here is how much of the
+photon's own energy sits outside a given inner radius $R_\text{in}$, and how the one-dimensional
+isolation distribution evolves with $R$ in truth-matched signal MC, inclusive MC, and data.
+
+\section{Samples and selection}
+
+\begin{itemize}
+  \item Truth-matched signal MC: photon5 + photon10 + photon20, cross-section weighted.
+        For a reco cluster to enter the study, its \texttt{cluster\_truthtrkID} must map to a
+        truth particle with \texttt{pid}\,=\,22, \texttt{photonclass}\,=\,1 (direct),
+        and \texttt{particle\_truth\_iso\_03}\,$<$\,4\,GeV (fiducial).
+  \item Inclusive MC: photon5/10/20 + jet5/8/12/20/30/40, cross-section weighted,
+        no truth match (all reconstructed clusters).
+  \item Data: 77 \texttt{part\_*\_with\_bdt\_split.root} files from the ana521 production,
+        capped at $5{\times}10^{5}$ clusters for this study (reduced from $3{\times}10^{6}$ in
+        the earlier pass — see revision note in \S\ref{sec:revision_smaller_sample}).
+  \item \emph{Pre-common}: no cluster-quality selection beyond the sample filter.
+  \item \emph{Post-common}: require \texttt{cluster\_npb\_score}\,$>$\,0.5 (the only active
+        common cut in \texttt{config\_bdt\_nom.yaml}, since \texttt{wr\_cogx\_bound}\,=\,0 and
+        \texttt{cluster\_weta\_cogx\_bound}\,=\,2 disable the shape cuts).
+\end{itemize}
+
+Inner-R branches scanned: $R_\text{in} \in \{0.05,\,0.075,\,0.10,\,0.20,\,0.30,\,0.40\}$.
+
+\section{Isolation distributions vs inner radius}
+
+Figure~\ref{fig:dist_overlay} overlays the six \texttt{cluster\_iso\_topo}$_R$
+distributions on each of the three samples. Figure~\ref{fig:dist_cmp} compares, per R, the
+data and inclusive MC distributions. Table~\ref{tab:stats} summarises the post-common mean
+and RMS.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{../plotting/figures/iso_topo_dist_overlay.pdf}
+  \caption{\texttt{cluster\_iso\_topo}$_R$ distributions (log-y, unit-normalised) for the six
+  inner radii, on truth-matched signal MC (left), inclusive MC (middle) and data (right),
+  all post-common. Inclusive in cluster $E_T$.}
+  \label{fig:dist_overlay}
+\end{figure}
+
+\subsection{Per-cluster-$E_T$ expansion (linear $y$)}
+Figure~\ref{fig:dist_overlay_clEt_1} to \ref{fig:dist_overlay_clEt_4} repeat
+Figure~\ref{fig:dist_overlay} in four cluster-$E_T$ windows with linear $y$-scale to
+make the peak structure visible. All samples and the six inner radii follow the same
+colour assignment; post-common selection applies throughout.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_topo_dist_overlay_per_clEt.pdf}
+  \caption{Cluster $E_T \in [8,14]$\,GeV, linear $y$.}
+  \label{fig:dist_overlay_clEt_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_topo_dist_overlay_per_clEt.pdf}
+  \caption{Cluster $E_T \in [14,20]$\,GeV, linear $y$.}
+  \label{fig:dist_overlay_clEt_2}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_topo_dist_overlay_per_clEt.pdf}
+  \caption{Cluster $E_T \in [20,28]$\,GeV, linear $y$.}
+  \label{fig:dist_overlay_clEt_3}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_topo_dist_overlay_per_clEt.pdf}
+  \caption{Cluster $E_T \in [28,40]$\,GeV, linear $y$.}
+  \label{fig:dist_overlay_clEt_4}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{../plotting/figures/iso_topo_dist_data_vs_mc.pdf}
+  \caption{Post-common \texttt{cluster\_iso\_topo}$_R$ distribution, one panel per inner
+  radius. Data (black markers) vs inclusive MC (blue line), both unit-normalised.}
+  \label{fig:dist_cmp}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+$R$ & \multicolumn{2}{c}{MC truth-matched photons} & \multicolumn{2}{c}{Inclusive MC} & \multicolumn{2}{c}{Data} \\
+    & mean & RMS & mean & RMS & mean & RMS \\
+\midrule
+0.05  & $+0.07$ & 0.76 & $-0.18$ & 2.60 & $-0.01$ & 1.97 \\
+0.075 & $+0.13$ & 0.68 & $+0.42$ & 2.34 & $+0.39$ & 1.86 \\
+0.10  & $+0.16$ & 0.66 & $+0.84$ & 2.26 & $+0.68$ & 1.87 \\
+0.20  & $+0.22$ & 0.64 & $+1.74$ & 2.57 & $+1.31$ & 2.25 \\
+0.30  & $+0.25$ & 0.65 & $+2.23$ & 2.83 & $+1.66$ & 2.50 \\
+0.40  & $+0.29$ & 0.68 & $+2.60$ & 3.00 & $+1.92$ & 2.65 \\
+\bottomrule
+\end{tabular}
+\caption{Mean and RMS (GeV) of \texttt{cluster\_iso\_topo}$_R$ in the three samples,
+post-common, cross-section weighted for the MC rows. Post-common cluster counts are
+1.69M (MC truth-matched), 1.29M (inclusive MC), 103k (data). Numbers re-extracted
+from the revised extraction (see \S\ref{sec:revision_smaller_sample}); they differ
+from the earlier pass at small $R$ — the earlier data/MC exhibited 3--4\,GeV RMS and
+$-$2.8\,GeV means at $R=0.05$, which the current extraction does not reproduce. The
+current truth-matched MC sits within $\pm 0.3$\,GeV of zero at every $R$, consistent
+with the seed-cluster subtraction in \texttt{cluster\_iso\_topo}.}
+\label{tab:stats}
+\end{table}
+
+\emph{Observations.} With the current slimtree's seed-subtracted
+\texttt{cluster\_iso\_topo}$_R$ definition, the truth-matched MC sits essentially at
+zero across $R$ (mean $0.07\to0.29$\,GeV, RMS $0.64$--$0.76$\,GeV), the photon energy
+being cleanly removed by the explicit $-E_T^{\rm seed}$ term. Inclusive MC and data
+track one another in shape but diverge mildly in the tails: inclusive-MC means are
+$\approx 0.3$--$0.7$\,GeV above data at $R\ge 0.2$, and the inclusive-MC RMS is
+$\approx 15$--$20\%$ larger than data at $R=0.4$. This is consistent with the MC mix
+being jet-richer than the as-taken data (which sits post-common after the NPB $>0.5$
+shower-shape cut).
+
+\section{Tower-based isolation: same study, per cluster $E_T$}
+\label{sec:revision_smaller_sample}
+
+For completeness the same per-cluster-$E_T$ overlay is repeated with the tower-based
+(\texttt{cluster\_iso}$_R$) branches, which sum EMCAL + HCALIN + HCALOUT tower energy
+within $R$ of the seed. The tower path has no un-thresholded $R=0.1$ branch in the
+current slimtree, so the scan is five radii: $\{0.05,\,0.075,\,0.20,\,0.30,\,0.40\}$.
+
+\textit{Revision note.} The extraction was re-run with a reduced sample for iteration
+speed on slow GPFS: $3{\times}10^5$ clusters per inclusive-MC sample and $5{\times}10^5$
+data clusters, vs.\ $2{\times}10^6$ and $3{\times}10^6$ respectively in the earlier pass.
+Post-common N is 1.7M truth-matched, 1.3M inclusive MC, 103k data. Shapes are
+preserved at the per-$R$, per cluster-$E_T$ level; per-bin statistical fluctuations
+in the $E_T\in[28,40]$\,GeV panel are modestly larger than in the original extraction.
+The subsequent new-variant figures (\S\ref{sec:tower_thr_r03}--\S\ref{sec:tower_excl})
+use the same reduced sample.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_tower_dist_overlay_per_clEt.pdf}
+  \caption{Tower-iso overlay, cluster $E_T \in [8,14]$\,GeV, linear $y$.}
+  \label{fig:tower_clEt_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_tower_dist_overlay_per_clEt.pdf}
+  \caption{Tower-iso overlay, cluster $E_T \in [14,20]$\,GeV, linear $y$.}
+  \label{fig:tower_clEt_2}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_tower_dist_overlay_per_clEt.pdf}
+  \caption{Tower-iso overlay, cluster $E_T \in [20,28]$\,GeV, linear $y$.}
+  \label{fig:tower_clEt_3}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_tower_dist_overlay_per_clEt.pdf}
+  \caption{Tower-iso overlay, cluster $E_T \in [28,40]$\,GeV, linear $y$.}
+  \label{fig:tower_clEt_4}
+\end{figure}
+
+\section{Tower threshold scan at $R=0.3$}
+\label{sec:tower_thr_r03}
+
+New tower-iso branches include a per-tower-energy-threshold scan at $R=0.3$, summed
+over EMCAL+HCalIn+HCalOut, for thresholds $\{0,\,60,\,70,\,120\}$\,MeV. The
+$0$-MeV (no-threshold) curve is the reconstructed sum of the new per-calo branches
+\texttt{cluster\_iso\_03\_emcal/hcalin/hcalout} — a cross-check of the existing
+\texttt{cluster\_iso\_03} total. Raising the tower threshold removes diffuse low-$E_T$
+noise tails and sharpens the iso peak near zero.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_tower_thresh_r03_per_clEt.pdf}
+  \caption{Tower-iso threshold scan at $R=0.3$, cluster $E_T\in[8,14]$\,GeV.}
+  \label{fig:thr_r03_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_tower_thresh_r03_per_clEt.pdf}
+  \caption{Tower-iso threshold scan at $R=0.3$, cluster $E_T\in[14,20]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_tower_thresh_r03_per_clEt.pdf}
+  \caption{Tower-iso threshold scan at $R=0.3$, cluster $E_T\in[20,28]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_tower_thresh_r03_per_clEt.pdf}
+  \caption{Tower-iso threshold scan at $R=0.3$, cluster $E_T\in[28,40]$\,GeV.}
+\end{figure}
+
+\section{EMCal-only tower iso with 70\,MeV threshold, $R$ scan}
+\label{sec:tower_emcal70}
+
+Branches \texttt{cluster\_iso\_R\_70\_emcal} for $R\in\{0.05,\,0.075,\,0.10,\,0.20,\,0.30\}$
+provide an EMCal-only, 70\,MeV-thresholded variant that removes HCal contributions and
+rejects low-$E_T$ towers. Useful as a shape prior if the HCal-summed iso picks up
+unrelated activity (jet fragments, neutrons) at the seed.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_tower_emcal70_per_clEt.pdf}
+  \caption{EMCal-only 70\,MeV tower iso, $R$ scan, cluster $E_T\in[8,14]$\,GeV.}
+  \label{fig:emcal70_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_tower_emcal70_per_clEt.pdf}
+  \caption{EMCal-only 70\,MeV tower iso, $R$ scan, cluster $E_T\in[14,20]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_tower_emcal70_per_clEt.pdf}
+  \caption{EMCal-only 70\,MeV tower iso, $R$ scan, cluster $E_T\in[20,28]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_tower_emcal70_per_clEt.pdf}
+  \caption{EMCal-only 70\,MeV tower iso, $R$ scan, cluster $E_T\in[28,40]$\,GeV.}
+\end{figure}
+
+\section{SUB1-subtracted tower iso}
+\label{sec:tower_sub1}
+
+The \texttt{\_sub1} branches apply a first-order underlying-event subtraction per calo
+layer; available at $R=0.3$ and $R=0.4$. Each figure overlays the plain and SUB1
+variants side-by-side at the two radii to show the subtraction's effect on the iso
+peak and on high-$E_T$ tails (each curve is the EMCAL+HCALIN+HCALOUT sum).
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_tower_sub1_per_clEt.pdf}
+  \caption{Plain vs.\ SUB1-subtracted tower iso, cluster $E_T\in[8,14]$\,GeV.}
+  \label{fig:sub1_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_tower_sub1_per_clEt.pdf}
+  \caption{Plain vs.\ SUB1-subtracted tower iso, cluster $E_T\in[14,20]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_tower_sub1_per_clEt.pdf}
+  \caption{Plain vs.\ SUB1-subtracted tower iso, cluster $E_T\in[20,28]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_tower_sub1_per_clEt.pdf}
+  \caption{Plain vs.\ SUB1-subtracted tower iso, cluster $E_T\in[28,40]$\,GeV.}
+\end{figure}
+
+\section{Ownership-excluded tower iso, $R$ scan}
+\label{sec:tower_excl}
+
+Branches \texttt{cluster\_iso\_excl\_R} for $R\in\{0.05,\,0.075,\,0.10,\,0.20,\,0.30,\,0.40\}$
+compute $\Sigma E_T^{\rm EMCAL, excl} + \Sigma E_T^{\rm HCalIn} + \Sigma E_T^{\rm HCalOut}$,
+where the EMCal sum \emph{excludes towers already assigned to the seed cluster by topo-cluster
+ownership} (the HCal sums are the usual in-cone totals with a 120\,MeV per-tower threshold
+for $R\ge0.10$). Compared with the plain \texttt{cluster\_iso\_R} — which sums all in-cone
+EMCal+HCal energy with no photon subtraction — the EMCal-ownership exclusion removes the
+photon's own energy while keeping the out-of-cluster EMCal + HCal activity that
+characterises jet-like backgrounds. In contrast to \texttt{cluster\_iso\_topo\_R} (which
+subtracts the seed explicitly as $-E_T^{\rm seed}$), the ownership exclusion is
+cluster-boundary-aware and avoids the negative-tail distortion at small $R$.
+
+Note: the \texttt{jet8} MC sample in the current slimtree lacks these branches (older
+production), so it is dropped from the inclusive-MC histogram here; the inclusive-MC
+shape is therefore a slightly photon-richer mix than in the other figures.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=1]{../plotting/figures/iso_tower_excl_per_clEt.pdf}
+  \caption{Ownership-excluded tower iso, $R$ scan, cluster $E_T\in[8,14]$\,GeV.}
+  \label{fig:excl_1}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=2]{../plotting/figures/iso_tower_excl_per_clEt.pdf}
+  \caption{Ownership-excluded tower iso, $R$ scan, cluster $E_T\in[14,20]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=3]{../plotting/figures/iso_tower_excl_per_clEt.pdf}
+  \caption{Ownership-excluded tower iso, $R$ scan, cluster $E_T\in[20,28]$\,GeV.}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth, page=4]{../plotting/figures/iso_tower_excl_per_clEt.pdf}
+  \caption{Ownership-excluded tower iso, $R$ scan, cluster $E_T\in[28,40]$\,GeV.}
+\end{figure}
+
+\section{Photon self-energy containment vs inner radius}
+
+For truth-matched direct photons the containment fraction is defined as
+\begin{equation}
+  f_\text{contain}(R) \;=\; \frac{\text{cluster\_iso\_topo}_R \;+\; E_T^{\text{cluster}}}
+                                  {p_T^{\gamma,\text{truth}}}
+  \;\approx\; \frac{\Sigma_{R}\,E_T^{\text{topo}}}{p_T^{\gamma,\text{truth}}}
+  \label{eq:fcontain}
+\end{equation}
+(the $-E_T^{\text{seed}}$ in the iso definition and the $+E_T^{\text{cluster}}$ in the
+numerator cancel up to clustering residuals, leaving the in-cone energy over truth $p_T$).
+For isolated photons, $f_\text{contain}(R)$ is the fraction of photon energy within
+$R$ of the cluster, and the leakage $1 - f_\text{contain}(R)$ is the fraction that falls
+outside. Figure~\ref{fig:contain} shows $\langle f_\text{contain}(R)\rangle$ for the
+inclusive signal and for four truth-$p_T$ bins.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\linewidth]{../plotting/figures/iso_topo_containment_vs_R.pdf}
+  \caption{Mean containment $\langle f_\text{contain}(R)\rangle$ in truth-matched direct
+  photon signal MC, pre-common (left) and post-common (right), for the inclusive sample and
+  four truth-$p_T$ bins.}
+  \label{fig:contain}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Truth $p_T$ bin & $R=0.05$ & $R=0.075$ & $R=0.10$ & $R=0.20$ & $R=0.30$ & $R=0.40$ \\
+\midrule
+inclusive         & 0.656 & 0.846 & 0.945 & 1.008 & 1.012 & 1.016 \\
+$[8,14]$\,GeV     & 0.640 & 0.820 & 0.916 & 0.986 & 0.989 & 0.993 \\
+$[14,20]$\,GeV    & 0.633 & 0.810 & 0.906 & 0.977 & 0.979 & 0.981 \\
+$[20,28]$\,GeV    & 0.638 & 0.813 & 0.903 & 0.971 & 0.972 & 0.974 \\
+$[28,40]$\,GeV    & 0.614 & 0.794 & 0.887 & 0.959 & 0.960 & 0.961 \\
+\bottomrule
+\end{tabular}
+\caption{Mean containment $\langle f_\text{contain}(R)\rangle$, post-common, by truth
+photon $p_T$ bin. Small $R$ under-contains the photon; higher $p_T$ marginally broadens
+the shower profile so containment decreases with $p_T$ at fixed $R$.}
+\label{tab:contain}
+\end{table}
+
+\emph{Observations.} Containment reaches $\sim\!95\%$ at $R=0.10$ and saturates above unity
+by $R=0.20$ (the slight excess over 1.0 reflects residual background plus cluster-shape
+calibration details). The pT dependence is mild: at $R=0.10$ the average contained fraction
+drops from 92\% in $[8,14]$\,GeV to 89\% in $[28,40]$\,GeV, a $\sim\!3$ percentage-point
+broadening consistent with increased lateral spread at higher energies.
+
+\section{Implication for the inner-R scan}
+
+At $R_\text{in} = 0.05$ the inner ring removes only $\sim\!66\%$ of the photon's energy
+while the outer R\,=\,0.4 cone contains essentially all of it; subtracting the former from
+the latter therefore leaves $\approx\!34\%$ of the photon in the recoiso$_{ET}$
+definition. That $\sim\!4$\,GeV contamination at $p_T^{\gamma}\!\sim\!10$\,GeV shifts
+the observed \texttt{cluster\_iso\_topo\_04}\,--\,\texttt{cluster\_iso\_topo\_005} mean from
+near zero to $+3.9$\,GeV, which is what was seen in the inner-R scan of the purity MC
+closure and explains why the ABCD iso region collapses at that working point. Inner radii
+of $R_\text{in} \geq 0.10$ leave $\lesssim 5\%$ photon residue and are the physics-motivated
+range for an annulus-isolation study if a clean photon-independent isolation variable is
+desired.
+
+\section{Files}
+
+\begin{itemize}
+  \item Analysis: \texttt{efficiencytool/iso\_topo\_containment\_study.py},
+        \texttt{efficiencytool/iso\_topo\_make\_rootfile.py}.
+  \item Histograms: \texttt{efficiencytool/results/iso\_topo\_containment.root}.
+  \item Arrays: \texttt{efficiencytool/results/iso\_topo\_containment.npz}.
+  \item Topo plot macros:
+        \texttt{plotting/plot\_iso\_topo\_containment.C},
+        \texttt{plot\_iso\_topo\_per\_clusterEt.C}.
+  \item Tower plot macros:
+        \texttt{plot\_iso\_tower\_per\_clusterEt.C} (plain),
+        \texttt{plot\_iso\_tower\_thresh\_r03\_per\_clusterEt.C},
+        \texttt{plot\_iso\_tower\_emcal70\_per\_clusterEt.C},
+        \texttt{plot\_iso\_tower\_sub1\_per\_clusterEt.C},
+        \texttt{plot\_iso\_tower\_excl\_per\_clusterEt.C}.
+  \item Figures: \texttt{plotting/figures/iso\_topo\_\{dist\_overlay,dist\_data\_vs\_mc,containment\_vs\_R,dist\_overlay\_per\_clEt\}.pdf},
+        \texttt{iso\_tower\_\{dist\_overlay\_per\_clEt,thresh\_r03\_per\_clEt,emcal70\_per\_clEt,sub1\_per\_clEt,excl\_per\_clEt\}.pdf}.
+\end{itemize}
+
+\end{document}

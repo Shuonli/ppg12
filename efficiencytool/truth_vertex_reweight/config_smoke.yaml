@@ -1,0 +1,60 @@
+# Smoke-test config: points at the 50-event jet12_double test file
+# (just to verify the pipeline runs against a real production single MC).
+# NOT for physics. Use config.yaml for real runs.
+
+branches:
+  tree_name:           "slimtree"
+  vertexz_truth:       "vertexz_truth"
+  vertexz_truth_mb:    "vertexz_truth_mb"
+  vertexz_truth_embed: "vertexz_truth_embed"
+  vertexz_truth_mb_embed: "vertexz_truth_mb_embed"
+  vertexz_reco:        "vertexz"
+  runnumber:           "runnumber"
+
+binning:
+  z_min:  -60.0
+  z_max:   60.0
+  n_bins:  12
+  overflow_clip: true
+
+inputs:
+  single_mc:
+    jet12:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet12/condorout/combined.root"
+      xs:   1490300.0
+      n_gen: 10000000
+
+  double_mc:
+    jet12_double:
+      path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet12_double/test_secondvtx/caloana.root"
+      xs:   1490300.0
+      n_gen: 50
+
+  data:
+    path: "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/jet12/condorout/combined.root"
+
+periods:
+  1p5mrad:
+    run_min: 51274
+    run_max: 54000
+    lumi:    16.8588
+    f_double: 0.079
+  0mrad:
+    run_min: 47289
+    run_max: 51274
+    lumi:    32.6574
+    f_double: 0.224
+
+fit:
+  sigma_gen: null
+  sigma_tgt_range: [15.0, 60.0]
+  sigma_tgt_step:   0.5
+  residual_clip:        [0.1, 10.0]
+  residual_smooth_bins: 1
+  residual_edge_clamp:  true
+  residual_renormalize: true
+  half_power_double: false
+
+output:
+  base_dir: "output_smoke"
+  per_period_subdir: true

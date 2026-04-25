@@ -1,0 +1,1020 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+% Fallback for long underscored filenames when seqsplit.sty is unavailable:
+% insert an allowed break after every character of the argument.
+\makeatletter
+\providecommand{\seqsplit}[1]{\@tfor\@tempc:=#1\do{\@tempc\allowbreak}}
+\makeatother
+\sloppy
+
+\newcommand{\etg}{$E_T^{\gamma,\mathrm{rec}}$}
+\newcommand{\wetacog}{\texorpdfstring{$w_{\eta}^{\mathrm{CoG}}$}{w\_eta\textasciicircum CoG}}
+\newcommand{\wphicog}{\texorpdfstring{$w_{\phi}^{\mathrm{CoG}}$}{w\_phi\textasciicircum CoG}}
+\newcommand{\isoET}{E_T^{\mathrm{iso}}}
+\newcommand{\pp}{$p$+$p$}
+\newcommand{\epem}{\ensuremath{e^{+}e^{-}}}
+
+\title{Converted vs.\ Unconverted Photons: Shower Shape,\\
+Isolation, and Energy Response in photon10 MC}
+\author{PPG12 Analysis Team (automated report)}
+\date{April 16, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the impact of photon conversions (pre-EMCal \epem\ pair production in
+detector material) on reconstruction observables used by the PPG12 isolated-photon
+cross-section measurement in \pp\ at $\sqrt{s}=200$~GeV.  Using the
+\texttt{photon10} single-particle Monte Carlo ($\sim 10$\,M events, truth
+\(p_T \in [14,30]\)~GeV), we find that \textbf{17.3\%} of fiducial truth
+photons ($|\eta|<0.7$, \(14 \le p_T < 30\)~GeV) convert before the EMCal.
+% source: fractions_findings.md Sec. inclusive |eta|<0.7
+Converted photons exhibit (i) a mean cluster-energy response shift of
+\(\Delta\langle R_E \rangle \simeq -0.076\) (\(-8\%\)) driven by an asymmetric
+low-$R$ tail,
+% source: response_findings.md Sec.4 and Sec.9 summary table
+(ii) a drop of $-14.6$~percentage points in the parametric reco-isolation pass
+fraction (rising to $-22.8$~pp at 8--10~GeV), dominated by additional EMCal
+energy inside the isolation cone,
+% source: isolation_findings.md Sec. parametric iso pass fraction
+and (iii) a $-16\%$ shift in the mean shower-shape BDT score, with
+$w_{\phi}^{\mathrm{CoG}}$ broadening by $+91\%$ due to the solenoidal-field
+opening of the \epem\ pair.
+% source: showershape_findings.md Sec.3 inclusive table, Sec.5 discriminating ranking
+These four features are mutually consistent with a single physical picture:
+the $\sim 1.4$~T sPHENIX solenoid splits the \epem\ pair in azimuth, one arm
+leaks outside the cluster footprint (reducing the energy response and
+polluting the isolation cone), and the resulting wider, two-lobed
+$\phi$-profile degrades the ID BDT. The effect enters the cross-section
+measurement as a joint ID$+$iso efficiency systematic whose size is set by
+the accuracy of the simulated material budget.
+\end{abstract}
+
+
+%% ===============================================================
+\section{Introduction and Motivation}
+\label{sec:intro}
+
+Photon conversion --- the reaction \(\gamma \to \epem\) induced by the Coulomb
+field of a nucleus --- occurs with probability \(P \simeq 1 - \exp\left[-\tfrac{7}{9}\,X/X_0\right]\)
+as a photon traverses a thickness \(X/X_0\) of material. In sPHENIX the tracker
+(MVTX + INTT + TPC) together with its support structures and cables precedes the
+barrel EMCal. With the nominally quoted $\sim 10$--$20$\%~$X_0$ of material, a
+\(\sim 10\)--$15\%$ conversion probability is expected in the central barrel.
+Once a photon converts, the two leptons are bent in opposite azimuthal
+directions by the $\sim 1.4$~T solenoid, land in the EMCal as two partially
+overlapping electromagnetic showers, and are reconstructed by the standard
+clustering as a single (wider) cluster whose properties differ from those of
+a pristine photon.
+
+These distortions matter for PPG12 because the tight-selected isolated photon
+signal efficiency is the product of a shower-shape identification efficiency
+(via the $E_T$-dependent BDT cut) and an isolation efficiency (via the
+parametric isolation cone cut). Both steps are sensitive to the converted
+fraction and its pre-reconstruction kinematics. Any mismatch in the simulated
+material budget between Monte Carlo and data therefore propagates directly
+into the cross-section. Quantifying the conversion fingerprint on each
+observable --- and its \(p_T\) and \(\eta\) dependence --- is a prerequisite
+for assigning a material-budget systematic uncertainty.
+
+Truth conversion information is carried in the slimtree through the
+\texttt{particle\_converted} flag written by
+\texttt{anatreemaker/source/CaloAna24.cc}.  The flag is built by traversing the
+G4 shower particle list of each truth photon
+(\texttt{CaloAna24.cc} lines \(\sim 807\text{--}843\)): any secondary that
+(a) originates at a G4 vertex with $r_\perp<93$~cm (i.e.\ upstream of the EMCal
+front face) and (b) carries more than 40\% of the photon momentum, tags the
+photon.  If at least one such secondary is an \(e^{\pm}\)
+(\(|\mathrm{pid}|=11\)), the photon is labelled \texttt{converted}; otherwise
+it is labelled \texttt{bad}.  The flag is written at
+\texttt{CaloAna24.cc} lines \(\sim 953\text{--}970\) using:
+%
+\begin{equation}
+\texttt{particle\_converted} =
+\begin{cases}
+0 & \text{no upstream secondary above threshold (unconverted)} \\
+1 & \text{\epem\ daughter above threshold (converted)} \\
+2 & \text{non-\epem\ secondary above threshold (bad)}
+\end{cases}
+\end{equation}
+%
+In what follows we treat the small ``bad'' population (0.01--0.02\% of truth
+photons, $<300$ matched in 10~M events) as physically negligible and focus on
+the unconverted--converted comparison.
+
+
+%% ===============================================================
+\section{Data Sample and Method}
+\label{sec:sample}
+
+\paragraph{Sample.} The study is based on the single-photon Monte Carlo file
+\texttt{\seqsplit{photon10\_with\_bdt\_vtx\_noreweight\_single.root}} (one
+fired photon per event, truth $p_T \in [14,30]$~GeV at generation,
+$|\eta|<1.5$).
+Four independent analyses read the tree \texttt{slimtree}:
+% source: showershape_findings.md header; isolation_findings.md header; response_findings.md header; fractions_findings.md header
+\begin{itemize}
+  \item Fractions, shower shape, and energy response use the full 9{,}998{,}541
+    events.
+  \item Isolation uses a 2{,}000{,}000-event subsample (runtime-based).
+\end{itemize}
+
+\paragraph{Truth selection (fiducial).} $\texttt{particle\_pid} == 22$,
+$|\texttt{particle\_Eta}| < 0.7$, $\texttt{particle\_truth\_iso\_03} < 4$~GeV,
+and (where applicable) $8 \le \texttt{particle\_Pt} \le 36$~GeV or
+$14 \le \texttt{particle\_Pt} < 30$~GeV as indicated.
+% source: showershape_findings.md Sec.1; fractions_findings.md Sec. inclusive |eta|<0.7
+
+\paragraph{Cluster--truth matching.} For each truth photon the highest-$E_T$
+cluster in \texttt{CLUSTERINFO\_CEMC} whose
+\texttt{cluster\_truthtrkID} equals the truth \texttt{particle\_trkid} is
+selected. A residual cluster $E_T$ threshold ($>3$--$5$~GeV, depending on the
+analysis) is applied. pT binning follows the PPG12 analysis edges
+\(\texttt{ptRanges}=\{8,10,12,14,16,18,20,22,24,26,28,32,36\}\) (12 bins) with
+the matched cluster $E_T$ as the abscissa.
+% source: showershape_findings.md Sec.1; response_findings.md header
+
+\paragraph{Caveat on isolation.} The input file \emph{does not} contain the
+topo-cluster isolation branches
+\texttt{cluster\_iso\_topo\_03/04}. The isolation study therefore uses the
+calo-tower isolation \texttt{cluster\_iso\_03} (and R=0.4 equivalent). The
+nominal analysis configuration \texttt{efficiencytool/config\_bdt\_nom.yaml}
+uses topo-iso at $R=0.4$ (\texttt{use\_topo\_iso: 2}). The \emph{shape} of the
+converted/unconverted difference is expected to carry over, but absolute
+magnitudes should be re-measured on topo-iso branches once they are populated
+for \texttt{photon10}.
+% source: isolation_findings.md Selection summary, Concerns and next steps
+
+\paragraph{Shower shape caveat.} The shower-shape BDT score is only written to
+the \texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT} node, whereas the other shower-shape
+observables use \texttt{CLUSTERINFO\_CEMC}. BDT conclusions below are therefore
+based on the unsplit-cluster node.
+% source: showershape_findings.md Sec. header
+
+
+%% ===============================================================
+\section{Conversion Fractions and Cluster Match Efficiency}
+\label{sec:fractions}
+
+In the fiducial region ($|\eta|<0.7$, $14 \le p_T < 30$~GeV, 855{,}380 truth
+photons), the converted fraction is $(17.317 \pm 0.041)\%$ and the ``bad''
+fraction is a negligible $(0.024 \pm 0.002)\%$.
+% source: fractions_findings.md Sec. "Inclusive (|eta|<0.7, 14<=pT<30 GeV)"
+Table~\ref{tab:fractions_inclusive} summarises the inclusive category counts
+and per-category cluster-match efficiency. The converted fraction is
+effectively flat in \(p_T\) ($17.2$--$17.9\%$ across 8--36~GeV) and rises with
+$|\eta|$, from $(15.4 \pm 0.3)\%$ at $|\eta|<0.1$ to $(20.1 \pm 0.4)\%$ at
+$0.6 < |\eta| < 0.7$, reaching $32\%$ at $|\eta| \simeq 1.4$--$1.5$
+(extended window).
+% source: fractions_findings.md Sec. per-|eta|-bin tables
+
+\begin{table}[H]
+\centering
+\caption{Converted-photon fractions and cluster-match efficiency in the
+fiducial window $|\eta|<0.7$, $14 \le p_T < 30$~GeV.  Match efficiency is
+defined as the fraction of truth photons (within a category) for which at
+least one cluster satisfies $\texttt{cluster\_truthtrkID}==\texttt{particle\_trkid}$
+and $\texttt{cluster\_Et}>5$~GeV.
+% source: fractions_findings.md "Inclusive (|eta|<0.7, 14<=pT<30 GeV)" and "Cluster-match efficiency"
+}
+\label{tab:fractions_inclusive}
+\begin{tabular}{lrrr}
+\toprule
+Category & N (truth) & Fraction & Match efficiency \\
+\midrule
+Unconverted         & 707{,}047 & $(82.659 \pm 0.041)\%$ & $(67.987 \pm 0.055)\%$ \\
+Converted (\epem)   & 148{,}129 & $(17.317 \pm 0.041)\%$ & $(66.290 \pm 0.123)\%$ \\
+Bad secondary       &       204 & $(0.024  \pm 0.002)\%$ & $(39.024 \pm 3.407)\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The three panels of Fig.~\ref{fig:fractions_panels} show the main
+trends:
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/fractions_vs_pt_eta07.pdf}
+\caption{Fractions vs.\ \(p_T\) ($|\eta|<0.7$)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/fractions_vs_abseta_eta07.pdf}
+\caption{Fractions vs.\ $|\eta|$ ($14 \le p_T < 30$~GeV)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.32\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/fractions_match_eff_eta07.pdf}
+\caption{Cluster-match efficiency vs.\ \(p_T\)}
+\end{subfigure}
+\caption{Converted-photon fractions and match efficiency in the fiducial
+window. The converted fraction is flat in \(p_T\) and rises with $|\eta|$
+consistent with increased integrated material at forward rapidity. Converted
+photons have $\sim 2$~pp lower cluster-match efficiency than unconverted.
+% source: fractions_findings.md Sec. "Per-pT-bin fractions" and "Per-|eta|-bin fractions"
+}
+\label{fig:fractions_panels}
+\end{figure}
+
+The central-barrel converted fraction of $\sim 17\%$ is consistent with a
+material budget near the upper end of the nominally quoted $10$--$20\%\,X_0$
+range ($1-\exp[-\tfrac{7}{9}\cdot 0.20] \simeq 15\%$). The sharp rise toward
+$|\eta|\sim 1.5$ is consistent with endcap-style material growth and matches
+expectations for the tracker support geometry.
+% source: fractions_findings.md Sec. "Physics discussion"
+
+The absolute match-efficiency value ($\sim 66$--$68\%$ for fiducial photons)
+looks low at first glance because the definition \emph{requires}
+\texttt{cluster\_truthtrkID} to equal the \emph{primary} photon track id. When
+clustering associates a post-shower secondary ($e^\pm$, brem $\gamma$) instead
+of the original photon, the match fails even though a physically correct
+cluster is present. The converted-category match efficiency is therefore a
+\emph{lower bound}; the \emph{relative} $\sim 2.5\%$ deficit with respect to
+unconverted is the physics-meaningful quantity.
+% source: fractions_findings.md Sec. "Concerns / caveats"
+
+
+%% ===============================================================
+\section{Energy Response and Resolution}
+\label{sec:response}
+
+We define the cluster energy response \(R_E = E_{\mathrm{cluster}}/E_{\gamma}^{\mathrm{truth}}\)
+and compare its shape, first and second moments, core Gaussian and Crystal
+Ball fit parameters, and low-$R$ tail fractions between the converted and
+unconverted categories. Analogous results for $R_{E_T}$ are contained in the
+auxiliary grid \texttt{response\_shape\_ET\_grid.pdf}.
+% source: response_findings.md Sec. "Energy response shapes"
+The abscissa is the \emph{truth} photon $p_T$ (so that the per-bin
+efficiency reflects the pre-clustering kinematics); the isolation and
+shower-shape sections that follow bin in the matched cluster $E_T$ instead,
+which is the variable observed in data.
+The negligible ``bad'' category (see Sec.~\ref{sec:intro}) is suppressed from
+the summary plots and from the Crystal Ball fits but remains in the shape
+grids for completeness.
+
+\subsection{Shape, mean, and resolution}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/response_shape_grid.pdf}
+\caption{Response shape \(R_E\) per \(p_T\) bin}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/response_mean_vs_pt.pdf}
+\caption{Mean response \(\langle R_E \rangle\) vs.\ \(p_T\)}
+\end{subfigure}
+\caption{Response distributions and means for unconverted vs.\ converted
+photons. The converted distribution shows a pronounced low-$R$ tail at
+$p_T \lesssim 20$~GeV caused by one arm of the \epem\ pair leaking outside
+the cluster footprint. Above $p_T\sim 25$~GeV the distributions converge and
+the mean response of converted photons crosses above that of unconverted
+(pair-collimation limit).
+% source: response_findings.md Sec. 3 and Sec. 4
+}
+\label{fig:response_shape_and_mean}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/response_sigma_vs_pt.pdf}
+\caption{Gaussian and Crystal Ball core $\sigma$ vs.\ \(p_T\)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/response_tailfrac_vs_pt.pdf}
+\caption{Tail fractions $R<0.8$ and $R<0.5$ vs.\ \(p_T\)}
+\end{subfigure}
+\caption{Resolution and tail-fraction summary. The Gaussian core width
+(fit in $[\mathrm{peak}-0.10,\,\mathrm{peak}+0.10]$) is only a few percent
+wider for converted photons, reflecting the fact that the surviving \epem\
+core reconstructs at essentially the same energy as an unconverted photon.
+The Crystal Ball $\sigma$ (simultaneous fit of Gaussian core plus left-side
+power-law tail over $R\in[0.3,1.2]$) shows a clear broadening of the core
+at low \(p_T\) --- up to $\sim +70\%$ at $p_T \sim 11$~GeV --- that converges
+to the unconverted value above $\sim 20$~GeV. The Gaussian-$\sigma$ panel
+shows a mild excursion for the converted category at $p_T \sim 22$--$32$~GeV:
+the symmetric $\pm 0.10$ window is fragile in that stats-limited range
+because the peak slides within the window as the converted sub-peak
+structure shifts; the Crystal Ball $\sigma$, which fits the core independently
+of the tail, is the stable estimator there. Both fits exclude the
+``bad'' category.
+% source: summary.txt, response_cb_params_vs_pt.pdf
+}
+\label{fig:response_sigma_tail}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{converted_photon_study/figures/response_cb_params_vs_pt.pdf}
+\caption{Crystal Ball tail-transition parameter $\alpha$ (in units of the
+fitted $\sigma$) and power-law index $n$ vs.\ \(p_T\). The tail transition
+$\alpha \simeq 0.45$--$0.6\,\sigma$ is similar between categories --- the
+tail sets in very close to the peak in both --- while the core width itself
+is what differs (Fig.~\ref{fig:response_sigma_tail}). The power-law index
+$n$ is poorly constrained and typically hits the numerical bound; the
+fit is effectively Gaussian-equivalent in the tail region for the
+inclusive \(p_T\) distribution, so the physics information resides in
+$\mu$, $\sigma$, and $\alpha$.
+% source: response_cb_params_vs_pt.pdf, summary.txt
+}
+\label{fig:response_cb_params}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Inclusive ($10 \le p_T \le 34$~GeV) energy-response summary for
+converted vs.\ unconverted photons. The Gaussian fit is performed in a
+symmetric window $[\mathrm{peak}-0.10,\,\mathrm{peak}+0.10]$ around the
+3-bin-smoothed peak (core-only); the Crystal Ball (CB) fit uses the full
+range $R\in[0.3,1.2]$ and parametrises a Gaussian core plus a left-side
+power-law tail with transition at $\mu-\alpha\,\sigma$. The CB power-law
+index $n$ is not well-constrained in the inclusive distribution (bumps
+against the numerical upper bound); the physical information is carried by
+$(\mu,\sigma,\alpha)$.
+% source: summary.txt, summary.pkl (Gaussian + Crystal Ball fits in make_plots.py)
+}
+\label{tab:response_inclusive}
+\begin{tabular}{lrrr}
+\toprule
+Quantity & Unconverted & Converted & Converted $-$ Unconverted \\
+\midrule
+$\langle R_E \rangle$               & 0.9424 & 0.8666 & $-0.0758$ ($-8\%$) \\
+median $R_E$                         & 0.9650 & 0.9050 & $-0.060$ \\
+upper width $p_{84}-p_{50}$         & 0.080  & 0.120  & $+50\%$ \\
+lower width $p_{50}-p_{16}$         & 0.120  & 0.230  & $+92\%$ \\
+Gaussian core $\mu$                  & 0.9894 & 0.9924 & $+0.003$ \\
+Gaussian core $\sigma$               & 0.0653 & 0.0677 & $+4\%$ \\
+Crystal Ball $\mu$                   & 1.0025 & 0.9741 & $-0.028$ \\
+Crystal Ball $\sigma$                & 0.0514 & 0.0696 & $+35\%$ \\
+Crystal Ball $\alpha$                & 0.463  & 0.458  & $-0.01$ \\
+fraction $R<0.8$                    & 0.107  & 0.311  & $\times 2.9$ \\
+fraction $R<0.5$                    & 0.0053 & 0.0201 & $\times 3.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The mean shift of $\Delta\langle R_E \rangle = -0.076$ is not a shift of the
+Gaussian core: the Gaussian-core $\mu$ (symmetric $\pm0.10$ fit) moves by
+only $+0.003$ and the Gaussian-core $\sigma$ broadens by $\sim 4\%$. The
+Crystal Ball fit, which accommodates the left-side power-law tail, finds a
+core $\mu$ shift of $-0.028$ and a core $\sigma$ broadening of $+35\%$ ---
+consistent with the picture that a non-trivial fraction of the converted
+population builds a sub-peak below $R=1$ while the surviving two-arm core
+still sits close to unity. Quantitatively, the tail fraction below $R=0.8$
+is $\sim 3\times$ larger for converted photons and below $R=0.5$ is
+$\sim 4\times$ larger; these tails dominate the $-8\%$ mean shift.
+% source: summary.txt (Gaussian + Crystal Ball fit parameters)
+
+\subsection{\(p_T\) trend and crossover}
+
+Per-$p_T$ shifts (from \texttt{response\_findings.md} Sec.~4):
+$\Delta\langle R_E \rangle \simeq -0.082$ at 10--12~GeV, shrinking to
+$-0.042$ at 18--20~GeV, $-0.014$ at 22--24~GeV, and \emph{crossing sign} at
+$\sim 26$--$27$~GeV. Above $p_T \simeq 25$~GeV the mean response of converted
+photons \emph{exceeds} that of unconverted (by up to $+0.023$ at 28--32~GeV).
+Physically, the \epem\ opening angle after magnetic-field bending decreases
+as $\sim 1/p_T$, so the pair becomes collimated enough to be contained in a
+single cluster --- exactly where the \emph{unconverted} response continues to
+degrade slowly with \(p_T\) from shower leakage into the HCal. The same
+crossover appears in the tail-0.8 curves (converted tail decreases from 0.32
+to 0.13 as \(p_T\) rises; unconverted tail rises mildly from 0.10 to 0.17),
+confirming the effect.
+% source: response_findings.md Sec. 4 and Sec. 6
+
+\subsection{Angular deltas}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{converted_photon_study/figures/response_angular_deltas.pdf}
+\caption{Cluster-minus-truth angular deltas $\Delta\eta$, $\Delta\phi$ and
+$\Delta R$. The $\Delta\phi$ distribution for converted photons is strikingly
+bimodal with lobes at $\Delta\phi \sim \pm 0.01$~rad and a dip at zero ---
+the signature of magnetic-field bending of the \epem\ pair, with the cluster
+centroid shifting toward the higher-energy lepton.  $\Delta\eta$ shows no
+shift or broadening, consistent with a purely azimuthal magnetic field.
+$\Delta R$ has a broader tail for converted photons (up to $0.15$~rad) that
+correlates with the $\Delta\phi$ lobes.
+% source: response_findings.md Sec. 8
+}
+\label{fig:response_angular}
+\end{figure}
+
+The $\Delta\phi$ bimodality is a purely kinematic consequence of the
+\epem\ pair carrying opposite charges: the solenoidal field bends the
+leptons in opposite senses with equal probability, so the mean $\Delta\phi$
+is zero while the RMS is roughly an order of magnitude larger than that of
+unconverted photons.  This feature is used below (Sec.~\ref{sec:showershape})
+to interpret the \wphicog\ distributions.
+
+
+%% ===============================================================
+\section{Isolation Energy}
+\label{sec:isolation}
+
+The PPG12 nominal reconstruction isolation cut is the parametric form
+\begin{equation}
+  \isoET\text{ max} = 0.502095 + 0.0433036 \cdot E_T,
+  \label{eq:iso_cut}
+\end{equation}
+% source: efficiencytool/config_bdt_nom.yaml lines 33-34 (reco_iso_max_b, reco_iso_max_s)
+given in GeV with $E_T$ also in GeV.  In the nominal analysis the input
+variable is the topo-cluster isolation
+\texttt{cluster\_iso\_topo\_04} (\texttt{use\_topo\_iso: 2} in
+\texttt{config\_bdt\_nom.yaml}).
+% source: efficiencytool/config_bdt_nom.yaml line 53
+Because the input MC file lacks that branch, we apply the same cut to
+\texttt{cluster\_iso\_03} (calo-tower iso, own-cluster towers removed).
+Absolute numbers below are tied to this substitution; the qualitative
+conclusions on converted--unconverted separation are robust because both
+isolation definitions sum tower $E_T$ in an $R=0.3$ cone.
+
+\subsection{Parametric cut pass fraction}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/isolation_cluster_iso_03.pdf}
+\caption{\(\texttt{cluster\_iso\_03}\) shape per \(p_T\) bin}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/isolation_pass_fraction_vs_pt.pdf}
+\caption{Parametric-cut pass fraction vs.\ \(p_T\)}
+\end{subfigure}
+\caption{Isolation distributions (left) and parametric-cut pass fraction
+(right). The low-\(p_T\) converted population has a long tail to $\isoET>2$~GeV
+that fails the parametric cut; the inclusive pass-fraction deficit is
+$-14.6$~pp for converted photons, dominated by the 8--14 GeV region.
+% source: isolation_findings.md Sec. "Parametric iso pass fraction per pT bin"
+}
+\label{fig:iso_shape_pass}
+\end{figure}
+
+Inclusive ($8 \le E_T < 36$~GeV) pass fractions:
+$\texttt{unconv}=0.649$, $\texttt{conv}=0.503$, $\Delta=-0.146$ (i.e.\ a
+\textbf{$-14.6$~percentage-point} drop).
+% source: isolation_findings.md Sec. "Parametric iso pass fraction per pT bin" inclusive row
+The deficit peaks at $-22.8$~pp in the 8--10~GeV bin ($0.562\to 0.334$) and
+shrinks to the $\pm 5$~pp statistics-limited level above 24~GeV.
+
+\subsection{Mean isolation energy and calorimeter decomposition}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{converted_photon_study/figures/isolation_mean_vs_pt_R003.pdf}
+\caption{Mean isolation energy $\langle\texttt{cluster\_iso\_03}\rangle$
+vs.\ cluster $E_T$, split into total + EMCal + inner HCal + outer HCal
+sub-components.  The total and EMCal sub-components exhibit a clear
+converted/unconverted separation; both HCal sub-components show the opposite
+(small) trend.
+% source: isolation_findings.md Sec. "Which calorimeter drives the shift?"
+}
+\label{fig:iso_mean_vs_pt}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Inclusive ($8 \le E_T < 36$~GeV) mean isolation energies for the total
+cone and its three sub-components (EMCal, inner HCal, outer HCal) at $R=0.3$
+and $R=0.4$. All values in GeV.  Note that
+\texttt{cluster\_iso\_03\_emcal} is the full EMCal cone integral minus the bare
+cluster $E_T$ --- it is a diagnostic, not a decomposition of the total.
+% source: isolation_findings.md Sec. "Inclusive shifts (converted - unconverted)"
+}
+\label{tab:iso_decomposition}
+\begin{tabular}{lrrr}
+\toprule
+Variable & Unconverted & Converted & Converted $-$ Unconverted \\
+\midrule
+\texttt{cluster\_iso\_03} (total)     & 0.816 & 1.386 & $+0.570$ \\
+\texttt{cluster\_iso\_03\_emcal}      & 4.683 & 5.151 & $+0.468$ \\
+\texttt{cluster\_iso\_03\_hcalin}     & 0.269 & 0.213 & $-0.056$ \\
+\texttt{cluster\_iso\_03\_hcalout}    & 0.287 & 0.253 & $-0.033$ \\
+\midrule
+\texttt{cluster\_iso\_04} (total)     & 0.957 & 1.531 & $+0.574$ \\
+\texttt{cluster\_iso\_04\_emcal}      & 8.166 & 8.484 & $+0.318$ \\
+\texttt{cluster\_iso\_04\_hcalin}     & 0.297 & 0.241 & $-0.056$ \\
+\texttt{cluster\_iso\_04\_hcalout}    & 0.434 & 0.398 & $-0.036$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $+0.57$~GeV mean shift at $R=0.3$ is driven by the EMCal sub-component
+($+0.47$~GeV) while both HCal sub-components move in the opposite direction
+($-0.05$ and $-0.03$~GeV). The physical picture is exactly the converse of
+what is ``leaking out'' of the cluster in Sec.~\ref{sec:response}: the
+\epem\ arm that curls outside the cluster footprint still deposits its
+shower \emph{inside} the $R=0.3$ isolation cone, inflating
+\texttt{iso\_03\_emcal}. Meanwhile, because the converted EMCal shower is
+more compactly absorbed (two overlapping \epem\ showers), \emph{less} energy
+leaks to the HCal. The same physics explains why the effect is largest at
+low $E_T$ (where the bent-pair opening is largest relative to a fixed $R=0.3$
+cone) and fades at high $E_T$ where the pair is collimated enough to fall
+inside the cluster.
+% source: isolation_findings.md Sec. "Conclusion -- the shift is driven by the EMCal"
+
+
+%% ===============================================================
+\section{Shower Shape and ID-Variable Separation}
+\label{sec:showershape}
+
+The shower-shape BDT uses the 25 features specified in
+\texttt{FunWithxgboost/config.yaml}. Here we examine the response of the most
+informative features (\wphicog, \wetacog, $e_{32}/e_{35}$, BDT score, CNN
+prob) to the converted/unconverted split.
+
+\subsection{Headline: \wphicog\ broadens by $+91\%$}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/showershape_wphi_cogx_inclusive.pdf}
+\caption{Inclusive \wphicog\ ($8 \le E_T < 36$~GeV)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/showershape_wphi_cogx_mean.pdf}
+\caption{Mean \wphicog\ vs.\ \(p_T\)}
+\end{subfigure}
+\caption{\wphicog\ (phi cluster width) inclusive distribution and
+\(p_T\)-binned mean.  Converted photons show a clear bimodal structure ---
+one population overlapping the unconverted core (pair unopened) and one at
+high \wphicog\ (pair opened). The resulting inclusive mean shift is
+$+0.116$ ($+91\%$ relative, $2.15\,\sigma_{\mathrm{unconv}}$).
+% source: showershape_findings.md Sec. 3 inclusive table; Sec. 5 ranking; Sec. 6 point 5
+}
+\label{fig:wphi_cogx_panels}
+\end{figure}
+
+The bimodality in Fig.~\ref{fig:wphi_cogx_panels} matches exactly the
+bimodal $\Delta\phi$ seen in Fig.~\ref{fig:response_angular}. Both arise from
+the same physics: the $\sim 1.4$~T sPHENIX solenoid opens the \epem\ pair in
+$\phi$ but not in $\eta$. The resulting two-lobe cluster is wider in the
+bending plane, which is detected by \wphicog. The PPG12 parametric tight cut
+(\texttt{tight\_wphi\_cogx\_max}, implemented in
+\texttt{FunWithxgboost/BDTinput.C}) therefore preferentially rejects
+opened-pair converted photons.
+
+\subsection{Other features}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/showershape_weta_cogx_inclusive.pdf}
+\caption{\wetacog\ inclusive}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\includegraphics[width=\textwidth]{converted_photon_study/figures/showershape_bdt_score_nosplit_inclusive.pdf}
+\caption{Shower-shape BDT score inclusive}
+\end{subfigure}
+\caption{Eta cluster width (\wetacog) and shower-shape BDT score (from
+\texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT}). The BDT distribution for converted
+photons has a clear low-score tail ($\sim 0.3$--$0.5$) that is essentially
+absent for unconverted photons.
+% source: showershape_findings.md Sec. 3, Sec. 6 point 2
+}
+\label{fig:wetacog_bdt}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textwidth]{converted_photon_study/figures/showershape_CNN_prob_inclusive.pdf}
+\caption{Inclusive CNN photon probability \texttt{CNN\_prob}. Converted
+photons are pushed strongly toward zero (mean $0.638 \to 0.464$,
+$-27.3\%$ relative). The CNN is not used in the nominal selection but is by
+far the most discriminating single variable for converted/unconverted
+topology; it is shown here as a cross-check.
+% source: showershape_findings.md Sec. 3 and Sec. 6 point 4
+}
+\label{fig:cnn_prob}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Inclusive ($8 \le E_T < 36$~GeV) means of selected shower-shape
+observables and signed shift (converted $-$ unconverted). The last column
+is the absolute shift expressed in units of $\sigma_{\mathrm{unconv}}$,
+ranking separation power.
+% source: showershape_findings.md Sec. 3 and Sec. 5 discriminating-variables table
+}
+\label{tab:showershape_inclusive}
+\begin{tabular}{lrrrr}
+\toprule
+Variable       & $\langle\,\rangle$ unconv & $\langle\,\rangle$ conv & $\Delta$ (rel.) & $|\Delta|/\sigma_{\mathrm{u}}$ \\
+\midrule
+\wetacog                 & 0.191 & 0.225 & $+0.034$ ($+17.8\%$) & 0.27 \\
+\wphicog                 & 0.128 & 0.244 & $+0.116$ ($+91.2\%$) & 2.15 \\
+$e_{11}/e_{33}$          & 0.649 & 0.597 & $-0.052$ ($-8.0\%$)  & 0.31 \\
+$e_{32}/e_{35}$          & 0.980 & 0.946 & $-0.034$ ($-3.4\%$)  & 2.33 \\
+$\mathrm{ET1}$ (leading) & 0.939 & 0.911 & $-0.028$ ($-3.0\%$)  & 0.55 \\
+$\mathrm{ET3}$           & 0.661 & 0.586 & $-0.075$ ($-11.3\%$) & 0.31 \\
+CNN prob                 & 0.638 & 0.464 & $-0.174$ ($-27.3\%$) & 0.40 \\
+\texttt{cluster\_prob}   & 0.565 & 0.415 & $-0.149$ ($-26.5\%$) & 0.48 \\
+\texttt{merged\_prob}    & 0.804 & 0.673 & $-0.131$ ($-16.3\%$) & 0.55 \\
+BDT score (no-split)     & 0.736 & 0.616 & $-0.121$ ($-16.4\%$) & 0.74 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The top two discriminators ($e_{32}/e_{35}$ at $2.33\,\sigma$ and \wphicog\
+at $2.15\,\sigma$) both test for shower broadening in the bending plane:
+$e_{32}/e_{35}$ is the ratio of the central $3\times 2$ to $3\times 5$ tower
+energy, which decreases sharply when the \epem\ pair deposits energy in the
+outer columns. The BDT score, by contrast, has a separation of only
+$0.74\,\sigma$ on the mean but shows a well-separated \emph{low-score tail}
+for converted photons (Fig.~\ref{fig:wetacog_bdt}), which drives its
+contribution to the tight-selection efficiency.
+% source: showershape_findings.md Sec. 5 and Sec. 6
+
+\subsection{BDT degradation vs.\ \(p_T\)}
+
+\begin{table}[H]
+\centering
+\caption{Shower-shape BDT mean shift $\Delta\langle\mathrm{BDT}\rangle =
+\langle\mathrm{BDT}\rangle_{\mathrm{conv}} -
+\langle\mathrm{BDT}\rangle_{\mathrm{unconv}}$ vs.\ bin-centre \(p_T\).
+The BDT degradation \emph{grows} with \(p_T\), driven by the growing
+low-score tail of converted photons. The nominal parametric tight cut is
+$\mathrm{BDT} > 0.80 - 0.015 \cdot E_T$
+(\texttt{bdt\_min\_intercept}, \texttt{bdt\_min\_slope} in
+\texttt{efficiencytool/config\_bdt\_nom.yaml}, lines 154--156).
+% source: showershape_findings.md Sec. 4 (pT dependence table); config_bdt_nom.yaml
+}
+\label{tab:bdt_vs_pt}
+\begin{tabular}{rrr}
+\toprule
+\(p_T\) centre [GeV] & $\Delta\langle\mathrm{BDT}\rangle$ (abs.) & rel.\ (\%) \\
+\midrule
+ 9  & $-0.135$ & $-18.4$ \\
+11  & $-0.109$ & $-14.7$ \\
+13  & $-0.106$ & $-14.4$ \\
+15  & $-0.116$ & $-15.9$ \\
+17  & $-0.131$ & $-18.1$ \\
+19  & $-0.151$ & $-21.1$ \\
+21  & $-0.162$ & $-22.7$ \\
+23  & $-0.178$ & $-25.3$ \\
+25  & $-0.176$ & $-25.0$ \\
+27  & $-0.171$ & $-24.7$ \\
+30  & $-0.166$ & $-24.2$ \\
+34  & $-0.168$ & $-25.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The most-used BDT features (\wetacog, \wphicog, $\mathrm{ET1}$,
+$e_{11}/e_{33}$, $e_{32}/e_{35}$, see \texttt{FunWithxgboost/config.yaml}
+lines 48--73) all shift in the direction that makes converted photons look
+more background-like. The BDT training is therefore implicitly rejecting
+converted photons even though no truth conversion information enters the
+classifier.
+% source: showershape_findings.md Sec. 5
+
+
+%% ===============================================================
+\section{Selection Efficiency by Conversion Category}
+\label{sec:efficiency}
+
+Sections~\ref{sec:response}--\ref{sec:showershape} characterised the
+response-level, isolation-level and BDT-level \emph{distributions}.
+This section translates those distribution shifts into \emph{efficiencies}
+through the nominal PPG12 parametric cuts, separately for unconverted
+versus converted truth photons. The measurement directly answers
+recommendation~\ref{sec:next_steps}(2): what is the efficiency of each
+selection stage, and how much of the nominal signal efficiency comes from
+each conversion category?
+
+\paragraph{Definitions and caveats.}
+For every truth photon in the fiducial region ($|\eta^{\gamma}|<0.7$,
+\texttt{particle\_truth\_iso\_03} $<4$~GeV, $8 \le p_T^{\gamma} < 36$~GeV) we
+record whether it satisfies each of three stages:
+%
+\begin{itemize}
+  \item $\varepsilon_{\mathrm{reco}}$: at least one
+  \texttt{CLUSTERINFO\_CEMC} cluster with
+  \texttt{cluster\_truthtrkID}$={}$\texttt{particle\_trkid} and
+  $E_T^{\mathrm{cluster}}>8$~GeV (i.e.\ reco'd and inside the analysis
+  $p_T$ range).
+  \item $\varepsilon_{\mathrm{ID}}$: at least one
+  \texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT} cluster with the same matching
+  requirement \emph{and} \mbox{BDT $> 0.80-0.015\cdot E_T$}. BDT score is
+  only stored on the unsplit node for this sample (same caveat as
+  Sec.~\ref{sec:showershape}).
+  \item $\varepsilon_{\mathrm{iso}}$: the matched CEMC cluster satisfies
+  \texttt{cluster\_iso\_03} $<0.502095+0.0433036\cdot E_T$~GeV. Because
+  \texttt{cluster\_iso\_topo\_04} is not populated in the input file, we
+  use the $R=0.3$ calo-tower iso with the topo-iso-tuned cut intercept
+  --- the same proxy used in Sec.~\ref{sec:isolation}, so absolute
+  numbers should be read as illustrative of \emph{shape}, not of the
+  nominal analysis pass fraction.
+  \item $\varepsilon_{\mathrm{total}}$: all three simultaneously (truth
+  photon has both a CEMC- and a NO\_SPLIT-matched cluster with both cuts
+  satisfied).
+\end{itemize}
+%
+All absolute efficiencies are normalised per fiducial truth photon in
+the category (i.e.\ divided by $N_{\mathrm{truth}}$ for that category).
+Conditional efficiencies $\varepsilon_{\mathrm{ID}\mid\mathrm{reco}}$
+and $\varepsilon_{\mathrm{iso}\mid\mathrm{reco}}$ use the
+same-node reco denominator to avoid the CEMC/NO\_SPLIT cluster-count
+mismatch.
+
+\paragraph{Per-stage efficiency vs.\ $p_T^{\gamma}$.}
+Figure~\ref{fig:eff_abs} shows the four absolute efficiencies as a
+function of truth $p_T$ for unconverted (black) and converted (red) photons.
+Figure~\ref{fig:eff_cond} gives the conditional forms
+$\varepsilon_{\mathrm{ID}\mid\mathrm{reco}}$ and
+$\varepsilon_{\mathrm{iso}\mid\mathrm{reco}}$.
+Figure~\ref{fig:eff_ratio} shows the per-stage ratio
+$\varepsilon_{\mathrm{conv}}/\varepsilon_{\mathrm{unconv}}$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{converted_photon_study/figures/efficiency_vs_pt.pdf}
+\caption{Absolute selection efficiency versus truth $p_T$ per conversion
+category, four stages. Denominator is the fiducial truth-photon count
+within each category. The drop from left to right shows the sequential
+loss from reco $\to$ BDT $\to$ iso. Converted photons consistently
+track below the unconverted curves.}
+\label{fig:eff_abs}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{converted_photon_study/figures/efficiency_cond_vs_pt.pdf}
+\caption{Conditional efficiencies:
+$\varepsilon_{\mathrm{ID}\mid\mathrm{reco}}$ (left, denominator =
+NO\_SPLIT-matched) and $\varepsilon_{\mathrm{iso}\mid\mathrm{reco}}$
+(right, denominator = CEMC-matched). Converted photons lose a larger
+fraction of the surviving sample at both the BDT cut and the iso cut.}
+\label{fig:eff_cond}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{converted_photon_study/figures/efficiency_ratio_vs_pt.pdf}
+\caption{Efficiency ratio
+$\varepsilon_{\mathrm{conv}}/\varepsilon_{\mathrm{unconv}}$ per stage.
+Values below unity quantify the conversion penalty at each stage.}
+\label{fig:eff_ratio}
+\end{figure}
+
+\paragraph{Inclusive summary.}
+Table~\ref{tab:eff_inclusive} lists the inclusive ($8\le p_T<36$~GeV)
+efficiencies per category along with the conv/unconv ratio.
+
+\begin{table}[H]
+\centering
+\caption{Inclusive ($8 \le p_T^{\gamma}<36$~GeV) selection efficiency per
+conversion category. Numerator definitions are given in the text;
+denominator is $N_{\mathrm{truth}}$ for that category (or the
+same-node reco match for conditional rows).
+% source: rootFiles/efficiencies_summary.json (analyze_efficiencies.py)
+}
+\label{tab:eff_inclusive}
+\begin{tabular}{lrrr}
+\toprule
+Stage & Unconverted & Converted & Ratio (conv/unconv) \\
+\midrule
+$N_{\mathrm{truth}}$                                     & 803,718 & 168,685 & --- \\
+$\varepsilon_{\mathrm{reco}}$ (CEMC match, $E_T>8$ GeV)  & 64.3\% & 51.9\% & 0.808 \\
+$\varepsilon_{\mathrm{ID}}$ (NO\_SPLIT match, BDT pass)  & 50.7\% & 29.6\% & 0.584 \\
+$\varepsilon_{\mathrm{iso}}$ (CEMC iso pass)             & 41.7\% & 26.1\% & 0.626 \\
+$\varepsilon_{\mathrm{total}}$ (reco $\wedge$ BDT $\wedge$ iso) & 32.5\% & 15.5\% & 0.477 \\
+$\varepsilon_{\mathrm{ID}\mid\mathrm{reco}}$             & 78.8\% & 57.0\% & 0.723 \\
+$\varepsilon_{\mathrm{iso}\mid\mathrm{reco}}$            & 64.9\% & 50.2\% & 0.775 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Physics interpretation.}
+Three observations follow from the numbers above:
+%
+\begin{enumerate}
+  \item The conversion penalty at the reco stage is modest ---
+  the ratio $\varepsilon_{\mathrm{reco}}^{\mathrm{conv}}/
+  \varepsilon_{\mathrm{reco}}^{\mathrm{unconv}}\approx 0.81$.
+  Part of this loss is the response-tail of Sec.~\ref{sec:response}
+  migrating matched clusters below the 8~GeV threshold.
+  \item The BDT cut is where the largest loss happens: the ratio drops
+  to $0.58$. This is consistent with the $-16\%$ inclusive
+  BDT mean shift and the growing low-score tail (Table~\ref{tab:bdt_vs_pt}).
+  \item The iso cut contributes an additional conditional factor
+  $0.77$ (given a reco'd cluster). Combined with the BDT
+  penalty, the total efficiency ratio is $0.48$ --- converted
+  photons are roughly half as efficient as unconverted ones end-to-end.
+\end{enumerate}
+%
+The nominal signal efficiency already integrates over this mix at the
+natural $17\%$ converted fraction, so the nominal result is
+self-consistent provided the GEANT material budget matches reality. The
+table supplies the quantity that drives the material-budget systematic
+numerically: $\Delta\varepsilon_{\mathrm{total}} =
+(\varepsilon_{\mathrm{total}}^{\mathrm{conv}}-
+\varepsilon_{\mathrm{total}}^{\mathrm{unconv}})\cdot\Delta f_{\mathrm{conv}}$
+per unit shift in the simulated conversion fraction.
+
+
+%% ===============================================================
+\section{Physics Interpretation}
+\label{sec:physics}
+
+The four analyses (fractions, response, isolation, shower shape) assemble
+into a single, self-consistent picture of converted photons in sPHENIX
+dictated by the $\sim 1.4$~T solenoid:
+
+\begin{enumerate}
+  \item The conversion probability is flat in \(p_T\) and rises with
+  $|\eta|$. The $\sim 17\%$ central-barrel value is consistent with the
+  quoted $10$--$20\%\,X_0$ of integrated material upstream of the EMCal.
+  % source: fractions_findings.md Sec. "Per-|eta|-bin" and Sec. "Physics discussion"
+  \item The magnetic field opens the \epem\ pair in $\phi$ (but not in
+  $\eta$). One of the two arms has a finite probability of curling outside
+  the cluster footprint, leaving partial energy in the EMCal. This produces
+  a long low-$R$ tail in the energy response --- the Gaussian core shifts by
+  only $+0.003$ while the Crystal Ball $\mu$ moves by $-0.028$ and the CB
+  $\sigma$ broadens by $+35\%$, consistent with a sub-peak below unity
+  coexisting with a two-arm core still close to $R=1$ --- together with a
+  bimodal $\Delta\phi$ distribution for the converted category.
+  % source: Table 2 (Gaussian + Crystal Ball fit parameters); Sec. 4.3
+  \item The lost-arm shower lands inside the $R=0.3$ isolation cone and
+  inflates \texttt{cluster\_iso\_03\_emcal} by $\sim 0.5$~GeV on average.
+  Meanwhile the HCal sub-components move in the opposite direction (the
+  two overlapping \epem\ showers are absorbed more compactly in the EMCal),
+  confirming the same spatial leakage pattern. The parametric iso cut
+  therefore rejects converted photons $\sim 14.6$~pp more often than
+  unconverted ones inclusively, rising to $\sim 23$~pp at low \(p_T\).
+  % source: isolation_findings.md Sec. "Conclusion -- the shift is driven by the EMCal"
+  \item The wider, two-lobed transverse shower profile is picked up most
+  cleanly by \wphicog\ (mean bimodality, $+91\%$ relative shift) and
+  $e_{32}/e_{35}$ (tightens the central $3\times 2$ fraction). The BDT
+  absorbs these features through its training on jet-MC background and
+  produces a well-separated low-score tail whose effect on the tight
+  selection grows with \(p_T\), reaching $-26\%$ at 23--34~GeV.
+  % source: showershape_findings.md Sec. 4 and Sec. 5
+  \item All four conversion signatures share a common \(p_T\) evolution:
+  the effect is strongest at low \(p_T\) (large magnetic opening relative to
+  the cluster/cone scale) and fades at high \(p_T\) where the \epem\ pair is
+  collimated. The BDT shift is the exception --- it grows with \(p_T\) ---
+  because the parametric cut itself becomes tighter at high \(p_T\) and the
+  low-score tail of converted photons sits on the wrong side of an
+  increasingly stringent boundary.
+\end{enumerate}
+
+
+%% ===============================================================
+\section{Implications for the Isolated-Photon Cross-Section}
+\label{sec:cross_section}
+
+The converted-photon signatures above enter the PPG12 cross-section
+measurement as an ID$+$iso efficiency effect:
+
+\begin{itemize}
+  \item The current nominal efficiency $\varepsilon(\mathrm{reco}\to
+  \mathrm{tight+iso})$ is computed on simulated signal events that
+  \emph{already} contain conversions at their natural $\sim 17\%$ rate. As
+  long as the GEANT material budget matches reality, the effect is
+  correctly absorbed into the nominal efficiency.
+  \item The converted population is simultaneously penalised by the BDT
+  tight cut (lower mean BDT, growing low-score tail) \emph{and} by the iso
+  parametric cut (EMCal pollution from the lost \epem\ arm). The PPG12
+  signal efficiency is therefore a product of two partially anticorrelated
+  selection factors, both of which track the converted fraction.
+  \item A mismatch between the simulated and data material budget (e.g.
+  missing support structure, cable run, coolant volume) would produce a
+  \emph{double} shift: the effective converted fraction would move, and
+  both $\varepsilon_{\mathrm{BDT}}$ and $\varepsilon_{\mathrm{iso}}$ would
+  respond.
+\end{itemize}
+
+\noindent The conclusion is that the material budget is one of the key
+cross-section systematics to control.  A dedicated material-budget
+uncertainty --- propagated through the converted fraction to both
+$\varepsilon_{\mathrm{BDT}}$ and $\varepsilon_{\mathrm{iso}}$ --- would
+correctly cover the combined ID$+$iso efficiency response.
+
+
+%% ===============================================================
+\section{Recommendations and Next Steps}
+\label{sec:next_steps}
+
+\begin{enumerate}
+  \item \textbf{Re-run the isolation study with topo-iso branches populated.}
+  The nominal analysis uses \texttt{cluster\_iso\_topo\_04}
+  (\texttt{use\_topo\_iso: 2}); the current study used \texttt{cluster\_iso\_03}
+  by necessity. Populating \texttt{cluster\_iso\_topo\_03/04} on this sample
+  (re-running \texttt{apply\_BDT.C} or the slim-tree builder with the topo
+  branches enabled) will allow the absolute pass-fraction numbers to be
+  tied directly to the nominal cut.
+  % source: isolation_findings.md Sec. "Concerns and next steps"
+  \item \textbf{Split the tight-selection efficiency by conversion category.}
+  Apply $\mathrm{BDT} > 0.80 - 0.015 \cdot E_T$ and the parametric iso cut
+  of Eq.~\ref{eq:iso_cut} separately to unconverted, converted, and
+  combined populations to obtain
+  $\varepsilon_{\mathrm{unconv}}$, $\varepsilon_{\mathrm{conv}}$, and the
+  natural-fraction-weighted efficiency. The difference between the
+  weighted and the unconverted-only result is the conversion contribution
+  to the nominal efficiency.
+  % source: showershape_findings.md Sec. 8
+  \item \textbf{Cross-check BDT data/MC agreement at low BDT values.} The
+  converted-photon population produces a distinct low-score BDT tail. The
+  shape of that tail in \emph{data} (which carries no truth conversion
+  flag) is a direct probe of the simulated material budget: if the MC
+  underestimates the material, the observed low-BDT-score rate will be
+  \emph{higher} than predicted.
+  \item \textbf{Independent toy: artificially remove conversions from MC
+  and propagate.} A zero-conversion counterfactual (e.g.\ selecting only
+  \texttt{particle\_converted==0}) gives a direct handle on the converted
+  contribution to the nominal efficiency and to the cross-section.
+  \item \textbf{Repeat on photon5 and photon20.} The pT dependence of the
+  converted-efficiency loss should be cross-checked at 1--14~GeV
+  (\texttt{photon5}) and 20--40~GeV (\texttt{photon20}) to confirm the
+  crossover at $p_T \sim 25$~GeV and the growing BDT shift.
+  % source: showershape_findings.md Sec. 8
+\end{enumerate}
+
+
+%% ===============================================================
+\appendix
+\section{Slimtree branches used}
+\label{app:branches}
+
+\begin{itemize}
+  \item \texttt{particle\_pid}, \texttt{particle\_Pt}, \texttt{particle\_Eta},
+    \texttt{particle\_Phi}, \texttt{particle\_E}, \texttt{particle\_trkid}
+    --- truth four-vector and track id (written at
+    \texttt{CaloAna24.cc} $\sim$957--966).
+  \item \texttt{particle\_converted} --- conversion flag
+    ($0$/$1$/$2$; see Sec.~\ref{sec:intro}).
+    % source: CaloAna24.cc lines 953-959, 970
+  \item \texttt{particle\_truth\_iso\_03} --- truth isolation $E_T$ in $R=0.3$.
+  \item \texttt{CLUSTERINFO\_CEMC.cluster\_Et},
+    \texttt{cluster\_truthtrkID} --- reconstructed cluster $E_T$ and
+    truth-track assignment.
+  \item Shower shape: \texttt{weta\_cogx}, \texttt{wphi\_cogx},
+    \texttt{et1}--\texttt{et4}, \texttt{e11/e33}, \texttt{e32/e35},
+    \texttt{CNN\_prob}, \texttt{cluster\_prob}, \texttt{merged\_prob}.
+  \item \texttt{CLUSTERINFO\_CEMC\_NO\_SPLIT.bdt\_score} --- shower-shape BDT
+    output.
+  \item Isolation: \texttt{cluster\_iso\_03}, \texttt{cluster\_iso\_04},
+    \texttt{..\_emcal}, \texttt{..\_hcalin}, \texttt{..\_hcalout}.
+\end{itemize}
+
+\section{Figure inventory}
+\label{app:figure_inventory}
+
+All figures live under
+\texttt{reports/converted\_photon\_study/figures/}. A compact inventory:
+
+\begin{itemize}
+  \item Fractions: \texttt{\seqsplit{fractions\_vs\_pt\_eta07.pdf}},
+    \texttt{\seqsplit{fractions\_vs\_abseta\_eta07.pdf}},
+    \texttt{\seqsplit{fractions\_match\_eff\_eta07.pdf}} (plus
+    \texttt{\_eta15} analogues; \texttt{fractions\_2d\_*};
+    \texttt{\seqsplit{fractions\_multiplicity\_*}}).
+  \item Response: \texttt{\seqsplit{response\_shape\_grid.pdf}},
+    \texttt{\seqsplit{response\_shape\_ET\_grid.pdf}},
+    \texttt{\seqsplit{response\_mean\_vs\_pt.pdf}},
+    \texttt{\seqsplit{response\_sigma\_vs\_pt.pdf}},
+    \texttt{\seqsplit{response\_cb\_params\_vs\_pt.pdf}},
+    \texttt{\seqsplit{response\_tailfrac\_vs\_pt.pdf}},
+    \texttt{\seqsplit{response\_match\_eff\_vs\_pt.pdf}},
+    \texttt{\seqsplit{response\_eta\_dep.pdf}},
+    \texttt{\seqsplit{response\_angular\_deltas.pdf}}.
+  \item Isolation: \texttt{\seqsplit{isolation\_cluster\_iso\_03.pdf}},
+    \texttt{\seqsplit{isolation\_cluster\_iso\_03\_emcal.pdf}} (plus
+    \texttt{\_hcalin}, \texttt{\_hcalout}, \texttt{\_cumulative}; $R=0.4$
+    analogues), \texttt{\seqsplit{isolation\_mean\_vs\_pt\_R003.pdf}},
+    \texttt{\_R004.pdf},
+    \texttt{\seqsplit{isolation\_pass\_fraction\_vs\_pt.pdf}}.
+  \item Shower shape (each variable has \texttt{\_inclusive}, \texttt{\_mean}
+    and a 12-panel $p_T$-binned PDF):
+    \texttt{\seqsplit{showershape\_weta\_cogx*.pdf}},
+    \texttt{\seqsplit{showershape\_wphi\_cogx*.pdf}},
+    \texttt{showershape\_et1*.pdf} to \texttt{et4*.pdf},
+    \texttt{\seqsplit{showershape\_e11\_over\_e33*.pdf}},
+    \texttt{\seqsplit{showershape\_e32\_over\_e35*.pdf}},
+    \texttt{\seqsplit{showershape\_et2\_over\_et1*.pdf}} to
+    \texttt{et4\_over\_et1*.pdf},
+    \texttt{\seqsplit{showershape\_CNN\_prob*.pdf}},
+    \texttt{\seqsplit{showershape\_cluster\_prob*.pdf}},
+    \texttt{\seqsplit{showershape\_merged\_prob*.pdf}},
+    \texttt{\seqsplit{showershape\_bdt\_score\_nosplit*.pdf}}.
+\end{itemize}
+
+\end{document}

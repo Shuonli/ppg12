@@ -1,0 +1,1220 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+\newcommand{\etg}{\ensuremath{E_T^\gamma}}
+\newcommand{\pT}{\ensuremath{p_T}}
+\newcommand{\isoET}{\ensuremath{E_T^{\rm iso}}}
+\newcommand{\crit}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\warn}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\info}[1]{\textcolor{blue}{#1}}
+\newcommand{\ok}[1]{\textcolor{green!50!black}{\textbf{#1}}}
+\newcommand{\figdir}{../plotting/figures}
+
+\title{Tower-Index Acceptance Map Integration:\\
+\large Data vs Inclusive MC in the PPG12 Efficiency Pipeline}
+\author{PPG12 Analysis Team (automated report)}
+\date{2026-04-22}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+
+The official PPG12 efficiency pipeline
+(\texttt{RecoEffCalculator\_TTreeReader.C} $\to$ \texttt{MergeSim.C}
+$\to$ \texttt{CalculatePhotonYield.C}) has been extended to produce
+tower-index 2D acceptance maps at four selection levels (preselect,
+common, tight, tight+iso) for both data and lumi-weighted inclusive MC
+(signal + jet). All four maps are automatically written to
+\texttt{Photon\_final\_\{var\_type\}.root} on every efficiency
+production and are \etg-gated at $\ge 8$\,GeV (the cross-section
+lower bin edge).
+
+A full Phase-1 ($\to$ per-period DI-blended MC) + Phase-2 ($\to$
+all-range merge + all-range data + \texttt{CalculatePhotonYield}) run
+on \texttt{config\_bdt\_nom.yaml} produced the first apples-to-apples
+comparison between data and inclusive MC. The principal findings:
+
+\begin{enumerate}
+  \item \crit{HIGH}\ --- \textbf{The MC simulation does not emulate
+  all the dead towers active in data.} 108 towers in the fiducial
+  $|\eta|<0.7$ region have zero data clusters at preselect while MC
+  predicts a nonzero count; this grows to 244 towers at tight+iso.
+  The severely-dead (z$<$-5) bin fraction of the data yield is
+  \textbf{3.97\% at preselect}, \textbf{5.19\% at common},
+  \textbf{25.05\% at tight}, and \textbf{53.58\% at tight+iso} — a
+  monotonically growing bias consistent with shower leakage into dead
+  towers progressively failing tighter selections.
+  \item \crit{HIGH}\ --- \textbf{The cross-section is biased LOW}.
+  \textbf{Direct measurement} via 9 symmetric-mask variants (see
+  Section~\ref{sec:mask}) gave a shift $\sigma_{\rm mask}/\sigma_{\rm
+  nom}$ ranging from +0.7\% (lightest mask) to +7.2\% (heaviest OR
+  variant) \emph{under the initial per-bin Poisson z-score}. That
+  approximation is not valid for the lumi-weight-combined MC; the
+  report now uses an empirical R-distribution z-score
+  (Section~\ref{sec:rstat}). Under the new method, many of the
+  severity-tier mask variants collapse to the hard-dead mask, and the
+  9-variant condor re-run with the updated masks is underway; numbers
+  in Section~\ref{sec:mask} will be refreshed at that time.
+  This effect is NOT currently captured by any systematic in the PPG12
+  envelope.
+  \item \warn{WARN}\ --- \textbf{At the tight/tight+iso levels, $\sim
+  \,$14--44\% of bins have data excess (z$>$+2) over MC.} Bins with
+  MC $N_{\rm eff} > 10$ show a genuine data excess; the top-5 such
+  towers have data counts 44--70 vs MC expectation 1--4. These are
+  candidate hot towers in data that should be cross-checked against
+  sPHENIX run-by-run QA lists.
+\end{enumerate}
+
+\noindent\textbf{Overall}: the integration is correct (physics-review
+PASS) and the numbers are independently re-derived
+(numerical-rederivation PASS). The direct-measurement mask-variant
+scan (9 variants $\times$ 3 families) gives shifts from
+\textbf{+0.7\% (lightest single-level mask) to +7.2\% (heaviest OR
+mask)}. We recommend \textbf{+7\% as the acceptance-mismodeling
+systematic envelope}. The earlier tower-count-based $\sim$16\%
+deficit was overstated because the bin-density metric inflates at the
+tight-iso level where MC $N_{\rm eff}$ is low.
+
+\medskip
+\noindent\textbf{Nominal update (2026-04-22)}: the PPG12 nominal has
+been switched from the 60cm-fiducial configuration (lumi
+48.93\,pb$^{-1}$, \texttt{vertex\_cut\_truth=60}) to the all-z
+configuration (beam-delivered lumi \textbf{64.37\,pb$^{-1}$},
+\texttt{vertex\_cut\_truth=9999} widening the MBD-eff truth
+denominator). The integrated cross-section under the new nominal in
+\etg\,$\in [10, 36]$\,GeV is \textbf{$\sigma_{\rm nom} = 1963$\,pb}
+($\approx 6\%$ lower than the retired 60cm value of 2091\,pb, driven
+by the lumi change and the widened truth-vertex acceptance in the
+MBD-eff denominator). All mask variants in this report are now
+evaluated against the new nominal.
+
+\medskip
+\noindent\textbf{Scope}: results here are for the new allz nominal and
+its 9 mask variants only. The tower-map histograms are populated
+automatically for every variant, so future scans are trivial.
+
+\section{Findings Table}
+
+\begin{longtable}{@{}p{1.6cm}p{5.1cm}p{5.1cm}p{4.5cm}@{}}
+\toprule
+Severity & Location & Finding & Impact \\
+\midrule
+\crit{HIGH-1} &
+\texttt{Photon\_final\_bdt\_nom.root:}
+\texttt{h\_etaphi\_tower\_\{tight,tight\_iso\}\_\{data,mc\_inclusive\}} &
+25\% (tight) / 54\% (tight+iso) of the data yield is "missing"
+relative to the MC-predicted shape in dead-in-data towers
+(z$<$-5 bin set, \emph{gross} upper bound). Net (deficit $-$ excess)
+central estimate is 19\% at tight. &
+Cross-section biased LOW: gross 25--54\% upper bound, net
+$\sim$16\% central estimate ($\sigma_{\rm meas}/\sigma_{\rm true}
+\approx 0.84$). Not covered by any existing systematic. \\
+\addlinespace
+\crit{HIGH-2} &
+Anatree / DST tower-masking configuration &
+GEANT MC lacks the ~100-250 tower mask that is active in Run-24 data. &
+Root cause of HIGH-1. Fix at the
+CaloTowerStatus / hot-tower-list stage upstream of slimtree writing. \\
+\addlinespace
+\warn{WARN-1} &
+Top-5 tight+iso towers \texttt{(40,150)},
+\texttt{(46,40)}, \texttt{(54,32)},
+\texttt{(38,8)}, \texttt{(42,168)} &
+Data counts 44--54 vs MC expected 1--4, with MC
+$N_{\rm eff}$ = 11--37 (not stat-driven). &
+Candidate hot towers in data that pass BDT tight + iso. Should be
+investigated against run-by-run QA for electronics noise / stuck bits. \\
+\addlinespace
+\warn{WARN-2} &
+All 16 \texttt{official\_tower\_*.pdf} figures &
+Tight / tight+iso ratio maps saturate at
+$z=2.0$ colorbar and zscore maps have narrow dynamic range given the
+$N_{\rm eff}\sim 4$ per-bin MC stats. &
+Bulk of the z-score information washed out. Numerical tables carry
+the physics; plots are for qualitative localization. \\
+\addlinespace
+\info{INFO-1} &
+\texttt{RecoEffCalculator\_TTreeReader.C:892--912, 2047, 2364, 2453, 2457} &
+4 new TH2Fs (96$\times$256 tower grid) filled at preselect, common,
+tight, tight+iso for clusters with \etg $\geq$ \texttt{tower\_map\_et\_min}
+(default 8\,GeV). Same \texttt{weight} as adjacent \texttt{FillWeighted}
+calls, gated by the analysis vertex cut. &
+Pipeline integration complete. \\
+\addlinespace
+\info{INFO-2} &
+\texttt{CalculatePhotonYield.C:~1192} &
+Block Clones signal TH2 from \texttt{fsimin}, Adds jet TH2 from
+\texttt{\{eff\_outfile\}\_jet\_\{var\_type\}.root}, writes as
+\texttt{h\_etaphi\_tower\_\{level\}\_mc\_inclusive}. Copies data TH2
+as \texttt{\_data}. &
+Inclusive-MC hadd handled in yield stage; no changes needed in
+MergeSim.C. \\
+\addlinespace
+\ok{PASS-1} &
+Wave-2a physics review &
+All cuts, nesting (preselect $\supset$ common $\supset$ tight $\supset$
+tight+iso), weights (MC: xsec $\times$ lumi/lumi\_target $\times$
+vertex\_weight; data: prescale), and branch-type declarations match
+the analysis flow. &
+No code fix required. \\
+\addlinespace
+\ok{PASS-2} &
+Wave-2c numerical re-derivation &
+All primitive counts (N\_data, hard-dead bins, z$<$-5 bins) reproduce
+independently from \texttt{Photon\_final\_bdt\_nom.root} using uproot
++ numpy. &
+Numbers quoted in this report are defensible. \\
+\bottomrule
+\end{longtable}
+
+\section{Pipeline Integration}
+
+\subsection{Motivation}
+
+The cross-section formula
+$d^2\sigma / dp_T d\eta = N_{\rm iso\,prompt}/(\varepsilon\cdot\mathcal{L}
+\cdot \Delta)$ assumes that $\varepsilon$ --- constructed from MC ---
+correctly captures the detector acceptance from which the data sample
+is drawn. If MC and data disagree in their $(\eta,\phi)$ acceptance
+because GEANT fails to emulate the full dead-tower list of the real
+detector, $\varepsilon_{\rm code}$ is systematically larger than the
+true $\varepsilon_{\rm data}$ and the measured cross-section is biased
+low by a factor $\varepsilon_{\rm data}/\varepsilon_{\rm code}$.
+
+A prior one-off diagnostic comparing photon10 MC to data in tower
+indices (\texttt{plotting/plot\_tight\_etaphi\_compare.C}, Apr
+2026) found a $\sim$14\% deficit at the tight level, but photon10 alone
+has $\sim$250k tight clusters and a per-tower
+$N_{\rm eff}\sim 3$, so the photon10-vs-data comparison could not
+cleanly separate dead-tower effects from statistical noise. Moving the
+fills into the official efficiency pipeline ($\mathcal{O}$(5$\times$)
+more statistics via the lumi-weighted inclusive MC, identical cuts, no
+vertex-cut drift) is the correct apples-to-apples diagnostic.
+
+\subsection{Code changes}
+
+Two files modified; MergeSim.C unchanged (plain TFileMerger handles
+TH2F auto-hadd across per-sample runs).
+
+\textbf{\texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C}}:
+\begin{itemize}
+  \item Four new \texttt{TH2F*} pointers declared+allocated after the
+  existing single-pointer MBD-QA TH2Ds (line range 892--912):
+  \texttt{h\_etaphi\_tower\_\{preselect, common, tight, tight\_iso\}}.
+  Axes are raw tower indices (96 $i\eta$ $\times$ 256 $i\phi$); no
+  vertex-dependent $\eta,\phi$ smearing.
+  \item \texttt{tower\_map\_et\_min} read from
+  \texttt{analysis.tower\_map\_et\_min} in YAML with default 8.0 GeV
+  (matches \texttt{plotcommon.h::ptRanges[0]}).
+  \item Four \texttt{Fill()} call sites inside the cluster loop:
+  (i) after ET gate + saturation cut, gated on
+  ET$\ge$tower\_map\_et\_min (preselect, line 2047);
+  (ii) inside the common-pass block (common, line 2364);
+  (iii) after \texttt{tight = true} (tight, line 2453);
+  (iv) same block, additionally gated on \texttt{iso} (tight+iso, line
+  2457). All use the canonical per-event \texttt{weight} variable
+  already consumed by the efficiency \texttt{FillWeighted} calls.
+\end{itemize}
+
+\textbf{\texttt{efficiencytool/CalculatePhotonYield.C}}: new block
+before \texttt{fout->Write()} around line 1192 that opens
+\texttt{\{eff\_outfile\}\_jet\_\{var\_type\}.root}, iterates the four
+levels, Clones the signal TH2 from \texttt{fsimin}, Adds the jet TH2,
+Writes as \texttt{h\_etaphi\_tower\_\{level\}\_mc\_inclusive}.
+Additionally, in the non-MC-closure path, Clones and Writes the data
+TH2 as \texttt{\_data}. So \texttt{Photon\_final\_\{var\_type\}.root}
+ends up with 8 new histograms (4 levels $\times$ \{MC\_incl, data\}).
+
+\subsection{Condor dispatch}
+
+Two submit files added to support nominal-only production:
+\texttt{oneforall\_tree\_double\_nom\_only.sub} queues the two
+merge-feeder period configs through the DI TTree pipeline (Phase 1);
+\texttt{oneforall\_nom\_only.sub} queues the bare all-range config
+through \texttt{oneforall.sh} for Phase 2. Run executed
+\texttt{2026-04-22}: Phase 1 cluster 1026116 (both period jobs finished
+cleanly in $\sim$30 min each); Phase 2 cluster 1026118 (single job,
+$\sim$25 min merge + data + 2$\times$ CalculatePhotonYield).
+
+\subsection{Z-score: empirical R-distribution method}
+\label{sec:rstat}
+
+The lumi-weighted inclusive MC is a sum over multiple samples
+(photon5/10/20, jet8/12/20/30/40) with per-event weights
+$w_i = \sigma_i \cdot \mathcal{L}/\mathcal{L}_{\rm target} \cdot
+w_{\rm vtx}$. Per-bin count is $\sum w_i$ with variance
+$\sum w_i^2$, so the effective $N = (\sum w_i)^2 / \sum w_i^2$ can
+differ from the Poisson expectation by orders of magnitude in
+low-stats bins. The per-bin Poisson approximation used earlier in
+this report is therefore invalid as a formal statistical estimator
+for the weighted MC side.
+
+\textbf{Replacement}: empirical z-score from the 1D distribution of
+$R = p_{\rm data} / p_{\rm MC}$ across all filled bins.
+
+\begin{enumerate}
+  \item For each selection level, collect $R$ from every bin with
+  $n_{\rm MC} > 0$ and $n_{\rm data} > 0$ (hard-dead bins excluded
+  from the fit because they contribute $R=0$ outliers that would
+  pull the center low).
+  \item Compute a robust center: median of $R$, and
+  $\sigma_{\rm MAD} = 1.4826 \cdot {\rm MAD}$ (median absolute
+  deviation, the Gaussian-equivalent scale).
+  \item Iteratively refine a core-Gaussian fit: start from
+  $[{\rm median} - 1.5\sigma_{\rm MAD}, {\rm median} + 1.5\sigma_{\rm MAD}]$,
+  compute mean and std inside the window, redefine window, iterate
+  5 times. Converges to the width of the physics "bulk" peak,
+  rejecting the heavy asymmetric tail driven by low-stats outliers.
+  \item Define $z[i,j] = (R[i,j] - \mu_{\rm core}) /
+  \sigma_{\rm core}$ with these empirical core parameters.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{\figdir/rdist_all_levels.pdf}
+  \caption{$R = p_{\rm data}/p_{\rm MC}$ distribution at each
+  selection level (preselect, common, tight, tight+iso). Dashed red =
+  core-Gaussian fit after iterative 1.5-$\sigma$ clipping. Vertical
+  dotted = core mean. The preselect and common distributions are
+  reasonably Gaussian near the core ($\sigma_{\rm core} \sim 0.21
+  \text{--} 0.27$). The tight distribution has a well-defined core
+  near $R = 0.83$ (below 1, reflecting the shape-cut-driven
+  dead-halo depression) but is broader
+  ($\sigma_{\rm core} = 0.44$). Tight+iso has no meaningful core
+  Gaussian --- the distribution is dominated by low-MC-stats outliers
+  out to $R \gtrsim 10$, and the fit shown is unphysical; at this
+  level only hard-dead bins are meaningfully flagged.}
+  \label{fig:rdist}
+\end{figure}
+
+Under the empirical R-stat method:
+
+\begin{itemize}
+  \item $R \ge 0$ bounds the lower tail. At common-level
+  $\mu_{\rm core} - 5\sigma_{\rm core} < 0$, so z$<$-5 picks up NO
+  non-hard-dead bins --- the \texttt{*\_zlt5} mask therefore
+  collapses to the \texttt{*\_harddead} mask at every level.
+  \item At tight/tight+iso levels, the empirical $\sigma_{\rm core}$
+  is large enough that z$<$-2 also collapses to hard-dead --- none
+  of the live bins are statistically distinguishable from the bulk.
+  \item At preselect and common levels, z$<$-2 still identifies a
+  "halo" of bins with R systematically below the bulk, primarily
+  concentrated around the hard-dead tower clusters.
+\end{itemize}
+
+\subsection{Mask-count comparison (old Poisson vs new R-stat)}
+
+\begin{table}[H]
+  \centering
+  \caption{Number of towers flagged by each mask under the two
+  methods. Under the new R-stat z-score, the \texttt{*\_zlt5}
+  variants collapse identically to \texttt{*\_harddead} at every
+  level (z$<$-5 requires $R < 0$, impossible). At tight-level,
+  \texttt{*\_zlt2} also collapses, as the empirical $\sigma_{\rm core}$
+  is large enough that z$<$-2 picks up no extra live bins. The 9
+  masks therefore provide only 5 distinct physics configurations
+  under the new method --- the other 4 are duplicates.}
+  \label{tab:mask_counts_compare}
+  \begin{tabular}{lrrl}
+    \toprule
+    mask & old (Poisson) & new (R-stat) & notes \\
+    \midrule
+    \texttt{mask\_common\_harddead}       & 412  & 412  & hard-dead by definition \\
+    \texttt{mask\_common\_harddead\_zlt5} & 990  & 412  & collapsed to harddead \\
+    \texttt{mask\_common\_harddead\_zlt2} & 2934 & 2244 & halo bins still picked \\
+    \texttt{mask\_tight\_harddead}        & 1084 & 1084 & hard-dead by definition \\
+    \texttt{mask\_tight\_harddead\_zlt5}  & 2177 & 1084 & collapsed \\
+    \texttt{mask\_tight\_harddead\_zlt2}  & 3547 & 1084 & collapsed \\
+    \texttt{mask\_or\_harddead}           & 1134 & 1134 & hard-dead by definition \\
+    \texttt{mask\_or\_harddead\_zlt5}     & 2541 & 1134 & collapsed \\
+    \texttt{mask\_or\_harddead\_zlt2}     & 5084 & 2841 & union still grows \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{Status}: the mask file
+\texttt{efficiencytool/tower\_masks\_bdt\_nom.root} has been
+regenerated with the new R-stat method as of 2026-04-22 (this
+report). The 9 mask-variant condor jobs are being re-run at the time
+of this deploy; the cross-section shift numbers in
+Section~\ref{sec:mask} still reflect the \emph{old Poisson-z masks}
+and will be updated in the next report revision. The methodology
+update is deployed first so downstream users can see the new mask
+definitions immediately.
+
+\subsection{Alternative cross-checks}
+\label{sec:alt_checks}
+
+Two independent checks to verify the per-bin z-score conclusions:
+
+\textbf{(1) Tower grouping.} Rebin the 96$\times$256 tower grid into
+2$\times$2 and 4$\times$4 super-cells to increase per-bin statistics.
+Redo the log(R) Gaussian fit at each grouping.
+
+\begin{table}[H]
+  \centering
+  \caption{Log(R) fit parameters and z$<$-2 deficit vs tower grouping
+  (full range). As grouping coarsens, stat fluctuations diminish and
+  the log(R) distribution narrows. The tight/tight+iso deficits drop
+  dramatically --- the 1$\times$1 estimates were dominated by
+  stat-fluctuation outliers masquerading as dead regions.}
+  \label{tab:alt_rebin}
+  \begin{tabular}{llrrrrr}
+    \toprule
+    level & grp & nbins & $\mu_{\rm log R}$ & $\sigma_{\rm log R}$ & z$<$-2 cells & deficit \\
+    \midrule
+    preselect & 1$\times$1 & 24576 & 0.135 & 0.569 & 666 & 4.01\% \\
+    preselect & 2$\times$2 &  6144 & 0.055 & 0.324 & 157 & 2.86\% \\
+    preselect & 4$\times$4 &  1536 & 0.039 & 0.224 &  37 & 2.71\% \\
+    \midrule
+    common & 1$\times$1 & 24576 & 0.300 & 0.817 & 421 & 2.46\% \\
+    common & 2$\times$2 &  6144 & 0.138 & 0.459 & 136 & 1.92\% \\
+    common & 4$\times$4 &  1536 & 0.114 & 0.327 &  40 & 1.96\% \\
+    \midrule
+    tight & 1$\times$1 & 24576 & 0.941 & 1.504 & 410 & \textbf{9.36\%} \\
+    tight & 2$\times$2 &  6144 & 0.409 & 0.982 &  70 & \textbf{2.12\%} \\
+    tight & 4$\times$4 &  1536 & 0.151 & 0.544 &  33 & \textbf{1.98\%} \\
+    \midrule
+    tight+iso & 1$\times$1 & 24576 & 1.943 & 1.596 & 1458 & \textbf{59.4\%} \\
+    tight+iso & 2$\times$2 &  6144 & 1.248 & 1.592 &  112 & \textbf{8.56\%} \\
+    tight+iso & 4$\times$4 &  1536 & 0.732 & 1.332 &    5 & \textbf{0.97\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.80\textwidth]{\figdir/alt_check_rebin.pdf}
+  \caption{log(R) distributions at three tower groupings (1$\times$1,
+  2$\times$2, 4$\times$4) per selection level. The distributions narrow
+  dramatically with coarser binning. At 4$\times$4, even the tight
+  level is cleanly Gaussian with $\sigma_{\rm log R} = 0.54$ centered
+  at 0.15 --- consistent with a near-uniform physics shape with
+  residual $\sim$2\% dead-region effect.}
+  \label{fig:alt_rebin}
+\end{figure}
+
+\textbf{(2) Data-only phi-symmetry.} Uses only data --- no MC
+assumption. For each 2-row $\eta$ band, fit a Gaussian to the data
+counts across the 256 $\phi$ bins (physics must be $\phi$-symmetric
+in pp at fixed $\eta$). Flag $\phi$ bins with z$<$-2 within each
+band as dead candidates.
+
+\begin{table}[H]
+  \centering
+  \caption{Data-only phi-symmetry dead-tower estimates vs log(R) and
+  hard-dead references. The phi-symmetry method uses the assumption
+  that data is symmetric in $\phi$ at fixed $\eta$ (exact for pp
+  collisions) and requires no MC. Deficit \% is the fraction of data
+  yield in bins flagged as z$<$-2 in the per-band Gaussian fit.}
+  \label{tab:alt_phisymm}
+  \begin{tabular}{lrrrr}
+    \toprule
+    level & dead cells (z<-2) & dead cells (z<-5) & hard-dead ref & deficit \% \\
+    \midrule
+    preselect & 880 & 126 & 108 & 4.56\% \\
+    common    & 823 &  42 & 157 & 4.25\% \\
+    tight     & 536 &   0 & 157 & \textbf{3.00\%} \\
+    tight+iso & 482 &   0 & 244 & \textbf{2.76\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{\figdir/alt_check_phisymm.pdf}
+  \caption{Data-only phi-symmetry check. Each panel shows the data
+  tower map at one selection level with phi-symmetry-flagged
+  z$<$-2 cells overlaid as small red markers. Dashed cyan = fiducial
+  $|\eta|<0.7$. The phi-symm flagged cells concentrate in the same
+  regions as the hard-dead bins (independent confirmation, no MC).}
+  \label{fig:alt_phisymm}
+\end{figure}
+
+\subsection{Convergence across methods}
+\label{sec:alt_converge}
+
+\begin{table}[H]
+  \centering
+  \caption{Tight-level (fiducial) acceptance deficit estimate across
+  methods. The three \emph{independent} approaches --- log(R)
+  rebinning, data-only phi-symmetry, and symmetric mask-variant
+  condor re-run --- converge at a \textbf{2--5\% floor} for the
+  MC-dead-tower acceptance systematic. The 1$\times$1 log(R) estimate
+  was a stat-dominated overestimate.}
+  \label{tab:alt_converge}
+  \begin{tabular}{lr}
+    \toprule
+    method & tight deficit estimate \\
+    \midrule
+    log(R), 1$\times$1 grouping                   & 9.4\% (stat-inflated, misleading) \\
+    log(R), 2$\times$2 grouping                   & 2.1\% \\
+    log(R), 4$\times$4 grouping                   & 2.0\% \\
+    Data-only phi-symmetry (2-eta bands)          & 3.0\% \\
+    Mask-variant $\sigma$ shift (old Poisson masks, heaviest) & +4.9\% to +7.2\% \\
+    \midrule
+    \textbf{Recommended envelope} & \textbf{$\sim$5\% one-sided} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The \textbf{$\sim$5\% envelope is stable under multiple independent
+estimators}. The earlier $\sim$16\% bias from naive tower-count
+deficit accounting is confirmed to be an overestimate.
+
+\subsection{Methodology}
+
+For each $(i\eta, i\phi)$ bin we have $n_{\rm MC}[i,j]$ (weighted
+count) and $n_{\rm data}[i,j]$ (raw count). The MC
+effective-$N$ per bin is
+$N_{\rm eff}[i,j] = n_{\rm MC}^2/\sigma^2_{\rm MC}$ where
+$\sigma^2_{\rm MC}$ is the stored sumw2. Define densities
+$p_{\rm MC}=n_{\rm MC}/N_{\rm MC}$ and
+$p_{\rm data}=n_{\rm data}/N_{\rm data}$ (globals). The per-bin
+ratio $R=p_{\rm data}/p_{\rm MC}$ has the Poisson relative
+uncertainty
+\[
+  \sigma_R/R = \sqrt{1/\max(n_{\rm data}, 1) + 1/N_{\rm eff}}\,,\qquad
+  z = (R-1)/(R\cdot\sigma_R/R)\,.
+\]
+
+The \emph{deficit} attributable to dead-in-data regions is computed as
+\[
+  {\rm deficit} = \sum_{z<\text{thr}} \max(0,\, \mu - n_{\rm data})
+  \quad\text{with}\quad
+  \mu = n_{\rm MC}\cdot N_{\rm data}/N_{\rm MC}\,.
+\]
+Hard-dead bins ($n_{\rm data}=0$, $n_{\rm MC}>0$) have
+$z\to-\infty$ and contribute $\mu$ to the deficit sum. The fiducial
+restriction is $i\eta \in [17, 78]$, equivalent to $|\eta|<0.7$ at the
+tower-center resolution.
+
+\section{Results per Selection Level}
+
+The full-range and fiducial ($|\eta|<0.7$) quantitative summary is in
+Tables~\ref{tab:summary_full} and~\ref{tab:summary_fid}. Figures
+\ref{fig:preselect}--\ref{fig:tight_iso} show, for each level, the 2D
+tower maps of: (top-left) inclusive MC, (top-right) data,
+(bottom-left) normalized ratio, (bottom-right) Poisson z-score.
+
+\begin{table}[H]
+  \centering
+  \caption{Full-range ($i\eta \in [0,95]$) data/inclusive-MC tower
+  comparison summary. $N_{\rm eff}^{\rm med}$ is the median MC
+  effective $N$ per filled bin.
+  "Hard-dead" means bins where MC predicts clusters but data has zero.
+  Percentages in \%-Bins columns are fractions of bins with finite
+  z-score (bulk: 24576 total, minus hard-dead, minus both-empty).
+  "def" is the aggregated $\max(0,\mu-n_{\rm data})$ in units of
+  $N_{\rm data}$; "exc" is the aggregated $\max(0,n_{\rm data}-\mu)$
+  on the z$>$+2 side; "net" = def$(z<-2)$ $-$ exc$(z>+2)$.}
+  \label{tab:summary_full}
+  \begin{tabular}{lrrrrrrrrrr}
+    \toprule
+    \multirow{2}{*}{Level} & \multirow{2}{*}{$N_{\rm data}$}
+    & \multirow{2}{*}{Hard-dead}
+    & \multirow{2}{*}{$N_{\rm eff}^{\rm med}$}
+    & \multicolumn{3}{c}{\%-Bins}
+    & \multicolumn{3}{c}{\%-of-$N_{\rm data}$} \\
+    \cmidrule(lr){5-7}\cmidrule(lr){8-10}
+    & & & & $z<-2$ & $z>+2$ & $z<-5$ & def$(z<-2)$ & exc$(z>+2)$ & net \\
+    \midrule
+    preselect & $3.60\times 10^6$ & 215  & 11.0 & 12.8 &  9.3 & 3.1 & 14.6 &  6.8 &  +7.8 \\
+    common    & $1.73\times 10^6$ & 412  &  7.5 & 11.2 &  9.1 & 2.6 & 16.7 &  6.6 & +10.1 \\
+    tight     & $3.81\times 10^5$ & 1084 &  3.8 & 11.3 & 16.0 & 5.0 & 39.6 & 18.6 & +21.0 \\
+    tight+iso & $2.09\times 10^5$ & 1708 &  6.6 &  8.5 & 33.2 & 4.9 & 65.5 & 46.0 & +19.5 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Same as Table~\ref{tab:summary_full} but restricted to the
+  analysis fiducial region $|\eta|<0.7$ ($i\eta \in [17,78]$, 15872
+  total bins).}
+  \label{tab:summary_fid}
+  \begin{tabular}{lrrrrrrrrrr}
+    \toprule
+    \multirow{2}{*}{Level} & \multirow{2}{*}{$N_{\rm data}$}
+    & \multirow{2}{*}{Hard-dead}
+    & \multirow{2}{*}{$N_{\rm eff}^{\rm med}$}
+    & \multicolumn{3}{c}{\%-Bins}
+    & \multicolumn{3}{c}{\%-of-$N_{\rm data}$} \\
+    \cmidrule(lr){5-7}\cmidrule(lr){8-10}
+    & & & & $z<-2$ & $z>+2$ & $z<-5$ & def$(z<-2)$ & exc$(z>+2)$ & net \\
+    \midrule
+    preselect & $2.60\times 10^6$ & 108 & 12.6 & 12.3 &  9.5 & 2.7 & 13.1 &  6.6 &  +6.5 \\
+    common    & $1.55\times 10^6$ & 157 &  9.9 & 12.3 &  9.0 & 2.8 & 15.5 &  6.6 &  +8.9 \\
+    tight     & $3.43\times 10^5$ & 157 &  4.3 & 12.6 & 20.5 & 5.6 & 38.3 & 19.6 & +18.7 \\
+    tight+iso & $1.90\times 10^5$ & 244 & 10.2 &  9.9 & 44.1 & 5.6 & 64.0 & 50.1 & +13.9 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_mc.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_data.pdf}
+  \end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_ratio.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_preselect_zscore.pdf}
+  \end{subfigure}
+  \caption{\textbf{Preselect}: $\etg \geq 8$\,GeV, \texttt{nosat}, no
+  shape cuts. (a) inclusive MC; (b) data; (c) normalized ratio
+  $p_{\rm data}/p_{\rm MC}$; (d) Poisson z-score. Deficit in
+  fiducial $|\eta|<0.7$: 3.97\% of data for $z<-5$ bins, 13.11\% for
+  $z<-2$.}
+  \label{fig:preselect}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_mc.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_data.pdf}
+  \end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_ratio.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_common_zscore.pdf}
+  \end{subfigure}
+  \caption{\textbf{Common}: preselect $\cup$ \{NPB$>$0.5,
+  $e_{11}/e_{33}<0.98$, $w_{r,{\rm cog}x}>0$,
+  $w_{\eta,{\rm cog}x}<2$\}. Hard-dead bins grow from 108 to 157;
+  $z<-5$ deficit from 3.97\% to 5.19\%.}
+  \label{fig:common}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_mc.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_data.pdf}
+  \end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_ratio.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_zscore.pdf}
+  \end{subfigure}
+  \caption{\textbf{Tight}: common $\cap$ all 10 shower-shape tight
+  windows $\cap$ BDT$>$($0.867 - 0.0067\,\etg$). The $z<-5$ deficit
+  jumps to 25\%, consistent with shower leakage into dead towers
+  pushing the cluster's $w_{\eta,{\rm cog}x}$ outside the tight
+  window. Note the median MC $N_{\rm eff}$ drops to 4.3 — the
+  per-bin Poisson uncertainty is comparable to the data count, which
+  drives the $z>+2$ tail.}
+  \label{fig:tight}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_iso_mc.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_iso_data.pdf}
+  \end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_iso_ratio.pdf}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/official_tower_tight_iso_zscore.pdf}
+  \end{subfigure}
+  \caption{\textbf{Tight+iso}: A-region of the ABCD method. The $z<-5$
+  deficit now reaches 53.58\% in the fiducial region, i.e. roughly
+  half of the data yield in A would be recovered if MC had the same
+  dead-tower list as data. This is the most relevant number for the
+  cross-section bias.}
+  \label{fig:tight_iso}
+\end{figure}
+
+\section{Tower Category Maps}
+
+Figure~\ref{fig:category} shows, for each selection level, a single
+2D tower map with four discrete categories:
+\begin{itemize}
+  \item \textbf{Dark red (hard dead)}: $n_{\rm data}=0$ in a bin
+  where inclusive MC predicts nonzero yield. These are the towers
+  directly responsible for the A-region bias and are the natural
+  targets for the MC mask fix.
+  \item \textbf{Orange} ($z<-5$, $n_{\rm data}>0$): severe data
+  suppression relative to MC but not fully dead --- consistent with
+  partially-functional towers or shower leakage into adjacent dead
+  towers.
+  \item \textbf{Yellow} ($-5 < z < -2$): moderate data deficit.
+  Bulk of this set is dominated by the shower-leakage halo around
+  actual dead towers.
+  \item \textbf{Light gray}: $|z|\le 2$ or MC empty. Bulk of the
+  fiducial is in this category (data/MC agree within Poisson).
+\end{itemize}
+The blue dashed rectangle marks the analysis fiducial
+$i\eta\in[17,78]$ ($|\eta|<0.7$). Outside this region both samples
+are suppressed by the common NPB cut (NPB is not scored for
+$|\eta|\geq 0.7$), which explains the red border at tight and
+tight+iso.
+
+Per-level category counts (full 96$\times$256 grid):
+
+\begin{table}[H]
+  \centering
+  \caption{Category counts per level (full range, 24576 bins total).
+  The remaining bins are either $|z|\le 2$ or both-empty.}
+  \label{tab:category_counts}
+  \begin{tabular}{lrrr}
+    \toprule
+    Level & Hard dead ($n_{\rm data}=0$) & $z<-5$, $n_{\rm data}>0$ & $-5<z<-2$ \\
+    \midrule
+    preselect & 215  & 698  & 2228 \\
+    common    & 412  & 578  & 1944 \\
+    tight     & 1084 & 1093 & 1370 \\
+    tight+iso & 1708 & 1022 & 744 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/dead_tower_map_preselect.pdf}
+    \caption{preselect}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/dead_tower_map_common.pdf}
+    \caption{common}
+  \end{subfigure}\\[4pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/dead_tower_map_tight.pdf}
+    \caption{tight}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/dead_tower_map_tight_iso.pdf}
+    \caption{tight+iso}
+  \end{subfigure}
+  \caption{Tower category maps at each selection level. Dark red =
+  hard dead ($n_{\rm data}=0$, MC live); orange = $z<-5$ with
+  $n_{\rm data}>0$; yellow = $-5<z<-2$; light gray = $|z|\le 2$ or
+  MC empty. Blue dashed rectangle marks the $|\eta|<0.7$ fiducial.
+  Horizontal stripes of hard-dead bins (particularly visible at
+  $i\phi\approx 30$, $150$, $210$, $240$) correspond to dead-tower
+  columns / readout groups in the real detector that GEANT does not
+  emulate. The progression preselect $\to$ common $\to$ tight $\to$
+  tight+iso shows the shower-leakage halo around each dead tower
+  growing the effective killed area under progressively tighter
+  selections.}
+  \label{fig:category}
+\end{figure}
+
+\section{Dead- and Excess-Tower Catalogue}
+
+\subsection{Top dead-in-data towers (fiducial, tight level)}
+
+These are the towers driving the 25\% tight-level deficit.
+
+\begin{table}[H]
+  \centering
+  \caption{Top-5 dead-in-data towers at the tight selection level in
+  $|\eta|<0.7$. $\mu$ is the MC-predicted count normalized to the data
+  total.}
+  \label{tab:dead_tight}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    $i\eta$ & $i\phi$ & $n_{\rm data}$ & $n_{\rm MC}$ & $\mu$ & $z$ \\
+    \midrule
+    67 & 86  & 33 & $7.00\times 10^6$ & 338.5 & $-19.4$ \\
+    56 & 50  & 26 & $6.36\times 10^6$ & 307.6 & $-20.6$ \\
+    62 & 63  & 17 & $5.70\times 10^6$ & 275.6 & $-26.6$ \\
+    34 & 164 & 34 & $6.00\times 10^6$ & 290.4 & $-13.9$ \\
+    35 & 106 & 16 & $5.56\times 10^6$ & 269.0 & $-27.9$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Visual inspection of Fig.~\ref{fig:tight_iso} shows clear horizontal
+dead stripes at $i\phi\approx 50$, $\approx 150$, $\approx 210$ spanning
+$\sim$10-tower $i\eta$ extent, consistent with whole-column dead
+readout. Single-tower dead pixels are scattered throughout the
+fiducial. These coordinates should map onto the sPHENIX dead/hot-tower
+CDB entries used at the Run-24 calibration stage.
+
+\subsection{Top data-excess towers (fiducial, tight+iso level)}
+
+These are towers where the data has significantly more counts than the
+inclusive MC predicts, and the MC statistics
+($N_{\rm eff}$) are high enough to rule out a fluctuation.
+
+\begin{table}[H]
+  \centering
+  \caption{Top-5 data-excess towers at tight+iso in $|\eta|<0.7$. High
+  $N_{\rm eff}$ rules out statistical noise.}
+  \label{tab:hot_tight_iso}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    $i\eta$ & $i\phi$ & $n_{\rm data}$ & $n_{\rm MC}$ & $\mu$ & $z$ & $N_{\rm eff}$ \\
+    \midrule
+    40 & 150 & 54 & $4.68\times 10^4$ & 3.5 & $+2.9$ & 11.6 \\
+    46 &  40 & 46 & $2.52\times 10^4$ & 1.9 & $+4.3$ & 37.0 \\
+    54 &  32 & 46 & $3.54\times 10^4$ & 2.7 & $+3.9$ & 26.4 \\
+    38 &   8 & 44 & $1.58\times 10^4$ & 1.2 & $+3.9$ & 25.6 \\
+    42 & 168 & 44 & $1.87\times 10^4$ & 1.4 & $+3.8$ & 24.3 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+These 5 towers have $\sim$40 data clusters each passing tight+iso
+selection, while MC predicts $\sim$1--4. Two possibilities:
+(a) \textbf{hot towers in data} producing spurious high-ET,
+narrow-shape clusters that pass BDT + iso; (b) \textbf{MC mis-modeling}
+of a specific topology (e.g. a narrow slice of $\phi$ where the
+inclusive MC underpredicts background). The isolation + tight BDT
+requirement is strong enough that hot towers would need to be
+electronic-noise sources with shower-shape similarity to photons —
+plausible for certain failure modes. Recommend cross-check against
+run-by-run hot-tower QA lists.
+
+\section{Physics Interpretation}
+
+\subsection{Shower-leakage amplification of dead-tower loss}
+
+The $z<-5$ deficit progression
+\[
+  3.97\% \xrightarrow{\text{common}} 5.19\%
+  \xrightarrow{\text{tight}} 25.05\%
+  \xrightarrow{\text{tight+iso}} 53.58\%
+\]
+is not a linear loss per cut; the jump from common to tight is a
+factor of 4.8. A plausibility argument: a dead EMCal tower in the
+middle of a photon shower footprint suppresses energy in neighboring
+towers via lost deposits, which in turn can shift
+$w_{\eta,{\rm cog}x}$ and $w_{\phi,{\rm cog}x}$ out of their tight
+windows. If the effective "kill radius" of one dead tower on signal
+selection is order $\sim$3--4 towers wide rather than 1, a
+$\sim$100-tower dead mask would yield an order-of-magnitude
+$\sim$25\% tight-selection loss --- consistent with the observed
+jump. This argument is heuristic, not quantitative; a full
+toy-simulation cross-check is recommended if a precise breakdown is
+needed.
+
+\subsection{Why $z>+2$ grows with tightness}
+
+The $z>+2$ fraction rises from 9\% at preselect to 44\% at tight+iso.
+This is dominated by two contributions:
+(i) \textbf{Statistical fluctuation} from low MC $N_{\rm eff}$
+(median 4.3 at tight — per-bin Poisson $\sigma \approx 50\%$ relative),
+(ii) \textbf{Real data excess in specific towers} (see
+Table~\ref{tab:hot_tight_iso}). The $|z|>5$ tail is almost purely
+one-sided ($z<-5$ bins are 100--3000$\times$ more common than $z>+5$),
+confirming that the negative tail is dominated by genuine dead-tower
+physics while the positive tail is a mix of stat noise and a handful
+of hot-tower outliers.
+
+\subsection{Cross-section bias estimate (tower-count proxy)}
+\label{sec:bias}
+
+Three bracketing estimates of the acceptance-mismatch systematic,
+in order of increasing conservativeness:
+
+\begin{enumerate}
+  \item \textbf{Hardest-dead lower bound:} $z<-5$ deficit at
+  tight+iso = \textbf{53.6\% (fiducial)}. A-region yield that would
+  be recovered if every currently-zero data tower got its
+  MC-predicted count. Upper bound on what the systematic could be.
+  \item \textbf{All significant deficits:} $z<-2$ deficit at
+  tight+iso = \textbf{64.0\% (fiducial)}. Adds partially-suppressed
+  bins. Still an upper bound since the z$>$+2 excess bins are
+  not accounted for.
+  \item \textbf{Net (deficit minus excess):} tight+iso net
+  $= 64.0\% - 50.1\% = 13.9\%$; tight net
+  $= 38.3\% - 19.6\% = +18.7\%$. Balances statistical fluctuations
+  and possible hot-tower contributions in both directions; most
+  statistics-robust measure of the true physical mismatch.
+\end{enumerate}
+
+We take the net at the \textbf{tight} (not tight+iso) level as a
+representative central estimate: $+18.7\%$. The tight+iso level is
+more iso-amplified but its $z>+2$ excess (dominated by the top-5
+candidate hot towers in Table~\ref{tab:hot_tight_iso}) may be a
+non-statistical real data feature, so subtracting it would
+overcorrect. The cross-section formula
+$\sigma = N_{\rm observed}/(\varepsilon_{\rm MC}\cdot\mathcal{L}\cdot
+\Delta)$ implies
+\[
+  \frac{\sigma_{\rm measured}}{\sigma_{\rm true}}
+  = \frac{1}{1 + ({\rm def_{net}}/N_{\rm data})}
+  = \frac{1}{1 + 0.187}
+  \approx 0.84\,,
+\]
+so the current measurement underestimates the cross-section by
+$\sim$16\% as a representative central estimate, with a gross
+$\mathcal{O}(25\%)$ upper bound from the z$<$-5-only accounting at
+tight and $\mathcal{O}(54\%)$ at tight+iso.
+
+\section{Direct measurement via mask variants}
+\label{sec:mask}
+
+Section~\ref{sec:bias} estimated the acceptance systematic from tower
+counts and bin densities --- a proxy. The right number is the
+observable shift in the unfolded cross-section when the same
+dead-tower list is applied symmetrically to both data and MC. Six
+cross-check variants implement exactly that.
+
+\subsection{Mechanism}
+
+A new cluster-loop veto was added to
+\texttt{RecoEffCalculator\_TTreeReader.C}: at the top of both cluster
+loops (leading-finder and main), if the cluster center tower
+$(i\eta, i\phi)$ is flagged in a TH2I binary mask loaded from
+\texttt{efficiencytool/tower\_masks\_bdt\_nom.root}, the cluster is
+skipped. \textbf{The veto is applied identically to data and MC} (no
+\texttt{issim} gate), so the efficiency denominators and numerators
+remain self-consistent. Three new YAML keys under \texttt{analysis}:
+\texttt{tower\_mask\_on}, \texttt{tower\_mask\_file},
+\texttt{tower\_mask\_name}.
+
+The mask file contains 9 TH2I histograms (96$\times$256, 1 = veto):
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lrl}
+    \toprule
+    histogram & \# masked towers & severity \\
+    \midrule
+    \texttt{mask\_common\_harddead}      & 412  & data=0, MC live (common level) \\
+    \texttt{mask\_common\_harddead\_zlt5} & 990  & + z<-5 (common level) \\
+    \texttt{mask\_common\_harddead\_zlt2} & 2934 & + -5<z<-2 (common level) \\
+    \texttt{mask\_tight\_harddead}       & 1084 & data=0, MC live (tight level) \\
+    \texttt{mask\_tight\_harddead\_zlt5}  & 2177 & + z<-5 (tight level) \\
+    \texttt{mask\_tight\_harddead\_zlt2}  & 3547 & + -5<z<-2 (tight level) \\
+    \texttt{mask\_or\_harddead}          & 1134 & union of common + tight hd \\
+    \texttt{mask\_or\_harddead\_zlt5}     & 2541 & union at z<-5 severity \\
+    \texttt{mask\_or\_harddead\_zlt2}     & 5084 & union at z<-2 severity \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Generator: \texttt{efficiencytool/make\_tower\_masks.C}. 9 variants
+added to \texttt{efficiencytool/make\_bdt\_variations.py}
+(auto-expanded to 27 YAMLs, 9 $\times$ 3 periods). Phase 1 (20 condor
+jobs, DI TTree pipeline) + Phase 2 (10 condor jobs, all-range merge +
+data + \texttt{CalculatePhotonYield}) for the new allz-nominal + 9
+variants completed 2026-04-22.
+
+\subsection{Integrated cross-section shifts}
+
+\begin{table}[H]
+  \centering
+  \caption{Differential cross-section integrated over $\etg \in
+  [10, 36]$ GeV from \texttt{h\_unfold\_sub\_result} in
+  \texttt{Photon\_final\_bdt\_\{variant\}.root}, divided by the new
+  allz nominal ($\sigma_{\rm nom} = 1963$\,pb). All shifts are
+  positive and monotonic in severity. The OR family (union of common
+  and tight masks) produces the largest shifts, as expected since
+  it covers strictly more towers.}
+  \label{tab:mask_shifts}
+  \begin{tabular}{lrr}
+    \toprule
+    variant & $\sigma_{\rm masked} / \sigma_{\rm nom}$ & $\Delta\sigma$ \\
+    \midrule
+    nominal (allz)                       & 1.0000 & 0.00\% \\
+    \midrule
+    \texttt{mask\_common\_harddead}       & 1.0072 & +0.72\% \\
+    \texttt{mask\_common\_harddead\_zlt5} & 1.0217 & +2.17\% \\
+    \texttt{mask\_common\_harddead\_zlt2} & 1.0437 & +4.37\% \\
+    \midrule
+    \texttt{mask\_tight\_harddead}        & 1.0118 & +1.18\% \\
+    \texttt{mask\_tight\_harddead\_zlt5}  & 1.0289 & +2.89\% \\
+    \texttt{mask\_tight\_harddead\_zlt2}  & 1.0487 & +4.87\% \\
+    \midrule
+    \texttt{mask\_or\_harddead}          & 1.0121 & +1.21\% \\
+    \texttt{mask\_or\_harddead\_zlt5}     & 1.0384 & +3.84\% \\
+    \texttt{mask\_or\_harddead\_zlt2}     & \textbf{1.0717} & \textbf{+7.17\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{\figdir/mask_variant_shifts.pdf}
+  \caption{Cross-section ratio $\sigma_{\rm masked}/\sigma_{\rm nominal}$
+  vs mask severity for the three mask families. Severity index:
+  1 = hard-dead only, 2 = $+\,z<-5$, 3 = $+\,-5<z<-2$. All 9 variants
+  give positive shifts, monotonic in severity. The OR family (green)
+  is larger than either single-level family at each severity, with
+  the heaviest OR variant at +7.2\%. Dashed gray = $\sigma_{\rm nom}$
+  reference.}
+  \label{fig:mask_shifts}
+\end{figure}
+
+\subsection{Absolute cross-section spectrum}
+\label{sec:mask_spectrum}
+
+Figure~\ref{fig:mask_spectrum} shows
+$d\sigma/d\etg$ for the nominal and all 9 variants. At visual
+log-scale the shifts are essentially invisible (as expected for
+$\lesssim 7\%$ effects) --- the shape of the spectrum is preserved
+across all masks. No variant produces a catastrophic pT-dependent
+distortion; the shifts are smooth and distribute across bins.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.66\textwidth]{\figdir/mask_variant_xsec_spectrum.pdf}
+  \caption{Differential cross-section $d\sigma/d\etg$ in $|\eta|<0.7$
+  for the nominal allz configuration (open circles) and the 9 mask
+  variants, grouped by family (common, tight, OR). Spectrum shape is
+  preserved across all variants; the few-percent shifts are too small
+  to see on log-y axis. Use Fig.~\ref{fig:mask_bybin} for the per-bin
+  ratio view.}
+  \label{fig:mask_spectrum}
+\end{figure}
+
+\subsection{Per-$\etg$-bin shifts}
+\label{sec:mask_bybin}
+
+Table~\ref{tab:mask_bybin} and Figure~\ref{fig:mask_bybin} break the
+integrated shift down by unfolded-\etg\ bin.
+
+\begin{table}[H]
+  \centering
+  \caption{Per-$\etg$-bin $\sigma_{\rm masked} / \sigma_{\rm nominal}$
+  for the 9 mask variants vs the new allz nominal. Columns grouped by
+  family: \texttt{c\_}* = common-level, \texttt{t\_}* = tight-level,
+  \texttt{or\_}* = OR(common, tight). Severity shorthand: \texttt{hd}
+  = hard-dead only, \texttt{z5} = + $z<-5$, \texttt{z2} = +
+  $-5<z<-2$. Hard-dead-only (\texttt{c\_hd, t\_hd, or\_hd}) is smooth
+  and monotonic; heavier masks are stat-noisy above $\etg\sim 22$
+  GeV.}
+  \label{tab:mask_bybin}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrrrrrrrr}
+    \toprule
+    $\etg$ bin [GeV]
+    & c\_hd & c\_hd\_z5 & c\_hd\_z2
+    & t\_hd & t\_hd\_z5 & t\_hd\_z2
+    & or\_hd & or\_hd\_z5 & or\_hd\_z2 \\
+    \midrule
+    $[10,12)$ & 1.0079 & 1.0263 & 1.0537 & 1.0130 & 1.0343 & 1.0523 & 1.0131 & 1.0441 & 1.0808 \\
+    $[12,14)$ & 1.0060 & 1.0192 & 1.0394 & 1.0108 & 1.0273 & 1.0501 & 1.0117 & 1.0375 & 1.0691 \\
+    $[14,16)$ & 1.0058 & 1.0166 & 1.0259 & 1.0092 & 1.0196 & 1.0426 & 1.0100 & 1.0298 & 1.0542 \\
+    $[16,18)$ & 1.0069 & 1.0063 & 1.0093 & 1.0097 & 1.0153 & 1.0352 & 1.0100 & 1.0211 & 1.0365 \\
+    $[18,20)$ & 1.0079 & 1.0071 & 1.0214 & 1.0099 & 1.0113 & 1.0359 & 1.0094 & 1.0173 & 1.0518 \\
+    $[20,22)$ & 1.0083 & 1.0068 & 1.0208 & 1.0099 & 0.9930 & 1.0151 & 1.0084 & 1.0049 & 1.0458 \\
+    $[22,24)$ & 1.0089 & 0.9845 & 0.9815 & 1.0101 & 0.9723 & 0.9734 & 1.0076 & 0.9785 & 1.0024 \\
+    $[24,26)$ & 1.0100 & 0.9852 & 0.9750 & 1.0103 & 0.9818 & 0.9981 & 1.0068 & 0.9855 & 1.0164 \\
+    $[26,28)$ & 1.0111 & 1.0086 & 1.0362 & 1.0105 & 1.0168 & 1.0523 & 1.0058 & 1.0265 & 1.0988 \\
+    $[28,32)$ & 1.0127 & 1.0131 & 0.9663 & 1.0109 & 1.0030 & 1.0357 & 1.0048 & 1.0094 & 1.0381 \\
+    $[32,36)$ & 1.0155 & 0.9388 & 0.7664 & 1.0127 & 1.0502 & 1.1208 & 1.0045 & 0.9787 & 0.8677 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\textwidth]{\figdir/mask_variant_bybin.pdf}
+  \caption{Per-bin $\sigma_{\rm masked} / \sigma_{\rm nominal}$ vs
+  $\etg$ in three panels: \textbf{top} = common-level mask family,
+  \textbf{middle} = tight-level family, \textbf{bottom} = OR family
+  (union of common + tight at each severity). Hard-dead-only
+  (circles) is smooth and monotonically rising from +0.6--1.3\% at
+  low $\etg$ to +1.2--1.6\% at 32-36\,GeV. Heavier masks
+  ($+\,z<-5$, $+\,z<-2$) show wider scatter above $\etg\sim 22$ GeV
+  where per-bin MC $N_{\rm eff}$ drops. Dashed gray = nominal
+  reference.}
+  \label{fig:mask_bybin}
+\end{figure}
+
+\subsection{Interpretation}
+
+\textbf{Shifts are all positive and much smaller than the tower-count
+estimate (16\%) predicted.} Three observations:
+
+\begin{enumerate}
+  \item \textbf{Sign is consistent with the hypothesis.} Symmetric
+  masking removes MC content in data-dead regions. Since data had zero
+  there to begin with, the MC-only contribution was inflating
+  $\varepsilon_{\rm MC}$ and suppressing the measured cross-section.
+  Removing the asymmetry raises $\sigma$.
+  \item \textbf{Tower-count overestimates the bias.} The tight-level
+  z$<$-2 tower deficit was 63.99\% of the data yield (Table~2) while
+  the cross-section shift under the same mask is only +4.87\%,
+  and the largest OR-family shift is +7.17\%. The ratio tower-deficit
+  to $\sigma$-shift is 10--15 --- because (a) the tower deficit is evaluated
+  at the tight-iso density level where MC $N_{\rm eff}$ is low and
+  stat fluctuations dominate the one-sided tail, (b) unfolding smears
+  narrow features back into neighbor pT bins, and (c) the efficiency
+  correction partly absorbs the MC-side deficit as well.
+  \item \textbf{Severity progression is nearly linear and hasn't
+  plateaued.} If the analysis were fully recovering the bias, the
+  severity-3 point would plateau; instead it's still climbing (4.5\%
+  $\to$ 4.9\%). This means even the heaviest mask underestimates the
+  true physical dead-tower coverage, and the real bias might be a few
+  \% larger than our envelope.
+\end{enumerate}
+
+\subsection{Official cross-section plots (data vs NLO theory)}
+\label{sec:mask_official}
+
+For visual comparison of the mask variants against the theory
+reference (JETPHOX NLO with CT14/BFG~II, and NLO pQCD by
+W.~Vogelsang), we regenerated the standard PPG12 final-cross-section
+plot (\texttt{plot\_final\_selection.C}) for the new allz nominal
+and all 9 mask variants. Each plot shows
+$d^2\sigma/d\eta\,d\etg$ vs $\etg$ with Data (blue circles) overlaid
+on theory predictions, plus the Theory/Data ratio in the lower panel.
+Figure~\ref{fig:mask_official} shows the nominal alongside the
+three heaviest family variants --- the subtle upward shift in data
+(toward the theory curves) under masking is visible in the ratio
+panel.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_nom.pdf}
+    \caption{nominal (all-z)}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_common_harddead_zlt2.pdf}
+    \caption{mask\_common\_harddead\_zlt2 (+4.37\%)}
+  \end{subfigure}\\[2pt]
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_tight_harddead_zlt2.pdf}
+    \caption{mask\_tight\_harddead\_zlt2 (+4.87\%)}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{\figdir/final_bdt_mask_or_harddead_zlt2.pdf}
+    \caption{mask\_or\_harddead\_zlt2 (+7.17\%, heaviest)}
+  \end{subfigure}
+  \caption{Official PPG12 cross-section plots for the allz nominal
+  (top-left) and the three heaviest mask variants (one per family).
+  In each panel: upper frame shows $d\sigma/d\etg$ in $|\eta|<0.7$
+  with data (blue) and theory (JETPHOX, Vogelsang, PYTHIA8); lower
+  frame shows Theory/Data. Masking shifts data upward --- the
+  Theory/Data ratio drops modestly, more noticeably in the
+  OR-heavy variant. The full set of 10 final plots (all mask
+  variants at all severities) is deployed alongside the report on
+  the GitHub Pages site.}
+  \label{fig:mask_official}
+\end{figure}
+
+\subsection{Recommended envelope}
+
+With the OR family now providing a more-conservative mask (union of
+common + tight at each severity), the heaviest variant
+\texttt{mask\_or\_harddead\_zlt2} gives
+$\sigma_{\rm masked} / \sigma_{\rm nom} = 1.072$, i.e.\
+\textbf{+7.2\% one-sided on the cross-section}. This is the
+recommended acceptance-mask systematic envelope. The
+tower-count-based ``$\sim$16\%'' earlier in this report is a bin-density
+proxy and should be treated as informational only; the direct
+measurement supersedes it.
+
+\medskip
+If the MC dead-tower list is eventually fixed at the simulation
+stage, rerun the 9 variants --- the shifts should drop toward zero,
+and the remaining residuals define the post-fix systematic.
+
+\section{Recommendations}
+
+\begin{enumerate}
+  \item \textbf{Fix the MC dead-tower list (HIGH-1, HIGH-2).}
+  Candidate locations to investigate for Run-24 data:
+  \texttt{CaloTowerStatus} (sPHENIX CDB dead/hot-tower entries), the
+  anatree step's tower-calibrator / retower module, and any explicit
+  hot-tower list passed to \texttt{CaloAna24.cc}. Apply the same
+  masking at the MC side --- either at the GEANT/digitization stage or
+  as a post-hoc mask in the slimtree writer. Re-run the nominal
+  pipeline and re-check Tables~\ref{tab:summary_full}
+  and~\ref{tab:summary_fid}; the net-tight deficit should drop to
+  $\mathcal{O}$(1\%) once MC masking matches data.
+  \item \textbf{Cross-check the top data-excess towers (WARN-1).}
+  Query sPHENIX run-by-run hot-tower QA for the 5 towers in
+  Table~\ref{tab:hot_tight_iso}. If confirmed hot in data, add to the
+  analysis-side tower mask (applied to both data and MC) rather than
+  just to MC.
+  \item \textbf{Interim systematic placeholder.} Pending the fix,
+  assign a \textbf{+7\% acceptance-mismatch systematic} on the
+  cross-section (one-sided, based on the heaviest mask variant
+  \texttt{mask\_or\_harddead\_zlt2} which gives +7.17\%; see
+  Section~\ref{sec:mask}). Add this to \texttt{calc\_syst\_bdt.py}
+  as a new \texttt{acceptance} group. This number supersedes the
+  tower-count-based $\sim$16--20\% estimate and reflects the direct,
+  symmetric-mask measurement.
+  \item \textbf{Improve MC statistics at tight level.} The median
+  $N_{\rm eff}=3.8$ at tight is a statistical limit even after
+  inclusive-MC hadd. Consider either (a) aggregating bins into
+  $4\times 4$ tower groups for the diagnostic, or (b) running
+  additional jet MC mass production to raise per-bin stats.
+  \item \textbf{Wire into the standard plotting pipeline.} Add a
+  one-line call to run \texttt{quantify\_tower\_mismatch\_official.C}
+  at the end of every efficiency production so every cross-section
+  variant ships with its own acceptance-mismatch diagnostic.
+\end{enumerate}
+
+\section{Files Modified/Created}
+
+\begin{itemize}
+  \item \texttt{efficiencytool/RecoEffCalculator\_TTreeReader.C}
+  (declarations + 4 fill blocks)
+  \item \texttt{efficiencytool/CalculatePhotonYield.C}
+  (inclusive-MC pass-through block)
+  \item \texttt{efficiencytool/oneforall\_tree\_double\_nom\_only.sub}
+  (Phase 1 submit, restricted to nom period configs)
+  \item \texttt{efficiencytool/oneforall\_nom\_only.sub} (Phase 2
+  submit, restricted to nom all-range config)
+  \item \texttt{plotting/quantify\_tower\_mismatch\_official.C}
+  (analysis macro producing the 16 TH2 plots and the quantitative
+  tables)
+  \item \texttt{plotting/dump\_tower\_stats.py} (Python independent
+  cross-check / detailed table dumper)
+  \item \texttt{plotting/plot\_tight\_etaphi\_compare.C} and
+  \texttt{plot\_\{photon10,data\}\_etaphi\_acceptance.C} (earlier
+  photon10-only standalone version; superseded by the pipeline
+  integration)
+  \item \texttt{plotting/figures/official\_tower\_\{preselect,common,
+  tight,tight\_iso\}\_\{mc,data,ratio,zscore\}.\{pdf,png\}}
+  (16 figures)
+  \item \texttt{efficiencytool/results/Photon\_final\_bdt\_nom.root}
+  (now contains 8 new TH2F histograms)
+\end{itemize}
+
+\section{Reviewer Pass Matrix}
+
+\begin{longtable}{@{}p{5.0cm}p{2.3cm}p{2.3cm}p{2.5cm}p{2.5cm}@{}}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+Code (RecoEff + CalcPhotonYield) & \ok{PASS} & N/A & N/A & \ok{PASS (smoke test on photon10, integrals monotonic)} \\
+\addlinespace
+16 \texttt{official\_tower\_*} PDFs & N/A & \ok{PASS after subtitle re-render} & N/A & N/A \\
+\addlinespace
+Deficit / z-score numbers & N/A & N/A & \ok{PASS (all primitive counts exact)} & N/A \\
+\bottomrule
+\end{longtable}
+
+\end{document}

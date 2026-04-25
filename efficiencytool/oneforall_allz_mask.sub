@@ -1,0 +1,31 @@
+# oneforall_allz_mask.sub
+#
+# Phase-2 condor submit for the new allz nominal + 9 tower-mask variants
+# (10 all-range parent jobs). Requires that oneforall_tree_double_allz_mask.sub
+# has finished so the per-period MC + data outputs exist.
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg in (
+    config_bdt_nom.yaml
+    config_bdt_mask_common_harddead.yaml
+    config_bdt_mask_common_harddead_zlt5.yaml
+    config_bdt_mask_common_harddead_zlt2.yaml
+    config_bdt_mask_tight_harddead.yaml
+    config_bdt_mask_tight_harddead_zlt5.yaml
+    config_bdt_mask_tight_harddead_zlt2.yaml
+    config_bdt_mask_or_harddead.yaml
+    config_bdt_mask_or_harddead_zlt5.yaml
+    config_bdt_mask_or_harddead_zlt2.yaml
+)

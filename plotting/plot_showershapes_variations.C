@@ -14,6 +14,7 @@
 #include <TLegend.h>
 #include <TString.h>
 #include <TLine.h>
+#include <TMath.h>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -71,10 +72,10 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
     // Open files
     const std::string dataFile        = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_" + config_suffix + ".root";
     const std::string sigFile = use_mixed
-        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_photon10_combined_" + config_suffix + ".root"
+        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_combined_" + config_suffix + ".root"
         : "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root";
     const std::string bkgInclusiveFile = use_mixed
-        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet12_combined_inclusive_" + config_suffix + ".root"
+        ? "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_combined_" + config_suffix + ".root"
         : "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_" + config_suffix + ".root";
     // In mixed mode there is no separate non-inclusive jet file; skip it to avoid ROOT open warnings.
     const std::string bkgOnlyFile = use_mixed
@@ -510,49 +511,62 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
                     }
                     if (ndf > 1) {
                         ndf -= 1;
+                        double pval = TMath::Prob(chi2, ndf);
                         myText(0.55, 0.70, 1, Form("#chi^{2}/ndf = %.1f/%d = %.2f", chi2, ndf, chi2 / ndf), 0.035);
+                        myText(0.55, 0.65, 1, Form("p-value = %.4f", pval), 0.035);
                     }
 
-                    // --- Lower pad: ratio plot ---
+                    // --- Lower pad: difference plot ---
                     pad2->cd();
 
-                    TH1D *h_ratio = (TH1D *)proj_data->Clone(Form("ratio_%s", histNameFull.Data()));
-                    h_ratio->Divide(proj_bkg);
-                    // Mask bins where denominator is empty (avoid points at y=0)
-                    for (int ib = 1; ib <= h_ratio->GetNbinsX(); ++ib) {
+                    TH1D *h_diff = (TH1D *)proj_data->Clone(Form("diff_%s", histNameFull.Data()));
+                    h_diff->Add(proj_bkg, -1.0);
+                    // Mask bins where MC is empty
+                    for (int ib = 1; ib <= h_diff->GetNbinsX(); ++ib) {
                         if (proj_bkg->GetBinContent(ib) <= 0) {
-                            h_ratio->SetBinContent(ib, -999);
-                            h_ratio->SetBinError(ib, 0);
+                            h_diff->SetBinContent(ib, -999);
+                            h_diff->SetBinError(ib, 0);
                         }
                     }
-                    h_ratio->SetStats(0);
-                    h_ratio->SetMarkerStyle(20);
-                    h_ratio->SetMarkerSize(0.8);
-                    h_ratio->SetMarkerColor(kBlack);
-                    h_ratio->SetLineColor(kBlack);
+                    h_diff->SetStats(0);
+                    h_diff->SetMarkerStyle(20);
+                    h_diff->SetMarkerSize(0.8);
+                    h_diff->SetMarkerColor(kBlack);
+                    h_diff->SetLineColor(kBlack);
+
+                    // Auto-range: symmetric around zero
+                    double diffMax = 0;
+                    for (int ib = 1; ib <= h_diff->GetNbinsX(); ++ib) {
+                        double v = h_diff->GetBinContent(ib);
+                        if (v > -900) { // skip masked bins
+                            double av = std::abs(v) + h_diff->GetBinError(ib);
+                            if (av > diffMax) diffMax = av;
+                        }
+                    }
+                    if (diffMax < 1e-12) diffMax = 0.01;
 
                     float scaleFactor = 0.7 / 0.3;
-                    h_ratio->SetYTitle("Data / Inclusive MC");
-                    h_ratio->GetYaxis()->SetRangeUser(0.5, 1.5);
-                    h_ratio->GetYaxis()->SetNdivisions(505);
-                    h_ratio->GetYaxis()->SetTitleSize(0.04 * scaleFactor);
-                    h_ratio->GetYaxis()->SetLabelSize(0.04 * scaleFactor);
-                    h_ratio->GetYaxis()->SetTitleOffset(0.6);
-                    h_ratio->GetYaxis()->CenterTitle();
+                    h_diff->SetYTitle("Data #minus Incl. MC");
+                    h_diff->GetYaxis()->SetRangeUser(-1.3 * diffMax, 1.3 * diffMax);
+                    h_diff->GetYaxis()->SetNdivisions(505);
+                    h_diff->GetYaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_diff->GetYaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_diff->GetYaxis()->SetTitleOffset(0.6);
+                    h_diff->GetYaxis()->CenterTitle();
 
-                    h_ratio->SetXTitle(xaxisname.Data());
-                    h_ratio->GetXaxis()->SetNdivisions(505);
-                    h_ratio->GetXaxis()->SetTitleSize(0.04 * scaleFactor);
-                    h_ratio->GetXaxis()->SetLabelSize(0.04 * scaleFactor);
-                    h_ratio->GetXaxis()->SetTitleOffset(1.0);
-                    h_ratio->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+                    h_diff->SetXTitle(xaxisname.Data());
+                    h_diff->GetXaxis()->SetNdivisions(505);
+                    h_diff->GetXaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_diff->GetXaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_diff->GetXaxis()->SetTitleOffset(1.0);
+                    h_diff->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
 
-                    h_ratio->Draw("ep");
+                    h_diff->Draw("ep");
 
-                    TLine *ratioLine = new TLine(xaxismin, 1.0, xaxismax, 1.0);
-                    ratioLine->SetLineStyle(2);
-                    ratioLine->SetLineColor(kBlack);
-                    ratioLine->Draw();
+                    TLine *zeroLine = new TLine(xaxismin, 0.0, xaxismax, 0.0);
+                    zeroLine->SetLineStyle(2);
+                    zeroLine->SetLineColor(kBlack);
+                    zeroLine->Draw();
 
                     c_proj->SaveAs(Form("%s/%s_%s.pdf", savePath.c_str(), dis_pfx.c_str(), histNamesave.Data()));
 
@@ -587,8 +601,8 @@ static bool plotOneConfig(const std::string &configname, bool use_mixed = false)
 
                     c_bkg->SaveAs(Form("%s/pfx_%s.pdf", savePath.c_str(), histNamesave.Data()));
 
-                    delete ratioLine;
-                    delete h_ratio;
+                    delete zeroLine;
+                    delete h_diff;
                     delete pad1;
                     delete pad2;
                     delete c_proj;

@@ -6,7 +6,7 @@ In pp collisions at RHIC, two separate collisions can occur in the same bunch cr
 
 ## Two Approaches
 
-### 1. Full GEANT Double-Interaction MC Blending (`run_showershape_double.sh`)
+### 1. Full GEANT Double-Interaction MC Blending (condor single-pass truth-vertex)
 
 Uses actual double-interaction MC samples produced through full detector simulation, blended with single-interaction MC at proper physics fractions.
 
@@ -14,42 +14,43 @@ Uses actual double-interaction MC samples produced through full detector simulat
 - **0 mrad crossing angle**: 22.4% cluster-weighted (`DOUBLE_FRAC=0.224`, event-level `f_double`=11.1%)
 - **1.5 mrad crossing angle**: 7.9% cluster-weighted (`DOUBLE_FRAC=0.079`, event-level `f_double`=3.9%)
 
-**MC samples** (in `anatreemaker/macro_maketree/sim/run28/`):
-- `photon10_double/` — double-interaction photon (14-30 GeV truth pT)
-- `jet12_double/` — double-interaction jet (14-21 GeV pT)
-- Corresponding nominal: `photon10/` (aka `photon10_nom`), `jet12/`
+**MC samples** (in `anatreemaker/macro_maketree/sim/run28/`) — **8 SI/DI pairs**:
 
-**Two-pass pipeline** (`run_showershape_double.sh`):
+| channel | SI | DI | truth pT |
+|---|---|---|---|
+| signal | `photon5` | `photon5_double` | 0-14 GeV |
+| signal | `photon10` | `photon10_double` | 14-30 GeV |
+| signal | `photon20` | `photon20_double` | 30+ GeV |
+| BG | `jet8` | `jet8_double` | 9-14 GeV |
+| BG | `jet12` | `jet12_double` | 14-21 GeV |
+| BG | `jet20` | `jet20_double` | 21-32 GeV |
+| BG | `jet30` | `jet30_double` | 32-42 GeV |
+| BG | `jet40` | `jet40_double` | 42+ GeV |
 
+SI aliased to `{sample}_nom` in analysis outputs to distinguish from pure-SI runs. **Skipped**: `jet5` (no DI partner exists), `jet50_double` (no SI partner in mc_samples.list).
+
+**Single-pass truth-vertex reweighting pipeline** (primary; replaces prior two-pass reco-vertex scheme):
+
+1. `ShowerShapeCheck.C` reads per-event truth vertex (hard-scatter `vertexz_truth`, and for DI also the min-bias `vertexz_truth_mb`) and applies `TruthVertexWeight(h, z_hard, z_mb)` factorized reweight from `TruthVertexReweightLoader.h`. The reweight histogram `h_w_iterative` is precomputed in `efficiencytool/truth_vertex_reweight/output/{0mrad,1p5mrad}/reweight.root`.
+2. Per-event weight = `cross_section × mix_weight × TruthVertexWeight(...)`. `mix_weight = DOUBLE_FRAC` for `_double` samples and `SINGLE_FRAC = 1 - DOUBLE_FRAC` for `_nom` samples.
+3. Config flag: `analysis.truth_vertex_reweight_on: 1` + `analysis.truth_vertex_reweight_file: ...reweight.root`. Mutually exclusive with the legacy `vertex_reweight_on` (reco-vertex), which is silently forced off when the truth path is on.
+4. `ShowerShapeCheck.C` uses `filetype.compare(size-7, 7, "_double") == 0` to detect DI samples for the R=0.4 truth-jet branch selection. `_nom` aliases resolve to the SI `combined.root` at `anatreemaker/macro_maketree/sim/run28/{SI}/condorout/combined.root`.
+
+**Condor packaging** (17 jobs per crossing-angle config: 8 `_nom` × 1 SI + 8 `_double` × 1 DI + 1 data):
+
+```bash
+cd efficiencytool
+condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub  # 0 mrad
+condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub  # 1.5 mrad
+bash hadd_showershape_di.sh   # final per-channel merge (signal + inclusive BG)
 ```
-Pass 1 (vertex scan): ShowerShapeCheck(config, sample, ..., do_vertex_scan=true, mix_weight=frac)
-  → Fills only h_vertexz weighted by physics fraction
-  → 5 parallel jobs: photon10_double(0.224), jet12_double(0.224), photon10_nom(0.776), jet12_nom(0.776), data
 
-hadd: nom_vtxscan + double_vtxscan → combined_vtxscan (blended MC vertex distribution)
-
-Pass 2 (full analysis): ShowerShapeCheck(config, sample, ..., mix_weight=frac, vtxscan_sim_override=combined)
-  → Full ABCD/efficiency/purity analysis
-  → All MC samples use the SAME blended vtxscan for vertex reweighting
-  → mix_weight applied to all histogram fills
-
-hadd: nom + double → combined outputs
-```
-
-**ShowerShapeCheck.C signature**:
+**ShowerShapeCheck.C signature** (still takes `do_vertex_scan` and `vtxscan_sim_override` for legacy compat, but the DI pipeline passes `do_vertex_scan=false` and empty override; the reweight path is driven entirely by config):
 ```cpp
 void ShowerShapeCheck(configname, filetype, doinclusive, do_vertex_scan, mix_weight, vtxscan_sim_override)
 ```
-- `mix_weight` — multiplicative fraction for all histogram fills (0.224 or 0.776 for 0 mrad); `cross_weight *= mix_weight`
-- `vtxscan_sim_override` — path to blended vtxscan ROOT file for consistent vertex reweighting
-- `do_vertex_scan` — if true, only fills `h_vertexz` (fast Pass 1)
 
-**How to run**:
-```bash
-cd efficiencytool
-bash run_showershape_double.sh config_showershape.yaml        # 0 mrad (22.4%)
-bash run_showershape_double.sh config_showershape.yaml 0.079  # 1.5 mrad (7.9%)
-```
+**Legacy two-pass reco-vertex pipeline** (`run_showershape_double_reco_legacy.sh`, renamed from `run_showershape_double.sh`): preserved for reference/cross-check. Filled `h_vertexz` in Pass 1, used the blended MC reco-vertex distribution as the reweight reference in Pass 2. Retired in favour of the truth-vertex single-pass flow above.
 
 ### 2. Toy Double-Interaction Simulation (`DoubleInteractionCheck.C`)
 
@@ -88,16 +89,22 @@ cd ../plotting && root -l -b -q 'plot_double_interaction.C("config_showershape.y
 
 | File | Purpose |
 |------|---------|
-| `efficiencytool/run_showershape_double.sh` | Full GEANT blending pipeline (2-pass) |
-| `efficiencytool/ShowerShapeCheck.C` | Shower shape analysis (supports mix_weight + vtxscan override) |
-| `efficiencytool/DoubleInteractionCheck.C` | Toy vertex-shift simulation (~1535 lines) |
+| `efficiencytool/submit_showershape_di.sub` | Condor submit for single-pass truth-vertex DI blending (primary) |
+| `efficiencytool/run_showershape_di_job.sh` | Per-job wrapper invoked by condor (4 args: config, sample, doinc, mix_weight) |
+| `efficiencytool/showershape_di_jobs_{0rad,1p5rad}.list` | 17-row job list per crossing-angle config |
+| `efficiencytool/hadd_showershape_di.sh` | Per-channel merge (signal_combined + jet_inc_combined) |
+| `efficiencytool/run_showershape_double_reco_legacy.sh` | Legacy two-pass reco-vertex pipeline (retired reference) |
+| `efficiencytool/ShowerShapeCheck.C` | Shower shape analysis (single-pass truth-vertex when `truth_vertex_reweight_on: 1`) |
+| `efficiencytool/TruthVertexReweightLoader.h` | Factorized reweight loader `TruthVertexWeight(h, z_hard, z_mb)` |
+| `efficiencytool/truth_vertex_reweight/` | Iterative reweight fit (`fit_truth_vertex_reweight.py`, precomputed `reweight.root` per period) |
+| `efficiencytool/DoubleInteractionCheck.C` | Toy vertex-shift simulation (~1446 lines) |
 | `efficiencytool/run_double_interaction.sh` | Toy simulation orchestration |
 | `efficiencytool/MbdPileupHelper.h` | MBD pileup metric calculator |
 | `efficiencytool/NPB_PurityStudy.C` | NPB purity study (0mrad/1.5mrad split) |
-| `efficiencytool/CrossSectionWeights.h` | MC cross-section weights (includes jet5/8/12/40) |
+| `efficiencytool/CrossSectionWeights.h` | MC cross-section weights (all 8 SI/DI pairs + full jet binning) |
 | `plotting/plot_double_interaction.C` | Plotting macro for toy sim results |
-| `anatreemaker/macro_maketree/sim/run28/photon10_double/` | Full GEANT double-interaction MC production |
-| `anatreemaker/macro_maketree/sim/run28/jet12_double/` | Full GEANT double-interaction MC production |
+| `anatreemaker/macro_maketree/sim/run28/photon{5,10,20}_double/` | Full GEANT DI signal MC (3 pT bins) |
+| `anatreemaker/macro_maketree/sim/run28/jet{8,12,20,30,40}_double/` | Full GEANT DI BG MC (5 pT bins) |
 
 ## MBD Pileup Metrics (MbdPileupHelper.h)
 
@@ -116,7 +123,11 @@ Computes timing spread from 128 MBD PMTs (64 north + 64 south):
 
 ## Output Files
 
-**Full GEANT blending** (from `run_showershape_double.sh`):
+**Full GEANT blending** (single-pass via `submit_showershape_di.sub`):
+- `results/MC_efficiencyshower_shape_{sample}_{suffix}.root` (one per sample in `{photon,jet}{pT}_{nom,double}`)
+- After `hadd_showershape_di.sh`: `results/MC_efficiencyshower_shape_signal_combined_{suffix}.root` (6 files merged) and `results/MC_efficiencyshower_shape_jet_inclusive_combined_{suffix}.root` (10 files merged). Cross-section × mix_weight baked into per-event weight, so plain hadd is correct.
+
+**Legacy two-pass output** (from `run_showershape_double_reco_legacy.sh`, retired):
 - `results/MC_efficiencyshower_shape_{sample}_{suffix}_vtxscan.root` (Pass 1)
 - `results/MC_efficiencyshower_shape_{sample}_combined[_inclusive]_{suffix}.root` (Pass 2, merged)
 

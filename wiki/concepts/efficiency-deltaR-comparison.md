@@ -2,7 +2,7 @@
 
 ## Overview
 
-This study compares the factorized photon efficiency chain (reco, isolation, photon ID, total) with and without the `deltaR < 0.1` truth-matching cut, across three MC sample types: single-interaction, double-interaction, and physics-mixed (0 mrad: 81.3% single + 18.7% double). All samples use the `photon10` generator (truth pT 14--30 GeV).
+This study compares the factorized photon efficiency chain (reco, isolation, photon ID, total) with and without the `deltaR < 0.1` truth-matching cut, across three MC sample types: single-interaction, double-interaction, and physics-mixed (0 mrad: 77.6% single + 22.4% double, cluster-weighted). All samples use the `photon10` generator (truth pT 14--30 GeV).
 
 **Key finding**: Removing the deltaR cut improves total efficiency for all interaction types. The reconstruction stage dominates the gain. Isolation efficiency is unaffected. Photon ID (BDT) efficiency degrades in double-interaction MC due to vertex-shifted kinematics, but the net effect is positive because the reconstruction gain outweighs the BDT loss.
 
@@ -55,7 +55,7 @@ Isolation efficiency is unaffected by the deltaR removal (ratios within 0.5% of 
 
 This is the most physically interesting stage. Single MC shows negligible change (-0.2 pp, ratio 0.998). Double MC shows a significant 13 pp reduction (82.6% to 69.4%, ratio 0.840). The mechanism is the ET-dependent BDT threshold: `BDT_min(ET) = intercept + slope * ET`. In double-interaction events, the vertex shift modifies the reconstructed ET = E / cosh(eta_reco), causing the cluster to evaluate the threshold at a shifted working point. The shifted shower-shape variables (particularly w_eta, which is sensitive to eta) further degrade the BDT score.
 
-The mixed 0 mrad sample shows a 3.4% decrease (82.9% to 80.0%), consistent with the 18.7% double-interaction admixture.
+The mixed 0 mrad sample shows a 3.4% decrease (82.9% to 80.0%), consistent with the 22.4% cluster-weighted double-interaction admixture.
 
 ### Total Efficiency
 

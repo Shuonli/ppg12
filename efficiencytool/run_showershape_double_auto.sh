@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
+# LEGACY two-pass showershape pipeline (reco-vertex reweight). The primary
+# pipeline is now the single-pass truth-vertex-reweighting condor flow via
+# submit_showershape_di.sub + showershape_di_jobs_{0rad,1p5rad}.list; this
+# script remains as a reference implementation / cross-check only.
+#
 # Run the full double-interaction showershape pipeline for a crossing angle:
 #   1) Compute f_double from per-run luminosity data (calc_pileup_range.C)
-#   2) Run the two-pass showershape blending (run_showershape_double.sh)
+#   2) Run the two-pass showershape blending (run_showershape_double_reco_legacy.sh)
 #
 # Usage:
 #   bash run_showershape_double_auto.sh 0mrad
@@ -75,11 +80,11 @@ echo ""
 
 rm -f "${PILEUP_LOG}"
 
-# --- Step 2: run the two-pass showershape blending ---
-echo "[auto] Step 2: Running run_showershape_double.sh ${CONFIGNAME} ${CW_DOUBLE} ..."
+# --- Step 2: run the two-pass showershape blending (legacy reco-vertex path) ---
+echo "[auto] Step 2: Running run_showershape_double_reco_legacy.sh ${CONFIGNAME} ${CW_DOUBLE} ..."
 echo ""
 
-bash run_showershape_double.sh "${CONFIGNAME}" "${CW_DOUBLE}"
+bash run_showershape_double_reco_legacy.sh "${CONFIGNAME}" "${CW_DOUBLE}"
 
 echo ""
 echo "============================================================"

@@ -47,7 +47,7 @@ MIXED_PFXS = ["dis_mixed"]
 # Human-readable labels per figure prefix, used in subsection headers and captions
 PFX_LABELS = {
     "dis":       "Nominal",
-    "dis_mixed": "Double-interaction mixed (0.813 \u00d7 single + 0.187 \u00d7 double)",
+    "dis_mixed": "Double-interaction mixed (0.776 \u00d7 single + 0.224 \u00d7 double)",
 }
 
 
@@ -219,6 +219,19 @@ def write_variant_fragment(suffix, pt_bins, out_tex_path,
         cuts = ALL_CUTS
     if pt_indices is None:
         pt_indices = [1, 2, 3]
+
+    # Only include pfxs that have at least one figure for this suffix — lets
+    # --mixed be passed globally without emitting MISSING-box sections for
+    # configs that don't have double-interaction blending figures.
+    def _pfx_has_any_figure(pfx):
+        for cut in cuts:
+            for ipt in pt_indices:
+                for var in FIGURE_VARS:
+                    fname = f"{pfx}_{var}_eta{ieta}_pt{ipt}_{cut}.pdf"
+                    if os.path.exists(os.path.join(FIGURES_SRC, suffix, fname)):
+                        return True
+        return False
+    pfxs = [p for p in pfxs if _pfx_has_any_figure(p)]
 
     # Directory where this fragment's figures live
     figs_rel = f"{suffix}/figures"   # relative to showershape_report/
@@ -435,8 +448,10 @@ def main():
             pfxs=args.pfx, cuts=args.cuts, pt_indices=args.pt_indices,
         )
 
-    # Write master (always includes all discovered suffixes for completeness)
-    master_tex = write_master_tex(all_suffixes if not args.suffix else suffixes, out_dir)
+    # Write master always from all discovered suffixes, regardless of whether
+    # --suffix was used to rebuild a subset. Previous behavior pinned the master
+    # to the single --suffix, silently dropping the other 9 fragments from the PDF.
+    master_tex = write_master_tex(all_suffixes, out_dir)
 
     if args.compile:
         print("\nCompiling PDF...")

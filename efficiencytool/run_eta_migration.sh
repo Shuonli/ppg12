@@ -43,6 +43,27 @@ hadd -f results/eta_migration_signal_${VAR_TYPE}.root \
 echo "[run_eta_migration] Merged single → results/eta_migration_signal_${VAR_TYPE}.root"
 
 # ==================================================================
+# Background (jet MC): run EtaMigrationStudy for jet samples
+# ==================================================================
+echo ""
+echo "[run_eta_migration] === Background (jet MC) ==="
+echo ""
+
+root -l -b -q 'EtaMigrationStudy.C("'"${CONFIG_SINGLE}"'", "jet20")' &
+root -l -b -q 'EtaMigrationStudy.C("'"${CONFIG_SINGLE}"'", "jet30")' &
+
+wait
+echo "[run_eta_migration] Jet MC jobs finished."
+
+# Merge jet-sample results (cross-section weighting already applied per-sample).
+# jet50 sample is excluded — bdt_split.root is empty; matches MergeSim.C pipeline usage.
+hadd -f results/eta_migration_background_${VAR_TYPE}.root \
+  results/eta_migration_jet20_${VAR_TYPE}.root \
+  results/eta_migration_jet30_${VAR_TYPE}.root
+
+echo "[run_eta_migration] Merged background → results/eta_migration_background_${VAR_TYPE}.root"
+
+# ==================================================================
 # Double interaction: run EtaMigrationStudy with do_double=true
 # ==================================================================
 echo ""
@@ -70,9 +91,10 @@ echo "[run_eta_migration] Merged double → results/eta_migration_double_signal_
 echo ""
 echo "============================================================"
 echo "[run_eta_migration] Output files:"
-echo "  Single: results/eta_migration_signal_${VAR_TYPE}.root"
-echo "  Double: results/eta_migration_double_signal_${VAR_TYPE_DOUBLE}.root"
+echo "  Single:     results/eta_migration_signal_${VAR_TYPE}.root"
+echo "  Background: results/eta_migration_background_${VAR_TYPE}.root"
+echo "  Double:     results/eta_migration_double_signal_${VAR_TYPE_DOUBLE}.root"
 echo "============================================================"
 echo ""
 echo "Next: plot with"
-echo "  cd ../plotting && root -l -b -q 'plot_eta_migration.C(\"../efficiencytool/results/eta_migration_signal_${VAR_TYPE}.root\", \"../efficiencytool/results/eta_migration_double_signal_${VAR_TYPE_DOUBLE}.root\")'"
+echo "  cd ../plotting && root -l -b -q 'plot_eta_migration.C(\"../efficiencytool/results/eta_migration_signal_${VAR_TYPE}.root\", \"../efficiencytool/results/eta_migration_double_signal_${VAR_TYPE_DOUBLE}.root\", \"../efficiencytool/results/eta_migration_background_${VAR_TYPE}.root\")'"

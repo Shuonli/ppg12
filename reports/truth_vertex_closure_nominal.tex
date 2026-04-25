@@ -1,0 +1,153 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{xspace}
+
+\newcommand{\ET}{\ensuremath{E_{\mathrm{T}}}\xspace}
+\newcommand{\pp}{\mbox{$p$+$p$}\xspace}
+\newcommand{\zhard}{\ensuremath{z_{\mathrm{hard}}^{\mathrm{truth}}}\xspace}
+\newcommand{\zmb}{\ensuremath{z_{\mathrm{mb}}^{\mathrm{truth}}}\xspace}
+\newcommand{\zreco}{\ensuremath{z^{\mathrm{reco}}_{\mathrm{vtx}}}\xspace}
+\newcommand{\chidf}{\ensuremath{\chi^{2}/\mathrm{ndf}}\xspace}
+
+\title{\large\textbf{Truth-vertex reweight: derivation target and post-pipeline closure}\\[2pt]
+\normalsize\textbf{\textit{sPHENIX} Internal} --- PPG12 isolated-photon cross-section}
+\author{Internal note}
+\date{2026-04-22}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+The postdoc's two questions, answered up front:
+
+\begin{itemize}
+  \item \textbf{(a) Is the weight derived by matching the inclusive-MC reco-vertex to data?}
+        \emph{Partially.} The matching observable \emph{is} \zreco, but the MC forward model used by the fitter is \texttt{photon10}~+~\texttt{photon10\_double} only (blended at the per-period double-interaction fraction). \textbf{No jet MC enters the fit.} The term ``inclusive MC'' is therefore misleading for the current reweight files; the reweight is better described as a \emph{photon10-driven} fit to data \zreco, applied \emph{universally} to all MC samples through $w(\zhard)\cdot w(\zmb)$.
+
+  \item \textbf{(b) After the nominal pipeline, does the weighted-sum MC reco-vertex match data?}
+        \emph{Yes for 0\,mrad, marginally for 1.5\,mrad, and within $O(1\text{--}2\%)$ for the all-range lumi-weighted hadd in the analysis core} ($|z|<60$ cm). See Fig.~\ref{fig:closure}. The 1.5 mrad iterative fit did not converge at the derivation stage, which leaves the post-pipeline closure there at the $\chidf=14.8$ level on shape (tails up to $\sim$15\%).
+\end{itemize}
+
+The central qualitative answer (``we are matching MC \zreco\ to data \zreco, and the post-pipeline MC reproduces data'') is correct. The quantitative caveats (photon-only forward model, 1.5\,mrad non-convergence) deserve attention and are discussed below.
+
+\section{How the reweight is derived}
+
+Fit driver: \texttt{efficiencytool/truth\_vertex\_reweight/fit\_truth\_vertex\_reweight.py}.
+Loader consumed downstream: \texttt{efficiencytool/TruthVertexReweightLoader.h}.
+
+\paragraph{Target.} Period-filtered, trigger-filtered data \zreco\ histogram $D(\zreco)$, 80 bins of 5\,cm, $z \in [-200,200]$\,cm. Selection: \texttt{runnumber}~$\in$~[run\_min, run\_max) and \texttt{scaledtrigger[bit~30]}~$\neq 0$ (Photon\_4\_GeV).
+
+\paragraph{MC forward model.} The fit builds
+\[
+  M(\zreco) \;=\; f_{\mathrm{single}}\,M_{\mathrm{single}}(\zreco) \;+\; f_{\mathrm{double}}\,M_{\mathrm{double}}(\zreco),
+\]
+where each term is filled at \zreco\ but weighted event-by-event by
+\[
+  w_{\mathrm{evt}} =
+  \frac{\sigma}{N_{\mathrm{gen}}}
+  \cdot w(\zhard) \cdot w(\zmb) \text{ (DI only; SI uses } w(\zhard)\text{)}.
+\]
+The per-period fractions $f_{\mathrm{double}}$ are $0.224$ (0\,mrad) and $0.079$ (1.5\,mrad), from \texttt{calc\_pileup\_range.C}. Live fit metadata in \texttt{output/\{0mrad,1p5mrad\}/reweight.root} records:
+\begin{itemize}
+  \item \texttt{sample\_list\_single = 'photon10'}
+  \item \texttt{sample\_list\_double = 'photon10\_double'}
+\end{itemize}
+\texttt{fit.log} in both periods shows \texttt{``skipping single MC jet12 (not matching filter 'photon10')''}. Jet MC is listed in the fitter's YAML but was excluded from the live run. This is the only material caveat on the derivation.
+
+\paragraph{Iteration scheme.} Three stages (parametric Gaussian $w(z)\propto\exp[\tfrac12 z^2(1/\sigma_{\mathrm{gen}}^2 - 1/\sigma_{\mathrm{tgt}}^2)]$; Stage-2 residual $c(\zreco)=D/M_{\mathrm{stage1}}$ smoothed; iterative Lucy--Richardson multiplicative update $w \mathrel{*}= (D/M)^{\alpha=0.5}$ with 30-iter cap and $\max|D/M-1|<0.01$ convergence). The downstream loader reads ONLY \texttt{h\_w\_iterative} (1D in truth~$z$, 5\,cm bins).
+
+\paragraph{Convergence (derivation stage).}
+\begin{itemize}
+  \item 0\,mrad: converged in 8 iterations, $\max|D/M-1|=0.0086$ inside the 99th-percentile closure window ($|z|<145$\,cm).
+  \item 1.5\,mrad: \textbf{did not converge} in 30 iterations, final $\max|D/M-1|=0.111$ inside $|z|<83$\,cm.
+\end{itemize}
+
+\paragraph{Downstream application.}
+\texttt{RecoEffCalculator\_TTreeReader.C} loads the period's \texttt{h\_w\_iterative} at line~284 and multiplies it into every per-event weight at lines 1517--1522 alongside the cross-section and the per-event \texttt{lumi/lumi\_target} factor, applied uniformly to all 8 SI + 8 DI MC samples. The legacy reco-vertex flag \texttt{vertex\_reweight\_on} is \emph{actually} zeroed in code at L145--150 when the truth path is on; it is not a YAML-only convention. \texttt{MergeSim.C}, \texttt{merge\_periods.C} and \texttt{CalculatePhotonYield.C} are plain \texttt{TFileMerger}s / yield arithmetic, so the reweight is correctly absorbed once at \texttt{RecoEffCalculator\_TTreeReader.C} and propagated by downstream hadds.
+
+\section{Post-pipeline closure}
+
+After the nominal pipeline (per-period \texttt{RecoEffCalculator\_TTreeReader.C} $\rightarrow$ \texttt{MergeSim.C} per period $\rightarrow$ \texttt{merge\_periods.C} lumi-weighted hadd), a 1D \texttt{h\_vertexz} is written at the top level of each data and MC output file. This is the observable to compare against data.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.99\linewidth]{../plotting/figures/truth_vertex_closure_nominal.pdf}
+  \caption{Data (black points) vs.\ weighted MC (blue line) reco-vertex distribution after the nominal pipeline, unit-normalised on $|z|<60$\,cm. \textbf{Left:} 0\,mrad period. \textbf{Middle:} 1.5\,mrad period. \textbf{Right:} lumi-weighted all-range hadd. Bottom pads: data/MC ratio; dashed vertical lines mark the analysis $|z|<60$\,cm window. The MC per-event weight already includes the cross-section, \texttt{lumi/lumi\_target}, and $w(\zhard)\cdot w(\zmb)$. $\chidf$ and KS computed on shape inside $|z|<60$\,cm.}
+  \label{fig:closure}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Post-pipeline closure statistics on shape, $|z|<60$\,cm analysis window, 120 bins of 1\,cm. MC integrals include cross-section\,$\times$\,lumi$_{\mathrm{weight}}$\,$\times$\,truth-vertex reweight per event. Data/MC ratios at representative $z$ given for intuition.}
+  \begin{tabular}{lccccc}
+    \toprule
+    period & \chidf\ (ndf=120) & KS & $D/M$ @ $z=-50$ & $D/M$ @ $z=0$ & $D/M$ @ $z=+50$ \\
+    \midrule
+    0\,mrad  (runs 47289--51274) & 1.31  & 0.0007 & 1.000 & 1.006 & 0.992 \\
+    1.5\,mrad (runs 51274--54000) & 14.79 & 0.0024 & 1.144 & 0.999 & 1.041 \\
+    all runs (hadd, lumi-weighted) & 9.67  & 0.0025 & 1.017 & 0.993 & 1.006 \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:closure}
+\end{table}
+
+\paragraph{Interpretation.}
+\begin{itemize}
+  \item \textbf{0\,mrad is closed.} $\chidf=1.31$ is statistics-limited: data has $3.4\times10^{7}$ clusters, so any residual sub-percent shape bias is visible. Ratio is flat at $\sim$1 across the full analysis window.
+  \item \textbf{1.5\,mrad is not closed in the tails.} The derivation-stage non-convergence propagates: bin-by-bin $D/M$ reaches $\sim$1.14 at $z=-50$\,cm and $\sim$1.04 at $z=+50$\,cm. Core (|z|$<30$\,cm) is sub-percent.
+  \item \textbf{All-range hadd is closed in the core.} Shape agreement is within 1--2\% at $|z|<50$\,cm; the large $\chidf=9.67$ reflects the sub-percent deviations becoming many-$\sigma$ with the $5\times10^{7}$ data sample. KS $\sim 2.5\times10^{-3}$ on shape is consistent with ``the shape matches the data in the analysis window''.
+\end{itemize}
+
+The post-pipeline closure \emph{confirms that the weighted combination of all 16 SI + DI MC samples reproduces the data \zreco\ shape in the analysis window}. It does not, on its own, validate that the photon10-only derivation was the right choice: the 1.5\,mrad tail discrepancy is a direct symptom of the fit-stage non-convergence.
+
+\section{Caveats and recommendations}
+
+\paragraph{Methodology cross-check (recommended).}
+To bound the channel-dependence worry, derive a second reweight using \texttt{jet12}~+~\texttt{jet12\_double} as the forward MC (fitter supports this via \texttt{--match jet12}) and compare \texttt{h\_w\_iterative} to the live photon10-driven version at the same period. The spread in the two $w(z)$'s is a defensible input to a ``truth-vertex-reweight forward-model'' systematic. Physics expectation: $z_{\mathrm{hard}}^{\mathrm{truth}}$ is a beam-profile observable and is channel-independent at fixed beam optics; any non-trivial $w$ spread therefore flags a trigger-selected residual-pileup or acceptance effect, which the current photon-only reweight absorbs and then pushes onto jet samples.
+
+\paragraph{1.5\,mrad non-convergence.} Suggested actions: (i)~try a relaxed $\alpha$ (e.g.\ 0.3) or a wider max-iter cap; (ii)~expand the closure window from $|z|<z_{\mathrm{cut,99}}=83$\,cm to cover the analysis fiducial symmetrically; (iii)~include jet MC in the forward model (likely root cause, since the 1.5\,mrad beam is tight and data there is jet-dominated). Combined with the cross-check above, option (iii) addresses both issues.
+
+\paragraph{Cross-section systematic.}
+A biased $w(z)$ couples to the cross-section dominantly through the vertex-cut acceptance in $\epsilon_{\mathrm{reco}}$. Rough envelope: $O(1\text{--}2\%)$ on the nominal cross-section, concentrated in the lowest-\ET\ bin. Currently no dedicated systematic covers this; the photon10-vs-jet12 cross-check fit is the cleanest way to assign one.
+
+\section*{Reviewer pass matrix}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Artifact & 2a physics & 2b cosmetics & 2c re-derivation & 3.5 fix-validator \\
+\midrule
+\texttt{fit\_truth\_vertex\_reweight.py} (read-only)                & WARN   & N/A   & PASS     & N/A \\
+\texttt{RecoEffCalculator\_TTreeReader.C} (read-only)               & INFO   & N/A   & PASS     & N/A \\
+\texttt{plotting/figures/truth\_vertex\_closure\_nominal.pdf}       & N/A    & PASS  & PASS     & PASS \\
+Closure $\chidf$, $D/M$ ratios (Table~\ref{tab:closure})            & N/A    & N/A   & PASS     & N/A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Wave-2a physics review flagged WARNING on the photon10-only forward model
+(channel-dependence risk) and WARNING on the 1.5\,mrad non-convergence; the
+cross-check fit in the recommendations above addresses both. Wave-2c
+independently re-derived $\chidf = 1.32 / 14.91 / 9.75$ against the claimed
+values $1.31 / 14.79 / 9.67$ (all within 1\%). Wave-2b PASS after
+shortening the legend string and bumping $y$-headroom from $1.35\times$ to
+$1.5\times$.
+
+\paragraph{Files.}
+\begin{itemize}\small
+  \item \texttt{plotting/plot\_truth\_vertex\_closure.C} (new macro)
+  \item \texttt{plotting/figures/truth\_vertex\_closure\_nominal.pdf} (new figure)
+  \item \texttt{reports/truth\_vertex\_closure\_nominal.tex} (this report)
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,34 @@
+# oneforall_tree_double_mask_only.sub
+#
+# Phase-1 condor submit for the 6 tower-mask cross-check variants (12 period
+# jobs). Each runs the full DI TTree pipeline (17 samples = 8 SI + 8 DI +
+# 1 data) with the tower-mask veto applied in both data and MC. Memory
+# matches oneforall_tree_double.sub (16 GB).
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = logs/$(cfg).tree_double.log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+queue cfg in (
+    config_bdt_mask_common_harddead_0rad.yaml
+    config_bdt_mask_common_harddead_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt5_0rad.yaml
+    config_bdt_mask_common_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_common_harddead_zlt2_0rad.yaml
+    config_bdt_mask_common_harddead_zlt2_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_0rad.yaml
+    config_bdt_mask_tight_harddead_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt5_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt5_1p5mrad.yaml
+    config_bdt_mask_tight_harddead_zlt2_0rad.yaml
+    config_bdt_mask_tight_harddead_zlt2_1p5mrad.yaml
+)

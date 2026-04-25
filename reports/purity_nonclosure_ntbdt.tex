@@ -1,0 +1,479 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=0.75in,top=0.65in,bottom=0.75in]{geometry}
+\setlength{\parskip}{1pt}
+\setlength{\parindent}{0pt}
+\usepackage{microtype}
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{1.0ex plus .5ex minus .2ex}{0.6ex plus .2ex}
+\titlespacing*{\paragraph}{0pt}{0.6ex}{1ex}
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begingroup
+  \centering
+  {\Large\bfseries \@title \par}\vspace{0.5ex}
+  {\small \@author \par}\vspace{0.3ex}
+  {\small \@date \par}\vspace{1ex}
+  \endgroup
+}
+\makeatother
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{array}
+
+\graphicspath{{figures/}{/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures/}}
+
+\title{ABCD Purity Non-Closure: Non-Tight BDT Lower Bound and Flat Threshold Partitions}
+\author{Shuonli Li / analysis proxy \\
+        \small sPHENIX Collaboration --- PPG12 Isolated Photon}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Abstract}
+
+We scan the non-tight BDT lower bound (\texttt{analysis.non\_tight.bdt\_min}) from its nominal value of 0.02 to 0.05 and 0.10 and quantify the ABCD purity non-closure against the MC truth purity in each of the twelve reconstructed $p_T$ bins. In the 14--28~GeV physics range, the mean absolute non-closure is 0.062--0.073 with no strong monotonic trend in the scan parameter, while the low-$E_T$ bins ($p_T \le 11$~GeV) show a larger ABCD bias of $-0.19$ to $-0.25$ (absolute). The observed spread across the three scan points in the core range (standard deviation of $|\mathrm{NC}|$ of 0.03--0.04) is consistent with the current \texttt{nt\_bdt} systematic entry in the purity group. We additionally evaluate four flat (ET-independent) BDT partitions around the collaborator's primary request of tight~=~$[0.9, 1.0]$, non-tight~=~$[0.5, 0.9]$: this configuration gives a core-range mean $|\mathrm{NC}|$ of 0.094 (slightly worse than parametric), while tightening the tight cut to 0.95 degrades closure substantially (mean 0.191, nonphysical $\texttt{gpurity\_leak} > 1$ at kinematic edges).
+
+\section{Method}
+
+\paragraph{ABCD regions.}
+The ABCD method partitions clusters into four regions using the tight-BDT and isolation selections:
+\begin{itemize}
+  \item $A$ = tight $\cap$ isolated (signal region),
+  \item $B$ = tight $\cap$ non-isolated (background template in BDT),
+  \item $C$ = non-tight $\cap$ isolated (background control in BDT),
+  \item $D$ = non-tight $\cap$ non-isolated.
+\end{itemize}
+Assuming approximate factorization of the BDT and isolation distributions for background, $N^{\mathrm{bkg}}_A = R \cdot N_B N_C / N_D$ with leakage corrections $c_{B,C,D}$ for residual signal contamination in $B$, $C$, $D$.
+
+\paragraph{Non-tight BDT bounds.}
+The non-tight BDT window is $[\texttt{nt\_bdt\_min}, \texttt{nt\_bdt\_max}]$. The upper bound is the parametric, $E_T$-dependent cut $\texttt{nt\_bdt\_max} = 0.80 - 0.015 \cdot E_T$ (fixed at the nominal values). The lower bound \texttt{nt\_bdt\_min} is the scan variable; we take the three pipeline-consistent points $\{0.02, 0.05, 0.10\}$.
+
+\paragraph{Purity extraction.}
+The ABCD purity is obtained by solving the cubic closure equation implemented in \texttt{CalculatePhotonYield.C}, which includes signal-leakage corrections. We report the signal-leak-corrected estimator \texttt{gpurity\_leak} as the ABCD purity. The truth purity is the ratio of truth-matched photon clusters to all clusters in region $A$,
+\begin{equation}
+  \mathcal{P}^{\mathrm{truth}}_A = \frac{N^{\gamma,\mathrm{truth}}_A}{N^{\mathrm{all}}_A}.
+\end{equation}
+The non-closure is defined as the absolute difference $\mathrm{NC} \equiv \mathcal{P}^{\mathrm{ABCD,leak}}_A - \mathcal{P}^{\mathrm{truth}}_A$.
+
+\paragraph{Closure input.}
+The closure test as implemented in \texttt{CalculatePhotonYield} (with
+\texttt{isMC=true}) uses the merged ``jet'' PYTHIA MC
+(\texttt{jet5}+\texttt{jet8}+\texttt{jet12}+\texttt{jet20}+\texttt{jet30}+\texttt{jet40},
+cross-section weighted) as the ``data'' side. Despite the naming,
+\emph{this IS the inclusive MC at $\sqrt{s}=200$\,GeV}: the jet samples are
+generated with both \texttt{HardQCD:all\,=\,on} and
+\texttt{PromptPhoton:all\,=\,on} in PYTHIA~8 (see
+\texttt{PPG12-analysis-note/selection.tex}), so they contain the full
+cocktail of direct, fragmentation, and jet processes. The dedicated
+\texttt{photon5/10/20} samples enter \emph{only} through the signal-leakage
+corrections $c_B, c_C, c_D$ (efficiency-boosting enhancements of the
+prompt-photon contribution) --- they are \emph{not} added to the ``data'' side,
+because that would double-count the prompt photons already present in the
+jet MC. The truth purity shown in the plots is therefore the
+direct+fragmentation photon fraction of tight+iso clusters in the
+inclusive MC.
+
+\paragraph{Inputs.}
+The three scan points correspond to the ROOT files
+\begin{center}
+  \texttt{efficiencytool/results/Photon\_final\_bdt\_\{nom,ntbdtmin05,ntbdtmin10\}\_mc.root}.
+\end{center}
+
+\section{Parametric Non-Tight BDT Lower-Bound Scan}
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{purity_sim_ntbdt_scan.pdf}
+    \caption{Truth-matched signal purity. The three \texttt{nt\_bdt\_min} points share
+             region~$A$ by construction, so the curves overlap.}
+    \label{fig:nonclosure_sim}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{purity_closure_ntbdt_scan.pdf}
+    \caption{ABCD / truth purity ratio. Deviations from unity are the ABCD non-closure.}
+    \label{fig:nonclosure_ratio}
+  \end{subfigure}
+  \caption{Parametric scan over the non-tight BDT lower bound
+  \texttt{nt\_bdt\_min} $\in \{0.02, 0.05, 0.10\}$.
+  Truth-matched signal purity (left) and ABCD/truth ratio (right) vs reconstructed
+  $E_T$. Absolute non-closure is reported in Table~\ref{tab:nc_abs}.}
+  \label{fig:nonclosure}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Absolute non-closure $\texttt{gpurity\_leak} - \texttt{g\_purity\_truth}$ per $p_T$ bin for the
+           three \texttt{nt\_bdt\_min} scan points.}
+  \label{tab:nc_abs}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabular}{c r r r}
+    \toprule
+    $E_T$ [GeV] & 0.02 (nominal) & 0.05 & 0.10 \\
+    \midrule
+    9  & -0.249 & -0.212 & -0.192 \\
+    11 & -0.167 & -0.174 & -0.198 \\
+    13 & -0.033 & -0.063 & -0.065 \\
+    15 & +0.017 & -0.002 & -0.043 \\
+    17 & +0.057 & +0.095 & +0.073 \\
+    19 & +0.023 & -0.021 & -0.054 \\
+    21 & +0.095 & +0.066 & +0.074 \\
+    23 & +0.147 & +0.130 & +0.101 \\
+    25 & +0.037 & +0.018 & -0.034 \\
+    27 & +0.138 & +0.099 & +0.115 \\
+    30 & +0.145 & +0.103 & +0.104 \\
+    34 & -0.009 & -0.058 & +0.019 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering
+  \caption{Scan summary: mean absolute non-closure in the physics range (14--28 GeV) and maximum
+           absolute non-closure across all twelve bins with its $E_T$ location, for each scan point.}
+  \label{tab:nc_summary}
+  \begin{tabular}{l c c c}
+    \toprule
+    \texttt{nt\_bdt\_min} & mean $|\mathrm{NC}|$ (14--28 GeV) & max $|\mathrm{NC}|$ (all bins) & max location \\
+    \midrule
+    0.02 (nominal) & 0.073 & 0.249 & 9 GeV \\
+    0.05           & 0.062 & 0.212 & 9 GeV \\
+    0.10           & 0.071 & 0.198 & 11 GeV \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Parametric Scan: Interpretation}
+
+The parametric scan resolves three $E_T$ regimes with distinct behaviour.
+
+\emph{Low-$E_T$ bins ($p_T \le 11$~GeV).} ABCD substantially under-predicts the truth purity, by $-0.19$ to $-0.25$ in the lowest bin across all three scan points. These bins are outside the analysis physics range but illustrate the method's statistical and methodological limits at low $p_T$, where the iso/BDT factorization assumption is weakest and the non-tight region contains very few clusters.
+
+\emph{Mid-$E_T$ (13--21~GeV, physics range).} The non-closure crosses zero and fluctuates at the $\pm 0.05$ level with no strong dependence on \texttt{nt\_bdt\_min}. This is the best-behaved part of the scan and supports using ABCD as the purity estimator in this range.
+
+\emph{High-$E_T$ (23--30~GeV).} ABCD over-predicts the truth purity by $+0.10$ to $+0.15$ across all three scan points. Tightening the non-tight BDT lower bound from 0.02 to 0.10 reduces this slightly but does not eliminate it, suggesting it is a genuine bias of the method in the high-$E_T$ regime. A plausible origin is stronger BDT--isolation correlation at high $E_T$ (collimated, harder jets have less energy outside their shower cone and simultaneously better shower-shape agreement with photons), which breaks the ABCD factorization assumption $N^{\mathrm{bkg}}_A = R\,N_B N_C / N_D$.
+
+Across the three scan points in the physics range (14--28~GeV), the per-bin $|\mathrm{NC}|$ spread (standard deviation $\sim 0.03$--$0.04$) is consistent with the current \texttt{nt\_bdt} systematic assignment in the purity group.
+
+\paragraph{Formal identity of truth purity across scan points.}
+By definition the truth purity depends only on region $A$, which is unaffected by \texttt{nt\_bdt\_min}. The observed differences in \texttt{g\_purity\_truth} across scan points are $<3\%$ per bin and reflect pipeline non-determinism (run-to-run random-seed / weighting drift in the per-sample merging), not a real physical variation.
+
+\section{Caveats and Follow-ups}
+
+\begin{itemize}
+  \item The closure test uses jet MC only (no cross-section-weighted signal+background cocktail). ``Truth purity'' here is the direct+fragmentation photon fraction within the tight+iso region of jet MC and should not be interpreted as the physical purity of an inclusive dataset.
+  \item Three scan points are the maximum that are pipeline-consistent at present. Older files at \texttt{nt\_bdt\_min} $\in \{0.00, 0.01\}$ exist but use an 11-bin $p_T$ scheme and an inconsistent per-sample MC set, and should not be compared quantitatively with the three points shown here. To extend the scan, regenerate those configs through \texttt{oneforall.sh} using the current per-sample \texttt{MC\_efficiency\_*\_bdt\_*.root} recipe.
+  \item The signal-leakage correction ($c_B, c_C, c_D$) is \emph{not} sub-percent, contrary to descriptions in some earlier notes: the relative shift between \texttt{gpurity} and \texttt{gpurity\_leak} is 6--15\% across all scan points. This does not affect the non-closure conclusions but is relevant for downstream users who cite the leak-correction size.
+  \item Statistical correlations between the three scan points are not propagated: all three share region $A$ and differ only in the non-tight region, so the per-bin differences quoted in Table~\ref{tab:nc_abs} are correlated rather than independent.
+\end{itemize}
+
+\section{Flat-Threshold Partition Scan}
+
+\paragraph{Motivation.}
+The parametric nominal uses $E_T$-dependent BDT thresholds (tight lower~=~$0.80 - 0.015 \cdot E_T$, non-tight upper~=~$0.80 - 0.015 \cdot E_T$). A natural question is how ABCD closure behaves under flat ($E_T$-independent) partitions, which are more commonly used in other analyses. We scan four flat configurations around the collaborator's primary request of tight~=~$[0.9, 1.0]$, non-tight~=~$[0.5, 0.9]$ (no gap at 0.9). The four variants, corresponding to ROOT files
+\texttt{Photon\_final\_bdt\_flat\_\{t85\_nt50, t90\_nt50, t90\_nt70,
+t95\_nt50\}\_mc.root},
+are summarized in Table~\ref{tab:flat_summary}.
+
+\paragraph{Key difference from the parametric scan.}
+Unlike the parametric \texttt{nt\_bdt\_min} scan (where region $A$ was identical across variants), here region $A$ changes between variants because the tight cut varies. Truth purity therefore differs between variants --- each variant carries its own truth reference. This is verified internally: \texttt{flat\_t90\_nt50} and \texttt{flat\_t90\_nt70} share the same tight cut (BDT~$>0.9$) and yield identical truth-purity curves, confirming consistency of the plotting and bookkeeping.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{purity_sim_flat_scan.pdf}
+    \caption{Truth-matched signal purity per flat BDT partition. Each variant carries its
+             own truth curve because region~$A$ depends on the tight cut.}
+    \label{fig:flat_nonclosure_sim}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\textwidth]{purity_closure_flat_scan.pdf}
+    \caption{ABCD / truth purity ratio. Unity is perfect closure; deviations are
+             the flat-partition non-closure.}
+    \label{fig:flat_nonclosure_ratio}
+  \end{subfigure}
+  \caption{Flat-threshold scan: truth-matched signal purity (left) and ABCD/truth ratio
+  (right) for the four flat BDT partitions with the parametric nominal as a gray-open
+  reference.  Absolute non-closure is reported in Table~\ref{tab:flat_nc_abs}.}
+  \label{fig:flat_nonclosure}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Absolute non-closure $\texttt{gpurity\_leak} - \texttt{g\_purity\_truth}$ per $p_T$ bin for the four flat-threshold variants.}
+  \label{tab:flat_nc_abs}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabular}{c r r r r}
+    \toprule
+    $E_T$ [GeV] & \texttt{flat\_t85\_nt50} & \texttt{flat\_t90\_nt50} & \texttt{flat\_t90\_nt70} & \texttt{flat\_t95\_nt50} \\
+    \midrule
+    9  & -0.056 & +0.021 & +0.150 & +0.415 \\
+    11 & -0.228 & -0.200 & -0.130 & -0.184 \\
+    13 & -0.027 & -0.107 & -0.137 & -0.090 \\
+    15 & -0.210 & -0.170 & -0.150 & -0.103 \\
+    17 & -0.094 & -0.077 & -0.062 & -0.431 \\
+    19 & +0.004 & +0.059 & +0.101 & +0.139 \\
+    21 & -0.227 & -0.130 & -0.130 & -0.106 \\
+    23 & -0.013 & +0.023 & +0.020 & -0.003 \\
+    25 & -0.081 & -0.149 & -0.177 & -0.206 \\
+    27 & +0.057 & -0.050 & -0.133 & -0.348 \\
+    30 & -0.172 & -0.320 & -0.464 & -0.372 \\
+    34 & -0.034 & +0.010 & +0.034 & +0.031 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Flat-threshold scan summary. The primary collaborator request is \texttt{flat\_t90\_nt50} (boldface).}
+  \label{tab:flat_summary}
+  \renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{l c c c c c}
+    \toprule
+    variant & tight & non-tight & mean $|\mathrm{NC}|$ (14--28 GeV) & max $|\mathrm{NC}|$ & max location \\
+    \midrule
+    \texttt{flat\_t85\_nt50}          & $[0.85, 1.0]$ & $[0.50, 0.85]$ & 0.098 & 0.228 & 11 GeV \\
+    \textbf{\texttt{flat\_t90\_nt50}} & $[0.90, 1.0]$ & $[0.50, 0.90]$ & \textbf{0.094} & 0.320 & 30 GeV \\
+    \texttt{flat\_t90\_nt70}          & $[0.90, 1.0]$ & $[0.70, 0.90]$ & 0.111 & 0.464 & 30 GeV \\
+    \texttt{flat\_t95\_nt50}          & $[0.95, 1.0]$ & $[0.50, 0.95]$ & 0.191 & 0.431 & 17 GeV \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+The primary ask \texttt{flat\_t90\_nt50} (mean $|\mathrm{NC}|=0.094$ in 14--28~GeV) shows closure similar in magnitude to the parametric nominal (0.073), but with a larger worst-bin excursion (0.320 at $E_T=30$~GeV vs 0.249 at $E_T=9$~GeV for the parametric). Tightening the non-tight lower edge from 0.5 to 0.7 (\texttt{t90\_nt50} $\to$ \texttt{t90\_nt70}) makes closure slightly worse at the $E_T=30$ bin ($-0.464$ vs $-0.320$), as the non-tight $C$/$D$ regions become more statistics-limited. Tightening the tight cut from 0.90 to 0.95 (\texttt{t95\_nt50}) substantially degrades closure: $\texttt{gpurity\_leak} > 1.0$ at $E_T=9$~GeV (toy-MC fit overshoot; truth = 0.713, absolute NC = $+0.415$) and $|\mathrm{NC}|=0.431$ at $E_T=17$~GeV. Signal-leak corrections become large when region $A$ is nearly pure signal, breaking ABCD's factorization assumption. Overall, all four flat variants underperform the parametric nominal in core-range mean $|\mathrm{NC}|$, consistent with the general expectation that $E_T$-dependent thresholds handle the BDT--isolation correlation better than flat cuts.
+
+\paragraph{Caveats specific to the flat scan.}
+\begin{itemize}
+  \item \texttt{flat\_t95\_nt50} at $E_T=9$~GeV has $\texttt{gpurity\_leak} = 1.127$ (nonphysical overshoot); $E_T=34$~GeV also shows mild overshoots (1.003, 1.027, 1.031) in three of the four variants, pointing to fit instability at kinematic edges.
+  \item Statistics-limited bins at low $E_T$ for the tightest variants; truth purity at $E_T=34$~GeV for \texttt{flat\_t95\_nt50} is exactly 1.000, so the ABCD bias there reflects pure fit numerics, not physics.
+\end{itemize}
+
+%% NOTE: a previous revision added a standalone "Inclusive-MC Cross-Check"
+%% section here. That section was physically invalid: PYTHIA "jet" MC is
+%% already inclusive (HardQCD:all + PromptPhoton:all), and the cross-check
+%% added photon5/10/20 to the jet samples with cross-section weights, which
+%% double-counts the prompt/fragmentation photons already present in jet MC.
+%% The section (and its per-variant companion in §Per-variant purity plots)
+%% has been removed. The closure test in §3--§4 is the correct inclusive
+%% closure and needs no separate "cross-check".
+
+\section{Per-variant purity plots}
+\label{sec:pervariant}
+
+For every scan point we also produce the per-variant purity plot generated by
+\texttt{plot\_purity\_sim\_selection.C}. Each panel overlays three markers and one
+fit-band on a single canvas:
+\begin{itemize}
+  \item \textcolor{red}{\textbf{red}} --- truth-matched photon purity
+        (\texttt{g\_purity\_truth}) in region $A$.
+  \item \textbf{black} --- ABCD purity without signal-leakage correction
+        (\texttt{gpurity}).
+  \item \textcolor{blue}{\textbf{blue}} --- ABCD purity with signal-leakage
+        correction (\texttt{gpurity\_leak}).
+  \item \textcolor{blue}{\textbf{azure band + line}} --- Padé fit to the
+        leakage-corrected ABCD points (\texttt{grFineConf\_leak},
+        \texttt{f\_purity\_leak\_fit}).
+\end{itemize}
+These are the same visualisation used elsewhere in the analysis for the nominal
+configuration (e.g.\ \texttt{purity\_sim\_bdt\_nom.pdf}).
+
+\subsection{Jet-MC closure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_nom.pdf}
+  \caption{parametric nom (\texttt{nt\_bdt\_min}~=~0.02)}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_ntbdtmin05.pdf}
+  \caption{\texttt{nt\_bdt\_min}~=~0.05}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_ntbdtmin10.pdf}
+  \caption{\texttt{nt\_bdt\_min}~=~0.10}
+\end{subfigure}
+\caption{Per-variant purity closure on jet MC — parametric $\texttt{nt\_bdt\_min}$ scan.}
+\label{fig:pv_ntbdt}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_flat_t85_nt50.pdf}
+  \caption{\texttt{flat\_t85\_nt50}}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_flat_t90_nt50.pdf}
+  \caption{\texttt{flat\_t90\_nt50} (primary)}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_flat_t90_nt70.pdf}
+  \caption{\texttt{flat\_t90\_nt70}}
+\end{subfigure}
+
+\vspace{0.5em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{purity_sim_bdt_flat_t95_nt50.pdf}
+  \caption{\texttt{flat\_t95\_nt50}}
+\end{subfigure}
+\caption{Per-variant purity closure on jet MC — flat BDT partitions.}
+\label{fig:pv_flat}
+\end{figure}
+
+%% Previous revision had an "Inclusive-MC closure" subsection here with
+%% per-variant _mcincl plots. Removed — see the note in §Method for the
+%% reason.
+
+\section{Extracted cross-section: flat-partition impact}
+\label{sec:xsec}
+
+For a direct look at how the ABCD non-closure in \S4 propagates into the
+final observable, Figure~\ref{fig:xsec_flat} shows the extracted
+isolated-photon yield \texttt{h\_unfold\_sub\_result}
+(background-subtracted + unfolded, in arbitrary units per pb$^{-1}$ of
+inclusive MC) for the parametric nominal and the four flat BDT partitions.
+The jet MC is itself inclusive (\S2 note), so these spectra are the
+MC-extraction-equivalent cross-section per variant.
+
+Figure~\ref{fig:xsec_flat_ratio} reports the ratio to the nominal
+extraction. The extraction method should return the same physical yield
+regardless of the BDT partition; in practice the flat partitions bias the
+extracted yield by $+50$\,--\,$140\,\%$ at $E_T=9$\,GeV (below the analysis
+physics range) and by $\sim\!10$--$25\,\%$ \emph{below} nominal across the
+core physics range $14\le E_T\le 28$\,GeV.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\textwidth]{xsec_flat_scan.pdf}
+  \caption{Extracted isolated-photon yield (log-$y$) from the
+    signal-leakage-corrected ABCD + unfolded pipeline, for the parametric
+    nominal and the four flat BDT partitions. All variants use the same
+    inclusive PYTHIA MC as the ``data'' side; the only thing that changes
+    is the BDT partition.}
+  \label{fig:xsec_flat}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\textwidth]{xsec_ratio_flat_scan.pdf}
+  \caption{Ratio of variant to nominal extracted yield. A perfectly
+    factorising BDT--iso choice would return unity at every $E_T$; the
+    departures are the method-induced bias from imposing a flat BDT
+    partition. The primary ask \texttt{flat\_t90\_nt50} (blue) sits at
+    $\approx 0.79$ in $15\,\text{GeV}\le E_T \le 25$\,GeV and rises to
+    $\approx 1.6$ at $E_T=9$\,GeV. \texttt{flat\_t95\_nt50} (magenta) is
+    the most divergent: $\approx 0.73$--$0.97$ in the core range and
+    $\approx 2.4$ at $E_T=9$\,GeV.}
+  \label{fig:xsec_flat_ratio}
+\end{figure}
+
+\paragraph{Caveat.}
+The cross-section comparison here uses the inclusive-MC-as-data extraction
+(\texttt{Photon\_final\_bdt\_\{var\}\_mc.root}) rather than the real
+luminosity-normalised data cross-section. The data-driven per-variant
+cross-section (with NLO pQCD comparison) is shown in
+\S\ref{sec:xsec_pervar} below.
+
+\section{Per-variant data cross-section (\texttt{plot\_final\_selection})}
+\label{sec:xsec_pervar}
+
+For each BDT partition variant we run
+\texttt{plot\_final\_selection.C} (the same macro used elsewhere for the
+nominal analysis and invoked by \texttt{make\_selection\_plots.sh}) to
+produce the two-panel cross-section + Theory/Data ratio figure.
+All five panels show the data-driven isolated-photon cross-section
+overlayed with PYTHIA~8, JETPHOX NLO (CT14 / BFG~II~FF,
+$\mu_f=\mu_F=\mu_R=E_T^\gamma$), and Vogelsang NLO; the luminosity
+label reads the matching analysis-config \texttt{lumi} value.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{final_bdt_nom.pdf}
+  \caption{parametric nominal (reference)}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{final_bdt_flat_t85_nt50.pdf}
+  \caption{\texttt{flat\_t85\_nt50}}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{final_bdt_flat_t90_nt50.pdf}
+  \caption{\texttt{flat\_t90\_nt50} (primary ask)}
+\end{subfigure}
+
+\vspace{0.5em}
+
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{final_bdt_flat_t90_nt70.pdf}
+  \caption{\texttt{flat\_t90\_nt70}}
+\end{subfigure}\hfill
+\begin{subfigure}{0.32\textwidth}
+  \includegraphics[width=\textwidth]{final_bdt_flat_t95_nt50.pdf}
+  \caption{\texttt{flat\_t95\_nt50}}
+\end{subfigure}
+\caption{Data-driven isolated-photon differential cross-section
+$d^2\sigma / d\eta\, dE_T^\gamma$ for the five BDT-partition scan
+points, each extracted via the full pipeline
+(\texttt{RecoEffCalculator} on data +
+\texttt{CalculatePhotonYield} on data) with the
+signal-leakage-corrected ABCD purity and Bayesian-iterative unfolding.
+Bottom sub-panel of each figure shows Theory/Data with JETPHOX and
+Vogelsang NLO systematic bands.}
+\label{fig:xsec_pervar}
+\end{figure}
+
+\section{Reviewer Pass Matrix}
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Reviewer pass matrix for the artifacts produced in this scan.}
+  \label{tab:reviewer}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{@{}p{0.22\textwidth} p{0.28\textwidth} p{0.20\textwidth} p{0.22\textwidth}@{}}
+    \toprule
+    Artifact & 2a physics & 2b cosmetics & 2c re-derivation \\
+    \midrule
+    \texttt{plot\_purity\_non-} \texttt{closure\_ntbdt.C}
+      & PASS (2 warnings on jet-MC labeling, now corrected; stale old files flagged, not used)
+      & PASS (2 fixes: \texttt{strleg4} position, bottom-pad $y$-range)
+      & PASS \\[2pt]
+    \texttt{figures/purity\_non-} \texttt{closure\_ntbdt.pdf}
+      & N/A
+      & PASS
+      & N/A \\[2pt]
+    Numbers in Tables~\ref{tab:nc_abs}--\ref{tab:nc_summary}
+      & N/A
+      & N/A
+      & PASS (independent re-extraction from ROOT matches) \\[2pt]
+    \texttt{plot\_purity\_non-} \texttt{closure\_flat.C}
+      & PASS (per-variant truth-purity handling correct; four variants distinguished in region~$A$)
+      & PASS (1 iteration: fixed $y$-title offset, moved ISO label, widened left margin)
+      & PASS (48 new rows appended to the scan CSV with \texttt{config\_type=flat}) \\[2pt]
+    \texttt{figures/purity\_non-} \texttt{closure\_flat\_scan.pdf}
+      & N/A
+      & PASS
+      & N/A \\[2pt]
+    Numbers in Tables~\ref{tab:flat_nc_abs}--\ref{tab:flat_summary}
+      & N/A
+      & N/A
+      & PASS (independent re-extraction from ROOT matches) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\end{document}

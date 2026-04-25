@@ -16,5 +16,5 @@ output       = logs/variant_train_$(VARIANT)_$(Cluster).$(Process).out
 error        = logs/variant_train_$(VARIANT)_$(Cluster).$(Process).err
 log          = /tmp/variant_train_$(VARIANT)_$(Cluster).log
 getenv       = true
-request_memory = 14GB
+request_memory = 24GB
 queue cfg from variant_configs/filelist_$(VARIANT).txt

@@ -85,15 +85,15 @@ The `oneforall.sub` HTCondor submit file queues one job per `config_bdt_*.yaml`,
 
 These are significant analysis workflows that run alongside the main cross-section pipeline.
 
-### Double-Interaction Blending (`run_showershape_double.sh`)
+### Double-Interaction Blending (showershape, single-pass)
 
-Full GEANT double-interaction MC samples blended with single-interaction MC at physics fractions (18.7% for 0 mrad, 7.2% for 1.5 mrad crossing angle). Uses a two-pass architecture:
+Full GEANT double-interaction MC samples blended with single-interaction MC at cluster-weighted fractions (22.4% for 0 mrad, 7.9% for 1.5 mrad crossing angle; computed by `calc_pileup_range.C`). Eight SI/DI pairs are available: photon5/10/20 and jet8/12/20/30/40 (see [Double-Interaction Efficiency](../concepts/double-interaction-efficiency.md) for the sample list).
 
-- **Pass 1 (vertex scan):** Fills only `h_vertexz` for each MC sample weighted by physics fraction
-- **hadd:** Merges nominal and double vtxscan files into a blended MC vertex distribution
-- **Pass 2 (full analysis):** Runs `ShowerShapeCheck.C` with `mix_weight` and blended vtxscan for consistent vertex reweighting
+The pipeline is now **single-pass with truth-vertex reweighting**: `ShowerShapeCheck.C` reads `h_w_iterative` from `efficiencytool/truth_vertex_reweight/output/{0mrad,1p5mrad}/reweight.root` via `TruthVertexReweightLoader.h` and applies `w(z_truth)` (single MC) or `w(z_hard)*w(z_mb)` (double MC) per event, multiplied by `mix_weight` (= cluster-weighted DI fraction or its SI complement). The previous two-pass reco-vertex approach has been retired (`run_showershape_double.sh` → `run_showershape_double_reco_legacy.sh`).
 
-Key files: `efficiencytool/run_showershape_double.sh`, `efficiencytool/ShowerShapeCheck.C` (1917 lines)
+Condor packaging: `submit_showershape_di.sub` with row lists `showershape_di_jobs_{0rad,1p5rad}.list` (17 rows = 8 SI/DI pairs + 1 data per crossing-angle config); per-job driver `run_showershape_di_job.sh`.
+
+Key files: `efficiencytool/submit_showershape_di.sub`, `efficiencytool/run_showershape_di_job.sh`, `efficiencytool/ShowerShapeCheck.C` (1917 lines), `efficiencytool/TruthVertexReweightLoader.h`, `efficiencytool/truth_vertex_reweight/config.yaml`.
 
 ### Shower Shape Analysis (`ShowerShapeCheck.C`)
 
