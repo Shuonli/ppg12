@@ -856,6 +856,11 @@ std::cout << "p-value = " << pvalue << "\n";
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>();     // 0 for no reweighting, 1 for reweighting
     //we move the reweight handling to updtream turn it off here
     reweight = 0;
+    // T2 (unfold_prior_flat): when set, replace the response prior with a
+    // uniform truth distribution before Bayes unfolding. With finite iter
+    // (resultit=2 nominal), prior choice biases the unfolded result; the
+    // difference vs the MC-shape prior is the prior systematic.
+    int flat_prior = configYaml["analysis"]["unfold"]["flat_prior"].as<int>(0);
 
     std::vector<TH1D *> h_unfold_sub_list;
     std::vector<TH1D *> h_unfold_sub_list_copy;
@@ -943,6 +948,32 @@ std::cout << "p-value = " << pvalue << "\n";
     {
         response_reweighted = response;
         response_leak_reweighted = response;
+    }
+
+    // T2: flatten response truth prior in place. RooUnfoldBayes consumes
+    // Htruth as the iter-0 prior in absolute terms, so we set each bin to
+    // (Integral / N_bins) to preserve total normalization while making the
+    // SHAPE uniform — that is the actual prior systematic (shape, not norm).
+    if (flat_prior)
+    {
+        std::cout << "[unfold] flat_prior=1 — flattening response truth prior shape" << std::endl;
+        auto flatten_truth = [](RooUnfoldResponse *resp) {
+            if (!resp) return;
+            TH1 *htruth = (TH1 *)resp->Htruth();
+            int nbins = htruth->GetNbinsX();
+            double total = htruth->Integral();
+            double per_bin = (nbins > 0) ? (total / nbins) : 1.0;
+            std::cout << "  [flat_prior] nbins=" << nbins
+                      << " total=" << total
+                      << " per_bin=" << per_bin << std::endl;
+            for (int ib = 1; ib <= nbins; ++ib) {
+                htruth->SetBinContent(ib, per_bin);
+                htruth->SetBinError(ib, 0.0);
+            }
+        };
+        flatten_truth(response_reweighted);
+        if (response_leak_reweighted != response_reweighted)
+            flatten_truth(response_leak_reweighted);
     }
 
     for (int i = 0; i < niterations_total; i++)

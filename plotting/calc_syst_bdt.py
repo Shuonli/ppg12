@@ -212,7 +212,7 @@ def aggregate_type(syst_type: str, vmap: dict, h_nom: ROOT.TH1F,
         var_type = f"bdt_{name}"
         try:
             return load_spectrum(var_type, results_dir, histogram)
-        except (FileNotFoundError, KeyError) as e:
+        except (FileNotFoundError, KeyError, OSError) as e:
             if skip_missing:
                 print(f"  [SKIP] {var_type}: {e}")
                 return None
@@ -515,7 +515,7 @@ def main():
             result = aggregate_type(type_name, vmap, h_nom,
                                     args.results, args.histogram,
                                     args.skip_missing)
-        except (FileNotFoundError, KeyError) as e:
+        except (FileNotFoundError, KeyError, OSError) as e:
             print(f"  [ERROR] {type_name}: {e}")
             continue
         if result is None:
