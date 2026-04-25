@@ -48,8 +48,21 @@ case "${CONFIGNAME}" in
 esac
 
 RUN_MIN=$(python3 -c "import yaml; print(yaml.safe_load(open('${CONFIGNAME}'))['analysis']['run_min'])")
+# T3 (di_fraction systematic): allow per-config override of DOUBLE_FRAC via
+# analysis.double_frac_override. Falls through to run_min-based default when
+# the field is absent or null. ruamel emits "None" for null; we treat any
+# non-numeric value as absent.
+DOUBLE_FRAC_OVERRIDE=$(python3 -c "
+import yaml
+y = yaml.safe_load(open('${CONFIGNAME}'))
+v = y.get('analysis', {}).get('double_frac_override', None)
+print('' if v is None else v)
+" 2>/dev/null)
 
-if [[ "${RUN_MIN}" -ge 0 && "${RUN_MIN}" -lt 51274 ]]; then
+if [[ -n "${DOUBLE_FRAC_OVERRIDE}" ]]; then
+  DOUBLE_FRAC="${DOUBLE_FRAC_OVERRIDE}"
+  CROSSING="override (run_min=${RUN_MIN})"
+elif [[ "${RUN_MIN}" -ge 0 && "${RUN_MIN}" -lt 51274 ]]; then
   DOUBLE_FRAC=0.224
   CROSSING="0mrad"
 elif [[ "${RUN_MIN}" -ge 51274 ]]; then

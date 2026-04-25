@@ -291,6 +291,25 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     TFile *fdatain = new TFile(datainput.c_str(), "READ");
 
+    // Defensive guard (F2): catch corrupted/recovered files from transient
+    // gpfs I/O during heavy condor batches. ROOT auto-recovers truncated
+    // files and silently leaves TH1 streamer state inconsistent — downstream
+    // Clone()/Add() then segfaults. Abort cleanly with an explicit message.
+    if (!fdatain || fdatain->IsZombie())
+    {
+        std::cerr << "[FATAL] CalculatePhotonYield: cannot open data input file "
+                  << datainput << " (zombie). Aborting." << std::endl;
+        return;
+    }
+    if (fdatain->TestBit(TFile::kRecovered))
+    {
+        std::cerr << "[FATAL] CalculatePhotonYield: data input file " << datainput
+                  << " was auto-recovered by ROOT (likely corrupted/truncated). "
+                  << "Streamer state of TH1 objects is unreliable. Aborting." << std::endl;
+        fdatain->Close();
+        return;
+    }
+
     TH1F *h_tight_iso_cluster_signal_data = (TH1F *)fdatain->Get(tight_iso_cluster_signal_name_data.c_str());
 
     TH1F *h_tight_noniso_cluster_signal_data = (TH1F *)fdatain->Get(tight_noniso_cluster_signal_name_data.c_str());
@@ -298,6 +317,15 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     TH1F *h_nontight_iso_cluster_signal_data = (TH1F *)fdatain->Get(nontight_iso_cluster_signal_name_data.c_str());
 
     TH1F *h_nontight_noniso_cluster_signal_data = (TH1F *)fdatain->Get(nontight_noniso_cluster_signal_name_data.c_str());
+
+    if (!h_tight_iso_cluster_signal_data || !h_tight_noniso_cluster_signal_data ||
+        !h_nontight_iso_cluster_signal_data || !h_nontight_noniso_cluster_signal_data)
+    {
+        std::cerr << "[FATAL] CalculatePhotonYield: missing ABCD histogram(s) in "
+                  << datainput << ". Aborting." << std::endl;
+        fdatain->Close();
+        return;
+    }
 
     TH1F *h_tight_iso_cluster_background_data = (TH1F *) h_tight_iso_cluster_signal_data->Clone("h_tight_iso_cluster_background_data");
 

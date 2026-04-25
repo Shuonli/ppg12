@@ -43,14 +43,22 @@ from make_bdt_variations import (  # noqa: E402
 # Colors for groups in the breakdown plot
 # ---------------------------------------------------------------------------
 GROUP_COLORS = {
-    # Use a saturated violet so purity-related systematics stay distinct
-    # from escale/eres tones in the breakdown overlay.
-    "purity": ROOT.kViolet + 1,
-    "eff":    ROOT.kAzure + 7,
-    "escale": ROOT.kGreen - 2,
-    "eres":   ROOT.kOrange + 1,
-    "mbd":    ROOT.kViolet - 1,
-    "unfolding": ROOT.kMagenta + 2,
+    # Phase-2 (2026-04-25) restructure: 9 Resp groups + flat sources.
+    # Colors chosen for distinguishability in the breakdown overlay
+    # (avoid kGray/kBlack which collide with the total band).
+    "photon_id":      ROOT.kAzure + 7,    # blue — BDT cuts + NPB
+    "abcd_region":    ROOT.kCyan + 2,     # teal — noniso boundary
+    "purity_method":  ROOT.kViolet + 1,   # violet — fit form + non-closure
+    "iso_resolution": ROOT.kRed + 1,      # red   — mciso pedestal
+    "acceptance":     ROOT.kPink + 7,     # pink  — phi-symm tower mask
+    "unfolding":      ROOT.kMagenta + 2,  # magenta — reweight + iter scan
+    "escale":         ROOT.kGreen - 2,    # green — energy scale
+    "eres":           ROOT.kOrange + 1,   # orange — energy resolution
+    "di_fraction":    ROOT.kSpring - 6,   # yellow-green — DI blending (Phase-3)
+    # Legacy keys (kept for backward compat with old breakdown plots):
+    "purity":         ROOT.kViolet + 1,
+    "eff":            ROOT.kAzure + 7,
+    "mbd":            ROOT.kViolet - 1,
 }
 
 
@@ -127,39 +135,35 @@ def write_syst_sum(outdir: str, h_al, h_ah, h_rl, h_rh) -> None:
 # Core computation
 # ---------------------------------------------------------------------------
 def calc_delta(h_var: ROOT.TH1F, h_nom: ROOT.TH1F, tag: str):
-    """Return (h_dev_abs, h_dev_rel).
+    """Return (h_dev_abs, h_dev_rel) — per-bin signed |var - nom|.
 
-    Per-bin shift = sign(var-nom) * sqrt(max(0, (var-nom)^2 - sigma_stat^2)).
-    sigma_stat is the propagated bin error of the difference, which under
-    Sumw2 reflects the combined MC stat of variant and nominal. Phase-1.A2
-    confirmed that h_unfold_sub_leak_2 carries nontrivial MC stat all the
-    way through MergeSim and RooUnfoldBayes(kErrors), so the subtraction
-    deflates per-bin syst by MC noise rather than treating noise as syst.
+    No stat-subtract. The earlier stat-subtract path
+    (sqrt(max(0, dev^2 - sigma_stat^2))) was OVER-aggressive: ROOT
+    propagates sigma_dev = sqrt(sigma_var^2 + sigma_nom^2) which assumes
+    uncorrelated samples, but PPG12 systematic variants share the same
+    underlying MC events with the nominal (only the cut decision differs
+    per event), so the true sigma_dev is much smaller than the propagated
+    value. The over-subtracted shift was silently zeroing real systematic
+    deviations, especially at high pT where MC stat is small.
 
-    Note: variants share the underlying MC events, so var and nom are
-    statistically correlated; the propagated sigma assumes uncorrelated
-    samples and slightly OVER-subtracts. For high-pT bins where D_eff < 100
-    events this is conservative-but-acceptable. (See Phase-1.A2 / G4.)
+    Standard treatment matches most published xsec analyses: take |dev|
+    directly. MC-stat noise contamination is small (<<dev) for ABCD-
+    propagated systematics and only matters for high-pT bins with very
+    low statistics, where it is treated as a known conservative
+    over-estimate rather than subtracted.
     """
     h_dev = h_var.Clone(f"h_dev_{tag}")
     h_dev.SetDirectory(0)
-    h_dev.Add(h_nom, -1.0)  # ROOT propagates Sumw2 into h_dev's bin errors
+    h_dev.Add(h_nom, -1.0)
     h_dev_rel = h_dev.Clone(f"h_dev_rel_{tag}")
     h_dev_rel.SetDirectory(0)
     for i in range(1, h_nom.GetNbinsX() + 1):
         nom = h_nom.GetBinContent(i)
-        dev_abs = h_dev.GetBinContent(i)
-        sigma_stat = h_dev.GetBinError(i)
-        shift = (max(0.0, dev_abs * dev_abs - sigma_stat * sigma_stat)) ** 0.5
-        sign = 1.0 if dev_abs >= 0 else -1.0
-        h_dev.SetBinContent(i, sign * shift)
-        h_dev.SetBinError(i, sigma_stat)
         if nom != 0:
-            h_dev_rel.SetBinContent(i, sign * shift / nom)
-            h_dev_rel.SetBinError(i, sigma_stat / abs(nom))
+            h_dev_rel.SetBinContent(i, h_dev.GetBinContent(i) / nom)
         else:
             h_dev_rel.SetBinContent(i, 0.0)
-            h_dev_rel.SetBinError(i, 0.0)
+        h_dev_rel.SetBinError(i, 0.0)
     return h_dev, h_dev_rel
 
 

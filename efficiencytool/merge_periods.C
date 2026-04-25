@@ -23,8 +23,10 @@
 
 #include <TFile.h>
 #include <TFileMerger.h>
+#include <TH1.h>
 #include <TNamed.h>
 #include <TSystem.h>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -32,15 +34,81 @@
 
 namespace {
 
+// Post-merge integral validator: read back a canonical histogram from the
+// output and compare to the sum across inputs. Catches the silent partial-
+// merge mode where TFileMerger swallows a transient I/O failure on one
+// input and writes a single-period output that still RECREATEs cleanly.
+// Returns true if integrals match within tolerance (or the validation
+// histogram doesn't exist in this file type — e.g. response files).
+bool validate_merge_integrals(const std::string &in0, const std::string &in1,
+                              const std::string &out, const char *probe_name,
+                              double rel_tol = 1e-3)
+{
+    auto integral = [](const std::string &path, const char *hname) -> double {
+        TFile *f = TFile::Open(path.c_str(), "READ");
+        if (!f || f->IsZombie()) { if (f) f->Close(); return -1.0; }
+        if (f->TestBit(TFile::kRecovered)) { f->Close(); return -2.0; }
+        TH1 *h = (TH1 *) f->Get(hname);
+        if (!h) { f->Close(); return -3.0; }
+        double i = h->Integral(0, h->GetNbinsX() + 1);  // include under/over
+        f->Close();
+        return i;
+    };
+    const double i0 = integral(in0, probe_name);
+    const double i1 = integral(in1, probe_name);
+    const double io = integral(out, probe_name);
+    if (i0 < 0 || i1 < 0) {
+        std::cerr << "[VALIDATE] cannot read probe " << probe_name
+                  << " from per-period inputs (rc " << i0 << "/" << i1
+                  << "); skipping integral check\n";
+        return true;  // probe not present => not applicable
+    }
+    if (io < 0) {
+        std::cerr << "[FATAL] merge output unreadable for probe " << probe_name
+                  << " in " << out << " (rc=" << io << ")\n";
+        return false;
+    }
+    const double exp = i0 + i1;
+    const double rel = std::abs(io - exp) / (exp > 0 ? exp : 1.0);
+    if (rel > rel_tol) {
+        std::cerr << "[FATAL] merge integral mismatch for " << out << ": "
+                  << "merged=" << io << "  expected " << i0 << "+" << i1 << "=" << exp
+                  << "  rel=" << rel << "  (>" << rel_tol << ")\n"
+                  << "  TFileMerger likely silently dropped one period from a "
+                  << "transient I/O failure. Re-run merge_periods.sh.\n";
+        return false;
+    }
+    std::cout << "  [VALIDATE] " << probe_name << ": merged=" << io
+              << "  exp=" << exp << "  rel=" << rel << "  OK\n";
+    return true;
+}
+
 bool merge_one_pair(const std::string &in0, const std::string &in1,
-                    const std::string &out)
+                    const std::string &out, const char *probe_name)
 {
     std::cout << "  in0 = " << in0 << "\n  in1 = " << in1 << "\n  out = " << out << std::endl;
+    // Pre-merge zombie check on inputs (would otherwise be silently skipped
+    // by TFileMerger's default error handling, producing a single-period
+    // output that passes "Merge() returned kTRUE").
+    for (const std::string &in : {in0, in1}) {
+        TFile *f = TFile::Open(in.c_str(), "READ");
+        bool bad = (!f || f->IsZombie() || f->TestBit(TFile::kRecovered));
+        if (f) f->Close();
+        if (bad) {
+            std::cerr << "[FATAL] input " << in << " is zombie/recovered. Aborting merge.\n";
+            return false;
+        }
+    }
     TFileMerger m;
     m.OutputFile(out.c_str(), "RECREATE");
     if (!m.AddFile(in0.c_str())) { std::cerr << "[ERROR] failed to add " << in0 << "\n"; return false; }
     if (!m.AddFile(in1.c_str())) { std::cerr << "[ERROR] failed to add " << in1 << "\n"; return false; }
     if (!m.Merge())              { std::cerr << "[ERROR] TFileMerger::Merge failed for " << out << "\n"; return false; }
+    // Post-merge integral validation (TFileMerger returns kTRUE even when
+    // it silently skipped an input on a transient gpfs I/O failure).
+    if (probe_name && !validate_merge_integrals(in0, in1, out, probe_name)) {
+        return false;
+    }
     return true;
 }
 
@@ -104,17 +172,21 @@ int merge_periods(const std::string &cfg0    = "config_bdt_0rad.yaml",
               << "  L(" << vt1 << ") = " << L1 << " pb-1   lumi_target = " << Lt1 << "\n"
               << "  combined var_type = " << vto << std::endl;
 
-    struct Pair { std::string in0, in1, out; const char *label; };
+    struct Pair { std::string in0, in1, out; const char *label; const char *probe; };
+    // Probe histogram per merge job — chosen because they are NPB-/iso-/cut-
+    // independent and straightforward to integrate. Set to nullptr to skip
+    // the integral validator (response files don't have a single canonical
+    // TH1 to integrate; rely on AddFile/Merge return codes for those).
     std::vector<Pair> jobs = {
-        { make_path(eff_b0, "",    vt0), make_path(eff_b1, "",    vt1), make_path(eff_bo, "",    vto), "eff_signal" },
-        { make_path(eff_b0, "jet", vt0), make_path(eff_b1, "jet", vt1), make_path(eff_bo, "jet", vto), "eff_jet"    },
-        { make_path(rsp_b0, "",    vt0), make_path(rsp_b1, "",    vt1), make_path(rsp_bo, "",    vto), "response"   },
+        { make_path(eff_b0, "",    vt0), make_path(eff_b1, "",    vt1), make_path(eff_bo, "",    vto), "eff_signal", "h_all_cluster_signal_0" },
+        { make_path(eff_b0, "jet", vt0), make_path(eff_b1, "jet", vt1), make_path(eff_bo, "jet", vto), "eff_jet",    "h_all_cluster_signal_0" },
+        { make_path(rsp_b0, "",    vt0), make_path(rsp_b1, "",    vt1), make_path(rsp_bo, "",    vto), "response",   nullptr                  },
     };
 
     int rc = 0;
     for (const auto &j : jobs) {
         std::cout << "\n--- " << j.label << " ---" << std::endl;
-        if (!merge_one_pair(j.in0, j.in1, j.out)) { rc = 1; continue; }
+        if (!merge_one_pair(j.in0, j.in1, j.out, j.probe)) { rc = 1; continue; }
         write_provenance(j.out, L0, L1, Lt0, vt0, vt1);
     }
     return rc;

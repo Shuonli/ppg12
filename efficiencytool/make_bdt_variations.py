@@ -94,7 +94,9 @@ VARIANTS = [
     dict(name="noniso10",     reco_noniso_min_shift=1.0,
          syst_type="noniso", syst_role="up"),     # looser noniso window
 
-    # NPB score cut  →  syst: npb_cut (efficiency)
+    # NPB score cut  →  syst: npb_cut (two_sided). Looser/tighter cut
+    # produces the expected anti-correlated yield shifts after the merge
+    # fix (Pearson r=-0.998, post-fix mean +0.3%/-1.2%).
     dict(name="npb03",        npb_score_cut=0.3,
          syst_type="npb_cut", syst_role="down"),  # looser npb cut
     dict(name="npb07",        npb_score_cut=0.7,
@@ -196,16 +198,18 @@ VARIANTS = [
          syst_type="unfold_iter", syst_role="max"),
 
     # ----------------------------------------------------------
-    # T2: Unfolding prior — flat-truth prior vs nominal MC-shape prior.
-    # CalculatePhotonYield.C now reads analysis.unfold.flat_prior and,
-    # when set, flattens the response's Htruth() before RooUnfoldBayes.
-    # Period-pinned (single bare config) — prior choice is also
-    # period-independent. Phase-2-only condor.
+    # T2: Unfolding prior — flat-truth prior. Demoted to cross-check on
+    # 2026-04-25: a fully-flat prior on the steeply-falling spectrum at
+    # iter=2 produces an unphysical syst (>25000% at 32-36 GeV) because
+    # the prior is too far from the true shape and 2 Bayes iterations
+    # cannot recover. The iter scan (T1) covers regularization at 1-7%
+    # physically; this flat-prior variant is kept only as a cross-check
+    # to bound prior dependence in an extreme limit.
     # ----------------------------------------------------------
     dict(name="unfold_prior_flat", flat_prior=1,
          run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
-         syst_type="unfold_prior", syst_role="one_sided"),
+         syst_type=None, syst_role=None),
 
     # ----------------------------------------------------------
     # T3: Double-interaction blending fraction ±20% per period.
@@ -336,6 +340,12 @@ SYST_TYPES = {
     # ---- photon-ID (BDT placement + NPB cut) ----
     "photon_id_tight":    {"mode": "one_sided", "group": "photon_id"},
     "photon_id_nontight": {"mode": "one_sided", "group": "photon_id"},
+    # npb_cut: two_sided. The earlier "same-sign +18%/+15%" anomaly that
+    # motivated a max-mode switch was entirely a Phase-1.6 merge bug —
+    # merge_periods.sh had silently dropped the 1p5mrad period from the
+    # all-range MC efficiency for npb03/npb07 (and a few other variants).
+    # After fixing the merges (audit_mc_merge.py), Pearson r(npb03, npb07)
+    # = -0.998 (textbook two-sided anti-correlation). Restored two_sided.
     "npb_cut":      {"mode": "two_sided",   "group": "photon_id"},
     # ---- ABCD region definition ----
     "noniso":       {"mode": "two_sided",   "group": "abcd_region"},
@@ -353,7 +363,8 @@ SYST_TYPES = {
     #     once the corresponding variants land in Phase 3) ----
     "di_fraction":  {"mode": "two_sided",   "group": "di_fraction"},
     "unfold_iter":  {"mode": "max",         "group": "unfolding"},
-    "unfold_prior": {"mode": "one_sided",   "group": "unfolding"},
+    # unfold_prior removed 2026-04-25 — flat-prior gave unphysical 25000%
+    # syst at high pT (see unfold_prior_flat variant comment).
     # ---- retired keys kept declared so old VARIANTS dicts that still
     #     reference them load cleanly (variants below this line are all
     #     syst_type=None and contribute nothing to quadrature):
@@ -370,7 +381,7 @@ SYST_GROUPS = {
     "purity_method":  ["purity_fit", "mc_purity_correction"],
     "iso_resolution": ["iso_resolution"],
     "acceptance":     ["acceptance"],
-    "unfolding":      ["reweight", "unfold_iter", "unfold_prior"],
+    "unfolding":      ["reweight", "unfold_iter"],   # unfold_prior removed (see SYST_TYPES note)
     "escale":         ["escale"],
     "eres":           ["eres"],
     "di_fraction":    ["di_fraction"],   # populated in Phase 3 (DOUBLE_FRAC ±20%)
