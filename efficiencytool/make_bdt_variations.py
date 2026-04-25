@@ -171,6 +171,72 @@ VARIANTS = [
          syst_type="escale", syst_role="up"),
     dict(name="energyresolution5", clustereres=0.05,
          syst_type="eres", syst_role="max"),
+
+    # ----------------------------------------------------------
+    # T1: Unfolding regularization scan (Bayes iteration count).
+    # The base CalculatePhotonYield writes h_unfold_sub_leak_{1..10}; these
+    # variants are produced via postprocess_unfold_iter_scan.py which
+    # promotes the iter-N histogram into h_unfold_sub_result so the
+    # standard aggregator can pick them up. No new condor needed.
+    # All-range pinned (run_min/max from nominal) so they generate as a
+    # single bare-name config rather than auto-expanding into period
+    # feeders — the iteration count is period-independent.
+    # ----------------------------------------------------------
+    dict(name="unfold_iter1", resultit=1,
+         run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         syst_type="unfold_iter", syst_role="max"),
+    dict(name="unfold_iter3", resultit=3,
+         run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         syst_type="unfold_iter", syst_role="max"),
+    dict(name="unfold_iter4", resultit=4,
+         run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         syst_type="unfold_iter", syst_role="max"),
+
+    # ----------------------------------------------------------
+    # T2: Unfolding prior — flat-truth prior vs nominal MC-shape prior.
+    # CalculatePhotonYield.C now reads analysis.unfold.flat_prior and,
+    # when set, flattens the response's Htruth() before RooUnfoldBayes.
+    # Period-pinned (single bare config) — prior choice is also
+    # period-independent. Phase-2-only condor.
+    # ----------------------------------------------------------
+    dict(name="unfold_prior_flat", flat_prior=1,
+         run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         syst_type="unfold_prior", syst_role="one_sided"),
+
+    # ----------------------------------------------------------
+    # T3: Double-interaction blending fraction ±20% per period.
+    # DOUBLE_FRAC nominal (cluster-weighted, triple+ folded into double):
+    #   0 mrad: 0.224 → ±20% rel → up=0.2688, down=0.1792
+    #   1.5 mrad: 0.079 → ±20% rel → up=0.0948, down=0.0632
+    # Configs are generated now; condor-side support pending — needs
+    # oneforall_tree_double_dispatch.sh to read analysis.double_frac_override
+    # instead of computing DOUBLE_FRAC from run_min. Each variant is
+    # period-pinned (the override is per-period).
+    # ----------------------------------------------------------
+    dict(name="di_frac_p20_0rad", double_frac_override=0.2688,
+         run_min=47289, run_max=51274, lumi=47.2076, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
+         syst_type="di_fraction", syst_role="up"),
+    dict(name="di_frac_m20_0rad", double_frac_override=0.1792,
+         run_min=47289, run_max=51274, lumi=47.2076, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
+         syst_type="di_fraction", syst_role="down"),
+    dict(name="di_frac_p20_1p5mrad", double_frac_override=0.0948,
+         run_min=51274, run_max=54000, lumi=17.1642, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
+         syst_type="di_fraction", syst_role="up"),
+    dict(name="di_frac_m20_1p5mrad", double_frac_override=0.0632,
+         run_min=51274, run_max=54000, lumi=17.1642, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
+         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
+         syst_type="di_fraction", syst_role="down"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -377,9 +443,15 @@ OVERRIDE_MAP = {
     "mbd_avg_sigma_max": (["analysis"],                              "mbd_avg_sigma_max"),
     "mbd_avg_sigma_min": (["analysis"],                              "mbd_avg_sigma_min"),
     "reweight": (["analysis", "unfold"],                              "reweight"),
+    "resultit": (["analysis", "unfold"],                              "resultit"),
+    "flat_prior": (["analysis", "unfold"],                            "flat_prior"),
     "tower_mask_on":   (["analysis"],                                 "tower_mask_on"),
     "tower_mask_file": (["analysis"],                                 "tower_mask_file"),
     "tower_mask_name": (["analysis"],                                 "tower_mask_name"),
+    # T3 (di_fraction): consumed by oneforall_tree_double_dispatch.sh once
+    # the dispatcher learns to read this YAML field instead of computing
+    # DOUBLE_FRAC from run_min. Configs exist now; condor-side support TODO.
+    "double_frac_override": (["analysis"],                            "double_frac_override"),
 }
 
 
