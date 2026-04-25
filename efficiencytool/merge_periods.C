@@ -87,9 +87,7 @@ bool merge_one_pair(const std::string &in0, const std::string &in1,
                     const std::string &out, const char *probe_name)
 {
     std::cout << "  in0 = " << in0 << "\n  in1 = " << in1 << "\n  out = " << out << std::endl;
-    // Pre-merge zombie check on inputs (would otherwise be silently skipped
-    // by TFileMerger's default error handling, producing a single-period
-    // output that passes "Merge() returned kTRUE").
+    // Pre-merge zombie check on inputs.
     for (const std::string &in : {in0, in1}) {
         TFile *f = TFile::Open(in.c_str(), "READ");
         bool bad = (!f || f->IsZombie() || f->TestBit(TFile::kRecovered));
@@ -99,13 +97,23 @@ bool merge_one_pair(const std::string &in0, const std::string &in1,
             return false;
         }
     }
-    TFileMerger m;
-    m.OutputFile(out.c_str(), "RECREATE");
-    if (!m.AddFile(in0.c_str())) { std::cerr << "[ERROR] failed to add " << in0 << "\n"; return false; }
-    if (!m.AddFile(in1.c_str())) { std::cerr << "[ERROR] failed to add " << in1 << "\n"; return false; }
-    if (!m.Merge())              { std::cerr << "[ERROR] TFileMerger::Merge failed for " << out << "\n"; return false; }
-    // Post-merge integral validation (TFileMerger returns kTRUE even when
-    // it silently skipped an input on a transient gpfs I/O failure).
+    // Use the standalone `hadd` tool rather than TFileMerger.
+    // TFileMerger has a known failure mode where it silently drops one
+    // input file's contributions for many TH1/TH2 histograms while the
+    // _signal/_notmatch cluster histograms (filled in a different code
+    // path) still merge correctly — observed for the jet-MC path on
+    // 2026-04-25 where ~106 of 212 histograms in MC_efficiency_jet_*.root
+    // had the 0rad period silently dropped despite Merge() returning
+    // kTRUE and a single-probe validator passing.  hadd does not exhibit
+    // this behaviour and is the canonical merge tool.
+    const std::string cmd = "hadd -f " + out + " " + in0 + " " + in1;
+    std::cout << "  $ " << cmd << std::endl;
+    int rc = gSystem->Exec(cmd.c_str());
+    if (rc != 0) {
+        std::cerr << "[ERROR] hadd failed for " << out << " (rc=" << rc << ")\n";
+        return false;
+    }
+    // Post-merge integral validation: scan a small set of canonical histos.
     if (probe_name && !validate_merge_integrals(in0, in1, out, probe_name)) {
         return false;
     }
