@@ -384,7 +384,7 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
     ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.GetYaxis().SetNdivisions(506)
     ROOT.frame_et_truth.GetYaxis().SetRangeUser(ylo, yhi)
-    ROOT.frame_et_truth.GetXaxis().SetRangeUser(10, 30)
+    ROOT.frame_et_truth.GetXaxis().SetRangeUser(10, 32)
     ROOT.frame_et_truth.GetXaxis().SetNdivisions(505)
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
     ROOT.frame_et_truth.Draw("axis")
@@ -542,6 +542,11 @@ def main():
             continue
         group_results[grp] = quadrature_sum(comps)
         write_syst_root(args.outdir, grp, *group_results[grp])
+        # Per-group syst plot (the analysis note references these by group
+        # rather than by type — e.g. "Photon Identification" combines tight
+        # + nontight + npb_cut into a single photon_id band).
+        plot_syst_type(args.figdir, f"group_{grp}", group_results[grp], h_nom,
+                       args.results, args.histogram, vmap, args)
         print(f"  [OK]  group:{grp}  (members: {[t for t in members if t in type_results]})")
 
     # ------------------------------------------------------------------
