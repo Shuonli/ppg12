@@ -269,6 +269,18 @@ analysis:
     resultit: 2
     resultleak: 1
     reweight: 1
+    # Truth-pT reweight for unfolding response prior. Re-derived 2026-04-25
+    # from R_flat = data_unfolded / mc_truth on allz nominal, fit range [10,36] GeV,
+    # rational(2,2) form, chi2/ndf=0.11. clamp_pT_min/max bracket the fit range so
+    # f_reweight is never evaluated below the dropped lowest reco bin or above the
+    # high-pT statistical cutoff. Loader: RecoEffCalculator_TTreeReader.C ~line 574.
+    truth_reweight:
+      formula: "([0] + [1]*x + [3]*x*x) / (1 + [2]*x + [4]*x*x)"
+      params: [-0.215115, -0.043400, -0.232349, 0.007216, 0.015592]
+      xmin: 0
+      xmax: 100
+      clamp_pT_min: 10
+      clamp_pT_max: 30
 
 
 
