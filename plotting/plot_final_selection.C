@@ -41,7 +41,7 @@ void plot_final_selection(string tune = "bdt_nom")
 
     float lowery = 0.2;
     float lowerx = 10;
-    float upperx = 36;
+    float upperx = 32;
 
     TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
