@@ -26,9 +26,11 @@ void plot_final_selection(string tune = "bdt_nom")
                   << ", using fallback " << datalumi << " pb^-1" << std::endl;
     }
 
-    // Build luminosity legend strings from the loaded value
+    // Build luminosity legend strings from the loaded value (#1: fixed broken
+    // 2-line lumi label — leading-space hack collapsed and made "= 64.4 pb^{-1}"
+    // look like a syntactically broken assignment).
     std::string strleg_lumi = Form("#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, %.1f pb^{-1}}", datalumi);
-    std::string strleg_lumi_line2 = Form("         = %.1f pb^{-1}", datalumi);
+    std::string strleg_lumi_line2 = Form("#int #it{L} d#it{t} = %.1f pb^{-1}", datalumi);
 
     std::string MCstring = "JETPHOX";
 
@@ -148,7 +150,7 @@ void plot_final_selection(string tune = "bdt_nom")
     pad_1->SetRightMargin(0.08);
     pad_1->SetLogy();
 
-    frame_et_rec->SetYTitle("d^{2}#sigma/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]");
+    frame_et_rec->SetYTitle("d^{2}#it{#sigma}/(d#it{#eta} d#it{E}_{T}^{#gamma}) [pb/GeV]");
     // frame_et_rec->SetYTitle("d#sigma/d#eta/dE_{T} [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(lowery, 1500);
     // frame_et_rec->GetYaxis()->SetRangeUser(0.2, 4e3);
@@ -157,9 +159,8 @@ void plot_final_selection(string tune = "bdt_nom")
     frame_et_rec->GetXaxis()->SetTitleOffset(1.05);
     frame_et_rec->GetYaxis()->SetTitleOffset(1.05);
     frame_et_rec->GetYaxis()->SetTitleSize(0.053);
-    frame_et_rec->GetXaxis()->SetLabelSize(0.050);
+    frame_et_rec->GetXaxis()->SetLabelSize(0);  // top-panel x-labels hidden (ratio panel below has them) — #6
     frame_et_rec->GetYaxis()->SetLabelSize(0.050);
-    frame_et_rec->GetXaxis()->SetLabelOffset(2);
     // frame_et_rec->GetXaxis()->CenterTitle();
     // frame_et_rec->GetYaxis()->CenterTitle();
     frame_et_rec->GetXaxis()->SetNdivisions(505);
@@ -457,14 +458,18 @@ void plot_final_selection(string tune = "bdt_nom")
     l1->AddEntry(h_pythia, "PYTHIA8", "pl");
     l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX", "fpl");
 
+    // #2: shared scale-choice annotation for ALL theory predictions (was
+    // previously duplicated in two places — once after JETPHOX line, once
+    // after Vogelsang). Keep PDF/FF info on the JETPHOX line; combine the
+    // common scale choice into a single sub-caption below the legend.
     string st_thScale = "#kern[-0.55]{#it{#mu}_{f}} = #kern[-0.55]{#it{#mu}_{F}} = #kern[-0.55]{#it{#mu}_{R}} = #kern[-0.55]{#it{E}_{T}^{#gamma}}";
     l1->AddEntry((TObject *)0, "#scale[0.93]{CT14nlo PDF / BFG II FF}", "");
-    l1->AddEntry((TObject *)0, "", "");
-    myText(xpos + 0.085, ypos2 + 1 * dy1 + 0.015, 1, st_thScale.c_str(), fontsize, 0);
-    // l1->AddEntry((TObject*)0, "#it{#mu}_{f} = #it{#mu}_{f} = #it{#mu}_{R} = #it{E}_{T}^{#gamma}", "");
     l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fpl");
+    l1->AddEntry((TObject *)0, "#scale[0.93]{(no #kern[-0.4]{#it{E}_{T}^{iso}} requirement)}", "");
     l1->Draw("same");
-    myText(xpos + 0.07, ypos2 - 0.05, 1, Form("(#scale[0.93]{no #kern[-0.4]{#it{E}_{T}^{iso}} / }%s)", st_thScale.data()), fontsize, 0);
+    // Single shared scale-choice line below the legend (replaces the two
+    // floating myText calls that previously sat between the legend rows).
+    myText(xpos, ypos2 - 0.06, 1, Form("All theory: %s", st_thScale.data()), fontsize, 0);
 
     TPad *pad_2 = (TPad *)c1->cd(2);
     pad_2->SetPad(0, 0, 1, 0.4);
@@ -475,8 +480,8 @@ void plot_final_selection(string tune = "bdt_nom")
 
     frame_et_truth->SetYTitle("Theory / Data");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_et_truth->GetYaxis()->SetNdivisions(506);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.5, 2.0);
+    frame_et_truth->GetYaxis()->SetNdivisions(509);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.4, 2.2);  // #8: widen so band doesn't clip
     frame_et_truth->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
@@ -485,7 +490,7 @@ void plot_final_selection(string tune = "bdt_nom")
     frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
     frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4. * 1.2);
     frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4.);
-    frame_et_truth->GetXaxis()->SetNdivisions(505);
+    frame_et_truth->GetXaxis()->SetNdivisions(412, kFALSE);  // #7: ticks at 12,17,22,27,32 over [12,32]
     frame_et_truth->Draw("axis");
 
     g_syst_rel->SetMarkerStyle(mkStyle[0]);
@@ -493,9 +498,13 @@ void plot_final_selection(string tune = "bdt_nom")
     g_syst_rel->SetLineColor(col[0]);
     g_syst_rel->SetFillColorAlpha(col[0], trans[0]);
 
-    lineone->Draw("L");
-
     g_syst_rel->Draw("2 same");
+    // #9: unity reference drawn AFTER the band so it is not overpainted; also
+    // bumped to width=2 dashed black so it stays the dominant eyeline.
+    lineone->SetLineColor(kBlack);
+    lineone->SetLineStyle(2);
+    lineone->SetLineWidth(2);
+    lineone->Draw("L same");
 
     // JETPHOX syst
     g_syst_rel_NLO->SetMarkerStyle(mkStyle[2]);

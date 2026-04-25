@@ -13,8 +13,9 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
 
     // g_mc_purity_fit_ratio is produced only in the MC-closure pass of
     // CalculatePhotonYield (gated by `if (isMC)` at line ~706) and lives
-    // in the _mc.root output, not the data-side Photon_final.
-    TString infile = Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.c_str());
+    // in the _mcincl.root output (inclusive MC pass — signal+jet xsec-weighted
+    // merge), not the data-side Photon_final or the jet-only _mc.root.
+    TString infile = Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mcincl.root", tune.c_str());
     TFile *fin = TFile::Open(infile, "READ");
     if (!fin || fin->IsZombie())
     {
