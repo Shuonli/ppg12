@@ -36,7 +36,7 @@ ROOT.gROOT.LoadMacro(os.path.join(_THIS_DIR, "plotcommon.h"))  # interpreted mod
 # ---------------------------------------------------------------------------
 sys.path.insert(0, os.path.join(_THIS_DIR, "..", "efficiencytool"))
 from make_bdt_variations import (  # noqa: E402
-    VARIANTS, SYST_TYPES, SYST_GROUPS, FINAL_SYSTS, LUMI_SYST,
+    VARIANTS, SYST_TYPES, SYST_GROUPS, FINAL_SYSTS, FLAT_SYSTS, LUMI_SYST,
 )
 
 # ---------------------------------------------------------------------------
@@ -127,20 +127,39 @@ def write_syst_sum(outdir: str, h_al, h_ah, h_rl, h_rh) -> None:
 # Core computation
 # ---------------------------------------------------------------------------
 def calc_delta(h_var: ROOT.TH1F, h_nom: ROOT.TH1F, tag: str):
-    """Return (h_dev_abs, h_dev_rel) — mirrors calcDelta() in plotcommon.h."""
+    """Return (h_dev_abs, h_dev_rel).
+
+    Per-bin shift = sign(var-nom) * sqrt(max(0, (var-nom)^2 - sigma_stat^2)).
+    sigma_stat is the propagated bin error of the difference, which under
+    Sumw2 reflects the combined MC stat of variant and nominal. Phase-1.A2
+    confirmed that h_unfold_sub_leak_2 carries nontrivial MC stat all the
+    way through MergeSim and RooUnfoldBayes(kErrors), so the subtraction
+    deflates per-bin syst by MC noise rather than treating noise as syst.
+
+    Note: variants share the underlying MC events, so var and nom are
+    statistically correlated; the propagated sigma assumes uncorrelated
+    samples and slightly OVER-subtracts. For high-pT bins where D_eff < 100
+    events this is conservative-but-acceptable. (See Phase-1.A2 / G4.)
+    """
     h_dev = h_var.Clone(f"h_dev_{tag}")
     h_dev.SetDirectory(0)
-    h_dev.Add(h_nom, -1.0)
+    h_dev.Add(h_nom, -1.0)  # ROOT propagates Sumw2 into h_dev's bin errors
     h_dev_rel = h_dev.Clone(f"h_dev_rel_{tag}")
     h_dev_rel.SetDirectory(0)
-    # Divide bin-by-bin; protect against zero nominal
     for i in range(1, h_nom.GetNbinsX() + 1):
         nom = h_nom.GetBinContent(i)
+        dev_abs = h_dev.GetBinContent(i)
+        sigma_stat = h_dev.GetBinError(i)
+        shift = (max(0.0, dev_abs * dev_abs - sigma_stat * sigma_stat)) ** 0.5
+        sign = 1.0 if dev_abs >= 0 else -1.0
+        h_dev.SetBinContent(i, sign * shift)
+        h_dev.SetBinError(i, sigma_stat)
         if nom != 0:
-            h_dev_rel.SetBinContent(i, h_dev.GetBinContent(i) / nom)
+            h_dev_rel.SetBinContent(i, sign * shift / nom)
+            h_dev_rel.SetBinError(i, sigma_stat / abs(nom))
         else:
             h_dev_rel.SetBinContent(i, 0.0)
-        h_dev_rel.SetBinError(i, 0.0)
+            h_dev_rel.SetBinError(i, 0.0)
     return h_dev, h_dev_rel
 
 
@@ -277,18 +296,36 @@ def quadrature_sum(components: list) -> tuple:
     return h_al, h_ah, h_rl, h_rh
 
 
-def add_lumi(h_al, h_ah, h_rl, h_rh, h_nom) -> tuple:
-    """Add flat luminosity uncertainty from LUMI_SYST in quadrature."""
-    lumi_l = LUMI_SYST["down"]
-    lumi_h = LUMI_SYST["up"]
+def add_flat(h_al, h_ah, h_rl, h_rh, h_nom, flat_systs=None) -> tuple:
+    """Add a dict of flat fractional uncertainties in quadrature.
+
+    flat_systs: {name: {"down": frac, "up": frac}}. Default = FLAT_SYSTS
+    from make_bdt_variations (lumi + l1_plateau). Each source contributes
+    a multiplicative-flat uncertainty applied post-unfold; this is the
+    correct treatment for sources independent of bin migration (lumi from
+    MBD xsec, L1 photon plateau, MBD trigger eff if added).
+    """
+    if flat_systs is None:
+        flat_systs = FLAT_SYSTS
     nbins = h_nom.GetNbinsX()
-    for i in range(1, nbins + 1):
-        nom = h_nom.GetBinContent(i)
-        h_al.SetBinContent(i, (h_al.GetBinContent(i) ** 2 + (lumi_l * nom) ** 2) ** 0.5)
-        h_ah.SetBinContent(i, (h_ah.GetBinContent(i) ** 2 + (lumi_h * nom) ** 2) ** 0.5)
-        h_rl.SetBinContent(i, (h_rl.GetBinContent(i) ** 2 + lumi_l ** 2) ** 0.5)
-        h_rh.SetBinContent(i, (h_rh.GetBinContent(i) ** 2 + lumi_h ** 2) ** 0.5)
+    for src_name, sym in flat_systs.items():
+        f_lo = sym.get("down", 0.0)
+        f_hi = sym.get("up",   0.0)
+        if f_lo == 0.0 and f_hi == 0.0:
+            continue
+        for i in range(1, nbins + 1):
+            nom = h_nom.GetBinContent(i)
+            h_al.SetBinContent(i, (h_al.GetBinContent(i) ** 2 + (f_lo * nom) ** 2) ** 0.5)
+            h_ah.SetBinContent(i, (h_ah.GetBinContent(i) ** 2 + (f_hi * nom) ** 2) ** 0.5)
+            h_rl.SetBinContent(i, (h_rl.GetBinContent(i) ** 2 + f_lo ** 2) ** 0.5)
+            h_rh.SetBinContent(i, (h_rh.GetBinContent(i) ** 2 + f_hi ** 2) ** 0.5)
     return h_al, h_ah, h_rl, h_rh
+
+
+# Backward-compat alias — will be removed once all callers migrate to add_flat.
+def add_lumi(h_al, h_ah, h_rl, h_rh, h_nom) -> tuple:
+    """Deprecated: use add_flat(...) instead. Adds only the lumi contribution."""
+    return add_flat(h_al, h_ah, h_rl, h_rh, h_nom, {"lumi": LUMI_SYST})
 
 
 # ---------------------------------------------------------------------------
@@ -511,11 +548,12 @@ def main():
     if not total_comps:
         print("  [ERROR] No group results available — cannot compute total.")
         return
-    total = add_lumi(*quadrature_sum(total_comps), h_nom)
+    total = add_flat(*quadrature_sum(total_comps), h_nom, FLAT_SYSTS)
     write_syst_root(args.outdir, "total", *total)
     write_syst_sum(args.outdir, *total)
     included = [g for g in FINAL_SYSTS if g in group_results]
-    print(f"  [OK]  total (groups: {included} + lumi)")
+    flat_names = list(FLAT_SYSTS.keys())
+    print(f"  [OK]  total (groups: {included} + flat: {flat_names})")
     print(f"  [OK]  syst_sum.root  (h_sum_low/high, h_sum_rel_low/high — for plot_final_selection.C)")
 
     # ------------------------------------------------------------------

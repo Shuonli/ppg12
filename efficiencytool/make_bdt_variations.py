@@ -57,8 +57,11 @@ VARIANTS = [
     #iso scale and shift
     dict(name="mciso_noscaleshift", mc_iso_scale=1.0, mc_iso_shift=0.0,
          syst_type=None, syst_role=None),
+    # Promoted 2026-04-25: probes additive-pedestal mismodeling between data
+    # and MC iso ET (multiplicative scale stays at nominal 1.2). _no_scale
+    # mixes pedestal+width with escale/eres, so we use _no_shift only.
     dict(name="mciso_no_shift",  mc_iso_shift=0.0,
-         syst_type=None, syst_role=None),
+         syst_type="iso_resolution", syst_role="one_sided"),
     dict(name="mciso_no_scale",  mc_iso_scale=1.0,
          syst_type=None, syst_role=None),
     # Flat-threshold BDT partitions (cross-checks).  Tight is flat [T, 1.0];
@@ -104,13 +107,35 @@ VARIANTS = [
     dict(name="mc_purity_correction", mc_purity_correction=1,
          syst_type="mc_purity_correction", syst_role="one_sided"),
 
-    # Vertex reweighting off  →  syst: vtx_reweight (efficiency)
+    # Vertex reweighting off — kept as cross-check only. Demoted 2026-04-25:
+    # under the all-z nominal, the legacy reco-vertex reweight is already off
+    # (truth_vertex_reweight_on=1 is nominal), so this variant probes the
+    # legacy path and overlaps the truth-vertex closure that the locked
+    # budget intentionally drops.
     dict(name="vtxreweight0", vertex_reweight_on=0,
-         syst_type="vtx_reweight", syst_role="one_sided"),
+         syst_type=None, syst_role=None),
 
-    # no unfolding reweighting
+    # no unfolding reweighting — note: name says "unfolding", but the actual
+    # effect is upstream in RecoEffCalculator (response prior is built with
+    # f_reweight tilt; CalculatePhotonYield force-zeros reweight). Verified
+    # non-null via Phase-1.A1 audit: variant builds an unweighted response
+    # matrix and produces a real shift vs nominal.
     dict(name="no_unfolding_reweighting", reweight=0,
          syst_type="reweight", syst_role="one_sided"),
+
+    # Photon-ID systematics — BDT cut placement (2026-04-25 locked).
+    # tightup_p05: tight_bdt_min_intercept += 0.05 (slope unchanged).
+    #   Nominal intercept = 0.8333..., new = 0.8833... Tightens the signal
+    #   selection at all ET; effect is dominantly an efficiency loss in A.
+    # ntdown_m10: nt_bdt_min_intercept -= 0.10 (slope unchanged).
+    #   Nominal intercept = 0.7333..., new = 0.6333... Loosens the non-tight
+    #   inner edge so C/D widen; tests bkg-template-shape stability.
+    dict(name="tightup_p05",
+         tight_bdt_min_intercept=0.8833333333333334,
+         syst_type="photon_id_tight", syst_role="one_sided"),
+    dict(name="ntdown_m10",
+         nt_bdt_min_intercept=0.6333333333333333,
+         syst_type="photon_id_nontight", syst_role="one_sided"),
 
     # BDT model cross-checks — single model across all ET bins
     dict(name="bdtmodel_v0",  bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v0",  "base_v0"],
@@ -186,14 +211,12 @@ for _low_label, (_t10, _h10, _l10) in _NTBDT_LOW_ANCHORS:
         _name = (f"ntbdtpair_t{int(round(_t10*100))}_{int(round(_t25*100))}"
                  f"_h{int(round(_h10*100))}_{int(round(_h25*100))}"
                  f"_l{int(round(_l10*100))}_{int(round(_l25*100))}")
-        # A+X = t80_70_h80_70_l70_40 is the "symmetric-boundary" ABCD (nt_hi ==
-        # tight_lo). Promoted to the sole nt_bdt one-sided systematic against the
-        # all-range nominal. Other anchor combos remain cross-checks. Variants are
-        # auto-expanded (bare + _0rad + _1p5mrad) via PER_PERIOD_OVERRIDES.
-        if _low_label == "A" and _high_label == "X":
-            _syst_type, _syst_role = "nt_bdt", "one_sided"
-        else:
-            _syst_type, _syst_role = None, None
+        # 2026-04-25: All ntbdtpair anchor combos demoted to cross-check
+        # (syst_type=None). The locked photon-ID coverage is now
+        # bdt_tightup_p05 + bdt_ntdown_m10 (constant-shift variants on the
+        # nominal C+Z parametric form), not the earlier A+X anchor pair.
+        # Anchor scan kept for purity-non-closure cross-checks only.
+        _syst_type, _syst_role = None, None
         VARIANTS.append(dict(
             name=_name,
             tight_bdt_min_intercept=_t_int, tight_bdt_min_slope=_t_slp,
@@ -220,12 +243,20 @@ for _low_label, (_t10, _h10, _l10) in _NTBDT_LOW_ANCHORS:
 # ---------------------------------------------------------------------------
 _TOWER_MASK_FILE = "/sphenix/user/shuhangli/ppg12/efficiencytool/tower_masks_bdt_nom.root"
 for _lvl in ("preselect", "common", "tight", "or"):
+    # mask_phisymm_or is the union envelope across selection levels; the
+    # other three masks (preselect/common/tight) are kept as cross-checks
+    # so the per-level shift can be inspected, but only _or feeds the
+    # acceptance systematic in the locked budget. Promoted 2026-04-25.
+    if _lvl == "or":
+        _st, _sr = "acceptance", "max"
+    else:
+        _st, _sr = None, None
     VARIANTS.append(dict(
         name=f"mask_phisymm_{_lvl}",
         tower_mask_on=1,
         tower_mask_file=_TOWER_MASK_FILE,
         tower_mask_name=f"mask_phisymm_{_lvl}",
-        syst_type=None, syst_role=None,
+        syst_type=_st, syst_role=_sr,
     ))
 
 # ---------------------------------------------------------------------------
@@ -234,38 +265,69 @@ for _lvl in ("preselect", "common", "tight", "or"):
 # group: which SYST_GROUPS key this type contributes to
 # ---------------------------------------------------------------------------
 SYST_TYPES = {
-    "reweight":     {"mode": "one_sided",   "group": "unfold"},
-    "tight_bdt":    {"mode": "two_sided",   "group": "eff"},
-    "nt_bdt":       {"mode": "one_sided",   "group": "purity"},
-    "noniso":       {"mode": "two_sided",   "group": "purity"},
-    "npb_cut":      {"mode": "two_sided",   "group": "eff"},
-    "purity_fit":   {"mode": "one_sided",   "group": "purity"},
-    "mc_purity_correction": {"mode": "one_sided", "group": "purity"},
-    "vtx_reweight": {"mode": "one_sided",   "group": "eff"},
-    "bdt_model":    {"mode": "max",         "group": "eff"},
-    "b2bjet":       {"mode": "one_sided",   "group": "eff"},
-    "timing":       {"mode": "two_sided",   "group": "eff"},
+    # ---- response/unfolding ----
+    "reweight":     {"mode": "one_sided",   "group": "unfolding"},
+    # ---- photon-ID (BDT placement + NPB cut) ----
+    "photon_id_tight":    {"mode": "one_sided", "group": "photon_id"},
+    "photon_id_nontight": {"mode": "one_sided", "group": "photon_id"},
+    "npb_cut":      {"mode": "two_sided",   "group": "photon_id"},
+    # ---- ABCD region definition ----
+    "noniso":       {"mode": "two_sided",   "group": "abcd_region"},
+    # ---- purity method (fit form + MC-driven non-closure correction) ----
+    "purity_fit":   {"mode": "one_sided",   "group": "purity_method"},
+    "mc_purity_correction": {"mode": "one_sided", "group": "purity_method"},
+    # ---- detector iso resolution / pedestal ----
+    "iso_resolution": {"mode": "one_sided", "group": "iso_resolution"},
+    # ---- tower acceptance (phi-symmetry mask envelope) ----
+    "acceptance":   {"mode": "max",         "group": "acceptance"},
+    # ---- energy scale and resolution ----
     "escale":       {"mode": "two_sided",   "group": "escale"},
     "eres":         {"mode": "max",         "group": "eres"},
-    "mbd":          {"mode": "placeholder", "group": "mbd"},   # TODO: add mbdeffup/down variants
-    "nor":          {"mode": "placeholder", "group": "unfolding"},   # TODO: add nr variant
+    # ---- pre-Phase-3 stubs (defined for schema completeness; populated
+    #     once the corresponding variants land in Phase 3) ----
+    "di_fraction":  {"mode": "two_sided",   "group": "di_fraction"},
+    "unfold_iter":  {"mode": "max",         "group": "unfolding"},
+    "unfold_prior": {"mode": "one_sided",   "group": "unfolding"},
+    # ---- retired keys kept declared so old VARIANTS dicts that still
+    #     reference them load cleanly (variants below this line are all
+    #     syst_type=None and contribute nothing to quadrature):
+    #     tight_bdt, nt_bdt, vtx_reweight, bdt_model, b2bjet, timing,
+    #     mbd, nor — removed 2026-04-25.
 }
 
-# Quadrature grouping: group name -> list of syst_type names
+# Quadrature grouping: group name -> list of syst_type names. Phase-3-pending
+# groups (di_fraction) keep their entries even when empty so calc_syst_bdt.py's
+# group loop emits a [SKIP] message rather than silently dropping them.
 SYST_GROUPS = {
-    "purity": ["noniso", "nt_bdt", "purity_fit", "mc_purity_correction"],
-    "eff":    ["npb_cut"],   # tight_bdt removed 2026-04-24 with tightbdt50/70 cleanup — full syst needs redo
-    "escale": ["escale"],
-    "eres":   ["eres"],
-    "mbd":    ["mbd"],
-    "unfolding": ["reweight"],
+    "photon_id":      ["photon_id_tight", "photon_id_nontight", "npb_cut"],
+    "abcd_region":    ["noniso"],
+    "purity_method":  ["purity_fit", "mc_purity_correction"],
+    "iso_resolution": ["iso_resolution"],
+    "acceptance":     ["acceptance"],
+    "unfolding":      ["reweight", "unfold_iter", "unfold_prior"],
+    "escale":         ["escale"],
+    "eres":           ["eres"],
+    "di_fraction":    ["di_fraction"],   # populated in Phase 3 (DOUBLE_FRAC ±20%)
 }
 
-# Groups included in the final total systematic quadrature sum
-FINAL_SYSTS = ["purity", "eff", "escale", "eres", "mbd", "unfolding"]
+# Groups included in the final total systematic quadrature sum (per-bin Resp).
+# Multiplicative-flat sources (lumi, l1_plateau) are added via FLAT_SYSTS in
+# calc_syst_bdt.py rather than here — they are not response-matrix-driven and
+# are applied post-unfold.
+FINAL_SYSTS = [
+    "photon_id", "abcd_region", "purity_method", "iso_resolution",
+    "acceptance", "unfolding", "escale", "eres", "di_fraction",
+]
 
-# Luminosity uncertainty (asymmetric, fractional): central=25.2, down=23.5, up=27.5 pb^-1
-LUMI_SYST = {"down": (25.2 - 23.5) / 25.2, "up": (27.5 - 25.2) / 25.2}
+# Multiplicative-flat sources (asymmetric fractional). Applied post-unfold by
+# add_flat() in calc_syst_bdt.py instead of being summed inside any group.
+#   lumi: from MBD inelastic xsec 25.2 +2.3/-1.7 mb (Joey/lumi memo, 2026).
+#         Reconciled 2026-04-25 — note had stale +15.1/-11.2 from sigma=15.2.
+#   l1_plateau: bit-30 turn-on at >=8 GeV measured eps=0.9958; assigned
+#         +0.4% one-sided (no per-pT correction in code yet).
+LUMI_SYST   = {"down": (25.2 - 23.5) / 25.2, "up": (27.5 - 25.2) / 25.2}  # +9.13/-6.75%
+L1_PLATEAU  = {"down": 0.0,                  "up": 0.004}                 # +0.4% one-sided
+FLAT_SYSTS  = {"lumi": LUMI_SYST, "l1_plateau": L1_PLATEAU}
 
 # ---------------------------------------------------------------------------
 # Mapping from flat override key -> (yaml_section_path, yaml_leaf_key)
