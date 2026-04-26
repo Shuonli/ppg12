@@ -33,11 +33,25 @@ void plot_combine_uncut()
     TH1D *h5  = (TH1D *)fin->Get("h_max_photon_pT_photon5");
     TH1D *h10 = (TH1D *)fin->Get("h_max_photon_pT_photon10");
     TH1D *h20 = (TH1D *)fin->Get("h_max_photon_pT_photon20");
-    if (!h5 || !h10 || !h20) {
+    TH1D *h5_w2  = (TH1D *)fin->Get("h_max_photon_pT_photon5_sumw2");
+    TH1D *h10_w2 = (TH1D *)fin->Get("h_max_photon_pT_photon10_sumw2");
+    TH1D *h20_w2 = (TH1D *)fin->Get("h_max_photon_pT_photon20_sumw2");
+    if (!h5 || !h10 || !h20 || !h5_w2 || !h10_w2 || !h20_w2) {
         std::cerr << "ERROR: input histograms missing.\n";
         return;
     }
-    h5->Sumw2();  h10->Sumw2();  h20->Sumw2();
+    // Set the proper sumw2 errors from the companion sumw2 histograms
+    // (uproot writes sqrt(values) by default when given (vals,edges)).
+    auto fix_errors = [](TH1D *h, TH1D *hw2) {
+        h->Sumw2();
+        for (int i = 1; i <= h->GetNbinsX(); ++i) {
+            double v2 = hw2->GetBinContent(i);
+            h->SetBinError(i, v2 > 0 ? std::sqrt(v2) : 0.0);
+        }
+    };
+    fix_errors(h5,  h5_w2);
+    fix_errors(h10, h10_w2);
+    fix_errors(h20, h20_w2);
 
     // --------- ratios (Fig 3) ---------
     TH1D *h10_over_05 = (TH1D *)h10->Clone("h10_over_05");

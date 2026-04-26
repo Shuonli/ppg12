@@ -22,7 +22,7 @@ SLIMTREE = "/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28/
 OUT = "/sphenix/user/shuhangli/ppg12/plotting/photon_max_pT_uncut.root"
 BIN_EDGES = np.arange(0.0, 50.001, 0.5)  # 0.5 GeV bins for cleaner ratios
 ETA_MAX = 0.7
-N_PER_SAMPLE = 3_000_000  # 30% of each sample, balances speed vs stats
+N_PER_SAMPLE = 100_000_000  # use all events (~10M per file)
 
 def fill_one(sample):
     path = SLIMTREE.format(sample=sample)
@@ -68,6 +68,11 @@ def main():
     for s in ("photon5","photon10","photon20"):
         H[s], HSQ[s] = fill_one(s)
         out[f"h_max_photon_pT_{s}"] = (H[s], BIN_EDGES)
+        # Also save sum-of-weights-squared so the consumer macro can
+        # set the proper bin errors (sqrt(Hsq)) instead of the default
+        # sqrt(values) that uproot writes when given a (vals, edges)
+        # tuple.
+        out[f"h_max_photon_pT_{s}_sumw2"] = (HSQ[s], BIN_EDGES)
     centers = 0.5*(BIN_EDGES[1:]+BIN_EDGES[:-1])
     print(f"\n{'pT':>5}  {'photon5':>11}  {'photon10':>11}  {'photon20':>11}  "
           f"{'10/5':>7}  {'20/10':>7}")
