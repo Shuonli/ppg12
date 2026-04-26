@@ -163,33 +163,31 @@ void plot_trigger_bit30()
         h_MBDns->GetYaxis()->SetTitleOffset(1.45);
         h_MBDns->GetXaxis()->SetTitleOffset(1.15);
 
-        // MBD N&S drawn on top (thick solid black). Photon 4 GeV underneath
-        // (thinner dashed red). Since bit-30 eff ~99.6%, the two histograms
-        // sit on top of each other above the turn-on; differentiating line
-        // style makes both visible at a glance.
+        // MBD N&S in solid black (drawn first as the wider denominator);
+        // Photon 4 GeV dashed red drawn on top so the dashes cut through
+        // the black line at the ~99.6% plateau where the two histograms
+        // are nearly identical.
         h_MBDns->SetLineColor(kBlack);
-        h_MBDns->SetLineStyle(1);   // solid
-        h_MBDns->SetLineWidth(3);
+        h_MBDns->SetLineStyle(1);
+        h_MBDns->SetLineWidth(2);
         h_MBDns->SetMarkerColor(kBlack);
         h_MBDns->SetMarkerStyle(20);
         h_MBDns->SetMarkerSize(0.7);
 
         h_Photon4GeV->SetLineColor(kRed + 1);
         h_Photon4GeV->SetLineStyle(2);   // dashed
-        h_Photon4GeV->SetLineWidth(2);
+        h_Photon4GeV->SetLineWidth(3);
         h_Photon4GeV->SetMarkerColor(kRed + 1);
         h_Photon4GeV->SetMarkerStyle(24);
         h_Photon4GeV->SetMarkerSize(0.7);
 
-        // Draw Photon4GeV first (underneath), then MBDns on top so both are
-        // distinguishable in the overlap region.
-        h_Photon4GeV->Draw("hist");
-        h_MBDns->Draw("hist same");
+        h_MBDns->Draw("hist");
+        h_Photon4GeV->Draw("hist same");
 
-        TLegend *l = new TLegend(0.45, 0.66, 0.93, 0.82);
+        TLegend *l = new TLegend(0.42, 0.66, 0.95, 0.82);
         legStyle(l, 0.20, 0.038);
-        l->AddEntry(h_MBDns,      "MBD N&S #geq 1 (bit 10)",                "l");
-        l->AddEntry(h_Photon4GeV, "Photon 4 GeV + MBD NS (bit 30)",         "l");
+        l->AddEntry(h_MBDns,      "MBD N&S #geq 1 (bit 10)", "l");
+        l->AddEntry(h_Photon4GeV, "Photon 4 GeV (bit 30)",   "l");
         l->Draw("same");
 
         const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
