@@ -202,6 +202,14 @@ void plot_unfold_iter()
     h_pT_reco_response->SetMarkerColor(kRed);
     h_pT_reco_response->SetMarkerStyle(20);
     h_pT_reco_response->Draw("same");
+
+    // The truth and reco distributions differ at the boundary truth bins
+    // [8,10] (where reco has no bin) and [10,12] (where reco accumulates the
+    // events whose truth was [8,10]). In a perfect closure, iter k unfolded ==
+    // truth for every k -- the iters thus all stack on top of truth in the
+    // top panel and on top of each other. This is what the bottom panel
+    // shows as ratio = 1. The red reco curve is NOT what the iters chase;
+    // it is shown for context only (label "reco (input)" in legend).
     std::cout << "h_pT_reco_response: ";
     for (int ibin = 1; ibin <= h_pT_reco_response->GetNbinsX(); ibin++)
     {
@@ -214,6 +222,7 @@ void plot_unfold_iter()
     myText(0.5, 0.80, 1, "Full closure test", 0.05);
 
     myMarkerLineText(0.6, 0.75, 1, kBlack, 20, kBlack, 1, "truth", 0.05, true);
+    myMarkerLineText(0.6, 0.70, 1, kRed, 20, kRed, 1, "reco (input)", 0.05, true);
 
     TPad *pad_2 = (TPad *)c2->cd(2);
     pad_2->SetPad(0, 0, 1, 0.4);
@@ -244,6 +253,13 @@ void plot_unfold_iter()
     // debug
     // h_pT_reco_response = (TH1D* )response_full->Hresponse()->ProjectionX();
 
+    // Iteration markers: use distinct OPEN styles + size gradient (largest -> smallest)
+    // so each iteration is visible even when central values are identical.
+    // Without this, iter 3 (filled circle, drawn last) covers iter 1 and iter 2
+    // and the user sees only one marker per bin -- no way to verify all
+    // iterations agree visually.
+    std::vector<int> iter_styles = {24, 25, 26, 32, 27};   // open: circle, square, triangle-up, triangle-dn, diamond
+    std::vector<float> iter_sizes = {1.8f, 1.4f, 1.0f, 0.8f, 0.6f};
     for (int i = 0; i < niterations; i++)
     {
         c2->cd();
@@ -261,7 +277,8 @@ void plot_unfold_iter()
         }
         std::cout << std::endl;
         pad_1->cd();
-        h_unfolded_iter->SetMarkerStyle(20);
+        h_unfolded_iter->SetMarkerStyle(iter_styles[i]);
+        h_unfolded_iter->SetMarkerSize(iter_sizes[i]);
         h_unfolded_iter->SetMarkerColor(colors[i]);
         h_unfolded_iter->SetLineColor(colors[i]);
         h_unfolded_iter->Draw("same");
@@ -270,9 +287,10 @@ void plot_unfold_iter()
         TH1D *h_unfolded_ratio_iter = (TH1D *)h_unfolded_iter->Clone(Form("h_unfolded_ratio_iter_%d", i));
         h_unfolded_ratio_iter->Divide(h_pT_truth_response);
         // h_unfolded_ratio.push_back(h_unfolded_ratio_iter);
-        myMarkerLineText(0.6, 0.70 - 0.05 * i, 1, colors[i], 20, colors[i], 1, Form("iteration %d", i + 1), 0.05, true);
+        myMarkerLineText(0.6, 0.65 - 0.05 * i, 1, colors[i], iter_styles[i], colors[i], 1, Form("iteration %d", i + 1), 0.05, true);
         pad_2->cd();
-        h_unfolded_ratio_iter->SetMarkerStyle(20);
+        h_unfolded_ratio_iter->SetMarkerStyle(iter_styles[i]);
+        h_unfolded_ratio_iter->SetMarkerSize(iter_sizes[i]);
         h_unfolded_ratio_iter->SetMarkerColor(colors[i]);
         h_unfolded_ratio_iter->SetLineColor(colors[i]);
         h_unfolded_ratio_iter->Draw("same");
@@ -335,14 +353,16 @@ void plot_unfold_iter()
         RooUnfoldBayes *half_unfold = new RooUnfoldBayes(response_half, h_pT_reco_secondhalf_response, i + 1);
         TH1D *h_unfolded_half_iter = (TH1D *)half_unfold->Hunfold();
 
-        // top pad
+        // top pad — use distinct open marker styles + size gradient (largest -> smallest)
+        // so all iterations are visible even when central values agree (mirrors full-closure block).
         pad_3_top->cd();
-        h_unfolded_half_iter->SetMarkerStyle(20);
+        h_unfolded_half_iter->SetMarkerStyle(iter_styles[i]);
+        h_unfolded_half_iter->SetMarkerSize(iter_sizes[i]);
         h_unfolded_half_iter->SetMarkerColor(colors[i]);
         h_unfolded_half_iter->SetLineColor(colors[i]);
         h_unfolded_half_iter->Draw("same");
 
-        myMarkerLineText(0.6, 0.70 - 0.05 * i, 1, colors[i], 20, colors[i], 1,
+        myMarkerLineText(0.6, 0.65 - 0.05 * i, 1, colors[i], iter_styles[i], colors[i], 1,
                          Form("iteration %d", i + 1), 0.05, true);
 
         // ratio
@@ -351,7 +371,8 @@ void plot_unfold_iter()
         h_unfolded_half_ratio_iter->Divide(h_pT_truth_secondhalf_response);
 
         pad_3_bottom->cd();
-        h_unfolded_half_ratio_iter->SetMarkerStyle(20);
+        h_unfolded_half_ratio_iter->SetMarkerStyle(iter_styles[i]);
+        h_unfolded_half_ratio_iter->SetMarkerSize(iter_sizes[i]);
         h_unfolded_half_ratio_iter->SetMarkerColor(colors[i]);
         h_unfolded_half_ratio_iter->SetLineColor(colors[i]);
         h_unfolded_half_ratio_iter->Draw("same");
