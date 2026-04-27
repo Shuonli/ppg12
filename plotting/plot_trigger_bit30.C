@@ -170,7 +170,7 @@ void plot_trigger_bit30()
         h_Photon4GeV_density->Scale(1.0, "width");
 
         h_MBDns_density->SetStats(0);
-        h_MBDns_density->GetXaxis()->SetRangeUser(10, 40);
+        h_MBDns_density->GetXaxis()->SetRangeUser(8, 15);
         h_MBDns_density->GetYaxis()->SetRangeUser(
             0.5, 5.0 * h_MBDns_density->GetMaximum());
         h_MBDns_density->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
@@ -232,7 +232,7 @@ void plot_trigger_bit30()
         // TH2F frame so the x-range is enforced for the TEfficiency overlay
         // (TH1F + SetRangeUser is ignored by TEfficiency::Draw("same")).
         TH2F *frame = new TH2F("frame_trig_turnon", "",
-                                100, 8, 20, 100, 0.95, 1.005);
+                                100, 8, 15, 100, 0.0, 1.1);
         frame->SetStats(0);
         frame->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame->GetYaxis()->SetTitle(
