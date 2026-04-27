@@ -88,7 +88,7 @@ void plot_efficiency(const std::string suffix = "bdt_nom")
     c4->SaveAs(Form("%s/eff_total_%s.pdf", savePath.c_str(), suffix.c_str()));
 
     TCanvas *c5 = new TCanvas("c5", "c5", 600, 600);
-    frame_et_truth->SetYTitle("MBD Trigger Efficiency");
+    frame_et_truth->SetYTitle("MBD vertex reco efficiency");
     frame_et_truth->GetYaxis()->SetRangeUser(0.45, 1.1);
     frame_et_truth->Draw("axis");
 
@@ -96,27 +96,6 @@ void plot_efficiency(const std::string suffix = "bdt_nom")
     g_mbd_eff->SetMarkerStyle(20);
     g_mbd_eff->SetLineColor(kBlack);
     g_mbd_eff->Draw("same p");
-    if (g_mbd_eff_north)
-    {
-        g_mbd_eff_north->SetMarkerColor(kBlue + 1);
-        g_mbd_eff_north->SetMarkerStyle(24);
-        g_mbd_eff_north->SetLineColor(kBlue + 1);
-        g_mbd_eff_north->Draw("same p");
-    }
-    if (g_mbd_eff_south)
-    {
-        g_mbd_eff_south->SetMarkerColor(kRed + 1);
-        g_mbd_eff_south->SetMarkerStyle(25);
-        g_mbd_eff_south->SetLineColor(kRed + 1);
-        g_mbd_eff_south->Draw("same p");
-    }
-
-    TLegend* lmbd = new TLegend(0.50, 0.24, 0.90, 0.40);
-    legStyle(lmbd, 0.20, 0.05);
-    lmbd->AddEntry(g_mbd_eff, "MBD north & south", "pl");
-    if (g_mbd_eff_north) lmbd->AddEntry(g_mbd_eff_north, "MBD north only", "pl");
-    if (g_mbd_eff_south) lmbd->AddEntry(g_mbd_eff_south, "MBD south only", "pl");
-    lmbd->Draw("same");
 
     myText(xpos2,ypos-0*dy,1,strMC.c_str(),fontsize,1);
     myText(xpos2,ypos-1*dy,1,strleg3.c_str(),fontsize,1);
