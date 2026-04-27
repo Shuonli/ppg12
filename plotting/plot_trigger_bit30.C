@@ -202,8 +202,8 @@ void plot_trigger_bit30()
 
         TLegend *l = new TLegend(0.42, 0.66, 0.95, 0.82);
         legStyle(l, 0.20, 0.038);
-        l->AddEntry(h_MBDns_density,      "MBD N&S #geq 1 (bit 10)", "lep");
-        l->AddEntry(h_Photon4GeV_density, "Photon 4 GeV (bit 30)",   "lep");
+        l->AddEntry(h_MBDns_density,      "scaled[10]  (MBD N&S)",        "lep");
+        l->AddEntry(h_Photon4GeV_density, "scaled[10] & scaled[30]",      "lep");
         l->Draw("same");
 
         const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
