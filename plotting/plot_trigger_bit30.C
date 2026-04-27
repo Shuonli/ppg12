@@ -254,17 +254,19 @@ void plot_trigger_bit30()
         eff_bit30->SetLineColor(kBlack);
         eff_bit30->Draw("same p");
 
-        // Error-function turn-on fit:
-        //   eps(E_T) = p0 * 0.5 * (1 + erf((E_T - p1)/(sqrt(2)*p2)))
-        // p0 = plateau, p1 = 50% point, p2 = Gaussian width.
+        // Gumbel-CDF turn-on fit:
+        //   eps(E_T) = p0 * exp( -exp( -(E_T - p1) / p2 ) )
+        // p0 = plateau, p1 = location (mode), p2 = scale (>0).
+        // Asymmetric turn-on (slow rise at low ET, fast asymptote) often
+        // describes calo trigger turn-ons better than the symmetric erf.
         // Fit on the visible range 5 < E_T^cluster < 15 GeV.
-        TF1 *ferf = new TF1("ferf_trig_turnon",
-            "[0]*0.5*(1.0+TMath::Erf((x-[1])/(TMath::Sqrt(2.0)*[2])))",
+        TF1 *ferf = new TF1("fgumbel_trig_turnon",
+            "[0]*TMath::Exp(-TMath::Exp(-(x-[1])/[2]))",
             5.0, 15.0);
-        ferf->SetParameters(1.0, 4.0, 1.0);   // (plateau, mu, sigma)
+        ferf->SetParameters(1.0, 4.0, 0.5);   // (plateau, mu, beta)
         ferf->SetParLimits(0, 0.5, 1.05);
         ferf->FixParameter(1, 4.0);          // mu fixed at trigger nominal threshold
-        ferf->SetParLimits(2, 0.1, 5.0);
+        ferf->SetParLimits(2, 0.05, 5.0);
         ferf->SetLineColor(kRed + 1);
         ferf->SetLineWidth(2);
 
@@ -290,22 +292,22 @@ void plot_trigger_bit30()
         const double p0 = ferf->GetParameter(0), e0 = ferf->GetParError(0);
         const double p1 = ferf->GetParameter(1), e1 = ferf->GetParError(1);
         const double p2 = ferf->GetParameter(2), e2 = ferf->GetParError(2);
-        std::cout << "erf fit: plateau=" << p0 << " ± " << e0
+        std::cout << "Gumbel fit: plateau=" << p0 << " ± " << e0
                   << "  mu=" << p1 << " ± " << e1
-                  << "  sigma=" << p2 << " ± " << e2
+                  << "  beta=" << p2 << " ± " << e2
                   << "  chi2/ndf=" << ferf->GetChisquare()
                   << "/" << ferf->GetNDF() << std::endl;
 
         TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.48);
         legStyle(l, 0.20, 0.036);
         l->AddEntry(eff_bit30, "#varepsilon = N(bit 10 & 30) / N(bit 10)", "pl");
-        l->AddEntry(ferf,      "erf fit (#mu fixed at 4 GeV)",             "l");
+        l->AddEntry(ferf,      "Gumbel fit (#mu fixed at 4 GeV)",          "l");
         l->Draw("same");
 
         // Fit parameters in middle of panel (data has empty mid-y region
         // because eps jumps quickly from ~0.9 at low ET to ~1.0 plateau).
         myText(0.50, 0.62, 1, Form("plateau = %.3f #pm %.3f", p0, e0), 0.034, 0);
-        myText(0.50, 0.58, 1, Form("#sigma = %.2f #pm %.2f GeV", p2, e2), 0.034, 0);
+        myText(0.50, 0.58, 1, Form("#beta = %.2f #pm %.2f GeV", p2, e2), 0.034, 0);
 
         // sPHENIX labels at bottom-left, fit params at top-right (data
         // saturates near y=1 so top area is also empty above the fit curve).
