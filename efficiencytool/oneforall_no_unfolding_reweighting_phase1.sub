@@ -1,0 +1,27 @@
+# oneforall_no_unfolding_reweighting_phase1.sub
+#
+# Phase 1 for the no_unfolding_reweighting variant. Runs the per-sample
+# TTree pipeline (RecoEffCalculator_TTreeReader for all MC samples + data
+# + per-period MergeSim) on the 2 merge-feeder configs.
+#
+# Used to derive the iter=1 truth-pT reweight against the current nominal
+# baseline (iso 0.490+0.037*ET, trigger-eff correction). Follow up with
+# oneforall_no_unfolding_reweighting_phase2.sub once these complete.
+
+universe              = vanilla
+request_memory        = 6GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg in (
+    config_bdt_no_unfolding_reweighting_0rad.yaml
+    config_bdt_no_unfolding_reweighting_1p5mrad.yaml
+)

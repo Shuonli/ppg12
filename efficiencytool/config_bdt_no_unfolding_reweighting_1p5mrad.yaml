@@ -44,6 +44,14 @@ analysis:
   #reco_iso_max_s: 0.0
   reco_noniso_min_shift: 0.8
   reco_noniso_max: 20.0
+
+  # L1 trigger-efficiency correction on data clusters: weight *= 1/eps_L1(ET^reco)
+  # Gumbel-CDF parametrization eps_L1(ET) = p0 * exp(-exp(-(ET - mu)/beta))
+  # measured in plot_trigger_bit30.C with scaled[10]/live[30].
+  apply_trigger_eff_correction: 1
+  trigger_eff_p0: 1.000
+  trigger_eff_mu: -2.04
+  trigger_eff_beta: 3.33
   reco_min_ET: 5.0
   cone_size: 3
   eff_dR: 0.1
