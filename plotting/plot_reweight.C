@@ -5,9 +5,13 @@ void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficienc
     init_plot();
     TFile *fin = new TFile(infile);
 
-    // Use unfolded data (truth pT, efficiency-corrected) vs MC response-matrix prior (truth pT).
-    // These are the correct inputs for reweighting the Bayesian unfolding prior.
-    TH1D *h_unfolded = (TH1D *)fin->Get("h_unfold_sub_result");
+    // Use iter=1 unfolded data (truth pT, efficiency- and leakage-corrected) vs MC
+    // response-matrix prior (truth pT). iter=1 is the standard choice for the first
+    // round of iterative prior reweighting in D'Agostini Bayes unfolding: the prior
+    // bias is still present and (iter=1)/prior captures the per-bin shape correction
+    // needed to bring the prior closer to data, not yet diluted by further unfolding
+    // iterations against the same un-reweighted prior.
+    TH1D *h_unfolded = (TH1D *)fin->Get("h_unfold_sub_leak_1");
     TH1D *h_mc_prior = (TH1D *)fin->Get("h_pT_truth_response_0");
 
     if (!h_unfolded || !h_mc_prior)
@@ -70,9 +74,17 @@ void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficienc
     TH1D *h_ratio = (TH1D *)h_unfolded->Clone("h_ratio");
     h_ratio->Divide(h_mc_prior);
 
-    // [2/2] Pade approximant fit
+    // [2/2] Pade approximant fit — bounded to keep parameters near physical
+    // values (R(0)~1 at zero ET) and the denominator monotonically positive
+    // over the clamp range [10, 30] GeV. Otherwise MIGRAD lands at a degenerate
+    // Pade corner whose denominator zeroes are inside or near the analysis range.
     TF1 *fit_ratio = new TF1("fit_ratio", "([0] + [1]*x + [3]*x*x) / (1 + [2]*x + [4]*x*x)", 8, 35);
-    fit_ratio->SetParameters(1.0, 0.1, 0.1, 0.1, 0.1);
+    fit_ratio->SetParameters(1.0, 0.0, 0.0, 0.0, 0.0);
+    fit_ratio->SetParLimits(0,  0.0, 5.0);
+    fit_ratio->SetParLimits(1, -1.0, 1.0);
+    fit_ratio->SetParLimits(2, -0.5, 0.5);     // keep denom from zeroing in analysis range
+    fit_ratio->SetParLimits(3, -0.5, 0.5);
+    fit_ratio->SetParLimits(4, -0.5, 0.5);
     h_ratio->Fit(fit_ratio, "REM", "", 8, 35);
     h_ratio->Fit(fit_ratio, "REM", "", 8, 35);
 
