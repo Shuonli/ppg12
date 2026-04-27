@@ -347,35 +347,42 @@ void plot_unfold_iter()
     // Horizontal line at y=1
     lineone->Draw("L");
 
-    // Now unfold for the half-sample7207574915
-    for (int i = 0; i < niterations + 1; i++)
+    // Now unfold for the half-sample. Show iterations 1, 2, 4 (skip 3) — three
+    // iterations are enough to bracket the unfolding behaviour and the plot
+    // stays visually clean. Iter 1 = prior-dominated (loose), iter 2 = nominal
+    // analysis count, iter 4 = converged (tight).
+    std::vector<int> half_iters_to_show = {1, 2, 4};
+    for (size_t k = 0; k < half_iters_to_show.size(); k++)
     {
+        int iter_idx = half_iters_to_show[k];                // displayed label (1-based)
+        int style_idx = static_cast<int>(k);                 // index into iter_styles/sizes/colors
         // Use response_half, h_pT_reco_secondhalf_response, etc.
-        RooUnfoldBayes *half_unfold = new RooUnfoldBayes(response_half, h_pT_reco_secondhalf_response, i + 1);
+        RooUnfoldBayes *half_unfold = new RooUnfoldBayes(response_half, h_pT_reco_secondhalf_response, iter_idx);
         TH1D *h_unfolded_half_iter = (TH1D *)half_unfold->Hunfold();
 
-        // top pad — use distinct open marker styles + size gradient (largest -> smallest)
-        // so all iterations are visible even when central values agree (mirrors full-closure block).
+        // top pad — distinct open marker styles + size gradient (largest -> smallest)
+        // so all iterations are visible even when central values agree.
         pad_3_top->cd();
-        h_unfolded_half_iter->SetMarkerStyle(iter_styles[i]);
-        h_unfolded_half_iter->SetMarkerSize(iter_sizes[i]);
-        h_unfolded_half_iter->SetMarkerColor(colors[i]);
-        h_unfolded_half_iter->SetLineColor(colors[i]);
+        h_unfolded_half_iter->SetMarkerStyle(iter_styles[style_idx]);
+        h_unfolded_half_iter->SetMarkerSize(iter_sizes[style_idx]);
+        h_unfolded_half_iter->SetMarkerColor(colors[style_idx]);
+        h_unfolded_half_iter->SetLineColor(colors[style_idx]);
         h_unfolded_half_iter->Draw("same");
 
-        myMarkerLineText(0.6, 0.65 - 0.05 * i, 1, colors[i], iter_styles[i], colors[i], 1,
-                         Form("iteration %d", i + 1), 0.05, true);
+        myMarkerLineText(0.6, 0.65 - 0.05 * style_idx, 1, colors[style_idx],
+                         iter_styles[style_idx], colors[style_idx], 1,
+                         Form("iteration %d", iter_idx), 0.05, true);
 
         // ratio
         TH1D *h_unfolded_half_ratio_iter = (TH1D *)h_unfolded_half_iter->Clone(
-            Form("h_unfolded_half_ratio_iter_%d", i));
+            Form("h_unfolded_half_ratio_iter_%d", iter_idx));
         h_unfolded_half_ratio_iter->Divide(h_pT_truth_secondhalf_response);
 
         pad_3_bottom->cd();
-        h_unfolded_half_ratio_iter->SetMarkerStyle(iter_styles[i]);
-        h_unfolded_half_ratio_iter->SetMarkerSize(iter_sizes[i]);
-        h_unfolded_half_ratio_iter->SetMarkerColor(colors[i]);
-        h_unfolded_half_ratio_iter->SetLineColor(colors[i]);
+        h_unfolded_half_ratio_iter->SetMarkerStyle(iter_styles[style_idx]);
+        h_unfolded_half_ratio_iter->SetMarkerSize(iter_sizes[style_idx]);
+        h_unfolded_half_ratio_iter->SetMarkerColor(colors[style_idx]);
+        h_unfolded_half_ratio_iter->SetLineColor(colors[style_idx]);
         h_unfolded_half_ratio_iter->Draw("same");
     }
 
