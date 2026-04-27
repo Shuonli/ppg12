@@ -335,6 +335,15 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     float recononiso_min_shift = configYaml["analysis"]["reco_noniso_min_shift"].as<float>();
     float recononiso_max = configYaml["analysis"]["reco_noniso_max"].as<float>();
 
+    // L1 trigger-efficiency correction (data only). Gumbel-CDF parametrization
+    //   eps_L1(ET) = p0 * exp(-exp(-(ET - mu)/beta))
+    // measured from plot_trigger_bit30.C with scaled[10]/live[30].
+    // Applied per data cluster as weight *= 1/eps_L1(ET^reco) at fill time.
+    int   apply_trigger_eff_correction = configYaml["analysis"]["apply_trigger_eff_correction"].as<int>(0);
+    float trigger_eff_p0   = configYaml["analysis"]["trigger_eff_p0"].as<float>(1.0f);
+    float trigger_eff_mu   = configYaml["analysis"]["trigger_eff_mu"].as<float>(-2.04f);
+    float trigger_eff_beta = configYaml["analysis"]["trigger_eff_beta"].as<float>(3.33f);
+
     float vertexcut = configYaml["analysis"]["vertex_cut"].as<float>();
     // Truth-vertex denominator cut for the MBD-eff plumbing (line ~1785).
     // Defaults to the reco vertex_cut so legacy configs are unchanged.
@@ -2070,6 +2079,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             }
         }
 
+        // Snapshot the per-event weight so per-cluster trigger-efficiency
+        // corrections (data only) don't accumulate across cluster iterations.
+        const float event_weight = weight;
         for (int icluster = 0; icluster < *ncluster; icluster++)
         {
             if (is_tower_masked(icluster)) continue;
@@ -2077,7 +2089,7 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
                 continue;
-            
+
             // for jet 10 event we want to remove some high ET clusters to reduce the fluctuation
             if (isbackground)
             {
@@ -2086,6 +2098,18 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                 {
                     continue;
                 }
+            }
+
+            // Per-cluster L1 trigger-efficiency correction (data only):
+            //   weight = event_weight / eps_L1(ET^reco)
+            // Gumbel-CDF eps_L1; if disabled (or sim) keep weight unchanged.
+            weight = event_weight;
+            if (!issim && apply_trigger_eff_correction)
+            {
+                const float et = cluster_Et[icluster];
+                const float eps = trigger_eff_p0 *
+                    std::exp(-std::exp(-(et - trigger_eff_mu) / trigger_eff_beta));
+                if (eps > 1e-6f) weight = event_weight / eps;
             }
             if (nosat)
             {
