@@ -77,7 +77,7 @@ void plot_b2bjet_npb_appendix()
     pTop->cd();
     pTop->SetLogy();
     TH2F *frTop = new TH2F("frTop", ";;d^{2}#it{#sigma}/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]",
-                            100, 10, 32, 100, 1.0e-2, 5.0e3);
+                            100, 12, 32, 100, 1.0e-2, 5.0e2);
     frTop->GetYaxis()->SetTitleOffset(1.2);
     frTop->GetYaxis()->SetTitleSize(0.06);
     frTop->GetYaxis()->SetLabelSize(0.05);
@@ -108,7 +108,7 @@ void plot_b2bjet_npb_appendix()
     // Bottom panel — ratio
     pBot->cd();
     TH2F *frBot = new TH2F("frBot", ";#it{E}_{T}^{#gamma} [GeV];Variant / Nominal",
-                            100, 10, 32, 100, 0.4, 1.6);
+                            100, 12, 32, 100, 0.4, 1.6);
     frBot->GetYaxis()->SetTitleOffset(0.65);
     frBot->GetYaxis()->SetTitleSize(0.10);
     frBot->GetXaxis()->SetTitleSize(0.10);
@@ -117,7 +117,7 @@ void plot_b2bjet_npb_appendix()
     frBot->GetYaxis()->SetNdivisions(505);
     frBot->Draw();
 
-    TLine *one = new TLine(10, 1.0, 32, 1.0);
+    TLine *one = new TLine(12, 1.0, 32, 1.0);
     one->SetLineStyle(2);
     one->SetLineColor(kGray + 1);
     one->Draw("same");
