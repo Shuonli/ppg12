@@ -77,7 +77,7 @@ void plot_b2bjet_npb_appendix()
     pTop->cd();
     pTop->SetLogy();
     TH2F *frTop = new TH2F("frTop", ";;d^{2}#it{#sigma}/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]",
-                            100, 12, 32, 100, 1.0e-2, 5.0e2);
+                            100, 12, 32, 100, 1.0e-1, 5.0e3);
     frTop->GetYaxis()->SetTitleOffset(1.2);
     frTop->GetYaxis()->SetTitleSize(0.06);
     frTop->GetYaxis()->SetLabelSize(0.05);
