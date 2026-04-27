@@ -13,8 +13,8 @@
 //   - 10 of 77 slimtree data files (6.6M events).
 //   - Fiducial: |cluster_Eta_CLUSTERINFO_CEMC| < 0.7 and |vertexz| < 60 cm.
 //   - Per-cluster fill of ET = cluster_Et_CLUSTERINFO_CEMC.
-//   - Denominator: livetrigger[10] == 1 (MBD NandS coincidence).
-//   - Numerator:   livetrigger[10] == 1 && livetrigger[30] == 1.
+//   - Denominator: scaledtrigger[10] == 1 (MBD NandS coincidence, post-prescale).
+//   - Numerator:   scaledtrigger[10] == 1 && scaledtrigger[30] == 1.
 //   - Binning: 0.5 GeV from 7->20, 1 GeV from 20->40 (46 variable bins).
 //   - Plateau constant fit on 10-20 GeV returns ~0.9958 per the report.
 //
@@ -100,7 +100,7 @@ void plot_trigger_bit30()
     TTreeReaderArray<float> cEt (R, "cluster_Et_CLUSTERINFO_CEMC");
     TTreeReaderArray<float> cEta(R, "cluster_Eta_CLUSTERINFO_CEMC");
     TTreeReaderValue<float> vtxz(R, "vertexz");
-    TTreeReaderArray<bool>  livetrig(R, "livetrigger");
+    TTreeReaderArray<bool>  scaledtrig(R, "scaledtrigger");
 
     // ---- Event / cluster loop -------------------------------------------
     auto tstart = std::chrono::steady_clock::now();
@@ -112,10 +112,10 @@ void plot_trigger_bit30()
         ++nev;
         if (std::fabs(*vtxz) > 60.0) continue;
         ++nev_vz;
-        if (livetrig.GetSize() <= 30)   continue;
-        if (livetrig[10] == 0)          continue;
+        if (scaledtrig.GetSize() <= 30)   continue;
+        if (scaledtrig[10] == 0)          continue;
         ++nev_mbd;
-        const bool photon_on = (livetrig[30] != 0);
+        const bool photon_on = (scaledtrig[30] != 0);
         for (int i = 0; i < *ncluster; ++i)
         {
             const float et  = cEt[i];
