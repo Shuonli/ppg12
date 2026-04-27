@@ -1,0 +1,23 @@
+# oneforall_iso_p49_s37_phase2.sub
+#
+# Phase 2 for the iso_p49_s37 cross-check variant. Run AFTER phase 1 completes.
+# Invokes oneforall.sh on the all-range bare config; this triggers
+# merge_periods.sh + RecoEffCalculator_TTreeReader(data) + CalculatePhotonYield x 2
+# + make_selection_plots.sh (sPHENIX-style PDFs in plotting/figures/).
+
+universe              = vanilla
+request_memory        = 4GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+log                   = logs/$(cfg).all.log
+output                = logs/$(cfg).all.out
+error                 = logs/$(cfg).all.err
+
+queue cfg in (
+    config_bdt_iso_p49_s37.yaml
+)

@@ -1,0 +1,26 @@
+# oneforall_iso_p49_s37_phase1.sub
+#
+# Phase 1 for the iso_p49_s37 cross-check variant (reco_iso_max = 0.490 + 0.037*ET).
+# Runs oneforall_tree_and_yield.sh on the 2 merge-feeder configs:
+#   tree stage  = RecoEffCalculator_TTreeReader per sample
+#   yield stage = MergeSim.C (lumi-weighted per-period MC merge)
+#
+# Follow-up: submit oneforall_iso_p49_s37_phase2.sub once these complete.
+
+universe              = vanilla
+request_memory        = 6GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_and_yield.sh $(cfg)"
+
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg in (
+    config_bdt_iso_p49_s37_0rad.yaml
+    config_bdt_iso_p49_s37_1p5mrad.yaml
+)

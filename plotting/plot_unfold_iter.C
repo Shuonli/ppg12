@@ -176,8 +176,8 @@ void plot_unfold_iter()
     pad_1->SetLogy();
 
     frame_et_rec->SetYTitle("d#sigma/dE_{T} [pb/GeV]");
-    frame_et_rec->GetYaxis()->SetRangeUser(1e3, 8e7);
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 32);
+    frame_et_rec->GetYaxis()->SetRangeUser(1e3, 1e8);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);
     frame_et_rec->SetYTitle("counts");
 
     frame_et_rec->GetXaxis()->SetTitleOffset(0.98);
@@ -223,7 +223,7 @@ void plot_unfold_iter()
     frame_et_truth->SetYTitle("unfolded / truth");
     frame_et_truth->GetYaxis()->SetNdivisions(506);
     frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.1);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 32);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
     frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
     frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);
@@ -245,9 +245,12 @@ void plot_unfold_iter()
     {
         c2->cd();
         RooUnfoldBayes *full_unfold = new RooUnfoldBayes(response_full, h_pT_reco_response, i + 1);
-        RooUnfoldBinByBin *full_unfold_binbybin = new RooUnfoldBinByBin(response_full, h_pT_reco_response);
-        // TH1D *h_unfolded_iter = (TH1D *)full_unfold->Hunfold();
-        TH1D *h_unfolded_iter = (TH1D *)full_unfold_binbybin->Hunfold();
+        // Use Bayesian iterative unfolder (matches the cross-section pipeline
+        // and properly populates the [32,36) truth bin in the non-square
+        // response). Bin-by-bin returns 0 for boundary truth bins under this
+        // axis configuration, which made the iter-1/2/3 markers identical and
+        // hid the [32,36) ratio off-frame.
+        TH1D *h_unfolded_iter = (TH1D *)full_unfold->Hunfold();
         std::cout << "h_unfolded_iter: ";
         for (int ibin = 1; ibin <= h_unfolded_iter->GetNbinsX(); ibin++)
         {
@@ -290,8 +293,8 @@ void plot_unfold_iter()
     // TOP PAD
     frame_et_rec->Draw("axis");
     frame_et_rec->SetYTitle("counts");
-    frame_et_rec->GetYaxis()->SetRangeUser(1e4, 1e7); // or adapt range to your data
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);    // adapt as needed
+    frame_et_rec->GetYaxis()->SetRangeUser(1e3, 5e7); // covers data over 10-36 GeV
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);    // extended to last truth bin [32,36]
 
     // Draw the “truth” histogram for the half-sample closure
     // (assuming you have h_pT_truth_secondhalf_response as the "truth" distribution)
@@ -315,8 +318,8 @@ void plot_unfold_iter()
 
     // Re-draw ratio axes
     frame_et_truth->SetYTitle("unfolded / truth");
-    frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.1);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.85, 1.15);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
     frame_et_truth->Draw("axis");
 
     // Horizontal line at y=1
