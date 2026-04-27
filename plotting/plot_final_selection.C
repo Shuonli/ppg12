@@ -486,11 +486,14 @@ void plot_final_selection(string tune = "bdt_nom")
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
     frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
-    frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);
+    // Derive the ratio-panel x-label size from the *y*-axis label of the top
+    // panel (which is preserved at 0.050). The top-panel x-label is hidden
+    // (size=0) per the two-pad layout, so reading from it would yield 0.
+    frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
     frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
     frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4. * 1.2);
     frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4.);
-    frame_et_truth->GetXaxis()->SetNdivisions(412, kFALSE);  // #7: ticks at 12,17,22,27,32 over [12,32]
+    frame_et_truth->GetXaxis()->SetNdivisions(505);  // 5 primary divisions, optimized — matches top panel; gives 15/20/25/30 labels
     frame_et_truth->Draw("axis");
 
     g_syst_rel->SetMarkerStyle(mkStyle[0]);

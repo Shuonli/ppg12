@@ -177,7 +177,9 @@ void plot_unfold_iter()
 
     frame_et_rec->SetYTitle("d#sigma/dE_{T} [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(1e3, 1e8);
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);
+    // Extend below 10 GeV so the [10,12] truth bin marker (center x=11) is
+    // not clipped against the y-axis line — it was hidden in earlier renders.
+    frame_et_rec->GetXaxis()->SetRangeUser(9, 36);
     frame_et_rec->SetYTitle("counts");
 
     frame_et_rec->GetXaxis()->SetTitleOffset(0.98);
@@ -223,7 +225,8 @@ void plot_unfold_iter()
     frame_et_truth->SetYTitle("unfolded / truth");
     frame_et_truth->GetYaxis()->SetNdivisions(506);
     frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.1);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
+    // Match top panel: extend below 10 GeV so the [10,12] ratio marker is visible.
+    frame_et_truth->GetXaxis()->SetRangeUser(9, 36);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
     frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
     frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6 / 4.);
@@ -294,7 +297,7 @@ void plot_unfold_iter()
     frame_et_rec->Draw("axis");
     frame_et_rec->SetYTitle("counts");
     frame_et_rec->GetYaxis()->SetRangeUser(1e3, 5e7); // covers data over 10-36 GeV
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);    // extended to last truth bin [32,36]
+    frame_et_rec->GetXaxis()->SetRangeUser(9, 36);     // start at 9 so [10,12] marker isn't clipped
 
     // Draw the “truth” histogram for the half-sample closure
     // (assuming you have h_pT_truth_secondhalf_response as the "truth" distribution)
@@ -319,7 +322,7 @@ void plot_unfold_iter()
     // Re-draw ratio axes
     frame_et_truth->SetYTitle("unfolded / truth");
     frame_et_truth->GetYaxis()->SetRangeUser(0.85, 1.15);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
+    frame_et_truth->GetXaxis()->SetRangeUser(9, 36);  // start at 9 to expose [10,12] marker
     frame_et_truth->Draw("axis");
 
     // Horizontal line at y=1
