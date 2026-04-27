@@ -93,7 +93,7 @@ void plot_trigger_bit30()
         "eff_bit30",
         ";#it{E}_{T}^{cluster} [GeV];#varepsilon(bit 30 | bit 10)",
         nbins, edges.data());
-    eff_bit30->SetStatisticOption(TEfficiency::kFNormal);  // binomial error sqrt(eff*(1-eff)/n)
+    eff_bit30->SetStatisticOption(TEfficiency::kFCP);  // Clopper-Pearson 68% CI
 
     // ---- Readers ---------------------------------------------------------
     TTreeReader R(t);
