@@ -44,6 +44,9 @@
 namespace {
 
 // 0.5 GeV binning from 7 -> 20, then 1 GeV from 20 -> 40. 46 bins, 47 edges.
+// Bin width is non-uniform; plotting code below scales raw counts by
+// 1/binwidth before drawing the left-panel overlay so the bin-width
+// transition at 20 GeV does not produce a step-up artifact.
 std::vector<double> make_turnon_edges()
 {
     std::vector<double> edges;
@@ -155,39 +158,52 @@ void plot_trigger_bit30()
         c1->SetTopMargin(0.06);
         c1->SetBottomMargin(0.15);
 
-        h_MBDns->SetStats(0);
-        h_MBDns->GetXaxis()->SetRangeUser(10, 40);
-        h_MBDns->GetYaxis()->SetRangeUser(1, 5.0 * h_MBDns->GetMaximum());
-        h_MBDns->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
-        h_MBDns->GetYaxis()->SetTitle("Clusters");
-        h_MBDns->GetYaxis()->SetTitleOffset(1.45);
-        h_MBDns->GetXaxis()->SetTitleOffset(1.15);
+        // Density scaling: divide raw counts by bin width so the 20 GeV
+        // bin-width transition (0.5 GeV -> 1.0 GeV) does not produce a
+        // step-up artifact in the log-y display. Sumw2 is set so the
+        // per-bin Poisson errors are propagated correctly through Scale.
+        TH1F *h_MBDns_density       = (TH1F *)h_MBDns->Clone("h_MBDns_density");
+        TH1F *h_Photon4GeV_density  = (TH1F *)h_Photon4GeV->Clone("h_Photon4GeV_density");
+        h_MBDns_density->Sumw2();
+        h_Photon4GeV_density->Sumw2();
+        h_MBDns_density->Scale(1.0, "width");
+        h_Photon4GeV_density->Scale(1.0, "width");
+
+        h_MBDns_density->SetStats(0);
+        h_MBDns_density->GetXaxis()->SetRangeUser(10, 40);
+        h_MBDns_density->GetYaxis()->SetRangeUser(
+            0.5, 5.0 * h_MBDns_density->GetMaximum());
+        h_MBDns_density->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
+        h_MBDns_density->GetYaxis()->SetTitle("Clusters / GeV");
+        h_MBDns_density->GetYaxis()->SetTitleOffset(1.45);
+        h_MBDns_density->GetXaxis()->SetTitleOffset(1.15);
 
         // MBD N&S in solid black (drawn first as the wider denominator);
         // Photon 4 GeV dashed red drawn on top so the dashes cut through
         // the black line at the ~99.6% plateau where the two histograms
         // are nearly identical.
-        h_MBDns->SetLineColor(kBlack);
-        h_MBDns->SetLineStyle(1);
-        h_MBDns->SetLineWidth(2);
-        h_MBDns->SetMarkerColor(kBlack);
-        h_MBDns->SetMarkerStyle(20);
-        h_MBDns->SetMarkerSize(0.7);
+        h_MBDns_density->SetLineColor(kBlack);
+        h_MBDns_density->SetLineStyle(1);
+        h_MBDns_density->SetLineWidth(2);
+        h_MBDns_density->SetMarkerColor(kBlack);
+        h_MBDns_density->SetMarkerStyle(20);
+        h_MBDns_density->SetMarkerSize(0.7);
 
-        h_Photon4GeV->SetLineColor(kRed + 1);
-        h_Photon4GeV->SetLineStyle(2);   // dashed
-        h_Photon4GeV->SetLineWidth(3);
-        h_Photon4GeV->SetMarkerColor(kRed + 1);
-        h_Photon4GeV->SetMarkerStyle(24);
-        h_Photon4GeV->SetMarkerSize(0.7);
+        h_Photon4GeV_density->SetLineColor(kRed + 1);
+        h_Photon4GeV_density->SetLineStyle(2);   // dashed
+        h_Photon4GeV_density->SetLineWidth(3);
+        h_Photon4GeV_density->SetMarkerColor(kRed + 1);
+        h_Photon4GeV_density->SetMarkerStyle(24);
+        h_Photon4GeV_density->SetMarkerSize(0.7);
 
-        h_MBDns->Draw("hist");
-        h_Photon4GeV->Draw("hist same");
+        // Draw with E1 to show statistical (Poisson) error bars.
+        h_MBDns_density->Draw("E1");
+        h_Photon4GeV_density->Draw("E1 same");
 
         TLegend *l = new TLegend(0.42, 0.66, 0.95, 0.82);
         legStyle(l, 0.20, 0.038);
-        l->AddEntry(h_MBDns,      "MBD N&S #geq 1 (bit 10)", "l");
-        l->AddEntry(h_Photon4GeV, "Photon 4 GeV (bit 30)",   "l");
+        l->AddEntry(h_MBDns_density,      "MBD N&S #geq 1 (bit 10)", "lep");
+        l->AddEntry(h_Photon4GeV_density, "Photon 4 GeV (bit 30)",   "lep");
         l->Draw("same");
 
         const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
@@ -213,16 +229,17 @@ void plot_trigger_bit30()
         c2->SetTopMargin(0.06);
         c2->SetBottomMargin(0.15);
 
-        TH1F *frame = new TH1F("frame_trig_turnon", "",
-                               1, 7, 40);
+        // TH2F frame so the x-range is enforced for the TEfficiency overlay
+        // (TH1F + SetRangeUser is ignored by TEfficiency::Draw("same")).
+        TH2F *frame = new TH2F("frame_trig_turnon", "",
+                                100, 8, 20, 100, 0.95, 1.005);
         frame->SetStats(0);
-        frame->GetXaxis()->SetRangeUser(10, 40);
-        frame->GetYaxis()->SetRangeUser(0.0, 1.1);
         frame->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame->GetYaxis()->SetTitle(
             "#varepsilon_{L1}(Photon 4 GeV | MBD N&S)");
         frame->GetYaxis()->SetTitleOffset(1.35);
         frame->GetXaxis()->SetTitleOffset(1.15);
+        frame->GetYaxis()->SetNdivisions(510);
         frame->Draw("axis");
 
         eff_bit30->SetMarkerStyle(20);
@@ -238,11 +255,13 @@ void plot_trigger_bit30()
                     "pl");
         l->Draw("same");
 
-        const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
+        // sPHENIX labels in the bottom-left of the panel (data sits near y=1
+        // so the empty bottom region is the natural home for them).
+        const float xpos = 0.22, ypos = 0.36;
         const float dy = 0.054, fontsize = 0.040;
-        myText(xpos,  ypos - 0 * dy, 1, strleg1.c_str(),   fontsize, 0);
-        myText(xpos,  ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 0);
-        myText(xpos2, ypos - 0 * dy, 1, strleg3.c_str(),   fontsize, 1);
+        myText(xpos, ypos - 0 * dy, 1, strleg1.c_str(),   fontsize, 0);
+        myText(xpos, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 0);
+        myText(xpos, ypos - 2 * dy, 1, strleg3.c_str(),   fontsize, 0);
 
         c2->SaveAs(Form("%s/"
                         "h_maxEnergyClus_NewTriggerFilling_doNotScale_"
