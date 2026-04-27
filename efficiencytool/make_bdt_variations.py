@@ -94,6 +94,14 @@ VARIANTS = [
     dict(name="noniso10",     reco_noniso_min_shift=1.0,
          syst_type="noniso", syst_role="up"),     # looser noniso window
 
+    # Reco-iso parametric shift cross-check (2026-04-27): tighter intercept
+    # 0.490 (vs nominal 0.502095) and slightly looser slope 0.037 (vs
+    # 0.0433036). Probes joint sensitivity of purity and iso efficiency
+    # to the parametric isolation cut shape; not a syst group entry.
+    dict(name="iso_p49_s37",
+         reco_iso_max_b=0.490, reco_iso_max_s=0.037,
+         syst_type=None, syst_role=None),
+
     # NPB score cut  →  syst: npb_cut (two_sided). Looser/tighter cut
     # produces the expected anti-correlated yield shifts after the merge
     # fix (Pearson r=-0.998, post-fix mean +0.3%/-1.2%).
