@@ -263,10 +263,10 @@ void plot_trigger_bit30()
         TF1 *ferf = new TF1("fgumbel_trig_turnon",
             "[0]*TMath::Exp(-TMath::Exp(-(x-[1])/[2]))",
             5.0, 15.0);
-        ferf->SetParameters(1.0, 4.0, 0.5);   // (plateau, mu, beta)
-        ferf->SetParLimits(0, 0.5, 1.05);
-        ferf->FixParameter(1, 4.0);          // mu fixed at trigger nominal threshold
-        ferf->SetParLimits(2, 0.05, 5.0);
+        ferf->SetParameters(1.0, 3.0, 1.0);   // (plateau, mu, beta)
+        ferf->FixParameter(0, 1.0);          // plateau locked: high-ET data is at 1.000
+        ferf->SetParLimits(1, -5.0, 6.0);
+        ferf->SetParLimits(2, 0.1, 5.0);
         ferf->SetLineColor(kRed + 1);
         ferf->SetLineWidth(2);
 
@@ -301,12 +301,12 @@ void plot_trigger_bit30()
         TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.48);
         legStyle(l, 0.20, 0.036);
         l->AddEntry(eff_bit30, "#varepsilon = N(bit 10 & 30) / N(bit 10)", "pl");
-        l->AddEntry(ferf,      "Gumbel fit (#mu fixed at 4 GeV)",          "l");
+        l->AddEntry(ferf,      "Gumbel fit, plateau = 1",                  "l");
         l->Draw("same");
 
         // Fit parameters in middle of panel (data has empty mid-y region
         // because eps jumps quickly from ~0.9 at low ET to ~1.0 plateau).
-        myText(0.50, 0.62, 1, Form("plateau = %.3f #pm %.3f", p0, e0), 0.034, 0);
+        myText(0.50, 0.62, 1, Form("#mu = %.2f #pm %.2f GeV",   p1, e1), 0.034, 0);
         myText(0.50, 0.58, 1, Form("#beta = %.2f #pm %.2f GeV", p2, e2), 0.034, 0);
 
         // sPHENIX labels at bottom-left, fit params at top-right (data
