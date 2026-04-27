@@ -4,7 +4,8 @@ config_bdt_b2bjet_pt7_npb0.yaml
 config_bdt_b2bjet_pt7.yaml
 config_bdt_bdtmodel_v0E.yaml
 config_bdt_bdtmodel_v0.yaml
-config_bdt_energyresolution5.yaml
+config_bdt_energyresolution0.yaml
+config_bdt_energyresolution8.yaml
 config_bdt_energyscale26down.yaml
 config_bdt_energyscale26up.yaml
 config_bdt_etbin_E_E.yaml

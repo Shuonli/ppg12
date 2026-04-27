@@ -78,10 +78,9 @@ The nominal base config `config_bdt_nom.yaml` must exist and be hand-maintained 
 | b2bjet | b2bjet | one_sided | back-to-back jet cut applied |
 | timingcut_2 | timing | down | timing window ±2 ns (tighter) |
 | timingcut_5 | timing | up | timing window ±5 ns (looser) |
-| energyscale26 | escale | one_sided | cluster energy scale × 1.026 |
-| energyresolution7 | eres | max | energy resolution smearing σ = 7% |
-| energyresolution8 | eres | max | energy resolution smearing σ = 8% |
-| energyresolution10 | eres | max | energy resolution smearing σ = 9% |
+| energyscale26up / energyscale26down | escale | two_sided | cluster energy scale × 1.026 / × 0.974 |
+| energyresolution0 | eres | down | extra resolution smearing σ = 0% (nominal − 4%) |
+| energyresolution8 | eres | up | extra resolution smearing σ = 8% (nominal + 4%) |
 
 ---
 

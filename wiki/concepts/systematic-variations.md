@@ -114,9 +114,13 @@ Note: the up/down naming refers to the scale factor direction, but the syst_role
 
 ### Energy Resolution Variants
 
+Nominal MC includes `cluster_eres = 0.04` (4% extra Gaussian smearing per cluster).
+The eres systematic brackets nominal symmetrically with two-sided variants:
+
 | Variant name | Config override | syst_type | syst_role |
 |--------------|----------------|-----------|-----------|
-| `energyresolution5` | `clustereres=0.05` | eres | max |
+| `energyresolution0` | `clustereres=0.00` | eres | down |
+| `energyresolution8` | `clustereres=0.08` | eres | up |
 
 ### Unfolding Variants
 
@@ -142,7 +146,6 @@ Note: the up/down naming refers to the scale factor direction, but the syst_role
 | `etbin_v1E_v3E` | `bdt_et_bin_models=["base_v1E","base_v3E"]` | Mixed BDT models |
 | `b2bjet` | `common_b2bjet_cut=1` | Back-to-back jet veto |
 | `timingcut_2` / `timingcut_5` | `cluster_mbd_time_min/max=+/-2/5` | Timing cut scan |
-| `energyresolution7` / `energyresolution8` | `clustereres=0.07/0.08` | Extra resolution smearing |
 
 ## Config Generation Details
 

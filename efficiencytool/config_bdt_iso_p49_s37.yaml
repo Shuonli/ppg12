@@ -85,7 +85,7 @@ analysis:
   truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
   fit_option: 1
   cluster_escale: 1.0
-  cluster_eres: 0.0
+  cluster_eres: 0.04
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 

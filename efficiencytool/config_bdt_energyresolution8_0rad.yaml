@@ -19,7 +19,7 @@ output:
   eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
   response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
   data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
-  var_type: "bdt_energyresolution5"
+  var_type: "bdt_energyresolution8_0rad"
   final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
 
 analysis:
@@ -30,8 +30,8 @@ analysis:
   #vertex_cut: 60.0
   truth_iso_max: 4.0
   reco_iso_min: -20.0
-  reco_iso_max_b: 0.502095
-  reco_iso_max_s: 0.0433036
+  reco_iso_max_b: 0.490
+  reco_iso_max_s: 0.037
   #reco_iso_max_b: 0
   #reco_iso_max_s: 0.0293956
   #reco_iso_max_b: 0.330117
@@ -81,11 +81,11 @@ analysis:
   # off and applies w(z_h) (single MC) or w(z_h)*w(z_mb) (double MC) per event.
   # Flip truth_vertex_reweight_on to 1 to switch the nominal 1.5 mrad
   # analysis from the f(z_r) reco-level reweight to the truth-level one.
-  truth_vertex_reweight_on: 0
-  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
+  truth_vertex_reweight_on: 1
+  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root"
   fit_option: 1
   cluster_escale: 1.0
-  cluster_eres: 0.05
+  cluster_eres: 0.08
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 
@@ -252,13 +252,13 @@ analysis:
 
   # Run range for data processing (-1 = no bound)
   run_min: 47289
-  run_max: 54000
+  run_max: 51274
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
   # Total luminosity (pb^-1) for the selected run range.
   # Nominal switched to all-z (beam-delivered) 64.3718 pb^-1 on 2026-04-22;
   # paired with vertex_cut_truth=9999 to widen the MBD-eff truth denominator.
-  lumi: 64.3718
+  lumi: 47.2076
 
   unfold:
     resultit: 2

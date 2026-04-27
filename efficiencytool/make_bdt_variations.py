@@ -175,12 +175,17 @@ VARIANTS = [
 
 
     # Energy scale and resolution  →  syst: escale, eres
+    # Nominal cluster_eres = 0.04 (4% extra Gaussian smearing applied per-cluster
+    # in RecoEffCalculator_TTreeReader.C). Two-sided eres systematic brackets
+    # nominal with 0% (no extra smearing) and 8% (twice nominal).
     dict(name="energyscale26up",   clusterescale=1.026,
          syst_type="escale", syst_role="down"),
     dict(name="energyscale26down", clusterescale=0.974,
          syst_type="escale", syst_role="up"),
-    dict(name="energyresolution5", clustereres=0.05,
-         syst_type="eres", syst_role="max"),
+    dict(name="energyresolution0", clustereres=0.00,
+         syst_type="eres", syst_role="down"),
+    dict(name="energyresolution8", clustereres=0.08,
+         syst_type="eres", syst_role="up"),
 
     # ----------------------------------------------------------
     # T1: Unfolding regularization scan (Bayes iteration count).
@@ -366,7 +371,7 @@ SYST_TYPES = {
     "acceptance":   {"mode": "max",         "group": "acceptance"},
     # ---- energy scale and resolution ----
     "escale":       {"mode": "two_sided",   "group": "escale"},
-    "eres":         {"mode": "max",         "group": "eres"},
+    "eres":         {"mode": "two_sided",   "group": "eres"},
     # ---- pre-Phase-3 stubs (defined for schema completeness; populated
     #     once the corresponding variants land in Phase 3) ----
     "di_fraction":  {"mode": "two_sided",   "group": "di_fraction"},
