@@ -19,7 +19,7 @@ output:
   eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
   response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
   data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
-  var_type: "bdt_energyscale26down_0rad"
+  var_type: "bdt_energyresolution0_0rad"
   final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
 
 analysis:
@@ -84,8 +84,8 @@ analysis:
   truth_vertex_reweight_on: 1
   truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root"
   fit_option: 1
-  cluster_escale: 0.974
-  cluster_eres: 0.04
+  cluster_escale: 1.0
+  cluster_eres: 0.0
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 

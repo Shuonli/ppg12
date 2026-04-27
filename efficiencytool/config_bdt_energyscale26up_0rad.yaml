@@ -30,8 +30,8 @@ analysis:
   #vertex_cut: 60.0
   truth_iso_max: 4.0
   reco_iso_min: -20.0
-  reco_iso_max_b: 0.502095
-  reco_iso_max_s: 0.0433036
+  reco_iso_max_b: 0.490
+  reco_iso_max_s: 0.037
   #reco_iso_max_b: 0
   #reco_iso_max_s: 0.0293956
   #reco_iso_max_b: 0.330117
@@ -85,7 +85,7 @@ analysis:
   truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root"
   fit_option: 1
   cluster_escale: 1.026
-  cluster_eres: 0.0
+  cluster_eres: 0.04
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 
