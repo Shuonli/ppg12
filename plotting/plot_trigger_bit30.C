@@ -9,14 +9,15 @@
 //   figures/h_maxEnergyClus_NewTriggerFilling_doNotScale_PhotonTurnOn.pdf
 //   figures/Photon_4_GeV_ConstantFit.pdf
 //
-// Methodology follows reports/trigger_bit30_turnon.md:
+// Methodology:
 //   - 10 of 77 slimtree data files (6.6M events).
-//   - Fiducial: |cluster_Eta_CLUSTERINFO_CEMC| < 0.7 and |vertexz| < 60 cm.
+//   - Fiducial: |cluster_Eta_CLUSTERINFO_CEMC| < 0.7 and |vertexz| < 200 cm.
 //   - Per-cluster fill of ET = cluster_Et_CLUSTERINFO_CEMC.
-//   - Denominator: scaledtrigger[10] == 1 (MBD NandS coincidence, post-prescale).
-//   - Numerator:   scaledtrigger[10] == 1 && scaledtrigger[30] == 1.
-//   - Binning: 0.5 GeV from 7->20, 1 GeV from 20->40 (46 variable bins).
-//   - Plateau constant fit on 10-20 GeV returns ~0.9958 per the report.
+//   - Denominator: scaledtrigger[10] == 1 (MBD N&S, prescale-selected reference).
+//   - Numerator:   scaledtrigger[10] == 1 && livetrigger[30] == 1
+//                  (bit 30 fired at L1 in the unbiased bit-10 sample;
+//                   independent of bit-30's own prescale wheel).
+//   - Binning: 0.5 GeV from 5->20, 1 GeV from 20->40 (50 variable bins).
 //
 // Run:  root -l -b -q plot_trigger_bit30.C
 
@@ -43,15 +44,15 @@
 
 namespace {
 
-// 0.5 GeV binning from 7 -> 20, then 1 GeV from 20 -> 40. 46 bins, 47 edges.
+// 0.5 GeV binning from 5 -> 20, then 1 GeV from 20 -> 40. 50 bins, 51 edges.
 // Bin width is non-uniform; plotting code below scales raw counts by
 // 1/binwidth before drawing the left-panel overlay so the bin-width
 // transition at 20 GeV does not produce a step-up artifact.
 std::vector<double> make_turnon_edges()
 {
     std::vector<double> edges;
-    edges.reserve(47);
-    for (int i = 0; i <= 26; ++i) edges.push_back(7.0 + 0.5 * i);
+    edges.reserve(51);
+    for (int i = 0; i <= 30; ++i) edges.push_back(5.0 + 0.5 * i);
     for (int i = 1; i <= 20; ++i) edges.push_back(20.0 + 1.0 * i);
     return edges;
 }
@@ -92,7 +93,7 @@ void plot_trigger_bit30()
         "eff_bit30",
         ";#it{E}_{T}^{cluster} [GeV];#varepsilon(bit 30 | bit 10)",
         nbins, edges.data());
-    eff_bit30->SetStatisticOption(TEfficiency::kFCP);  // Clopper-Pearson
+    eff_bit30->SetStatisticOption(TEfficiency::kFNormal);  // binomial error sqrt(eff*(1-eff)/n)
 
     // ---- Readers ---------------------------------------------------------
     TTreeReader R(t);
@@ -101,6 +102,7 @@ void plot_trigger_bit30()
     TTreeReaderArray<float> cEta(R, "cluster_Eta_CLUSTERINFO_CEMC");
     TTreeReaderValue<float> vtxz(R, "vertexz");
     TTreeReaderArray<bool>  scaledtrig(R, "scaledtrigger");
+    TTreeReaderArray<bool>  livetrig(R, "livetrigger");
 
     // ---- Event / cluster loop -------------------------------------------
     auto tstart = std::chrono::steady_clock::now();
@@ -110,12 +112,16 @@ void plot_trigger_bit30()
     while (R.Next())
     {
         ++nev;
-        if (std::fabs(*vtxz) > 60.0) continue;
+        if (std::fabs(*vtxz) > 200.0) continue;
         ++nev_vz;
         if (scaledtrig.GetSize() <= 30)   continue;
+        if (livetrig.GetSize()   <= 30)   continue;
         if (scaledtrig[10] == 0)          continue;
         ++nev_mbd;
-        const bool photon_on = (scaledtrig[30] != 0);
+        // Numerator: bit 30 fired at L1 in the unbiased scaled[10] reference.
+        // Use livetrigger[30] (not scaledtrigger[30]) so the result is
+        // independent of bit-30's own prescale wheel.
+        const bool photon_on = (livetrig[30] != 0);
         for (int i = 0; i < *ncluster; ++i)
         {
             const float et  = cEt[i];
@@ -170,7 +176,7 @@ void plot_trigger_bit30()
         h_Photon4GeV_density->Scale(1.0, "width");
 
         h_MBDns_density->SetStats(0);
-        h_MBDns_density->GetXaxis()->SetRangeUser(8, 15);
+        h_MBDns_density->GetXaxis()->SetRangeUser(5, 15);
         h_MBDns_density->GetYaxis()->SetRangeUser(
             0.5, 5.0 * h_MBDns_density->GetMaximum());
         h_MBDns_density->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
@@ -203,7 +209,7 @@ void plot_trigger_bit30()
         TLegend *l = new TLegend(0.42, 0.66, 0.95, 0.82);
         legStyle(l, 0.20, 0.038);
         l->AddEntry(h_MBDns_density,      "scaled[10]  (MBD N&S)",        "lep");
-        l->AddEntry(h_Photon4GeV_density, "scaled[10] & scaled[30]",      "lep");
+        l->AddEntry(h_Photon4GeV_density, "scaled[10] & live[30]",        "lep");
         l->Draw("same");
 
         const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
@@ -232,7 +238,7 @@ void plot_trigger_bit30()
         // TH2F frame so the x-range is enforced for the TEfficiency overlay
         // (TH1F + SetRangeUser is ignored by TEfficiency::Draw("same")).
         TH2F *frame = new TH2F("frame_trig_turnon", "",
-                                100, 8, 15, 100, 0.0, 1.1);
+                                100, 5, 15, 100, 0.0, 1.1);
         frame->SetStats(0);
         frame->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame->GetYaxis()->SetTitle(
