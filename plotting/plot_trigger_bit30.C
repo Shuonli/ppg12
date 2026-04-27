@@ -254,16 +254,62 @@ void plot_trigger_bit30()
         eff_bit30->SetLineColor(kBlack);
         eff_bit30->Draw("same p");
 
-        TLegend *l = new TLegend(0.45, 0.20, 0.93, 0.32);
-        legStyle(l, 0.20, 0.038);
-        l->AddEntry(eff_bit30,
-                    "#varepsilon = N(bit 10 & 30) / N(bit 10)",
-                    "pl");
+        // Error-function turn-on fit:
+        //   eps(E_T) = p0 * 0.5 * (1 + erf((E_T - p1)/(sqrt(2)*p2)))
+        // p0 = plateau, p1 = 50% point, p2 = Gaussian width.
+        // Fit on the visible range 5 < E_T^cluster < 15 GeV.
+        TF1 *ferf = new TF1("ferf_trig_turnon",
+            "[0]*0.5*(1.0+TMath::Erf((x-[1])/(TMath::Sqrt(2.0)*[2])))",
+            5.0, 15.0);
+        ferf->SetParameters(1.0, 4.0, 1.0);   // (plateau, mu, sigma)
+        ferf->SetParLimits(0, 0.5, 1.05);
+        ferf->FixParameter(1, 4.0);          // mu fixed at trigger nominal threshold
+        ferf->SetParLimits(2, 0.1, 5.0);
+        ferf->SetLineColor(kRed + 1);
+        ferf->SetLineWidth(2);
+
+        // Build a TH1 of efficiencies with symmetrized CP errors, then fit.
+        const auto edges_local = make_turnon_edges();
+        const int    nb_local  = static_cast<int>(edges_local.size()) - 1;
+        TH1F *h_eff_for_fit = new TH1F("h_eff_for_fit_turnon", "",
+                                       nb_local, edges_local.data());
+        for (int i = 1; i <= nb_local; ++i) {
+            const double tot = eff_bit30->GetTotalHistogram()
+                                          ->GetBinContent(i);
+            if (tot <= 0) continue;
+            const double e   = eff_bit30->GetEfficiency(i);
+            const double el  = eff_bit30->GetEfficiencyErrorLow(i);
+            const double eh  = eff_bit30->GetEfficiencyErrorUp(i);
+            const double err = 0.5 * (el + eh);
+            h_eff_for_fit->SetBinContent(i, e);
+            h_eff_for_fit->SetBinError(i, err > 0 ? err : 1.0/std::sqrt(tot));
+        }
+        h_eff_for_fit->Fit(ferf, "R Q N");
+        ferf->Draw("same");
+
+        const double p0 = ferf->GetParameter(0), e0 = ferf->GetParError(0);
+        const double p1 = ferf->GetParameter(1), e1 = ferf->GetParError(1);
+        const double p2 = ferf->GetParameter(2), e2 = ferf->GetParError(2);
+        std::cout << "erf fit: plateau=" << p0 << " ± " << e0
+                  << "  mu=" << p1 << " ± " << e1
+                  << "  sigma=" << p2 << " ± " << e2
+                  << "  chi2/ndf=" << ferf->GetChisquare()
+                  << "/" << ferf->GetNDF() << std::endl;
+
+        TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.48);
+        legStyle(l, 0.20, 0.036);
+        l->AddEntry(eff_bit30, "#varepsilon = N(bit 10 & 30) / N(bit 10)", "pl");
+        l->AddEntry(ferf,      "erf fit (#mu fixed at 4 GeV)",             "l");
         l->Draw("same");
 
-        // sPHENIX labels in the bottom-left of the panel (data sits near y=1
-        // so the empty bottom region is the natural home for them).
-        const float xpos = 0.22, ypos = 0.36;
+        // Fit parameters in middle of panel (data has empty mid-y region
+        // because eps jumps quickly from ~0.9 at low ET to ~1.0 plateau).
+        myText(0.50, 0.62, 1, Form("plateau = %.3f #pm %.3f", p0, e0), 0.034, 0);
+        myText(0.50, 0.58, 1, Form("#sigma = %.2f #pm %.2f GeV", p2, e2), 0.034, 0);
+
+        // sPHENIX labels at bottom-left, fit params at top-right (data
+        // saturates near y=1 so top area is also empty above the fit curve).
+        const float xpos = 0.22, ypos = 0.30;
         const float dy = 0.054, fontsize = 0.040;
         myText(xpos, ypos - 0 * dy, 1, strleg1.c_str(),   fontsize, 0);
         myText(xpos, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 0);
