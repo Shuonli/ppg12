@@ -341,23 +341,18 @@ for _lvl in ("preselect", "common", "tight", "or"):
 SYST_TYPES = {
     # ---- response/unfolding ----
     "reweight":     {"mode": "one_sided",   "group": "unfolding"},
-    # ---- photon-ID (BDT placement + NPB cut) ----
-    "photon_id_tight":    {"mode": "one_sided", "group": "photon_id"},
-    "photon_id_nontight": {"mode": "one_sided", "group": "photon_id"},
-    # npb_cut: two_sided. The earlier "same-sign +18%/+15%" anomaly that
-    # motivated a max-mode switch was entirely a Phase-1.6 merge bug —
-    # merge_periods.sh had silently dropped the 1p5mrad period from the
-    # all-range MC efficiency for npb03/npb07 (and a few other variants).
-    # After fixing the merges (audit_mc_merge.py), Pearson r(npb03, npb07)
-    # = -0.998 (textbook two-sided anti-correlation). Restored two_sided.
-    "npb_cut":      {"mode": "two_sided",   "group": "photon_id"},
-    # ---- ABCD region definition ----
-    "noniso":       {"mode": "two_sided",   "group": "abcd_region"},
-    # ---- purity method (fit form + MC-driven non-closure correction) ----
-    "purity_fit":   {"mode": "one_sided",   "group": "purity_method"},
-    "mc_purity_correction": {"mode": "one_sided", "group": "purity_method"},
-    # ---- detector iso resolution / pedestal ----
-    "iso_resolution": {"mode": "one_sided", "group": "iso_resolution"},
+    # ---- purity: tight/non-tight BDT placement, isolation sideband, fit form,
+    #     MC closure correction (matches systematics.tex itemize) ----
+    "photon_id_tight":    {"mode": "one_sided", "group": "purity"},
+    "photon_id_nontight": {"mode": "one_sided", "group": "purity"},
+    "noniso":       {"mode": "two_sided",   "group": "purity"},
+    "purity_fit":   {"mode": "one_sided",   "group": "purity"},
+    "mc_purity_correction": {"mode": "one_sided", "group": "purity"},
+    # ---- NPB cut: standalone group (not part of purity) per analysis-note
+    #     structure. Pearson r(npb03, npb07) = -0.998 (clean two-sided).
+    "npb_cut":      {"mode": "two_sided",   "group": "npb"},
+    # ---- detector iso resolution / pedestal: efficiency group (single member) ----
+    "iso_resolution": {"mode": "one_sided", "group": "efficiency"},
     # ---- tower acceptance (phi-symmetry mask envelope) ----
     # Demoted to a cross-check (no quadrature contribution) on 2026-04-27;
     # phi-symmetry residuals are absorbed into the photon-ID response chain.
@@ -381,15 +376,18 @@ SYST_TYPES = {
 }
 
 # Quadrature grouping: group name -> list of syst_type names.
+# Structure mirrors the analysis-note systematics itemize (purity merges
+# tight/non-tight ID + noniso + fit form + MC closure; NPB and efficiency
+# are stand-alone groups; unfolding combines reweight + iter scan).
 SYST_GROUPS = {
-    "photon_id":      ["photon_id_tight", "photon_id_nontight", "npb_cut"],
-    "abcd_region":    ["noniso"],
-    "purity_method":  ["purity_fit", "mc_purity_correction"],
-    "iso_resolution": ["iso_resolution"],
-    "unfolding":      ["reweight", "unfold_iter"],
-    "escale":         ["escale"],
-    "eres":           ["eres"],
-    "di_fraction":    ["di_fraction"],
+    "escale":      ["escale"],
+    "eres":        ["eres"],
+    "purity":      ["photon_id_tight", "photon_id_nontight",
+                    "noniso", "purity_fit", "mc_purity_correction"],
+    "efficiency":  ["iso_resolution"],
+    "unfolding":   ["reweight", "unfold_iter"],
+    "di_fraction": ["di_fraction"],
+    "npb":         ["npb_cut"],
 }
 
 # Groups included in the final total systematic quadrature sum (per-bin Resp).
@@ -397,8 +395,8 @@ SYST_GROUPS = {
 # calc_syst_bdt.py rather than here — it is not response-matrix-driven and is
 # applied post-unfold.
 FINAL_SYSTS = [
-    "photon_id", "abcd_region", "purity_method", "iso_resolution",
-    "unfolding", "escale", "eres", "di_fraction",
+    "escale", "eres", "purity", "efficiency",
+    "unfolding", "di_fraction", "npb",
 ]
 
 # Multiplicative-flat sources (asymmetric fractional). Applied post-unfold by

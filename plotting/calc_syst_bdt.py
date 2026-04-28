@@ -43,22 +43,15 @@ from make_bdt_variations import (  # noqa: E402
 # Colors for groups in the breakdown plot
 # ---------------------------------------------------------------------------
 GROUP_COLORS = {
-    # Phase-2 (2026-04-25) restructure: 9 Resp groups + flat sources.
-    # Colors chosen for distinguishability in the breakdown overlay
-    # (avoid kGray/kBlack which collide with the total band).
-    "photon_id":      ROOT.kAzure + 7,    # blue — BDT cuts + NPB
-    "abcd_region":    ROOT.kCyan + 2,     # teal — noniso boundary
-    "purity_method":  ROOT.kViolet + 1,   # violet — fit form + non-closure
-    "iso_resolution": ROOT.kRed + 1,      # red   — mciso pedestal
-    "acceptance":     ROOT.kPink + 7,     # pink  — phi-symm tower mask
-    "unfolding":      ROOT.kMagenta + 2,  # magenta — reweight + iter scan
-    "escale":         ROOT.kGreen - 2,    # green — energy scale
-    "eres":           ROOT.kOrange + 1,   # orange — energy resolution
-    "di_fraction":    ROOT.kSpring - 6,   # yellow-green — DI blending (Phase-3)
-    # Legacy keys (kept for backward compat with old breakdown plots):
-    "purity":         ROOT.kViolet + 1,
-    "eff":            ROOT.kAzure + 7,
-    "mbd":            ROOT.kViolet - 1,
+    # Note-aligned grouping (2026-04-28): purity merges tight/nontight/noniso/
+    # fit/mc-closure; efficiency = iso_resolution; npb is its own group.
+    "escale":      ROOT.kGreen - 2,    # green — energy scale
+    "eres":        ROOT.kOrange + 1,   # orange — energy resolution
+    "purity":      ROOT.kViolet + 1,   # violet — tight+nontight+noniso+fit+mc-closure
+    "efficiency":  ROOT.kRed + 1,      # red   — iso pedestal
+    "unfolding":   ROOT.kMagenta + 2,  # magenta — reweight + iter scan
+    "di_fraction": ROOT.kSpring - 6,   # yellow-green — DI blending
+    "npb":         ROOT.kAzure + 7,    # blue — NPB cut
 }
 
 
