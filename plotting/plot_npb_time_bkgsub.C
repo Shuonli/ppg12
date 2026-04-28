@@ -74,7 +74,11 @@ void plot_npb_time_bkgsub()
     gSystem->Exec(Form("mkdir -p %s", savePath.c_str()));
 
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node config = YAML::LoadFile("../efficiencytool/config_bdt_nom.yaml");
+    // ShowerShape histograms in data_histoshower_shape_.root are filled with
+    // the showershape config's coarser pT binning ([10, 14, 18, 22, 28, 30]),
+    // not the analysis pT binning. Read the matching config so the panel
+    // labels reflect the actual histogram contents.
+    YAML::Node config = YAML::LoadFile("../efficiencytool/config_showershape.yaml");
 
     std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
     const int nPtBins = pT_bin_edges.size() - 1;
@@ -275,13 +279,16 @@ void plot_npb_time_bkgsub()
                 g_eff->SetMarkerColor(kRed+1); g_eff->SetLineColor(kRed+1); g_eff->SetLineWidth(2);
                 TH1F *fr = new TH1F(Form("fr_pur_%d_%d", ieta, ipt), "", 10, 0.05, 0.95);
                 fr->SetStats(0); fr->GetXaxis()->SetTitle("NPB Score Threshold"); fr->GetYaxis()->SetTitle("Purity / Efficiency");
-                fr->GetYaxis()->SetTitleOffset(1.4); fr->GetYaxis()->SetRangeUser(0.5, 1.1); fr->Draw();
+                fr->GetYaxis()->SetTitleOffset(1.4);
+                // Y-range opened to 1.30 so the upper-left labels sit above
+                // the purity / efficiency plateau (curves max at ~1.0).
+                fr->GetYaxis()->SetRangeUser(0.5, 1.30); fr->Draw();
                 g_pur->Draw("PL SAME");
                 g_eff->Draw("PL SAME");
-                drawLabels(0.20, 0.90, ipt, pT_bin_edges);
-                myText(0.20, 0.74, 1, "Bkg template: NPB < 0.2", 0.04);
-                myText(0.20, 0.69, 1, Form("Tail fit: t < %.0f ns", tail_time_cut), 0.04);
-                TLegend *leg = makeLegend(0.55, 0.18, 0.88, 0.30);
+                drawLabels(0.20, 0.93, ipt, pT_bin_edges, 0.035, 0.045);
+                myText(0.20, 0.75, 1, "Bkg template: NPB < 0.2", 0.035);
+                myText(0.20, 0.71, 1, Form("Tail fit: t < %.0f ns", tail_time_cut), 0.035);
+                TLegend *leg = makeLegend(0.55, 0.20, 0.88, 0.32);
                 leg->AddEntry(g_pur, "Purity",                "pl");
                 leg->AddEntry(g_eff, "Sig. retention eff.",   "pl");
                 leg->Draw();
@@ -296,13 +303,15 @@ void plot_npb_time_bkgsub()
                 for (size_t i = 0; i < thresh_vals.size(); ++i) { gT->SetPoint(i, thresh_vals[i], total_vals[i]); gB->SetPoint(i, thresh_vals[i], bkg_vals[i]); gS->SetPoint(i, thresh_vals[i], sig_vals[i]); }
                 auto styleG = [](TGraph *g, int m, Color_t col) { g->SetMarkerStyle(m); g->SetMarkerSize(1.2); g->SetMarkerColor(col); g->SetLineColor(col); g->SetLineWidth(2); };
                 styleG(gT, 20, kBlack); styleG(gB, 21, kRed); styleG(gS, 22, kBlue+1);
-                double maxY = *std::max_element(total_vals.begin(), total_vals.end()) * 1.3;
+                // Y-headroom widened (1.7x) so labels (upper-left) and
+                // legend (upper-right) sit above the Total / Signal plateau.
+                double maxY = *std::max_element(total_vals.begin(), total_vals.end()) * 1.7;
                 TH1F *fr = new TH1F(Form("fr_yld_%d_%d", ieta, ipt), "", 10, 0.15, 0.95);
                 fr->SetStats(0); fr->GetXaxis()->SetTitle("NPB Score Threshold"); fr->GetYaxis()->SetTitle("Yield");
                 fr->GetYaxis()->SetTitleOffset(1.5); fr->GetYaxis()->SetRangeUser(0, maxY); fr->Draw();
                 gT->Draw("PL SAME"); gB->Draw("PL SAME"); gS->Draw("PL SAME");
-                drawLabels(0.20, 0.90, ipt, pT_bin_edges, 0.035);
-                TLegend *leg = makeLegend(0.55, 0.72, 0.88, 0.88);
+                drawLabels(0.20, 0.93, ipt, pT_bin_edges, 0.035, 0.045);
+                TLegend *leg = makeLegend(0.62, 0.74, 0.92, 0.92);
                 leg->AddEntry(gT, "Total", "pl"); leg->AddEntry(gB, "Background", "pl"); leg->AddEntry(gS, "Signal", "pl");
                 leg->Draw();
                 c->SaveAs(Form("%s/yield_vs_npb_eta%d_pt%d.pdf", savePath.c_str(), ieta, ipt));
