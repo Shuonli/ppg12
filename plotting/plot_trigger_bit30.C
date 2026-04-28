@@ -84,16 +84,31 @@ void plot_trigger_bit30()
     TH1F *h_MBDns = new TH1F("h_MBDns",
                               ";#it{E}_{T}^{cluster} [GeV];Clusters",
                               nbins, edges.data());
+    TH1F *h_Photon3GeV = new TH1F("h_Photon3GeV",
+                                   ";#it{E}_{T}^{cluster} [GeV];Clusters",
+                                   nbins, edges.data());
     TH1F *h_Photon4GeV = new TH1F("h_Photon4GeV",
                                    ";#it{E}_{T}^{cluster} [GeV];Clusters",
                                    nbins, edges.data());
+    TH1F *h_Photon5GeV = new TH1F("h_Photon5GeV",
+                                   ";#it{E}_{T}^{cluster} [GeV];Clusters",
+                                   nbins, edges.data());
 
-    // TEfficiency with variable binning.
-    TEfficiency *eff_bit30 = new TEfficiency(
-        "eff_bit30",
+    // TEfficiency with variable binning. Three triggers: bit 29 (Photon 3 GeV,
+    // most prescaled), bit 30 (Photon 4 GeV, NOMINAL), bit 31 (Photon 5 GeV,
+    // tightest threshold).
+    TEfficiency *eff_bit29 = new TEfficiency("eff_bit29",
+        ";#it{E}_{T}^{cluster} [GeV];#varepsilon(bit 29 | bit 10)",
+        nbins, edges.data());
+    TEfficiency *eff_bit30 = new TEfficiency("eff_bit30",
         ";#it{E}_{T}^{cluster} [GeV];#varepsilon(bit 30 | bit 10)",
         nbins, edges.data());
-    eff_bit30->SetStatisticOption(TEfficiency::kFCP);  // Clopper-Pearson 68% CI
+    TEfficiency *eff_bit31 = new TEfficiency("eff_bit31",
+        ";#it{E}_{T}^{cluster} [GeV];#varepsilon(bit 31 | bit 10)",
+        nbins, edges.data());
+    eff_bit29->SetStatisticOption(TEfficiency::kFCP);
+    eff_bit30->SetStatisticOption(TEfficiency::kFCP);
+    eff_bit31->SetStatisticOption(TEfficiency::kFCP);
 
     // ---- Readers ---------------------------------------------------------
     TTreeReader R(t);
@@ -114,14 +129,16 @@ void plot_trigger_bit30()
         ++nev;
         if (std::fabs(*vtxz) > 200.0) continue;
         ++nev_vz;
-        if (scaledtrig.GetSize() <= 30)   continue;
-        if (livetrig.GetSize()   <= 30)   continue;
+        if (scaledtrig.GetSize() <= 31)   continue;
+        if (livetrig.GetSize()   <= 31)   continue;
         if (scaledtrig[10] == 0)          continue;
         ++nev_mbd;
-        // Numerator: bit 30 fired at L1 in the unbiased scaled[10] reference.
-        // Use livetrigger[30] (not scaledtrigger[30]) so the result is
-        // independent of bit-30's own prescale wheel.
-        const bool photon_on = (livetrig[30] != 0);
+        // Numerators: bit 29/30/31 fired at L1 in the unbiased scaled[10]
+        // reference. Use livetrigger[*] (not scaledtrigger[*]) so the result
+        // is independent of each bit's own prescale wheel.
+        const bool photon3_on = (livetrig[29] != 0);
+        const bool photon4_on = (livetrig[30] != 0);
+        const bool photon5_on = (livetrig[31] != 0);
         for (int i = 0; i < *ncluster; ++i)
         {
             const float et  = cEt[i];
@@ -130,12 +147,12 @@ void plot_trigger_bit30()
             if (et < edges.front() || et >= edges.back()) continue;
             ++nclus_den;
             h_MBDns->Fill(et);
-            if (photon_on)
-            {
-                ++nclus_num;
-                h_Photon4GeV->Fill(et);
-            }
-            eff_bit30->Fill(photon_on, et);
+            if (photon3_on) h_Photon3GeV->Fill(et);
+            if (photon4_on) { ++nclus_num; h_Photon4GeV->Fill(et); }
+            if (photon5_on) h_Photon5GeV->Fill(et);
+            eff_bit29->Fill(photon3_on, et);
+            eff_bit30->Fill(photon4_on, et);
+            eff_bit31->Fill(photon5_on, et);
         }
     }
 
@@ -169,11 +186,17 @@ void plot_trigger_bit30()
         // step-up artifact in the log-y display. Sumw2 is set so the
         // per-bin Poisson errors are propagated correctly through Scale.
         TH1F *h_MBDns_density       = (TH1F *)h_MBDns->Clone("h_MBDns_density");
+        TH1F *h_Photon3GeV_density  = (TH1F *)h_Photon3GeV->Clone("h_Photon3GeV_density");
         TH1F *h_Photon4GeV_density  = (TH1F *)h_Photon4GeV->Clone("h_Photon4GeV_density");
+        TH1F *h_Photon5GeV_density  = (TH1F *)h_Photon5GeV->Clone("h_Photon5GeV_density");
         h_MBDns_density->Sumw2();
+        h_Photon3GeV_density->Sumw2();
         h_Photon4GeV_density->Sumw2();
+        h_Photon5GeV_density->Sumw2();
         h_MBDns_density->Scale(1.0, "width");
+        h_Photon3GeV_density->Scale(1.0, "width");
         h_Photon4GeV_density->Scale(1.0, "width");
+        h_Photon5GeV_density->Scale(1.0, "width");
 
         h_MBDns_density->SetStats(0);
         h_MBDns_density->GetXaxis()->SetRangeUser(5, 15);
@@ -195,21 +218,38 @@ void plot_trigger_bit30()
         h_MBDns_density->SetMarkerStyle(20);
         h_MBDns_density->SetMarkerSize(0.7);
 
+        h_Photon3GeV_density->SetLineColor(kAzure + 2);
+        h_Photon3GeV_density->SetLineStyle(2);
+        h_Photon3GeV_density->SetLineWidth(2);
+        h_Photon3GeV_density->SetMarkerColor(kAzure + 2);
+        h_Photon3GeV_density->SetMarkerStyle(25);
+        h_Photon3GeV_density->SetMarkerSize(0.7);
+
         h_Photon4GeV_density->SetLineColor(kRed + 1);
-        h_Photon4GeV_density->SetLineStyle(2);   // dashed
+        h_Photon4GeV_density->SetLineStyle(2);
         h_Photon4GeV_density->SetLineWidth(3);
         h_Photon4GeV_density->SetMarkerColor(kRed + 1);
         h_Photon4GeV_density->SetMarkerStyle(24);
         h_Photon4GeV_density->SetMarkerSize(0.7);
 
-        // Draw with E1 to show statistical (Poisson) error bars.
-        h_MBDns_density->Draw("E1");
-        h_Photon4GeV_density->Draw("E1 same");
+        h_Photon5GeV_density->SetLineColor(kSpring - 6);
+        h_Photon5GeV_density->SetLineStyle(2);
+        h_Photon5GeV_density->SetLineWidth(2);
+        h_Photon5GeV_density->SetMarkerColor(kSpring - 6);
+        h_Photon5GeV_density->SetMarkerStyle(26);
+        h_Photon5GeV_density->SetMarkerSize(0.7);
 
-        TLegend *l = new TLegend(0.42, 0.66, 0.95, 0.82);
-        legStyle(l, 0.20, 0.038);
-        l->AddEntry(h_MBDns_density,      "scaled[10]  (MBD N&S)",        "lep");
-        l->AddEntry(h_Photon4GeV_density, "scaled[10] & live[30]",        "lep");
+        h_MBDns_density->Draw("E1");
+        h_Photon3GeV_density->Draw("E1 same");
+        h_Photon4GeV_density->Draw("E1 same");
+        h_Photon5GeV_density->Draw("E1 same");
+
+        TLegend *l = new TLegend(0.42, 0.62, 0.95, 0.86);
+        legStyle(l, 0.20, 0.034);
+        l->AddEntry(h_MBDns_density,      "scaled[10]  (MBD N&S)",   "lep");
+        l->AddEntry(h_Photon3GeV_density, "scaled[10] & live[29]",   "lep");
+        l->AddEntry(h_Photon4GeV_density, "scaled[10] & live[30]",   "lep");
+        l->AddEntry(h_Photon5GeV_density, "scaled[10] & live[31]",   "lep");
         l->Draw("same");
 
         const float xpos = 0.22, xpos2 = 0.93, ypos = 0.88;
@@ -242,106 +282,108 @@ void plot_trigger_bit30()
         frame->SetStats(0);
         frame->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
         frame->GetYaxis()->SetTitle(
-            "#varepsilon_{L1}(Photon 4 GeV | MBD N&S)");
+            "#varepsilon_{L1}(Photon N GeV | MBD N&S)");
         frame->GetYaxis()->SetTitleOffset(1.35);
         frame->GetXaxis()->SetTitleOffset(1.15);
         frame->GetYaxis()->SetNdivisions(510);
         frame->Draw("axis");
 
-        eff_bit30->SetMarkerStyle(20);
-        eff_bit30->SetMarkerColor(kBlack);
-        eff_bit30->SetMarkerSize(0.9);
-        eff_bit30->SetLineColor(kBlack);
-        eff_bit30->Draw("same p");
+        // Fit each of bits 29, 30, 31 with eps(ET) = p0 * exp(-exp(-(ET-mu)/beta))
+        // (asymmetric saturating turn-on). Bit 30 (Photon 4 GeV, NOMINAL) is the
+        // analysis trigger; bits 29 (Photon 3 GeV) and 31 (Photon 5 GeV) are
+        // shown for context (lower/higher hardware threshold).
+        struct TrigSpec {
+            TEfficiency *eff;
+            const char  *name;
+            const char  *legend;
+            int          color;
+            int          marker;
+            float        ci_alpha;
+        };
+        std::vector<TrigSpec> trigs = {
+            {eff_bit29, "bit29", "Photon 3 GeV (bit 29)",         kAzure + 2,   25, 0.18f},
+            {eff_bit30, "bit30", "Photon 4 GeV (bit 30, nom.)",   kRed + 1,     20, 0.30f},
+            {eff_bit31, "bit31", "Photon 5 GeV (bit 31)",         kSpring - 6,  26, 0.18f},
+        };
 
-        // Gumbel-CDF turn-on fit:
-        //   eps(E_T) = p0 * exp( -exp( -(E_T - p1) / p2 ) )
-        // p0 = plateau, p1 = location (mode), p2 = scale (>0).
-        // Asymmetric turn-on (slow rise at low ET, fast asymptote) often
-        // describes calo trigger turn-ons better than the symmetric erf.
-        // Fit on the visible range 5 < E_T^cluster < 15 GeV.
-        TF1 *ferf = new TF1("fgumbel_trig_turnon",
-            "[0]*TMath::Exp(-TMath::Exp(-(x-[1])/[2]))",
-            5.0, 15.0);
-        // All three parameters free; initial guess from the previous
-        // plateau-locked fit (mu = -2, beta = 3.33).
-        ferf->SetParameters(1.0, -2.0, 3.33); // (plateau, mu, beta)
-        ferf->SetParLimits(0, 0.5, 1.0);     // plateau capped at 1 (physical upper bound)
-        ferf->SetParLimits(1, -50.0, 8.0);
-        ferf->SetParLimits(2, 0.1, 50.0);
-        ferf->SetLineColor(kRed + 1);
-        ferf->SetLineWidth(2);
-
-        // Build a TH1 of efficiencies with symmetrized CP errors, then fit.
         const auto edges_local = make_turnon_edges();
         const int    nb_local  = static_cast<int>(edges_local.size()) - 1;
-        TH1F *h_eff_for_fit = new TH1F("h_eff_for_fit_turnon", "",
-                                       nb_local, edges_local.data());
-        for (int i = 1; i <= nb_local; ++i) {
-            const double tot = eff_bit30->GetTotalHistogram()
-                                          ->GetBinContent(i);
-            if (tot <= 0) continue;
-            const double e   = eff_bit30->GetEfficiency(i);
-            const double el  = eff_bit30->GetEfficiencyErrorLow(i);
-            const double eh  = eff_bit30->GetEfficiencyErrorUp(i);
-            const double err = 0.5 * (el + eh);
-            h_eff_for_fit->SetBinContent(i, e);
-            h_eff_for_fit->SetBinError(i, err > 0 ? err : 1.0/std::sqrt(tot));
-        }
-        TFitResultPtr fit_result = h_eff_for_fit->Fit(ferf, "R Q N S");
 
-        // 1-sigma (68.3%) CI band from the fit covariance, evaluated on a
-        // fine grid over the fit range and propagated via
-        // TFitResult::GetConfidenceIntervals.
-        const int n_ci = 200;
-        std::vector<double> x_ci_arr(n_ci), ci_err_arr(n_ci);
-        for (int i = 0; i < n_ci; ++i) {
-            x_ci_arr[i] = 5.0 + i * (15.0 - 5.0) / (n_ci - 1);
-        }
-        fit_result->GetConfidenceIntervals(n_ci, 1, 1,
-                                           x_ci_arr.data(), ci_err_arr.data(),
-                                           0.683, false);
-        TGraphErrors *g_ci = new TGraphErrors(n_ci);
-        for (int i = 0; i < n_ci; ++i) {
-            g_ci->SetPoint(i, x_ci_arr[i], ferf->Eval(x_ci_arr[i]));
-            g_ci->SetPointError(i, 0.0, ci_err_arr[i]);
-        }
-        g_ci->SetFillColorAlpha(kRed + 1, 0.30);
-        g_ci->SetFillStyle(1001);
-        g_ci->SetLineWidth(0);
-        g_ci->Draw("3 same");
-        ferf->Draw("same");
+        // Hold per-trigger fit objects + CI graphs alive past the loop.
+        std::vector<TF1 *>          fits;
+        std::vector<TGraphErrors *> ci_graphs;
+        std::vector<std::array<double, 6>> fit_pars;  // {p0,e0,p1,e1,p2,e2}
 
-        const double p0 = ferf->GetParameter(0), e0 = ferf->GetParError(0);
-        const double p1 = ferf->GetParameter(1), e1 = ferf->GetParError(1);
-        const double p2 = ferf->GetParameter(2), e2 = ferf->GetParError(2);
-        std::cout << "Gumbel fit: plateau=" << p0 << " ± " << e0
-                  << "  mu=" << p1 << " ± " << e1
-                  << "  beta=" << p2 << " ± " << e2
-                  << "  chi2/ndf=" << ferf->GetChisquare()
-                  << "/" << ferf->GetNDF() << std::endl;
+        TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.55);
+        legStyle(l, 0.20, 0.030);
 
-        TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.48);
-        legStyle(l, 0.20, 0.036);
-        l->AddEntry(eff_bit30, "#varepsilon = N(bit 10 & 30) / N(bit 10)", "pl");
-        l->AddEntry(ferf,      "fit (1#sigma CI)",                         "lf");
-        l->GetListOfPrimitives()->Last(); // place CI marker after fit
-        // To show both line and fill in the legend entry, replace with
-        // explicit dual-icon construction:
-        l->GetListOfPrimitives()->RemoveLast();
-        l->AddEntry(g_ci,      "fit (1#sigma CI)",                         "lf");
+        for (const auto &t : trigs) {
+            t.eff->SetMarkerStyle(t.marker);
+            t.eff->SetMarkerColor(t.color);
+            t.eff->SetMarkerSize(0.85);
+            t.eff->SetLineColor(t.color);
+            t.eff->Draw("same p");
+
+            TF1 *f = new TF1(Form("fgumbel_%s", t.name),
+                "[0]*TMath::Exp(-TMath::Exp(-(x-[1])/[2]))", 5.0, 15.0);
+            f->SetParameters(1.0, -2.0, 3.33);
+            f->SetParLimits(0, 0.5, 1.0);
+            f->SetParLimits(1, -50.0, 8.0);
+            f->SetParLimits(2,  0.1, 50.0);
+            f->SetLineColor(t.color);
+            f->SetLineWidth(2);
+
+            TH1F *h_fit = new TH1F(Form("h_eff_for_fit_%s", t.name), "",
+                                   nb_local, edges_local.data());
+            for (int i = 1; i <= nb_local; ++i) {
+                const double tot = t.eff->GetTotalHistogram()->GetBinContent(i);
+                if (tot <= 0) continue;
+                const double e   = t.eff->GetEfficiency(i);
+                const double el  = t.eff->GetEfficiencyErrorLow(i);
+                const double eh  = t.eff->GetEfficiencyErrorUp(i);
+                const double err = 0.5 * (el + eh);
+                h_fit->SetBinContent(i, e);
+                h_fit->SetBinError(i, err > 0 ? err : 1.0 / std::sqrt(tot));
+            }
+            TFitResultPtr fr = h_fit->Fit(f, "R Q N S");
+
+            const int n_ci = 200;
+            std::vector<double> x_arr(n_ci), ci_arr(n_ci);
+            for (int i = 0; i < n_ci; ++i) x_arr[i] = 5.0 + i * 10.0 / (n_ci - 1);
+            fr->GetConfidenceIntervals(n_ci, 1, 1, x_arr.data(), ci_arr.data(), 0.683, false);
+            TGraphErrors *gci = new TGraphErrors(n_ci);
+            for (int i = 0; i < n_ci; ++i) {
+                gci->SetPoint(i, x_arr[i], f->Eval(x_arr[i]));
+                gci->SetPointError(i, 0.0, ci_arr[i]);
+            }
+            gci->SetFillColorAlpha(t.color, t.ci_alpha);
+            gci->SetFillStyle(1001);
+            gci->SetLineWidth(0);
+            gci->Draw("3 same");
+            f->Draw("same");
+
+            fits.push_back(f);
+            ci_graphs.push_back(gci);
+            fit_pars.push_back({f->GetParameter(0), f->GetParError(0),
+                                f->GetParameter(1), f->GetParError(1),
+                                f->GetParameter(2), f->GetParError(2)});
+
+            std::cout << "fit " << t.name
+                      << ":  plateau=" << f->GetParameter(0) << " #pm " << f->GetParError(0)
+                      << "  mu="       << f->GetParameter(1) << " #pm " << f->GetParError(1)
+                      << "  beta="     << f->GetParameter(2) << " #pm " << f->GetParError(2)
+                      << "  chi2/ndf=" << f->GetChisquare() << "/" << f->GetNDF() << std::endl;
+
+            l->AddEntry(t.eff, t.legend, "pl");
+        }
         l->Draw("same");
 
-        // Fit parameters in middle of panel (data has empty mid-y region
-        // because eps jumps quickly from ~0.9 at low ET to ~1.0 plateau).
-        myText(0.50, 0.66, 1, Form("plateau = %.3f #pm %.3f",   p0, e0), 0.034, 0);
-        myText(0.50, 0.62, 1, Form("#mu = %.2f #pm %.2f GeV",   p1, e1), 0.034, 0);
-        myText(0.50, 0.58, 1, Form("#beta = %.2f #pm %.2f GeV", p2, e2), 0.034, 0);
+        (void)fit_pars;  // params shown in the caption rather than on canvas
 
-        // sPHENIX labels at bottom-left, fit params at top-right (data
-        // saturates near y=1 so top area is also empty above the fit curve).
+        // sPHENIX labels at lower-left of the panel (data sits near y=1, so
+        // the bottom region is empty).
         const float xpos = 0.22, ypos = 0.30;
-        const float dy = 0.054, fontsize = 0.040;
+        const float dy = 0.050, fontsize = 0.038;
         myText(xpos, ypos - 0 * dy, 1, strleg1.c_str(),   fontsize, 0);
         myText(xpos, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 0);
         myText(xpos, ypos - 2 * dy, 1, strleg3.c_str(),   fontsize, 0);
