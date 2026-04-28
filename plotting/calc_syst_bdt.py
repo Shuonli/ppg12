@@ -336,16 +336,24 @@ def add_lumi(h_al, h_ah, h_rl, h_rh, h_nom) -> tuple:
 # ---------------------------------------------------------------------------
 # Plotting helpers (PyROOT, following syst_*.C / calcSyst.C style)
 # ---------------------------------------------------------------------------
-def _yrange_from_hists(hists, padding=0.3):
+def _yrange_from_hists(hists, padding=0.3, x_min=12.0, x_max=32.0):
     """
-    Return (ylo, yhi) for a ratio plot that comfortably fits all histograms.
+    Return (ylo, yhi) for a ratio plot that comfortably fits all histograms,
+    looking only at bins whose center falls in (x_min, x_max] — i.e. the
+    visible analysis range. Bins outside this window (truth overflow/under-
+    flow [8,10] / [32,45], etc.) are ignored so a single huge edge bin can't
+    blow up the y axis.
+
     padding is the fractional margin added above the max and below the min.
-    Always includes zero; minimum full-range is ±0.02.
+    Always includes zero; minimum full-range is ~0.04.
     """
     vmax = 0.0
     vmin = 0.0
     for h in hists:
         for i in range(1, h.GetNbinsX() + 1):
+            xc = h.GetBinCenter(i)
+            if xc < x_min or xc > x_max:
+                continue
             v = h.GetBinContent(i)
             if v > vmax:
                 vmax = v
@@ -356,12 +364,85 @@ def _yrange_from_hists(hists, padding=0.3):
     return vmin - margin, vmax + margin
 
 
+# ---------------------------------------------------------------------------
+# Physical labels for variants — used in the per-syst-type plots so the
+# legend shows what was actually varied (e.g. "ET scale +2.6%") instead of
+# the generic "up var." / "down var.". Variants not in this dict fall back
+# to their config name with underscores replaced by spaces.
+# ---------------------------------------------------------------------------
+VARIANT_LABELS = {
+    # Energy scale / resolution
+    "energyscale26up":   "#it{E}_{T} scale #times 1.026",
+    "energyscale26down": "#it{E}_{T} scale #times 0.974",
+    "energyresolution0": "no extra smearing (#sigma_{E}/E = 0%)",
+    "energyresolution8": "extra smearing #sigma_{E}/E = 8%",
+    # ABCD region
+    "noniso04": "non-iso gap +0.4 GeV",
+    "noniso10": "non-iso gap +1.0 GeV",
+    # Photon ID
+    "npb03":      "NPB cut = 0.3 (looser)",
+    "npb07":      "NPB cut = 0.7 (tighter)",
+    "tightup_p05": "tight-BDT intercept +0.05",
+    "ntdown_m10":  "non-tight BDT intercept -0.10",
+    # Purity
+    "purity_pade":          "purity erf fit",
+    "mc_purity_correction": "MC closure correction",
+    # Iso resolution
+    "mciso_no_shift": "MC iso pedestal shift = 0",
+    # Unfolding
+    "no_unfolding_reweighting": "unweighted response matrix",
+    "unfold_iter1": "Bayes iter = 1",
+    "unfold_iter3": "Bayes iter = 3",
+    "unfold_iter4": "Bayes iter = 4",
+    # Acceptance
+    "mask_phisymm_or": "#phi-symm tower-mask OR",
+    # Double interaction
+    "di_frac_p20_0rad":     "f_{DI}(0 mrad) #times 1.20",
+    "di_frac_m20_0rad":     "f_{DI}(0 mrad) #times 0.80",
+    "di_frac_p20_1p5mrad":  "f_{DI}(1.5 mrad) #times 1.20",
+    "di_frac_m20_1p5mrad":  "f_{DI}(1.5 mrad) #times 0.80",
+    "di_frac_fit":          "f_{DI} from data BDT-score #chi^{2} fit",
+}
+
+
+def _variant_label(name: str) -> str:
+    """Look up a physical legend label for a variant; fall back to the cleaned
+    config name."""
+    return VARIANT_LABELS.get(name, name.replace("_", " "))
+
+
+def _draw_line_legend(x, y, color, text, tsize=0.045, dashed=False):
+    """Draw a short coloured line + label at NDC (x, y)."""
+    ln = ROOT.TLine()
+    ln.SetLineColor(color)
+    ln.SetLineWidth(2)
+    ln.SetLineStyle(2 if dashed else 1)
+    ln.DrawLineNDC(x - 0.045, y, x - 0.010, y)
+    lab = ROOT.TLatex()
+    lab.SetNDC()
+    lab.SetTextAlign(12)
+    lab.SetTextSize(tsize)
+    lab.DrawLatex(x, y, text)
+
+
 def plot_syst_type(figdir: str, type_name: str, result: tuple,
                    h_nom: ROOT.TH1F, results_dir: str, histogram: str,
                    vmap: dict, args) -> None:
-    """
-    Single-pad ratio-only canvas per syst_type.
-    Y axis range is auto-scaled to the actual relative deviation values.
+    """Per-syst-type ratio-only canvas.
+
+    Rendering depends on the syst_type's mode:
+      two_sided  : two SIGNED relative-deviation lines, one per variant, with
+                   physical legend labels (e.g. "ET scale x 1.026").
+      one_sided  : a single SIGNED line for the lone variant. Caption notes
+                   that the budget symmetrizes |delta|.
+      max        : one SIGNED line per "max" variant. Caption notes that the
+                   budget takes the per-bin envelope of |delta|.
+      group_*    : (called via type_name="group_<grp>") -- legacy mirror
+                   envelope is plotted because there is no single variant.
+
+    The deviation is *signed* (var - nom)/nom and is NOT flipped to ensure
+    the band stays on one side of zero — letting it cross zero is the honest
+    visualization that motivates the symmetrization step.
     """
     h_al, h_ah, h_rl, h_rh = result
 
@@ -374,13 +455,64 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
     c.SetTopMargin(0.07)
     c.SetBottomMargin(0.13)
 
-    # Build the two plotted histograms: -h_rl (down, blue) and h_rh (up, red)
-    h_rl_plot = h_rl.Clone(f"h_rl_plot_{type_name}")
-    h_rl_plot.SetDirectory(0)
-    h_rl_plot.Scale(-1)
+    is_group = type_name.startswith("group_") or type_name == "total"
+    mode = SYST_TYPES.get(type_name, {}).get("mode", "")
+    roles = vmap.get(type_name, {}) if not is_group else {}
 
-    # Auto-scale Y axis to fit both bands with padding
-    ylo, yhi = _yrange_from_hists([h_rl_plot, h_rh])
+    # Load signed (var - nom)/nom for each variant we want to draw.
+    def signed_rel(vname):
+        var_type = f"bdt_{vname}"
+        try:
+            hv = load_spectrum(var_type, results_dir, histogram)
+        except (FileNotFoundError, KeyError, OSError):
+            return None
+        _, hr = calc_delta(hv, h_nom, f"plot_{type_name}_{vname}")
+        return hr
+
+    # Decide what to draw and gather (h, color, label) entries.
+    entries = []  # (h, color, label)
+    palette = [ROOT.kRed + 1, ROOT.kBlue + 1, ROOT.kGreen + 2,
+               ROOT.kViolet + 1, ROOT.kOrange + 7, ROOT.kCyan + 2]
+    caption_note = ""
+
+    if is_group:
+        # Fall back to the legacy envelope plot (mirrors |delta|): h_rh up
+        # in red, -h_rl down in blue. Useful for group_*/total summaries.
+        h_rl_plot = h_rl.Clone(f"h_rl_plot_{type_name}")
+        h_rl_plot.SetDirectory(0)
+        h_rl_plot.Scale(-1)
+        entries.append((h_rh,        ROOT.kRed,  "envelope (up)"))
+        entries.append((h_rl_plot,   ROOT.kBlue, "envelope (down)"))
+    elif mode == "two_sided":
+        for i, role in enumerate(("up", "down")):
+            for vname in roles.get(role, []):
+                hr = signed_rel(vname)
+                if hr is None: continue
+                entries.append((hr, palette[i], _variant_label(vname)))
+    elif mode == "one_sided":
+        for vname in roles.get("one_sided", []):
+            hr = signed_rel(vname)
+            if hr is None: continue
+            entries.append((hr, palette[0], _variant_label(vname)))
+        caption_note = "Single-sided variation; |#it{#delta}| symmetrized in the systematic budget."
+    elif mode == "max":
+        for i, vname in enumerate(roles.get("max", [])):
+            hr = signed_rel(vname)
+            if hr is None: continue
+            entries.append((hr, palette[i % len(palette)], _variant_label(vname)))
+        caption_note = "Per-bin |#it{#delta}|-envelope of these variations is taken in the budget."
+
+    if not entries:
+        # Nothing to draw — fall back to legacy behaviour so the figure still
+        # appears (mirrored abs envelope).
+        h_rl_plot = h_rl.Clone(f"h_rl_plot_{type_name}")
+        h_rl_plot.SetDirectory(0)
+        h_rl_plot.Scale(-1)
+        entries = [(h_rh,      ROOT.kRed,  "up envelope"),
+                   (h_rl_plot, ROOT.kBlue, "down envelope")]
+
+    # Auto-scale Y axis to fit all drawn lines with padding.
+    ylo, yhi = _yrange_from_hists([h for h, _, _ in entries])
 
     ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.GetYaxis().SetNdivisions(506)
@@ -390,37 +522,36 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
     ROOT.frame_et_truth.Draw("axis")
 
-    h_rl_plot.SetMarkerStyle(20)
-    h_rl_plot.SetMarkerColor(ROOT.kBlue)
-    h_rl_plot.SetLineColor(ROOT.kBlue)
-    h_rl_plot.SetLineWidth(2)
-    h_rl_plot.Draw("same ][ HIST")
-
-    h_rh.SetMarkerStyle(20)
-    h_rh.SetMarkerColor(ROOT.kRed)
-    h_rh.SetLineColor(ROOT.kRed)
-    h_rh.SetLineWidth(2)
-    h_rh.Draw("same ][ HIST")
+    for h, color, _ in entries:
+        h.SetMarkerStyle(20)
+        h.SetMarkerColor(color)
+        h.SetLineColor(color)
+        h.SetLineWidth(2)
+        h.Draw("same ][ HIST")
 
     ROOT.linezero.Draw("L")
 
     ROOT.myText(0.55, 0.88, 1, ROOT.strleg1.c_str(), 0.045)
     ROOT.myText(0.55, 0.83, 1, ROOT.strleg2.c_str(), 0.045)
-    # Line-only legend entries (the bands are Draw("HIST") so no markers).
-    def _line_legend(x, y, color, text, tsize=0.05):
-        ln = ROOT.TLine()
-        ln.SetLineColor(color)
-        ln.SetLineWidth(2)
-        ln.SetLineStyle(1)
-        ln.DrawLineNDC(x - 0.040, y, x - 0.010, y)
-        lab = ROOT.TLatex()
-        lab.SetNDC()
-        lab.SetTextAlign(12)
-        lab.SetTextSize(tsize)
-        lab.DrawLatex(x, y, text)
-    _line_legend(0.22, 0.88, ROOT.kRed,  "up var.")
-    _line_legend(0.22, 0.82, ROOT.kBlue, "down var.")
-    ROOT.myText(0.18, 0.76, 1, type_name.replace("_", " "), 0.05)
+
+    # Per-variant legend entries (top-left).
+    leg_x = 0.22
+    leg_y = 0.88
+    leg_dy = 0.06
+    for i, (_, color, label) in enumerate(entries):
+        _draw_line_legend(leg_x, leg_y - i * leg_dy, color, label, tsize=0.04)
+
+    # Type label below the legend block.
+    type_y = leg_y - len(entries) * leg_dy - 0.02
+    ROOT.myText(0.18, type_y, 1, type_name.replace("_", " "), 0.045)
+
+    # Caption note at the bottom, if any.
+    if caption_note:
+        cap = ROOT.TLatex()
+        cap.SetNDC()
+        cap.SetTextAlign(13)
+        cap.SetTextSize(0.035)
+        cap.DrawLatex(0.15, 0.20, caption_note)
 
     out = os.path.join(figdir, f"syst_bdt_rel_{type_name}.pdf")
     c.SaveAs(out)
