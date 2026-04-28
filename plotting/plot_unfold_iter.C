@@ -87,78 +87,109 @@ void plot_unfold_iter()
 
     string leg1 = "total relative stat. uncertainty";
     string leg2 = "total relative deviation";
+    string leg3 = "stat. + dev. (quadrature)";
 
     std::string h_result_name_base = "h_unfold_sub_leak_";
 
     TH1F *h_stat = new TH1F("h_stat", "Statistical Uncertainty", ntotal_iterations, 0.5, ntotal_iterations + 0.5);
-
     TH1F *h_iter_delta = new TH1F("h_iter_delta", "Iteration Delta", ntotal_iterations, 0.5, ntotal_iterations + 0.5);
-    
-        for (int i = 1; i < ntotal_iterations; i++)
-        {
-            std::string h_prev_name = h_result_name_base + std::to_string(i);
-            std::string h_this_name = h_result_name_base + std::to_string(i + 1);
+    TH1F *h_stat_dev_quad = new TH1F("h_stat_dev_quad", "Stat + Dev quadrature", ntotal_iterations, 0.5, ntotal_iterations + 0.5);
 
-            TH1F *h_prev = (TH1F *)fin->Get(h_prev_name.c_str());
-            TH1F *h_this = (TH1F *)fin->Get(h_this_name.c_str());
-
-            TH1F *h_dev_rel = (TH1F *)calcDelta(h_this, h_prev, "h_dev_rel_" + std::to_string(i)).second;
-
-            // loop over bin find the quad sum
-            double rel_quad_sum = 0;
-            double rel_stat_sum = 0;
-
-            //for (int ibin = 1; ibin <= h_dev_rel->GetNbinsX(); ibin++)
-            for (int ibin = 2; ibin <= (h_dev_rel->GetNbinsX() - 2); ibin++)
-            {
-                double rel = h_dev_rel->GetBinContent(ibin);
-                double stat = h_this->GetBinError(ibin) / h_this->GetBinContent(ibin);
-                //std::cout << "ibin: " << ibin << " rel: " << rel << " stat: " << stat << std::endl;
-                if (rel == rel)
-                {
-                    rel_quad_sum += rel * rel;
-                }
-                if (stat == stat)
-                {
-                    rel_stat_sum += stat * stat;
-                }
-            }
-            rel_quad_sum = sqrt(rel_quad_sum);
-            rel_stat_sum = sqrt(rel_stat_sum);
-
-            std::cout << "rel_quad_sum: " << rel_quad_sum << " rel_stat_sum: " << rel_stat_sum << std::endl;
-
-            h_stat->SetBinContent(i + 1, rel_stat_sum);
-            h_stat->SetBinError(i + 1, 0);
-            h_iter_delta->SetBinContent(i + 1, rel_quad_sum);
-            h_iter_delta->SetBinError(i + 1, 0);
+    // Helper: sum bin-by-bin quadrature of a relative-deviation hist over
+    // truth bins 2..(N-2) — i.e., physical analysis range [10,12]..[28,32],
+    // excluding the [8,10] and [32,36] / [36,45] overflow truth bins.
+    auto fill_iter_summary = [&](int iter_label, TH1F *h_dev_rel, TH1F *h_this) {
+        double rel_quad_sum = 0;
+        double rel_stat_sum = 0;
+        for (int ibin = 2; ibin <= (h_dev_rel->GetNbinsX() - 2); ibin++) {
+            double rel = h_dev_rel->GetBinContent(ibin);
+            double stat = (h_this->GetBinContent(ibin) != 0)
+                              ? h_this->GetBinError(ibin) / h_this->GetBinContent(ibin)
+                              : 0.0;
+            if (rel == rel)  rel_quad_sum  += rel  * rel;
+            if (stat == stat) rel_stat_sum += stat * stat;
         }
+        rel_quad_sum = sqrt(rel_quad_sum);
+        rel_stat_sum = sqrt(rel_stat_sum);
+        std::cout << "iter " << iter_label
+                  << "  rel_quad_sum=" << rel_quad_sum
+                  << "  rel_stat_sum=" << rel_stat_sum << std::endl;
+        h_stat->SetBinContent(iter_label, rel_stat_sum);
+        h_stat->SetBinError(iter_label, 0);
+        h_iter_delta->SetBinContent(iter_label, rel_quad_sum);
+        h_iter_delta->SetBinError(iter_label, 0);
+        h_stat_dev_quad->SetBinContent(iter_label, sqrt(rel_quad_sum*rel_quad_sum + rel_stat_sum*rel_stat_sum));
+        h_stat_dev_quad->SetBinError(iter_label, 0);
+    };
 
-        TCanvas *c1 = new TCanvas("can", "", 600, 600);
+    // Iteration 1: relative SHAPE deviation w.r.t. the unfolder INPUT (the
+    // initial prior — the MC truth marginal of the response matrix, which is
+    // what RooUnfoldBayes seeds iter 0 with). Both iter 1 and the prior live
+    // on the same truth axis; we just rescale the prior to match iter 1's
+    // analysis-range integral so the comparison is a pure shape deviation.
+    {
+        TH1F *h_iter1 = (TH1F *)fin->Get("h_unfold_sub_leak_1");
+        TH1F *h_prior = (TH1F *)fresponsein->Get("h_pT_truth_response_0");
+        // Cast to TH1F shape (FindBin etc.) — h_pT_truth_response_0 is TH1D.
+        TH1F *h_prior_f = (TH1F *)h_iter1->Clone("h_prior_f");
+        h_prior_f->Reset();
+        for (int b = 1; b <= h_iter1->GetNbinsX(); b++) {
+            h_prior_f->SetBinContent(b, h_prior->GetBinContent(b));
+            h_prior_f->SetBinError(b, h_prior->GetBinError(b));
+        }
+        double s_iter = 0, s_pr = 0;
+        for (int b = 2; b <= h_iter1->GetNbinsX() - 2; b++) {
+            s_iter += h_iter1->GetBinContent(b);
+            s_pr   += h_prior_f->GetBinContent(b);
+        }
+        if (s_pr > 0) h_prior_f->Scale(s_iter / s_pr);
 
-        frame_iteration->SetYTitle("#sqrt{#delta}");
-        frame_iteration->GetYaxis()->SetRangeUser(0, 0.6);
-        frame_iteration->GetXaxis()->SetRangeUser(1, 10);
-        frame_iteration->Draw("axis");
+        TH1F *h_dev_rel_1 = (TH1F *)calcDelta(h_iter1, h_prior_f, "h_dev_rel_1").second;
+        fill_iter_summary(1, h_dev_rel_1, h_iter1);
+    }
 
-        h_stat->SetMarkerStyle(20);
-        h_stat->SetMarkerColor(kBlack);
-        h_stat->SetLineColor(kBlack);
-        h_stat->Draw("same p");
+    // Iterations 2..ntotal_iterations: relative deviation w.r.t. previous iteration.
+    for (int i = 1; i < ntotal_iterations; i++)
+    {
+        std::string h_prev_name = h_result_name_base + std::to_string(i);
+        std::string h_this_name = h_result_name_base + std::to_string(i + 1);
+        TH1F *h_prev = (TH1F *)fin->Get(h_prev_name.c_str());
+        TH1F *h_this = (TH1F *)fin->Get(h_this_name.c_str());
+        TH1F *h_dev_rel = (TH1F *)calcDelta(h_this, h_prev, "h_dev_rel_" + std::to_string(i + 1)).second;
+        fill_iter_summary(i + 1, h_dev_rel, h_this);
+    }
 
-        h_iter_delta->SetMarkerStyle(20);
-        h_iter_delta->SetMarkerColor(kBlue);
-        h_iter_delta->SetLineColor(kBlue);
-        h_iter_delta->Draw("same p");
+    TCanvas *c1 = new TCanvas("can", "", 600, 600);
 
-        myText(0.5, 0.9, 1, strleg1.c_str(), 0.04);
-        myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
-        myText(0.5, 0.80, 1, strleg3.c_str(), 0.04);
+    frame_iteration->SetYTitle("#sqrt{#delta}");
+    frame_iteration->GetYaxis()->SetRangeUser(0, 0.6);
+    frame_iteration->GetXaxis()->SetRangeUser(0, 10);  // start at 0 so iter-1 label is on-pane
+    frame_iteration->Draw("axis");
 
-        myMarkerLineText(0.25, 0.75, 1, kBlack, 20, kBlack, 1, leg1.c_str(), 0.04, true);
-        myMarkerLineText(0.25, 0.70, 1, kBlue, 20, kBlue, 1, leg2.c_str(), 0.04, true);
+    h_stat->SetMarkerStyle(20);
+    h_stat->SetMarkerColor(kBlack);
+    h_stat->SetLineColor(kBlack);
+    h_stat->Draw("same p");
 
-        c1->SaveAs(Form("%s/unfold_iter.pdf", savePath.c_str()));
+    h_iter_delta->SetMarkerStyle(20);
+    h_iter_delta->SetMarkerColor(kBlue);
+    h_iter_delta->SetLineColor(kBlue);
+    h_iter_delta->Draw("same p");
+
+    h_stat_dev_quad->SetMarkerStyle(20);
+    h_stat_dev_quad->SetMarkerColor(kRed);
+    h_stat_dev_quad->SetLineColor(kRed);
+    h_stat_dev_quad->Draw("same p");
+
+    myText(0.5, 0.9, 1, strleg1.c_str(), 0.04);
+    myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
+    myText(0.5, 0.80, 1, strleg3.c_str(), 0.04);
+
+    myMarkerLineText(0.25, 0.75, 1, kBlack, 20, kBlack, 1, leg1.c_str(), 0.04, true);
+    myMarkerLineText(0.25, 0.70, 1, kBlue, 20, kBlue, 1, leg2.c_str(), 0.04, true);
+    myMarkerLineText(0.25, 0.65, 1, kRed, 20, kRed, 1, leg3.c_str(), 0.04, true);
+
+    c1->SaveAs(Form("%s/unfold_iter.pdf", savePath.c_str()));
     
 
     // closure test
