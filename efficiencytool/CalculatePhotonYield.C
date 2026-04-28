@@ -124,6 +124,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     TFile *f_mc_purity_corr = nullptr;
     TGraphErrors *g_mc_purity_fit_ratio = nullptr;
+    TF1 *f_mc_purity_corr_fit = nullptr;  // smooth fit to bin-by-bin truth/ABCD ratio
     if (!isMC && mc_purity_correction)
     {
         std::string mc_ratio_source = mc_purity_correction_file.empty() ? mc_outfilename : mc_purity_correction_file;
@@ -137,15 +138,16 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
         else
         {
             g_mc_purity_fit_ratio = (TGraphErrors *)f_mc_purity_corr->Get("g_mc_purity_fit_ratio");
-            if (!g_mc_purity_fit_ratio)
+            f_mc_purity_corr_fit = (TF1 *)f_mc_purity_corr->Get("f_mc_purity_corr_fit");
+            if (!g_mc_purity_fit_ratio || !f_mc_purity_corr_fit)
             {
-                std::cout << "WARNING: g_mc_purity_fit_ratio not found in " << mc_ratio_source
+                std::cout << "WARNING: g_mc_purity_fit_ratio or f_mc_purity_corr_fit not found in " << mc_ratio_source
                           << ". Skip MC purity correction." << std::endl;
                 mc_purity_correction = false;
             }
             else
             {
-                std::cout << "Apply MC purity correction using " << mc_ratio_source << std::endl;
+                std::cout << "Apply MC purity correction (fit-of-bin-by-bin truth/ABCD ratio) using " << mc_ratio_source << std::endl;
             }
         }
     }
@@ -399,7 +401,14 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     std::vector<TH1F *> h_purity_leak_list;
     std::vector<TF1 *> f_purity_list;
     std::vector<TF1 *> f_purity_leak_list;
-    TRandom3 *rand = new TRandom3(0);
+    // Fixed seed (42) so the toy-throw step in the ABCD purity uncertainty
+    // (Poisson re-throws for raw yields + Gaussian re-throws for the
+    // signal-leakage corrections cB/cC/cD) is bit-reproducible across
+    // pipeline runs. Seed 0 (CPU clock) had been used previously, which
+    // made the per-bin ±2-sigma fluctuation envelope drift between
+    // re-runs and contaminated the systematic comparison vs nominal.
+    // Matches the global analysis seed used elsewhere in the pipeline.
+    TRandom3 *rand = new TRandom3(42);
     h_tight_iso_cluster_signal_data->Sumw2();
     h_tight_noniso_cluster_signal_data->Sumw2();
     h_nontight_iso_cluster_signal_data->Sumw2();
@@ -630,7 +639,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     int nFinePoints = 1000; // Number of points for granular intervals
     double xMin = 10;       // Fit range start (tightened 2026-04-24; was 8)
-    double xMax = 32;       // Fit range end
+    double xMax = 36;       // Fit range end (extended 2026-04-27; was 32)
 
     TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
     f_purity_fit->SetParameters(1.0, 15.0, 5.0);
@@ -733,6 +742,7 @@ std::cout << "p-value = " << pvalue << "\n";
 
     if (isMC)
     {
+        // Truth-purity fit (kept for plotting; not used in the closure correction).
         f_purity_truth_fit = new TF1("f_purity_truth_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
         f_purity_truth_fit->SetParameters(1.0, 15.0, 5.0);
         if (fitoption == 1)
@@ -743,25 +753,42 @@ std::cout << "p-value = " << pvalue << "\n";
         g_purity_truth->Fit(f_purity_truth_fit, "REMN", "", xMin, xMax);
         g_purity_truth->Fit(f_purity_truth_fit, "REMN", "", xMin, xMax);
 
+        // Bin-by-bin closure correction = (raw truth purity) / (raw leakage-corrected ABCD purity),
+        // computed at the same per-ET-bin sampling as the underlying TGraphs. Then fit with a
+        // smooth function (pol2 by default) over [xMin, xMax] so applying the correction on data
+        // is robust against per-bin statistical noise.
         g_mc_purity_fit_ratio_out = new TGraphErrors(g_purity_truth->GetN());
         g_mc_purity_fit_ratio_out->SetName("g_mc_purity_fit_ratio");
         for (int i = 0; i < g_purity_truth->GetN(); ++i)
         {
-            double x = 0;
-            double y_truth = 0;
+            double x = 0, y_truth = 0;
             g_purity_truth->GetPoint(i, x, y_truth);
-            double y_fit = f_purity_leak_fit->Eval(x);
+            double x_leak = 0, y_leak = 0;
+            gpurity_leak->GetPoint(i, x_leak, y_leak);
             double ratio = 1.0;
             double err = 0.0;
-            if (y_fit != 0 && !std::isnan(y_fit) && !std::isinf(y_fit))
+            if (y_leak != 0 && !std::isnan(y_leak) && !std::isinf(y_leak)
+                            && !std::isnan(y_truth) && !std::isinf(y_truth))
             {
-                ratio = y_truth / y_fit;
+                ratio = y_truth / y_leak;
                 double truth_err = 0.5 * (g_purity_truth->GetErrorYlow(i) + g_purity_truth->GetErrorYhigh(i));
-                err = truth_err / std::abs(y_fit);
+                double leak_err  = gpurity_leak->GetErrorY(i);
+                double rel2 = 0.0;
+                if (y_truth > 0) rel2 += (truth_err / y_truth) * (truth_err / y_truth);
+                if (y_leak  > 0) rel2 += (leak_err  / y_leak ) * (leak_err  / y_leak );
+                err = std::abs(ratio) * std::sqrt(rel2);
             }
             g_mc_purity_fit_ratio_out->SetPoint(i, x, ratio);
             g_mc_purity_fit_ratio_out->SetPointError(i, 0, err);
         }
+        // Smooth fit over the analysis range; saved separately (named f_mc_purity_corr_fit)
+        // and used as the actual correction on the data side.
+        TF1 *f_mc_purity_corr_fit_out = new TF1("f_mc_purity_corr_fit", "pol2", xMin, xMax);
+        f_mc_purity_corr_fit_out->SetParameters(1.0, 0.0, 0.0);
+        g_mc_purity_fit_ratio_out->Fit(f_mc_purity_corr_fit_out, "REMN", "", xMin, xMax);
+        g_mc_purity_fit_ratio_out->Fit(f_mc_purity_corr_fit_out, "REMN", "", xMin, xMax);
+        // Stash the fit in a global so the writer block can persist it.
+        gROOT->GetListOfFunctions()->Add(f_mc_purity_corr_fit_out);
     }
 
     if(fit_purity_dis)
@@ -802,9 +829,11 @@ std::cout << "p-value = " << pvalue << "\n";
             //double NA_purity = gpurity_leak->GetY()[ibin - 1];
             double x_center = h_tight_iso_cluster_signal_data->GetBinCenter(ibin);
             double mc_corr_ratio = 1.0;
-            if (!isMC && mc_purity_correction && g_mc_purity_fit_ratio)
+            if (!isMC && mc_purity_correction && f_mc_purity_corr_fit)
             {
-                mc_corr_ratio = g_mc_purity_fit_ratio->Eval(x_center);
+                // Evaluate the smooth fit (pol2) of the bin-by-bin truth/ABCD ratio, NOT the
+                // raw TGraph. This avoids piecewise-linear interpolation noise.
+                mc_corr_ratio = f_mc_purity_corr_fit->Eval(x_center);
                 if (mc_corr_ratio <= 0 || std::isnan(mc_corr_ratio) || std::isinf(mc_corr_ratio))
                 {
                     mc_corr_ratio = 1.0;
@@ -1196,6 +1225,12 @@ std::cout << "p-value = " << pvalue << "\n";
     if (g_mc_purity_fit_ratio_out)
     {
         g_mc_purity_fit_ratio_out->Write();
+        TF1 *f_mc_purity_corr_fit_persist = (TF1 *)gROOT->GetListOfFunctions()->FindObject("f_mc_purity_corr_fit");
+        if (f_mc_purity_corr_fit_persist)
+        {
+            f_mc_purity_corr_fit_persist->Write();
+            gROOT->GetListOfFunctions()->Remove(f_mc_purity_corr_fit_persist);
+        }
     }
     g_mbd_eff->Write();
     g_mbd_eff_north->Write();
