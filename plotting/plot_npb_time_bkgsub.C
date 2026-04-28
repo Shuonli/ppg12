@@ -253,21 +253,40 @@ void plot_npb_time_bkgsub()
                 delete leg; delete h_bkg_sc; delete h_sel; delete c;
             }
 
-            // Purity vs threshold plot
+            // Purity + signal-retention efficiency vs threshold plot.
+            // Efficiency = sig(T) / sig(T_min) — fraction of signal clusters
+            // retained at each NPB threshold relative to the loosest scanned
+            // threshold.
             {
                 TCanvas *c = new TCanvas(Form("c_purity_eta%d_pt%d", ieta, ipt), "", 600, 600);
-                TGraphErrors *g = new TGraphErrors(thresh_vals.size());
-                for (size_t i = 0; i < thresh_vals.size(); ++i) { g->SetPoint(i, thresh_vals[i], purity_vals[i]); g->SetPointError(i, 0, purity_errs[i]); }
-                g->SetMarkerStyle(20); g->SetMarkerSize(1.2); g->SetMarkerColor(kBlue+1); g->SetLineColor(kBlue+1); g->SetLineWidth(2);
+                const double sig_ref = sig_vals.empty() ? 0.0 : sig_vals.front();
+                TGraphErrors *g_pur = new TGraphErrors(thresh_vals.size());
+                TGraphErrors *g_eff = new TGraphErrors(thresh_vals.size());
+                for (size_t i = 0; i < thresh_vals.size(); ++i) {
+                    g_pur->SetPoint(i, thresh_vals[i], purity_vals[i]);
+                    g_pur->SetPointError(i, 0, purity_errs[i]);
+                    const double eff = (sig_ref > 0) ? sig_vals[i] / sig_ref : 0.0;
+                    g_eff->SetPoint(i, thresh_vals[i], eff);
+                    g_eff->SetPointError(i, 0, 0);
+                }
+                g_pur->SetMarkerStyle(20); g_pur->SetMarkerSize(1.2);
+                g_pur->SetMarkerColor(kBlue+1); g_pur->SetLineColor(kBlue+1); g_pur->SetLineWidth(2);
+                g_eff->SetMarkerStyle(21); g_eff->SetMarkerSize(1.2);
+                g_eff->SetMarkerColor(kRed+1); g_eff->SetLineColor(kRed+1); g_eff->SetLineWidth(2);
                 TH1F *fr = new TH1F(Form("fr_pur_%d_%d", ieta, ipt), "", 10, 0.05, 0.95);
-                fr->SetStats(0); fr->GetXaxis()->SetTitle("NPB Score Threshold"); fr->GetYaxis()->SetTitle("Purity");
-                fr->GetYaxis()->SetTitleOffset(1.4); fr->GetYaxis()->SetRangeUser(0.8, 1.1); fr->Draw();
-                g->Draw("PL SAME");
+                fr->SetStats(0); fr->GetXaxis()->SetTitle("NPB Score Threshold"); fr->GetYaxis()->SetTitle("Purity / Efficiency");
+                fr->GetYaxis()->SetTitleOffset(1.4); fr->GetYaxis()->SetRangeUser(0.5, 1.1); fr->Draw();
+                g_pur->Draw("PL SAME");
+                g_eff->Draw("PL SAME");
                 drawLabels(0.20, 0.90, ipt, pT_bin_edges);
-                myText(0.20, 0.70, 1, "Bkg template: NPB < 0.2", 0.04);
-                myText(0.20, 0.65, 1, Form("Tail fit: t < %.0f ns", tail_time_cut), 0.04);
+                myText(0.20, 0.74, 1, "Bkg template: NPB < 0.2", 0.04);
+                myText(0.20, 0.69, 1, Form("Tail fit: t < %.0f ns", tail_time_cut), 0.04);
+                TLegend *leg = makeLegend(0.55, 0.18, 0.88, 0.30);
+                leg->AddEntry(g_pur, "Purity",                "pl");
+                leg->AddEntry(g_eff, "Sig. retention eff.",   "pl");
+                leg->Draw();
                 c->SaveAs(Form("%s/purity_vs_npb_eta%d_pt%d.pdf", savePath.c_str(), ieta, ipt));
-                delete g; delete fr; delete c;
+                delete g_pur; delete g_eff; delete fr; delete leg; delete c;
             }
 
             // Yield vs threshold plot
