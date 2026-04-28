@@ -288,7 +288,28 @@ void plot_trigger_bit30()
             h_eff_for_fit->SetBinContent(i, e);
             h_eff_for_fit->SetBinError(i, err > 0 ? err : 1.0/std::sqrt(tot));
         }
-        h_eff_for_fit->Fit(ferf, "R Q N");
+        TFitResultPtr fit_result = h_eff_for_fit->Fit(ferf, "R Q N S");
+
+        // 1-sigma (68.3%) CI band from the fit covariance, evaluated on a
+        // fine grid over the fit range and propagated via
+        // TFitResult::GetConfidenceIntervals.
+        const int n_ci = 200;
+        std::vector<double> x_ci_arr(n_ci), ci_err_arr(n_ci);
+        for (int i = 0; i < n_ci; ++i) {
+            x_ci_arr[i] = 5.0 + i * (15.0 - 5.0) / (n_ci - 1);
+        }
+        fit_result->GetConfidenceIntervals(n_ci, 1, 1,
+                                           x_ci_arr.data(), ci_err_arr.data(),
+                                           0.683, false);
+        TGraphErrors *g_ci = new TGraphErrors(n_ci);
+        for (int i = 0; i < n_ci; ++i) {
+            g_ci->SetPoint(i, x_ci_arr[i], ferf->Eval(x_ci_arr[i]));
+            g_ci->SetPointError(i, 0.0, ci_err_arr[i]);
+        }
+        g_ci->SetFillColorAlpha(kRed + 1, 0.30);
+        g_ci->SetFillStyle(1001);
+        g_ci->SetLineWidth(0);
+        g_ci->Draw("3 same");
         ferf->Draw("same");
 
         const double p0 = ferf->GetParameter(0), e0 = ferf->GetParError(0);
@@ -303,7 +324,12 @@ void plot_trigger_bit30()
         TLegend *l = new TLegend(0.50, 0.36, 0.93, 0.48);
         legStyle(l, 0.20, 0.036);
         l->AddEntry(eff_bit30, "#varepsilon = N(bit 10 & 30) / N(bit 10)", "pl");
-        l->AddEntry(ferf,      "Gumbel fit",                               "l");
+        l->AddEntry(ferf,      "fit (1#sigma CI)",                         "lf");
+        l->GetListOfPrimitives()->Last(); // place CI marker after fit
+        // To show both line and fill in the legend entry, replace with
+        // explicit dual-icon construction:
+        l->GetListOfPrimitives()->RemoveLast();
+        l->AddEntry(g_ci,      "fit (1#sigma CI)",                         "lf");
         l->Draw("same");
 
         // Fit parameters in middle of panel (data has empty mid-y region
