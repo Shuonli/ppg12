@@ -162,8 +162,8 @@ void plot_unfold_iter()
     TCanvas *c1 = new TCanvas("can", "", 600, 600);
 
     frame_iteration->SetYTitle("#sqrt{#delta}");
-    frame_iteration->GetYaxis()->SetRangeUser(0, 0.6);
-    frame_iteration->GetXaxis()->SetRangeUser(0, 10);  // start at 0 so iter-1 label is on-pane
+    frame_iteration->GetYaxis()->SetRangeUser(0, 0.7);   // leave headroom above iter-1 (~0.48)
+    frame_iteration->GetXaxis()->SetRangeUser(0, 10);    // iter-1 label on-pane
     frame_iteration->Draw("axis");
 
     h_stat->SetMarkerStyle(20);
@@ -181,13 +181,15 @@ void plot_unfold_iter()
     h_stat_dev_quad->SetLineColor(kRed);
     h_stat_dev_quad->Draw("same p");
 
-    myText(0.5, 0.9, 1, strleg1.c_str(), 0.04);
-    myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
-    myText(0.5, 0.80, 1, strleg3.c_str(), 0.04);
+    // Metadata + legend grouped on the right side so they don't overlap the
+    // iter-1 high points at the left edge (~0.45-0.48).
+    myText(0.55, 0.90, 1, strleg1.c_str(), 0.04);
+    myText(0.55, 0.85, 1, strleg2.c_str(), 0.04);
+    myText(0.55, 0.80, 1, strleg3.c_str(), 0.04);
 
-    myMarkerLineText(0.25, 0.75, 1, kBlack, 20, kBlack, 1, leg1.c_str(), 0.04, true);
-    myMarkerLineText(0.25, 0.70, 1, kBlue, 20, kBlue, 1, leg2.c_str(), 0.04, true);
-    myMarkerLineText(0.25, 0.65, 1, kRed, 20, kRed, 1, leg3.c_str(), 0.04, true);
+    myMarkerLineText(0.55, 0.73, 1, kBlack, 20, kBlack, 1, leg1.c_str(), 0.04, true);
+    myMarkerLineText(0.55, 0.68, 1, kBlue,  20, kBlue,  1, leg2.c_str(), 0.04, true);
+    myMarkerLineText(0.55, 0.63, 1, kRed,   20, kRed,   1, leg3.c_str(), 0.04, true);
 
     c1->SaveAs(Form("%s/unfold_iter.pdf", savePath.c_str()));
     
