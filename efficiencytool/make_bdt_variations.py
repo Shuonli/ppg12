@@ -227,33 +227,29 @@ VARIANTS = [
     # ----------------------------------------------------------
     # T3: Double-interaction blending fraction ±20% per period.
     # DOUBLE_FRAC nominal (cluster-weighted, triple+ folded into double):
-    #   0 mrad: 0.224 → ±20% rel → up=0.2688, down=0.1792
-    #   1.5 mrad: 0.079 → ±20% rel → up=0.0948, down=0.0632
-    # Configs are generated now; condor-side support pending — needs
-    # oneforall_tree_double_dispatch.sh to read analysis.double_frac_override
-    # instead of computing DOUBLE_FRAC from run_min. Each variant is
-    # period-pinned (the override is per-period).
+    #   0 mrad:   f_best = 0.290 (analytic 0.224, |Δf| = 0.066)
+    #   1.5 mrad: f_best = 0.000 (analytic 0.079, |Δf| = 0.079)
+    # Manual triplet (bare-name + 2 feeders) so each crossing carries its own
+    # f_best while the all-range merge_periods.sh step produces a single
+    # Photon_final_bdt_di_frac_fit.root for calc_syst_bdt.py. Only the
+    # bare-name is tagged with syst_type so the aggregator picks up exactly
+    # one all-range varied spectrum (not the two per-period pre-merge ones).
     # ----------------------------------------------------------
-    dict(name="di_frac_p20_0rad", double_frac_override=0.2688,
+    dict(name="di_frac_fit",
+         run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
+         vertex_cut_truth=9999.0, truth_vertex_reweight_on=0,
+         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
+         syst_type="di_fraction", syst_role="one_sided"),
+    dict(name="di_frac_fit_0rad", double_frac_override=0.290,
          run_min=47289, run_max=51274, lumi=47.2076, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
-         syst_type="di_fraction", syst_role="up"),
-    dict(name="di_frac_m20_0rad", double_frac_override=0.1792,
-         run_min=47289, run_max=51274, lumi=47.2076, lumi_target=64.3718,
-         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
-         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
-         syst_type="di_fraction", syst_role="down"),
-    dict(name="di_frac_p20_1p5mrad", double_frac_override=0.0948,
+         syst_type=None, syst_role=None),
+    dict(name="di_frac_fit_1p5mrad", double_frac_override=0.000,
          run_min=51274, run_max=54000, lumi=17.1642, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
-         syst_type="di_fraction", syst_role="up"),
-    dict(name="di_frac_m20_1p5mrad", double_frac_override=0.0632,
-         run_min=51274, run_max=54000, lumi=17.1642, lumi_target=64.3718,
-         vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
-         truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
-         syst_type="di_fraction", syst_role="down"),
+         syst_type=None, syst_role=None),
 ]
 
 # ---------------------------------------------------------------------------
@@ -326,20 +322,15 @@ for _low_label, (_t10, _h10, _l10) in _NTBDT_LOW_ANCHORS:
 # ---------------------------------------------------------------------------
 _TOWER_MASK_FILE = "/sphenix/user/shuhangli/ppg12/efficiencytool/tower_masks_bdt_nom.root"
 for _lvl in ("preselect", "common", "tight", "or"):
-    # mask_phisymm_or is the union envelope across selection levels; the
-    # other three masks (preselect/common/tight) are kept as cross-checks
-    # so the per-level shift can be inspected, but only _or feeds the
-    # acceptance systematic in the locked budget. Promoted 2026-04-25.
-    if _lvl == "or":
-        _st, _sr = "acceptance", "max"
-    else:
-        _st, _sr = None, None
+    # All four phi-symmetry mask variants (preselect, common, tight, or) are
+    # kept as cross-checks only — none enter the systematic quadrature.
+    # Phi-symmetry residuals are absorbed into the photon-ID response chain.
     VARIANTS.append(dict(
         name=f"mask_phisymm_{_lvl}",
         tower_mask_on=1,
         tower_mask_file=_TOWER_MASK_FILE,
         tower_mask_name=f"mask_phisymm_{_lvl}",
-        syst_type=_st, syst_role=_sr,
+        syst_type=None, syst_role=None,
     ))
 
 # ---------------------------------------------------------------------------
@@ -368,13 +359,17 @@ SYST_TYPES = {
     # ---- detector iso resolution / pedestal ----
     "iso_resolution": {"mode": "one_sided", "group": "iso_resolution"},
     # ---- tower acceptance (phi-symmetry mask envelope) ----
-    "acceptance":   {"mode": "max",         "group": "acceptance"},
+    # Demoted to a cross-check (no quadrature contribution) on 2026-04-27;
+    # phi-symmetry residuals are absorbed into the photon-ID response chain.
+    # The mask_phisymm_or variant now carries syst_type=None.
     # ---- energy scale and resolution ----
     "escale":       {"mode": "two_sided",   "group": "escale"},
     "eres":         {"mode": "two_sided",   "group": "eres"},
-    # ---- pre-Phase-3 stubs (defined for schema completeness; populated
-    #     once the corresponding variants land in Phase 3) ----
-    "di_fraction":  {"mode": "two_sided",   "group": "di_fraction"},
+    # ---- DI blending fraction: data-driven envelope from chi^2 fit at the
+    #     preselection cut. Two period-pinned variants at f_best (0.290 at
+    #     0 mrad, 0.000 at 1.5 mrad), each syst_role="one_sided"; calc_syst_bdt
+    #     applies |Δσ| symmetrically per crossing and quadrature-sums.
+    "di_fraction":  {"mode": "one_sided",   "group": "di_fraction"},
     "unfold_iter":  {"mode": "max",         "group": "unfolding"},
     # unfold_prior removed 2026-04-25 — flat-prior gave unphysical 25000%
     # syst at high pT (see unfold_prior_flat variant comment).
@@ -385,39 +380,36 @@ SYST_TYPES = {
     #     mbd, nor — removed 2026-04-25.
 }
 
-# Quadrature grouping: group name -> list of syst_type names. Phase-3-pending
-# groups (di_fraction) keep their entries even when empty so calc_syst_bdt.py's
-# group loop emits a [SKIP] message rather than silently dropping them.
+# Quadrature grouping: group name -> list of syst_type names.
 SYST_GROUPS = {
     "photon_id":      ["photon_id_tight", "photon_id_nontight", "npb_cut"],
     "abcd_region":    ["noniso"],
     "purity_method":  ["purity_fit", "mc_purity_correction"],
     "iso_resolution": ["iso_resolution"],
-    "acceptance":     ["acceptance"],
-    "unfolding":      ["reweight", "unfold_iter"],   # unfold_prior removed (see SYST_TYPES note)
+    "unfolding":      ["reweight", "unfold_iter"],
     "escale":         ["escale"],
     "eres":           ["eres"],
-    "di_fraction":    ["di_fraction"],   # populated in Phase 3 (DOUBLE_FRAC ±20%)
+    "di_fraction":    ["di_fraction"],
 }
 
 # Groups included in the final total systematic quadrature sum (per-bin Resp).
-# Multiplicative-flat sources (lumi, l1_plateau) are added via FLAT_SYSTS in
-# calc_syst_bdt.py rather than here — they are not response-matrix-driven and
-# are applied post-unfold.
+# The lumi multiplicative-flat source is added via FLAT_SYSTS in
+# calc_syst_bdt.py rather than here — it is not response-matrix-driven and is
+# applied post-unfold.
 FINAL_SYSTS = [
     "photon_id", "abcd_region", "purity_method", "iso_resolution",
-    "acceptance", "unfolding", "escale", "eres", "di_fraction",
+    "unfolding", "escale", "eres", "di_fraction",
 ]
 
 # Multiplicative-flat sources (asymmetric fractional). Applied post-unfold by
 # add_flat() in calc_syst_bdt.py instead of being summed inside any group.
 #   lumi: from MBD inelastic xsec 25.2 +2.3/-1.7 mb (Joey/lumi memo, 2026).
 #         Reconciled 2026-04-25 — note had stale +15.1/-11.2 from sigma=15.2.
-#   l1_plateau: bit-30 turn-on at >=8 GeV measured eps=0.9958; assigned
-#         +0.4% one-sided (no per-pT correction in code yet).
+# l1_plateau retired 2026-04-28: the bit-30 turn-on is corrected per-\etg
+# bin in CalculatePhotonYield via the fitted L1 efficiency, so there is no
+# residual systematic to assign.
 LUMI_SYST   = {"down": (25.2 - 23.5) / 25.2, "up": (27.5 - 25.2) / 25.2}  # +9.13/-6.75%
-L1_PLATEAU  = {"down": 0.0,                  "up": 0.004}                 # +0.4% one-sided
-FLAT_SYSTS  = {"lumi": LUMI_SYST, "l1_plateau": L1_PLATEAU}
+FLAT_SYSTS  = {"lumi": LUMI_SYST}
 
 # ---------------------------------------------------------------------------
 # Mapping from flat override key -> (yaml_section_path, yaml_leaf_key)

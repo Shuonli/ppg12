@@ -304,10 +304,11 @@ def add_flat(h_al, h_ah, h_rl, h_rh, h_nom, flat_systs=None) -> tuple:
     """Add a dict of flat fractional uncertainties in quadrature.
 
     flat_systs: {name: {"down": frac, "up": frac}}. Default = FLAT_SYSTS
-    from make_bdt_variations (lumi + l1_plateau). Each source contributes
+    from make_bdt_variations (currently {lumi}). Each source contributes
     a multiplicative-flat uncertainty applied post-unfold; this is the
     correct treatment for sources independent of bin migration (lumi from
-    MBD xsec, L1 photon plateau, MBD trigger eff if added).
+    MBD xsec). The L1-plateau term was retired on 2026-04-28 once the
+    bit-30 turn-on is corrected per-bin in CalculatePhotonYield.
     """
     if flat_systs is None:
         flat_systs = FLAT_SYSTS
@@ -384,7 +385,7 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
     ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.GetYaxis().SetNdivisions(506)
     ROOT.frame_et_truth.GetYaxis().SetRangeUser(ylo, yhi)
-    ROOT.frame_et_truth.GetXaxis().SetRangeUser(10, 32)
+    ROOT.frame_et_truth.GetXaxis().SetRangeUser(12, 32)
     ROOT.frame_et_truth.GetXaxis().SetNdivisions(505)
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
     ROOT.frame_et_truth.Draw("axis")
