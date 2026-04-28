@@ -655,8 +655,8 @@ void plot_final_selection(string tune = "bdt_nom")
     */
     pad_1->cd();
     // common, tight iso, sub, sub with unfold and final result
-    frame_et_rec->GetYaxis()->SetRangeUser(2, 1e5);
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_rec->GetYaxis()->SetRangeUser(1, 1e5);
+    frame_et_rec->GetXaxis()->SetRangeUser(12, 32);
     frame_et_rec->SetYTitle("dN/dE_{T} [GeV^{-1}]");
     frame_et_rec->Draw("axis");
 
@@ -713,8 +713,8 @@ void plot_final_selection(string tune = "bdt_nom")
     myMarkerLineText(0.6, 0.05 + 0.5, 1.5, colors[4], marker_styles[4], colors[4], 1, "efficiency corrected", 0.05, true);
 
     pad_2->cd();
-    frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.15);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.8, 1.05);
+    frame_et_truth->GetXaxis()->SetRangeUser(12, 32);
     frame_et_truth->SetYTitle("after/before unfolding");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
     frame_et_truth->Draw("axis");
