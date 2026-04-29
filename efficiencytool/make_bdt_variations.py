@@ -113,6 +113,14 @@ VARIANTS = [
     # Purity fit option  →  syst: purity_fit (purity)
     dict(name="purity_pade", fit_option=0,
          syst_type="purity_fit", syst_role="one_sided"),
+    # Purity fit 1σ CI band  →  syst: purity_fit_ci (purity, two-sided).
+    # Replaces the central f_purity_fit value with the upper/lower edge of
+    # the 0.683 CL fitter confidence interval (TVirtualFitter::GetConfidenceIntervals)
+    # in CalculatePhotonYield.C, controlled by analysis.fittingerror = +1/-1.
+    dict(name="purity_fit_ci_up",   fittingerror=1,
+         syst_type="purity_fit_ci", syst_role="up"),
+    dict(name="purity_fit_ci_down", fittingerror=-1,
+         syst_type="purity_fit_ci", syst_role="down"),
     # Use MC-driven purity correction ratio for data purity fit
     dict(name="mc_purity_correction", mc_purity_correction=1,
          syst_type="mc_purity_correction", syst_role="one_sided"),
@@ -147,7 +155,11 @@ VARIANTS = [
          nt_bdt_min_intercept=0.6333333333333333,
          syst_type="photon_id_nontight", syst_role="one_sided"),
 
-    # BDT model cross-checks — single model across all ET bins
+    # BDT model cross-checks — single model across all ET bins. Kept as
+    # cross-checks only (not part of the published systematic budget). The
+    # nominal photon-ID BDT (base_v3E) uses 11 input features; base_v0E uses
+    # only 7 of those, so the comparison entangles training-vintage effects
+    # with feature-engineering changes and is not a clean closure variation.
     dict(name="bdtmodel_v0",  bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v0",  "base_v0"],
          syst_type=None, syst_role=None),
     dict(name="bdtmodel_v0E", bdt_et_bin_edges=[8, 15, 35], bdt_et_bin_models=["base_v0E", "base_v0E"],
@@ -182,10 +194,15 @@ VARIANTS = [
          syst_type="escale", syst_role="down"),
     dict(name="energyscale26down", clusterescale=0.974,
          syst_type="escale", syst_role="up"),
+    # Role labels follow the *output* (cross-section) direction, matching the
+    # escale convention above: less smearing → unfolded yield goes up,
+    # more smearing → unfolded yield goes down. Without this convention the
+    # breakdown plot would draw the eres band with sign flipped relative to
+    # the per-type signed plot.
     dict(name="energyresolution0", clustereres=0.00,
-         syst_type="eres", syst_role="down"),
-    dict(name="energyresolution8", clustereres=0.08,
          syst_type="eres", syst_role="up"),
+    dict(name="energyresolution8", clustereres=0.08,
+         syst_type="eres", syst_role="down"),
 
     # ----------------------------------------------------------
     # T1: Unfolding regularization scan (Bayes iteration count).
@@ -347,6 +364,7 @@ SYST_TYPES = {
     "photon_id_nontight": {"mode": "one_sided", "group": "purity"},
     "noniso":       {"mode": "two_sided",   "group": "purity"},
     "purity_fit":   {"mode": "one_sided",   "group": "purity"},
+    "purity_fit_ci": {"mode": "two_sided",  "group": "purity"},
     "mc_purity_correction": {"mode": "one_sided", "group": "purity"},
     # ---- NPB cut: standalone group (not part of purity) per analysis-note
     #     structure. Pearson r(npb03, npb07) = -0.998 (clean two-sided).
@@ -366,13 +384,17 @@ SYST_TYPES = {
     #     applies |Δσ| symmetrically per crossing and quadrature-sums.
     "di_fraction":  {"mode": "one_sided",   "group": "di_fraction"},
     "unfold_iter":  {"mode": "max",         "group": "unfolding"},
+    # bdt_model retired 2026-04-29: bdtmodel_v0E swaps an alternative
+    # photon-ID classifier with a different feature set (7 vs 11), so the
+    # variation entangles training vintage with feature engineering and
+    # was not a clean closure systematic. Kept as a cross-check only.
     # unfold_prior removed 2026-04-25 — flat-prior gave unphysical 25000%
     # syst at high pT (see unfold_prior_flat variant comment).
     # ---- retired keys kept declared so old VARIANTS dicts that still
     #     reference them load cleanly (variants below this line are all
     #     syst_type=None and contribute nothing to quadrature):
-    #     tight_bdt, nt_bdt, vtx_reweight, bdt_model, b2bjet, timing,
-    #     mbd, nor — removed 2026-04-25.
+    #     tight_bdt, nt_bdt, vtx_reweight, b2bjet, timing,
+    #     mbd, nor, bdt_model — removed 2026-04-25 / 2026-04-29.
 }
 
 # Quadrature grouping: group name -> list of syst_type names.
@@ -383,7 +405,8 @@ SYST_GROUPS = {
     "escale":      ["escale"],
     "eres":        ["eres"],
     "purity":      ["photon_id_tight", "photon_id_nontight",
-                    "noniso", "purity_fit", "mc_purity_correction"],
+                    "noniso", "purity_fit", "purity_fit_ci",
+                    "mc_purity_correction"],
     "efficiency":  ["iso_resolution"],
     "unfolding":   ["reweight", "unfold_iter"],
     "di_fraction": ["di_fraction"],
@@ -450,6 +473,7 @@ OVERRIDE_MAP = {
     "use_topo_iso":        (["analysis"],                 "use_topo_iso"),
     "mc_iso_shift":        (["analysis"],                 "mc_iso_shift"),
     "fit_option":        (["analysis"],                 "fit_option"),
+    "fittingerror":      (["analysis"],                 "fittingerror"),
     "mc_purity_correction": (["analysis"],              "mc_purity_correction"),
     "bdt_et_bin_edges":  (["input"],                              "bdt_et_bin_edges"),
     "bdt_et_bin_models": (["input"],                              "bdt_et_bin_models"),
