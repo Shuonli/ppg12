@@ -292,26 +292,28 @@ void plot_final_selection(string tune = "bdt_nom")
         double pT = x[i];
         double dpT = xHigh[i] - xLow[i];
         double y_binavg = f_phenix_mpl->Integral(xLow[i], xHigh[i]) / dpT;
+        double f_center = f_phenix_mpl->Eval(pT);
+        double bin_shape = (f_center > 0.0) ? y_binavg / f_center : 1.0;
 
         int rb = h_eta_ratio->FindBin(pT);
         if (rb < 1) rb = 1;
         if (rb > h_eta_ratio->GetNbinsX()) rb = h_eta_ratio->GetNbinsX();
         double R = h_eta_ratio->GetBinContent(rb);
         if (R <= 0.0) R = 1.0;
-        double y_corr = y_binavg / R;
 
         double sf = pT * factorCommon;
         double y_pub = y[i] * sf;
-        double scale = (y_pub > 0.0) ? y_corr / y_pub : 1.0;
+        double total_scale = bin_shape / R;
+        double y_corr = y_pub * total_scale;
 
         double exl = pT - xLow[i];
         double exh = xHigh[i] - pT;
         gStat_PHENIX_corr->SetPoint(i, pT, y_corr);
         gStat_PHENIX_corr->SetPointError(i, exl, exh,
-            statDown[i] * sf * scale, statUp[i] * sf * scale);
+            statDown[i] * sf * total_scale, statUp[i] * sf * total_scale);
         gSys_PHENIX_corr->SetPoint(i, pT, y_corr);
         gSys_PHENIX_corr->SetPointError(i, exl, exh,
-            sysDown[i] * sf * scale, sysUp[i] * sf * scale);
+            sysDown[i] * sf * total_scale, sysUp[i] * sf * total_scale);
     }
     f_eta_ratio->Close();
 
