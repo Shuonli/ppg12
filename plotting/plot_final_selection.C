@@ -48,9 +48,9 @@ void plot_final_selection(string tune = "bdt_nom")
     TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
     TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
-    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10.root");
-    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_05.root");
-    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_20.root");
+    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10.root");
+    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05.root");
+    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20.root");
     TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
@@ -65,7 +65,9 @@ void plot_final_selection(string tune = "bdt_nom")
     TH1F *h_tight_iso_cluster_data = (TH1F *)fin_data->Get("h_tight_iso_cluster_0");
     h_tight_iso_cluster_data->Scale(1.0 / deta);
     TH1F *h_sub_data = (TH1F *)fin_data->Get("h_data_sub_leak");
+    h_sub_data->Scale(1.0 / deta);
     TH1F *h_sub_data_unfold = (TH1F *)fin_data->Get("h_unfold_sub_result_woeff");
+    h_sub_data_unfold->Scale(1.0 / deta);
     TH1F *h_tight_iso_cluster_mc = (TH1F *)fin_mc->Get("h_tight_iso_cluster_0");
     h_tight_iso_cluster_mc->Scale(1.0 / deta);
 
@@ -250,19 +252,87 @@ void plot_final_selection(string tune = "bdt_nom")
         gSys_PHENIX->SetPointError(i, exl, exh, sysDownScaled, sysUpScaled);
     }
 
+    // ---------------------------------------------------------------
+    // PHENIX corrected to |eta|<0.7: undo bin-width via modified power
+    // law fit, then rescale by 1/R where R = (dN/deta)_{|eta|<0.25} /
+    // (dN/deta)_{|eta|<0.7} from truth_eta_ratio_inclusive.root
+    // (Pythia truth, NO isolation — matches PHENIX inclusive fiducial).
+    // Fit form A*(1+pT^2/b)^c (PHENIX 1405.3940) lifted to differential
+    // d^2sigma/(deta dpT) by the 2*pi*pT factor. Fit window 10-26 GeV
+    // to focus on the pT region overlapping PPG12.
+    // ---------------------------------------------------------------
+    TGraphErrors *gFit_PHENIX = new TGraphErrors(n);
+    for (Int_t i = 0; i < n; ++i)
+    {
+        double pT = x[i];
+        double sf = pT * factorCommon;
+        double y_d  = y[i] * sf;
+        double s_d  = 0.5 * (statUp[i] + statDown[i]) * sf;
+        gFit_PHENIX->SetPoint(i, pT, y_d);
+        gFit_PHENIX->SetPointError(i, 0.0, s_d);
+    }
+    TF1 *f_phenix_mpl = new TF1("f_phenix_mpl",
+        "2.0*TMath::Pi()*x*[0]*pow(1.0 + x*x/[1], [2])",
+        xLow[0], xHigh[n - 1]);
+    f_phenix_mpl->SetParameters(8.3e-3, 2.26, -3.45);
+    f_phenix_mpl->SetParLimits(1, 0.05, 1e3);
+    gFit_PHENIX->Fit(f_phenix_mpl, "QRN");
+
+    TFile *f_eta_ratio = TFile::Open(
+        "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_eta_ratio_inclusive.root");
+    TH1D *h_eta_ratio = (TH1D *) f_eta_ratio->Get("h_ratio_central_over_full");
+
+    TGraphAsymmErrors *gStat_PHENIX_corr = new TGraphAsymmErrors(n);
+    gStat_PHENIX_corr->SetName("gStat_PHENIX_corr");
+    TGraphAsymmErrors *gSys_PHENIX_corr = new TGraphAsymmErrors(n);
+    gSys_PHENIX_corr->SetName("gSys_PHENIX_corr");
+
+    for (Int_t i = 0; i < n; ++i)
+    {
+        double pT = x[i];
+        double dpT = xHigh[i] - xLow[i];
+        double y_binavg = f_phenix_mpl->Integral(xLow[i], xHigh[i]) / dpT;
+
+        int rb = h_eta_ratio->FindBin(pT);
+        if (rb < 1) rb = 1;
+        if (rb > h_eta_ratio->GetNbinsX()) rb = h_eta_ratio->GetNbinsX();
+        double R = h_eta_ratio->GetBinContent(rb);
+        if (R <= 0.0) R = 1.0;
+        double y_corr = y_binavg / R;
+
+        double sf = pT * factorCommon;
+        double y_pub = y[i] * sf;
+        double scale = (y_pub > 0.0) ? y_corr / y_pub : 1.0;
+
+        double exl = pT - xLow[i];
+        double exh = xHigh[i] - pT;
+        gStat_PHENIX_corr->SetPoint(i, pT, y_corr);
+        gStat_PHENIX_corr->SetPointError(i, exl, exh,
+            statDown[i] * sf * scale, statUp[i] * sf * scale);
+        gSys_PHENIX_corr->SetPoint(i, pT, y_corr);
+        gSys_PHENIX_corr->SetPointError(i, exl, exh,
+            sysDown[i] * sf * scale, sysUp[i] * sf * scale);
+    }
+    f_eta_ratio->Close();
+
     // getting a different NLO
     ifstream myfile;
     TGraph *tphoton = new TGraph();
     TGraph *tphoton05 = new TGraph();
     TGraph *tphoton02 = new TGraph();
-    myfile.open("sphenix_nlo/photons_newphenix_sc1.dat");
+    // Werner Vogelsang NLO inputs: refreshed sPhenix-sc{05,1,2}.dat tables
+    // (8-30 GeV, 1 GeV steps, 23 rows). Same 4-column format as the legacy
+    // photons_newphenix_sc*.dat: pT, direct, fragmentation, total (last col
+    // ignored — direct + frag is recomputed).
+    const int n_werner = 23;
+    myfile.open("/sphenix/user/shuhangli/ppg12/sPhenix-sc1.dat");
     if (!myfile)
     {
         cout << "No file found!" << endl;
         return;
     }
 
-    for (int index = 0; index < 38; index++)
+    for (int index = 0; index < n_werner; index++)
     {
         double pt;
         double yield;
@@ -277,14 +347,14 @@ void plot_final_selection(string tune = "bdt_nom")
     TF1 *fphoton = new TF1("f", [&](double *x, double *)
                            { return tphoton->Eval(x[0]); }, lowerx, upperx, 0);
 
-    myfile.open("sphenix_nlo/photons_newphenix_sc05.dat");
+    myfile.open("/sphenix/user/shuhangli/ppg12/sPhenix-sc05.dat");
     if (!myfile)
     {
         cout << "No file found!" << endl;
         return;
     }
 
-    for (int index = 0; index < 38; index++)
+    for (int index = 0; index < n_werner; index++)
     {
         double pt;
         double yield;
@@ -299,14 +369,14 @@ void plot_final_selection(string tune = "bdt_nom")
     TF1 *fphoton05 = new TF1("f05", [&](double *x, double *)
                              { return tphoton05->Eval(x[0]); }, lowerx, upperx, 0);
 
-    myfile.open("sphenix_nlo/photons_newphenix_sc2.dat");
+    myfile.open("/sphenix/user/shuhangli/ppg12/sPhenix-sc2.dat");
     if (!myfile)
     {
         cout << "No file found!" << endl;
         return;
     }
 
-    for (int index = 0; index < 38; index++)
+    for (int index = 0; index < n_werner; index++)
     {
         double pt;
         double yield;
@@ -463,9 +533,8 @@ void plot_final_selection(string tune = "bdt_nom")
     // after Vogelsang). Keep PDF/FF info on the JETPHOX line; combine the
     // common scale choice into a single sub-caption below the legend.
     string st_thScale = "#kern[-0.55]{#it{#mu}_{f}} = #kern[-0.55]{#it{#mu}_{F}} = #kern[-0.55]{#it{#mu}_{R}} = #kern[-0.55]{#it{E}_{T}^{#gamma}}";
-    l1->AddEntry((TObject *)0, "#scale[0.93]{CT14nlo PDF / BFG II FF}", "");
+    l1->AddEntry((TObject *)0, "#scale[0.93]{CT18NLO PDF / BFG II FF}", "");
     l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fpl");
-    l1->AddEntry((TObject *)0, "#scale[0.93]{(no #kern[-0.4]{#it{E}_{T}^{iso}} requirement)}", "");
     l1->Draw("same");
     // Single shared scale-choice line below the legend (replaces the two
     // floating myText calls that previously sat between the legend rows).
@@ -777,6 +846,20 @@ void plot_final_selection(string tune = "bdt_nom")
     gSys_PHENIX->SetFillColorAlpha(col[1], 0.35);
     gSys_PHENIX->Draw("2 same");
 
+    gSys_PHENIX_corr->SetMarkerStyle(25);
+    gSys_PHENIX_corr->SetMarkerSize(mkSize[1]);
+    gSys_PHENIX_corr->SetMarkerColor(col[1]);
+    gSys_PHENIX_corr->SetLineColor(col[1]);
+    gSys_PHENIX_corr->SetFillStyle(3354);
+    gSys_PHENIX_corr->SetFillColor(col[1]);
+    gSys_PHENIX_corr->Draw("2 same");
+
+    gStat_PHENIX_corr->SetMarkerStyle(25);
+    gStat_PHENIX_corr->SetMarkerSize(mkSize[1]);
+    gStat_PHENIX_corr->SetMarkerColor(col[1]);
+    gStat_PHENIX_corr->SetLineColor(col[1]);
+    gStat_PHENIX_corr->Draw("P same");
+
     g_syst->SetMarkerStyle(mkStyle[0]);
     g_syst->SetMarkerColor(col[0]);
     g_syst->SetLineColor(col[0]);
@@ -798,6 +881,14 @@ void plot_final_selection(string tune = "bdt_nom")
     htemp_PHENIX->SetLineColor(col[1]);
     htemp_PHENIX->SetFillColorAlpha(col[1], 0.25);
 
+    TH1F *htemp_PHENIX_corr = (TH1F *)h_data->Clone("htemp_PHENIX_corr");
+    htemp_PHENIX_corr->SetMarkerStyle(25);
+    htemp_PHENIX_corr->SetMarkerSize(mkSize[1]);
+    htemp_PHENIX_corr->SetMarkerColor(col[1]);
+    htemp_PHENIX_corr->SetLineColor(col[1]);
+    htemp_PHENIX_corr->SetFillStyle(3354);
+    htemp_PHENIX_corr->SetFillColor(col[1]);
+
     // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     xpos2 = 0.91;
     fontsize = 0.043;
@@ -814,15 +905,111 @@ void plot_final_selection(string tune = "bdt_nom")
     // myText(xpos2,ypos-3*dy,1,strleg3.c_str(),fontsize,1);
     // myText(xpos2,ypos-4*dy,1,strleg4.c_str(),fontsize,1);
 
-    nEntry = 2;
+    nEntry = 3;
     TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
     legStyle(l2, 0.21, fontsize);
     l2->AddEntry(htemp_data, "Data", "fpl");
     l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}}", "fpl");
+    l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, bin-avg, |#eta|<0.7}", "fpl");
     l2->Draw("same");
     myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
 
     c2->SaveAs(Form("figures/final_phenix_%s.pdf", tune.data()));
 
     //-----------------------------------------------------------------
+    // PHENIX fit + pull diagnostic
+    //-----------------------------------------------------------------
+    TCanvas *c3 = new TCanvas("c3_phenix_fit", "", 800, 800);
+
+    TPad *p3_top = new TPad("p3_top", "", 0, 0.32, 1, 1);
+    p3_top->SetTopMargin(0.06);
+    p3_top->SetBottomMargin(0.02);
+    p3_top->SetLeftMargin(0.13);
+    p3_top->SetRightMargin(0.05);
+    p3_top->SetLogy();
+    p3_top->Draw();
+
+    TPad *p3_bot = new TPad("p3_bot", "", 0, 0, 1, 0.32);
+    p3_bot->SetTopMargin(0.02);
+    p3_bot->SetBottomMargin(0.30);
+    p3_bot->SetLeftMargin(0.13);
+    p3_bot->SetRightMargin(0.05);
+    p3_bot->Draw();
+
+    p3_top->cd();
+    TH1F *frame_fit_top = new TH1F("frame_fit_top", "", 1, xLow[0], xHigh[n - 1]);
+    frame_fit_top->SetYTitle("d^{2}#sigma/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]");
+    frame_fit_top->GetYaxis()->SetRangeUser(0.05, 1e5);
+    frame_fit_top->GetYaxis()->SetTitleSize(0.055);
+    frame_fit_top->GetYaxis()->SetTitleOffset(1.05);
+    frame_fit_top->GetYaxis()->SetLabelSize(0.050);
+    frame_fit_top->GetXaxis()->SetLabelSize(0);
+    frame_fit_top->GetXaxis()->SetTickLength(0.03);
+    frame_fit_top->Draw("axis");
+
+    gFit_PHENIX->SetMarkerStyle(mkStyle[1]);
+    gFit_PHENIX->SetMarkerSize(mkSize[1]);
+    gFit_PHENIX->SetMarkerColor(col[1]);
+    gFit_PHENIX->SetLineColor(col[1]);
+    gFit_PHENIX->Draw("P same");
+
+    f_phenix_mpl->SetLineColor(kBlack);
+    f_phenix_mpl->SetLineWidth(2);
+    f_phenix_mpl->Draw("L same");
+
+    myText(0.55, 0.87, 1, strleg1.c_str(), 0.046, 0);
+    myText(0.55, 0.81, 1, "PHENIX PRD 86 072008, |#eta^{#gamma}| < 0.25", 0.038, 0);
+    myText(0.55, 0.76, 1,
+        Form("Fit: A(1 + #it{p}_{T}^{2}/b)^{c}, range %.0f#minus%.0f GeV",
+             xLow[0], xHigh[n - 1]),
+        0.034, 0);
+    myText(0.55, 0.71, 1,
+        Form("A = %.3g, b = %.2f, c = %.3f",
+             f_phenix_mpl->GetParameter(0),
+             f_phenix_mpl->GetParameter(1),
+             f_phenix_mpl->GetParameter(2)),
+        0.034, 0);
+    myText(0.55, 0.66, 1,
+        Form("#chi^{2}/ndf = %.2f / %d",
+             f_phenix_mpl->GetChisquare(),
+             f_phenix_mpl->GetNDF()),
+        0.034, 0);
+
+    p3_bot->cd();
+    TH1F *frame_fit_bot = new TH1F("frame_fit_bot", "", 1, xLow[0], xHigh[n - 1]);
+    frame_fit_bot->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+    frame_fit_bot->SetYTitle("(data #minus fit) / #sigma_{stat}");
+    frame_fit_bot->GetYaxis()->SetRangeUser(-3.5, 3.5);
+    frame_fit_bot->GetYaxis()->SetNdivisions(505);
+    frame_fit_bot->GetYaxis()->SetTitleSize(0.085);
+    frame_fit_bot->GetYaxis()->SetTitleOffset(0.65);
+    frame_fit_bot->GetYaxis()->SetLabelSize(0.080);
+    frame_fit_bot->GetXaxis()->SetTitleSize(0.095);
+    frame_fit_bot->GetXaxis()->SetTitleOffset(1.20);
+    frame_fit_bot->GetXaxis()->SetLabelSize(0.080);
+    frame_fit_bot->Draw("axis");
+
+    TGraph *g_pull = new TGraph(n);
+    for (Int_t i = 0; i < n; ++i)
+    {
+        double pT = x[i];
+        double sf = pT * factorCommon;
+        double y_d = y[i] * sf;
+        double s_d = 0.5 * (statUp[i] + statDown[i]) * sf;
+        double y_binavg_p = f_phenix_mpl->Integral(xLow[i], xHigh[i]) / (xHigh[i] - xLow[i]);
+        double pull = (s_d > 0.0) ? (y_d - y_binavg_p) / s_d : 0.0;
+        g_pull->SetPoint(i, pT, pull);
+    }
+    g_pull->SetMarkerStyle(mkStyle[1]);
+    g_pull->SetMarkerSize(mkSize[1]);
+    g_pull->SetMarkerColor(col[1]);
+    g_pull->SetLineColor(col[1]);
+    g_pull->Draw("P same");
+
+    TLine *l_pull0 = new TLine(xLow[0], 0.0, xHigh[n - 1], 0.0);
+    l_pull0->SetLineStyle(2);
+    l_pull0->SetLineColor(kGray + 2);
+    l_pull0->Draw();
+
+    c3->SaveAs(Form("figures/final_phenix_fit_%s.pdf", tune.data()));
 }
