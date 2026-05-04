@@ -227,12 +227,13 @@ void plot_final_selection(string tune = "bdt_nom")
     // Double_t factorCommon = 2.0 * TMath::Pi() * 2.0 * 0.7; // ~ 8.7964
     Double_t factorCommon = 2.0 * TMath::Pi();
 
+    // Cosmetic-only x half-width for the published PHENIX sys box; small
+    // enough not to suggest a bin-width meaning (PHENIX has bin-shifted
+    // these to the bin centre themselves), large enough that the box
+    // renders.
+    const Double_t kPhenixSysHalfX = 0.15;
     for (Int_t i = 0; i < n; i++)
     {
-        // PHENIX values are reported at the bin centre (PHENIX has applied
-        // its own bin-shift correction), so the published points carry no
-        // horizontal extent here. The bin-width "box" is reserved for the
-        // corrected (bin-averaged) overlay below.
         Double_t scaleFactor = x[i] * factorCommon;
         Double_t yScaled = y[i] * scaleFactor;
         Double_t statUpScaled = statUp[i] * scaleFactor;
@@ -244,7 +245,8 @@ void plot_final_selection(string tune = "bdt_nom")
         gStat_PHENIX->SetPointError(i, 0.0, 0.0, statDownScaled, statUpScaled);
 
         gSys_PHENIX->SetPoint(i, x[i], yScaled);
-        gSys_PHENIX->SetPointError(i, 0.0, 0.0, sysDownScaled, sysUpScaled);
+        gSys_PHENIX->SetPointError(i, kPhenixSysHalfX, kPhenixSysHalfX,
+                                   sysDownScaled, sysUpScaled);
     }
 
     // ---------------------------------------------------------------
@@ -843,17 +845,18 @@ void plot_final_selection(string tune = "bdt_nom")
     gSys_PHENIX->SetFillColorAlpha(col[1], 0.35);
     gSys_PHENIX->Draw("2 same");
 
+    const Color_t kCorrColor = kViolet + 1;
     gSys_PHENIX_corr->SetMarkerStyle(25);
     gSys_PHENIX_corr->SetMarkerSize(mkSize[1]);
-    gSys_PHENIX_corr->SetMarkerColor(col[1]);
-    gSys_PHENIX_corr->SetLineColor(col[1]);
-    gSys_PHENIX_corr->SetFillColorAlpha(col[1], 0.30);
+    gSys_PHENIX_corr->SetMarkerColor(kCorrColor);
+    gSys_PHENIX_corr->SetLineColor(kCorrColor);
+    gSys_PHENIX_corr->SetFillColorAlpha(kCorrColor, 0.30);
     gSys_PHENIX_corr->Draw("2 same");
 
     gStat_PHENIX_corr->SetMarkerStyle(25);
     gStat_PHENIX_corr->SetMarkerSize(mkSize[1]);
-    gStat_PHENIX_corr->SetMarkerColor(col[1]);
-    gStat_PHENIX_corr->SetLineColor(col[1]);
+    gStat_PHENIX_corr->SetMarkerColor(kCorrColor);
+    gStat_PHENIX_corr->SetLineColor(kCorrColor);
     gStat_PHENIX_corr->Draw("P same");
 
     g_syst->SetMarkerStyle(mkStyle[0]);
@@ -880,9 +883,9 @@ void plot_final_selection(string tune = "bdt_nom")
     TH1F *htemp_PHENIX_corr = (TH1F *)h_data->Clone("htemp_PHENIX_corr");
     htemp_PHENIX_corr->SetMarkerStyle(25);
     htemp_PHENIX_corr->SetMarkerSize(mkSize[1]);
-    htemp_PHENIX_corr->SetMarkerColor(col[1]);
-    htemp_PHENIX_corr->SetLineColor(col[1]);
-    htemp_PHENIX_corr->SetFillColorAlpha(col[1], 0.30);
+    htemp_PHENIX_corr->SetMarkerColor(kViolet + 1);
+    htemp_PHENIX_corr->SetLineColor(kViolet + 1);
+    htemp_PHENIX_corr->SetFillColorAlpha(kViolet + 1, 0.30);
 
     // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     xpos2 = 0.91;
