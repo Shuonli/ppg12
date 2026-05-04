@@ -826,7 +826,7 @@ void plot_final_selection(string tune = "bdt_nom")
     // frame_et_rec->GetYaxis()->SetRangeUser(0.2, 4e3);
     // frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#sigma/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]");
-    frame_et_rec->GetYaxis()->SetRangeUser(lowery, 1500);
+    frame_et_rec->GetYaxis()->SetRangeUser(lowery, 500);
     frame_et_rec->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_rec->GetXaxis()->SetTitleOffset(1.05);
 
