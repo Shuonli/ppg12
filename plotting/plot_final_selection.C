@@ -817,21 +817,22 @@ void plot_final_selection(string tune = "bdt_nom")
     // only compare to PHENIX
     init_plot();
     h_data = h_data_cp;
-    TCanvas *c2 = new TCanvas("can2", "", 800, 800);
+    // Two-pad layout mirrors c1 (60/40 split) so font scaling is reusable.
+    TCanvas *c2 = new TCanvas("can2", "", 800, 889);
 
-    TPad *pad2_top = new TPad("pad2_top", "", 0, 0.32, 1, 1);
-    pad2_top->SetTopMargin(0.06);
-    pad2_top->SetBottomMargin(0.02);
+    TPad *pad2_top = new TPad("pad2_top", "", 0, 0.4, 1, 1);
+    pad2_top->SetTopMargin(0.05);
+    pad2_top->SetBottomMargin(0.002);
     pad2_top->SetLeftMargin(0.13);
-    pad2_top->SetRightMargin(0.05);
+    pad2_top->SetRightMargin(0.08);
     pad2_top->SetLogy();
     pad2_top->Draw();
 
-    TPad *pad2_bot = new TPad("pad2_bot", "", 0, 0, 1, 0.32);
-    pad2_bot->SetTopMargin(0.02);
-    pad2_bot->SetBottomMargin(0.30);
+    TPad *pad2_bot = new TPad("pad2_bot", "", 0, 0, 1, 0.4);
+    pad2_bot->SetTopMargin(0.023);
+    pad2_bot->SetBottomMargin(0.25);
     pad2_bot->SetLeftMargin(0.13);
-    pad2_bot->SetRightMargin(0.05);
+    pad2_bot->SetRightMargin(0.08);
     pad2_bot->Draw();
 
     pad2_top->cd();
@@ -926,26 +927,34 @@ void plot_final_selection(string tune = "bdt_nom")
     myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(PHENIX: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
 
     // -----------------------------------------------------------------
-    // Bottom pad: data / PHENIX_{|eta|<0.7-corrected} ratio
-    // Computed only over the PHENIX overlap range (PHENIX bins
-    // 10-26 GeV align bin-by-bin with the present pT_bins).
+    // Bottom pad: data / PHENIX_{|eta|<0.7-corrected} ratio.
+    // Mirror the c1 lower-panel convention: per-point markers with
+    // stat vertical bars and bin-width horizontals, data systematic
+    // as filled boxes around the markers, denominator (PHENIX-corr)
+    // systematic as a band at y=1.
     // -----------------------------------------------------------------
     pad2_bot->cd();
 
     TH1F *frame_ratio_phenix = new TH1F("frame_ratio_phenix", "", 1, lowerx, upperx);
     frame_ratio_phenix->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_ratio_phenix->SetYTitle("Data / PHENIX_{|#eta|<0.7}");
-    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.5, 1.5);
+    frame_ratio_phenix->SetYTitle("Data / PHENIX");
+    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.4, 1.6);
     frame_ratio_phenix->GetYaxis()->SetNdivisions(505);
-    frame_ratio_phenix->GetXaxis()->SetTitleSize(0.095);
-    frame_ratio_phenix->GetYaxis()->SetTitleSize(0.075);
-    frame_ratio_phenix->GetXaxis()->SetLabelSize(0.085);
-    frame_ratio_phenix->GetYaxis()->SetLabelSize(0.075);
-    frame_ratio_phenix->GetYaxis()->SetTitleOffset(0.85);
-    frame_ratio_phenix->GetXaxis()->SetTitleOffset(1.15);
+    // Match the c1 lower-panel font scaling (6/4 = 1.5) for visual parity.
+    const double k_p2bot_scale = 6.0 / 4.0;
+    frame_ratio_phenix->GetXaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * k_p2bot_scale);
+    frame_ratio_phenix->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * k_p2bot_scale);
+    frame_ratio_phenix->GetXaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * k_p2bot_scale * 1.2);
+    frame_ratio_phenix->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * k_p2bot_scale);
+    frame_ratio_phenix->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4.0 / 6.0 * 1.4);
+    frame_ratio_phenix->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4.0 / 6.0);
+    frame_ratio_phenix->GetXaxis()->SetNdivisions(505);
     frame_ratio_phenix->Draw("axis");
 
-    TGraphAsymmErrors *g_ratio_phenix = new TGraphAsymmErrors();
+    TGraphAsymmErrors *g_ratio_phenix      = new TGraphAsymmErrors();
+    TGraphAsymmErrors *g_ratio_phenix_dsys = new TGraphAsymmErrors();
+    TGraphAsymmErrors *g_phenix_sys_band   = new TGraphAsymmErrors();
+
     int rp_idx = 0;
     for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
     {
@@ -955,32 +964,76 @@ void plot_final_selection(string tune = "bdt_nom")
         double e_d = h_data->GetBinError(i);
         if (y_d <= 0.0) continue;
 
+        // Match PHENIX-corrected bin
         double x_p = 0.0, y_p = 0.0;
-        bool matched = false;
+        int p_idx = -1;
         for (Int_t j = 0; j < gStat_PHENIX_corr->GetN(); ++j)
         {
             gStat_PHENIX_corr->GetPoint(j, x_p, y_p);
-            if (std::abs(x_p - pT_c) < 0.1) { matched = true; break; }
+            if (std::abs(x_p - pT_c) < 0.1) { p_idx = j; break; }
         }
-        if (!matched || y_p <= 0.0) continue;
+        if (p_idx < 0 || y_p <= 0.0) continue;
 
-        double r = y_d / y_p;
-        double r_err = e_d / y_p;
-        double bin_w = h_data->GetBinWidth(i);
+        // Data sys from g_syst (same binning as h_data)
+        double sys_d_lo = 0.0, sys_d_hi = 0.0;
+        for (Int_t j = 0; j < g_syst->GetN(); ++j)
+        {
+            double x_s = 0.0, y_s = 0.0;
+            g_syst->GetPoint(j, x_s, y_s);
+            if (std::abs(x_s - pT_c) < 0.1) {
+                sys_d_lo = g_syst->GetErrorYlow(j);
+                sys_d_hi = g_syst->GetErrorYhigh(j);
+                break;
+            }
+        }
+        // PHENIX-corrected sys (same index as the matched stat point)
+        double sys_p_lo = gSys_PHENIX_corr->GetErrorYlow(p_idx);
+        double sys_p_hi = gSys_PHENIX_corr->GetErrorYhigh(p_idx);
+
+        double r          = y_d / y_p;
+        double r_stat     = e_d / y_p;
+        double r_dsys_lo  = sys_d_lo / y_p;
+        double r_dsys_hi  = sys_d_hi / y_p;
+        double r_psys_lo  = sys_p_lo / y_p;
+        double r_psys_hi  = sys_p_hi / y_p;
+        double bin_w      = h_data->GetBinWidth(i);
+
         g_ratio_phenix->SetPoint(rp_idx, pT_c, r);
-        g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_err, r_err);
+        g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_stat, r_stat);
+
+        g_ratio_phenix_dsys->SetPoint(rp_idx, pT_c, r);
+        g_ratio_phenix_dsys->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_dsys_lo, r_dsys_hi);
+
+        g_phenix_sys_band->SetPoint(rp_idx, pT_c, 1.0);
+        g_phenix_sys_band->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_psys_lo, r_psys_hi);
+
         ++rp_idx;
     }
+
+    // Layer 1 (back): PHENIX-corrected sys band at y=1
+    g_phenix_sys_band->SetFillColorAlpha(kViolet + 1, 0.30);
+    g_phenix_sys_band->SetLineColor(kViolet + 1);
+    g_phenix_sys_band->Draw("2 same");
+
+    // Unity reference line
+    lineone->SetLineColor(kBlack);
+    lineone->SetLineStyle(2);
+    lineone->SetLineWidth(2);
+    lineone->Draw("L same");
+
+    // Layer 2: data sys boxes around the ratio markers
+    g_ratio_phenix_dsys->SetMarkerStyle(mkStyle[0]);
+    g_ratio_phenix_dsys->SetMarkerColor(col[0]);
+    g_ratio_phenix_dsys->SetLineColor(col[0]);
+    g_ratio_phenix_dsys->SetFillColorAlpha(col[0], trans[0]);
+    g_ratio_phenix_dsys->Draw("2 same");
+
+    // Layer 3 (front): markers with bin-width horizontal + stat vertical
     g_ratio_phenix->SetMarkerStyle(mkStyle[0]);
     g_ratio_phenix->SetMarkerSize(mkSize[0]);
     g_ratio_phenix->SetMarkerColor(col[0]);
     g_ratio_phenix->SetLineColor(col[0]);
     g_ratio_phenix->Draw("P same");
-
-    TLine *l_unity_phenix = new TLine(lowerx, 1.0, upperx, 1.0);
-    l_unity_phenix->SetLineStyle(2);
-    l_unity_phenix->SetLineColor(kGray + 2);
-    l_unity_phenix->Draw();
 
     c2->SaveAs(Form("figures/final_phenix_%s.pdf", tune.data()));
 
