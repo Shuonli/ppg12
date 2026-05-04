@@ -1148,7 +1148,10 @@ void RecoEffCalculator(const std::string &configname = "config_bdt_test.yaml", c
         }
     }
 
-    TRandom3 *rand = new TRandom3(0);
+    // Fixed seed (42) for reproducibility — see RecoEffCalculator_TTreeReader.C.
+    // (RecoEffCalculator.C is the legacy SetBranchAddress path; not used by the
+    // current TTree pipeline but synced here to avoid silent re-introduction.)
+    TRandom3 *rand = new TRandom3(42);
     std::set<int> skiprunnumbers = {47698, 51489, 51721, 51725, 53284};
     int nentries = slimtree->GetEntries();
     for (int ientry = 0; ientry < nentries; ientry++)
