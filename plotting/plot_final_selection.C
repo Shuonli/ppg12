@@ -230,8 +230,8 @@ void plot_final_selection(string tune = "bdt_nom")
     // Cosmetic-only x half-width for the published PHENIX sys box; small
     // enough not to suggest a bin-width meaning (PHENIX has bin-shifted
     // these to the bin centre themselves), large enough that the box
-    // renders.
-    const Double_t kPhenixSysHalfX = 0.15;
+    // renders. Smaller than every visible PHENIX bin's half-width.
+    const Double_t kPhenixSysHalfX = 0.5;
     for (Int_t i = 0; i < n; i++)
     {
         Double_t scaleFactor = x[i] * factorCommon;
@@ -907,10 +907,10 @@ void plot_final_selection(string tune = "bdt_nom")
     TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
     legStyle(l2, 0.21, fontsize);
     l2->AddEntry(htemp_data, "Data", "fpl");
-    l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}}", "fpl");
-    l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, bin-avg, |#eta|<0.7}", "fpl");
+    l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.1]{#it{PRD 86 072008}}, |#eta^{#gamma}|<0.25}", "fpl");
+    l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, bin-avg, |#eta^{#gamma}|<0.7}", "fpl");
     l2->Draw("same");
-    myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(|#eta^{#gamma}| < 0.25, no #kern[-0.2]{#it{E}_{T}^{iso}} requiremenet)}", fontsize, 0);
+    myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(PHENIX: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
 
     c2->SaveAs(Form("figures/final_phenix_%s.pdf", tune.data()));
 
