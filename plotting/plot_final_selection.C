@@ -229,27 +229,22 @@ void plot_final_selection(string tune = "bdt_nom")
 
     for (Int_t i = 0; i < n; i++)
     {
-        // x errors = half bin widths
-        Double_t exl = x[i] - xLow[i];
-        Double_t exh = xHigh[i] - x[i];
-
-        // Scale factor for the i-th point = pT * factorCommon
+        // PHENIX values are reported at the bin centre (PHENIX has applied
+        // its own bin-shift correction), so the published points carry no
+        // horizontal extent here. The bin-width "box" is reserved for the
+        // corrected (bin-averaged) overlay below.
         Double_t scaleFactor = x[i] * factorCommon;
-
-        // Scale the central value and uncertainties
         Double_t yScaled = y[i] * scaleFactor;
         Double_t statUpScaled = statUp[i] * scaleFactor;
         Double_t statDownScaled = statDown[i] * scaleFactor;
         Double_t sysUpScaled = sysUp[i] * scaleFactor;
         Double_t sysDownScaled = sysDown[i] * scaleFactor;
 
-        // Fill the TGraphAsymmErrors (Stat)
         gStat_PHENIX->SetPoint(i, x[i], yScaled);
-        gStat_PHENIX->SetPointError(i, exl, exh, statDownScaled, statUpScaled);
+        gStat_PHENIX->SetPointError(i, 0.0, 0.0, statDownScaled, statUpScaled);
 
-        // Fill the TGraphAsymmErrors (Sys)
         gSys_PHENIX->SetPoint(i, x[i], yScaled);
-        gSys_PHENIX->SetPointError(i, exl, exh, sysDownScaled, sysUpScaled);
+        gSys_PHENIX->SetPointError(i, 0.0, 0.0, sysDownScaled, sysUpScaled);
     }
 
     // ---------------------------------------------------------------
@@ -852,8 +847,7 @@ void plot_final_selection(string tune = "bdt_nom")
     gSys_PHENIX_corr->SetMarkerSize(mkSize[1]);
     gSys_PHENIX_corr->SetMarkerColor(col[1]);
     gSys_PHENIX_corr->SetLineColor(col[1]);
-    gSys_PHENIX_corr->SetFillStyle(3354);
-    gSys_PHENIX_corr->SetFillColor(col[1]);
+    gSys_PHENIX_corr->SetFillColorAlpha(col[1], 0.30);
     gSys_PHENIX_corr->Draw("2 same");
 
     gStat_PHENIX_corr->SetMarkerStyle(25);
@@ -888,8 +882,7 @@ void plot_final_selection(string tune = "bdt_nom")
     htemp_PHENIX_corr->SetMarkerSize(mkSize[1]);
     htemp_PHENIX_corr->SetMarkerColor(col[1]);
     htemp_PHENIX_corr->SetLineColor(col[1]);
-    htemp_PHENIX_corr->SetFillStyle(3354);
-    htemp_PHENIX_corr->SetFillColor(col[1]);
+    htemp_PHENIX_corr->SetFillColorAlpha(col[1], 0.30);
 
     // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     xpos2 = 0.91;
