@@ -817,18 +817,31 @@ void plot_final_selection(string tune = "bdt_nom")
     // only compare to PHENIX
     init_plot();
     h_data = h_data_cp;
-    TCanvas *c2 = new TCanvas("can2", "", 800, 700);
-    // log y
-    c2->SetLogy();
+    TCanvas *c2 = new TCanvas("can2", "", 800, 800);
 
-    // frame_et_rec->SetYTitle("d#sigma/d#eta/dE_{T} [pb/GeV]");
-    // frame_et_rec->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    // frame_et_rec->GetYaxis()->SetRangeUser(0.2, 4e3);
-    // frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
-    frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#sigma/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]");
+    TPad *pad2_top = new TPad("pad2_top", "", 0, 0.32, 1, 1);
+    pad2_top->SetTopMargin(0.06);
+    pad2_top->SetBottomMargin(0.02);
+    pad2_top->SetLeftMargin(0.13);
+    pad2_top->SetRightMargin(0.05);
+    pad2_top->SetLogy();
+    pad2_top->Draw();
+
+    TPad *pad2_bot = new TPad("pad2_bot", "", 0, 0, 1, 0.32);
+    pad2_bot->SetTopMargin(0.02);
+    pad2_bot->SetBottomMargin(0.30);
+    pad2_bot->SetLeftMargin(0.13);
+    pad2_bot->SetRightMargin(0.05);
+    pad2_bot->Draw();
+
+    pad2_top->cd();
+    frame_et_rec->SetTitle(";;d^{2}#sigma/d#it{#eta}d#it{E}_{T}^{#gamma} [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(lowery, 500);
     frame_et_rec->GetXaxis()->SetRangeUser(lowerx, upperx);
-    frame_et_rec->GetXaxis()->SetTitleOffset(1.05);
+    frame_et_rec->GetXaxis()->SetLabelSize(0);
+    frame_et_rec->GetYaxis()->SetTitleSize(0.055);
+    frame_et_rec->GetYaxis()->SetLabelSize(0.050);
+    frame_et_rec->GetYaxis()->SetTitleOffset(1.05);
 
     frame_et_rec->Draw("axis");
 
@@ -911,6 +924,63 @@ void plot_final_selection(string tune = "bdt_nom")
     l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, bin-avg, |#eta^{#gamma}|<0.7}", "fpl");
     l2->Draw("same");
     myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(PHENIX: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
+
+    // -----------------------------------------------------------------
+    // Bottom pad: data / PHENIX_{|eta|<0.7-corrected} ratio
+    // Computed only over the PHENIX overlap range (PHENIX bins
+    // 10-26 GeV align bin-by-bin with the present pT_bins).
+    // -----------------------------------------------------------------
+    pad2_bot->cd();
+
+    TH1F *frame_ratio_phenix = new TH1F("frame_ratio_phenix", "", 1, lowerx, upperx);
+    frame_ratio_phenix->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+    frame_ratio_phenix->SetYTitle("Data / PHENIX_{|#eta|<0.7}");
+    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.5, 1.5);
+    frame_ratio_phenix->GetYaxis()->SetNdivisions(505);
+    frame_ratio_phenix->GetXaxis()->SetTitleSize(0.095);
+    frame_ratio_phenix->GetYaxis()->SetTitleSize(0.075);
+    frame_ratio_phenix->GetXaxis()->SetLabelSize(0.085);
+    frame_ratio_phenix->GetYaxis()->SetLabelSize(0.075);
+    frame_ratio_phenix->GetYaxis()->SetTitleOffset(0.85);
+    frame_ratio_phenix->GetXaxis()->SetTitleOffset(1.15);
+    frame_ratio_phenix->Draw("axis");
+
+    TGraphAsymmErrors *g_ratio_phenix = new TGraphAsymmErrors();
+    int rp_idx = 0;
+    for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
+    {
+        double pT_c = h_data->GetBinCenter(i);
+        if (pT_c < lowerx || pT_c > 26.0) continue;
+        double y_d = h_data->GetBinContent(i);
+        double e_d = h_data->GetBinError(i);
+        if (y_d <= 0.0) continue;
+
+        double x_p = 0.0, y_p = 0.0;
+        bool matched = false;
+        for (Int_t j = 0; j < gStat_PHENIX_corr->GetN(); ++j)
+        {
+            gStat_PHENIX_corr->GetPoint(j, x_p, y_p);
+            if (std::abs(x_p - pT_c) < 0.1) { matched = true; break; }
+        }
+        if (!matched || y_p <= 0.0) continue;
+
+        double r = y_d / y_p;
+        double r_err = e_d / y_p;
+        double bin_w = h_data->GetBinWidth(i);
+        g_ratio_phenix->SetPoint(rp_idx, pT_c, r);
+        g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_err, r_err);
+        ++rp_idx;
+    }
+    g_ratio_phenix->SetMarkerStyle(mkStyle[0]);
+    g_ratio_phenix->SetMarkerSize(mkSize[0]);
+    g_ratio_phenix->SetMarkerColor(col[0]);
+    g_ratio_phenix->SetLineColor(col[0]);
+    g_ratio_phenix->Draw("P same");
+
+    TLine *l_unity_phenix = new TLine(lowerx, 1.0, upperx, 1.0);
+    l_unity_phenix->SetLineStyle(2);
+    l_unity_phenix->SetLineColor(kGray + 2);
+    l_unity_phenix->Draw();
 
     c2->SaveAs(Form("figures/final_phenix_%s.pdf", tune.data()));
 
