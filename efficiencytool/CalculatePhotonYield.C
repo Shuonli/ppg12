@@ -641,12 +641,26 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     double xMin = 10;       // Fit range start (tightened 2026-04-24; was 8)
     double xMax = 36;       // Fit range end (extended 2026-04-27; was 32)
 
+    // Padé init seeded from the nom-converged values so variant fits don't
+    // fall into the runaway minimum where (p0+p1*x) and (1+p2^2*x) both blow
+    // up but their ratio mimics the data. Per-variant gpurity values are
+    // ~1% from nom, so starting near the nom minimum keeps the optimizer
+    // there. Bare TGraphErrors->Fit() previously diverged for npb03 (chi2
+    // 224 vs 5.7 nominal, params at 1e+27, fit eval 1.25 at low pT
+    // when the per-bin gpurity value was 0.52). See session 2026-05-03.
+    constexpr double pade_purity_p0      =  0.129795; // f_purity_fit nom
+    constexpr double pade_purity_p1      =  0.032936;
+    constexpr double pade_purity_p2      =  0.151076;
+    constexpr double pade_purity_leak_p0 =  0.085956; // f_purity_leak_fit nom
+    constexpr double pade_purity_leak_p1 =  0.052318;
+    constexpr double pade_purity_leak_p2 = -0.164694;
+
     TF1 *f_purity_fit = new TF1("f_purity_fit", "[0]*TMath::Erf((x - [1])/[2])", xMin, xMax);
     f_purity_fit->SetParameters(1.0, 15.0, 5.0);
     if(fitoption ==1)
     {
         f_purity_fit = new TF1("f_purity_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
-        f_purity_fit->SetParameters(0.5, 0.5, 0.5);
+        f_purity_fit->SetParameters(pade_purity_p0, pade_purity_p1, pade_purity_p2);
     }
     
 
@@ -690,7 +704,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     if(fitoption ==1)
     {
         f_purity_leak_fit = new TF1("f_purity_leak_fit", "([0] + [1]*x) / (1 + [2]*[2]*x)", xMin, xMax);
-        f_purity_leak_fit->SetParameters(0.5, 0.5, 0.5);
+        f_purity_leak_fit->SetParameters(pade_purity_leak_p0, pade_purity_leak_p1, pade_purity_leak_p2);
     }
 
     //TF1 *f_purity_leak_fit = new TF1("f_purity_leak_fit", "pol3", 8, 35);

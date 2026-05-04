@@ -1477,7 +1477,13 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                   << " runs from " << run_list_file << std::endl;
     }
 
-    TRandom3 *rand = new TRandom3(0);
+    // Fixed seed (42) for reproducibility: this RNG drives the per-cluster MC
+    // ET smearing at line ~2064 (cluster_Et *= rand->Gaus(1, clustereres)).
+    // Seed 0 (clock) made every Phase-1 run produce a slightly different MC
+    // efficiency file, which propagated as a few-percent drift in the final
+    // cross section between nominally-identical reruns. Matches the global
+    // analysis seed used in CalculatePhotonYield.C.
+    TRandom3 *rand = new TRandom3(42);
     std::set<int> skiprunnumbers = {0};
     int nentries = chain.GetEntries();
     int ientry = 0;

@@ -50,7 +50,7 @@ GROUP_COLORS = {
     "purity":      ROOT.kViolet + 1,   # violet — tight+nontight+noniso+fit+mc-closure
     "efficiency":  ROOT.kRed + 1,      # red   — iso pedestal
     "unfolding":   ROOT.kMagenta + 2,  # magenta — reweight + iter scan
-    "di_fraction": ROOT.kSpring - 6,   # yellow-green — DI blending
+    "di_fraction": ROOT.kCyan + 2,     # teal-cyan — DI blending (distinct from escale green)
     "npb":         ROOT.kAzure + 7,    # blue — NPB cut
 }
 
@@ -551,6 +551,37 @@ def plot_syst_type(figdir: str, type_name: str, result: tuple,
     c.Close()
 
 
+def _build_stat_rel(args) -> "ROOT.TH1F | None":
+    """Read the nominal final-yield histogram and build a per-bin
+    relative statistical uncertainty histogram, on the same binning as
+    the syst breakdown.
+
+    Returns None if the nominal file or histogram cannot be opened.
+    """
+    nom_path = os.path.join(args.results,
+                            f"Photon_final_{args.nom}.root")
+    f = ROOT.TFile.Open(nom_path, "READ")
+    if not f or f.IsZombie():
+        print(f"[stat overlay] Cannot open {nom_path}; stat curve skipped.")
+        return None
+    h_nom = f.Get(args.histogram)
+    if not h_nom:
+        print(f"[stat overlay] Missing {args.histogram} in {nom_path}; "
+              f"stat curve skipped.")
+        f.Close()
+        return None
+    h_stat = h_nom.Clone("h_stat_rel")
+    h_stat.SetDirectory(0)
+    h_stat.Reset()
+    for i in range(1, h_nom.GetNbinsX() + 1):
+        y = h_nom.GetBinContent(i)
+        e = h_nom.GetBinError(i)
+        h_stat.SetBinContent(i, (e / y) if y > 0 else 0.0)
+        h_stat.SetBinError(i, 0.0)
+    f.Close()
+    return h_stat
+
+
 def plot_breakdown(figdir: str, group_results: dict,
                    total: tuple, args) -> None:
     """
@@ -570,6 +601,26 @@ def plot_breakdown(figdir: str, group_results: dict,
     # Keep explicit Python references to all drawn clones so PyROOT does not
     # garbage-collect one side of the bands before SaveAs().
     keep_alive = []
+
+    # Statistical uncertainty curve (per-bin relative). Drawn first so the
+    # syst bands sit on top.
+    h_stat_rel = _build_stat_rel(args)
+    h_stat_rel_neg = None
+    if h_stat_rel is not None:
+        h_stat_rel.SetLineColor(ROOT.kGray + 2)
+        h_stat_rel.SetLineStyle(2)
+        h_stat_rel.SetLineWidth(2)
+        h_stat_rel.SetMarkerSize(0)
+        keep_alive.append(h_stat_rel)
+        h_stat_rel_neg = h_stat_rel.Clone("h_stat_rel_neg")
+        h_stat_rel_neg.SetDirectory(0)
+        h_stat_rel_neg.Scale(-1.0)
+        keep_alive.append(h_stat_rel_neg)
+        h_stat_rel.Draw("same ][ HIST")
+        h_stat_rel_neg.Draw("same ][ HIST")
+        ROOT.myMarkerLineText(0.25, 0.41, 0, ROOT.kGray + 2, 0,
+                              ROOT.kGray + 2, 2,
+                              "Stat (#pm#sigma)", 0.05, True)
 
     # Draw total (black, thick)
     h_rl_tot, h_rh_tot = total[2], total[3]
