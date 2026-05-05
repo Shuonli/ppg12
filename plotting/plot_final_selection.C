@@ -51,6 +51,10 @@ void plot_final_selection(string tune = "bdt_nom")
     TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10.root");
     TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05.root");
     TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20.root");
+    // Alternative-PDF central-scale JETPHOX productions for the PDF
+    // comparison panel (Lower-most pad of the final figure).
+    TFile *fin_NLO_ct14  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10.root");
+    TFile *fin_NLO_nnpdf = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_10.root");
     TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
@@ -87,6 +91,16 @@ void plot_final_selection(string tune = "bdt_nom")
     h_NLO_data_up->Divide(h_data);
     TH1F *h_NLO_data_down = (TH1F *)h_NLO_down->Clone("h_NLO_data_down");
     h_NLO_data_down->Divide(h_data);
+
+    // Alternative-PDF JETPHOX/data ratios for the PDF-comparison panel.
+    TH1F *h_NLO_ct14 = (TH1F *)fin_NLO_ct14->Get("h_truth_pT");
+    h_NLO_ct14->Scale(1.0 / deta);
+    TH1F *h_NLO_nnpdf = (TH1F *)fin_NLO_nnpdf->Get("h_truth_pT");
+    h_NLO_nnpdf->Scale(1.0 / deta);
+    TH1F *h_NLO_data_ct14  = (TH1F *)h_NLO_ct14 ->Clone("h_NLO_data_ct14");
+    h_NLO_data_ct14 ->Divide(h_data);
+    TH1F *h_NLO_data_nnpdf = (TH1F *)h_NLO_nnpdf->Clone("h_NLO_data_nnpdf");
+    h_NLO_data_nnpdf->Divide(h_data);
 
     TH1F *h_pythia_data = (TH1F *)h_pythia->Clone("h_pythia_data");
     h_pythia_data->Divide(h_data);
@@ -141,11 +155,11 @@ void plot_final_selection(string tune = "bdt_nom")
         g_syst_rel_NLO->SetPointError(i, xlowerror, xuperror, h_NLO_data->GetBinContent(i + 1) - h_NLO_data_down->GetBinContent(i + 1), h_NLO_data_up->GetBinContent(i + 1) - h_NLO_data->GetBinContent(i + 1));
     }
 
-    TCanvas *c1 = new TCanvas("can", "", 800, 889);
-    c1->Divide(1, 2);
+    TCanvas *c1 = new TCanvas("can", "", 800, 1110);
+    c1->Divide(1, 3);
 
     TPad *pad_1 = (TPad *)c1->cd(1);
-    pad_1->SetPad(0, 0.4, 1, 1);
+    pad_1->SetPad(0, 0.5, 1, 1);
     pad_1->SetTopMargin(0.05);
     pad_1->SetLeftMargin(0.13);
     pad_1->SetBottomMargin(0.002);
@@ -540,16 +554,18 @@ void plot_final_selection(string tune = "bdt_nom")
     myText(xpos, ypos2 - 0.06, 1, Form("All theory: %s", st_thScale.data()), fontsize, 0);
 
     TPad *pad_2 = (TPad *)c1->cd(2);
-    pad_2->SetPad(0, 0, 1, 0.4);
+    pad_2->SetPad(0, 0.25, 1, 0.5);
     pad_2->SetTopMargin(0.023);
     pad_2->SetLeftMargin(0.13);
-    pad_2->SetBottomMargin(0.25);
+    pad_2->SetBottomMargin(0.002);
     pad_2->SetRightMargin(0.08);
 
     frame_et_truth->SetYTitle("Theory / Data");
-    frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+    // x-axis labels are hidden here (the third pad below carries them).
+    frame_et_truth->SetXTitle("");
+    frame_et_truth->GetXaxis()->SetLabelSize(0);
     frame_et_truth->GetYaxis()->SetNdivisions(509);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.4, 2.2);  // #8: widen so band doesn't clip
+    frame_et_truth->GetYaxis()->SetRangeUser(0.5, 2.2);  // #8: widen so band doesn't clip; 0.5 lower edge avoids "0.4" label clipping at the pad seam
     frame_et_truth->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
     frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6.);
@@ -616,6 +632,69 @@ void plot_final_selection(string tune = "bdt_nom")
     h_pythia_data->SetMarkerSize(mkSize[3]);
     h_pythia_data->SetLineWidth(lineWidth[3]);
     h_pythia_data->Draw("same");
+
+    // ----------------------------------------------------------------
+    // Third pad: JETPHOX/Data ratio for three NLO PDF sets
+    // (CT18NLO, CT14NLO, NNPDF3.1) at the central scale mu=pT.
+    // ----------------------------------------------------------------
+    TPad *pad_3 = (TPad *)c1->cd(3);
+    pad_3->SetPad(0, 0, 1, 0.25);
+    pad_3->SetTopMargin(0.023);
+    pad_3->SetLeftMargin(0.13);
+    pad_3->SetBottomMargin(0.30);
+    pad_3->SetRightMargin(0.08);
+
+    TH1F *frame_pdf = (TH1F *)frame_et_truth->Clone("frame_pdf");
+    frame_pdf->SetYTitle("JETPHOX / Data");
+    frame_pdf->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
+    frame_pdf->GetYaxis()->SetRangeUser(0.4, 2.0);
+    frame_pdf->GetYaxis()->SetNdivisions(505);
+    frame_pdf->GetXaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6.0 / 4.0);
+    frame_pdf->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6.0 / 4.0 * 1.2);
+    frame_pdf->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4.0 / 6.0 * 1.4);
+    frame_pdf->Draw("axis");
+
+    const Color_t kCT14col  = kSpring - 7;
+    const Color_t kCT18col  = mkcol[2];
+    const Color_t kNNPDFcol = kRed - 4;
+
+    h_NLO_data_ct14->SetMarkerStyle(24);
+    h_NLO_data_ct14->SetMarkerSize(mkSize[2]);
+    h_NLO_data_ct14->SetMarkerColor(kCT14col);
+    h_NLO_data_ct14->SetLineColor(kCT14col);
+    h_NLO_data_ct14->SetLineWidth(lineWidth[2]);
+
+    h_NLO_data->SetMarkerStyle(mkStyle[2]);
+    h_NLO_data->SetMarkerSize(mkSize[2]);
+    h_NLO_data->SetMarkerColor(kCT18col);
+    h_NLO_data->SetLineColor(kCT18col);
+    h_NLO_data->SetLineWidth(lineWidth[2]);
+
+    h_NLO_data_nnpdf->SetMarkerStyle(26);
+    h_NLO_data_nnpdf->SetMarkerSize(mkSize[2]);
+    h_NLO_data_nnpdf->SetMarkerColor(kNNPDFcol);
+    h_NLO_data_nnpdf->SetLineColor(kNNPDFcol);
+    h_NLO_data_nnpdf->SetLineWidth(lineWidth[2]);
+
+    lineone->SetLineColor(kBlack);
+    lineone->SetLineStyle(2);
+    lineone->SetLineWidth(2);
+    lineone->Draw("L same");
+
+    h_NLO_data_ct14 ->Draw("same");
+    h_NLO_data      ->Draw("same");
+    h_NLO_data_nnpdf->Draw("same");
+
+    TLegend *l_pdf = new TLegend(0.16, 0.86, 0.92, 0.97);
+    l_pdf->SetBorderSize(0);
+    l_pdf->SetFillStyle(0);
+    l_pdf->SetTextFont(42);
+    l_pdf->SetTextSize(0.075);
+    l_pdf->SetNColumns(3);
+    l_pdf->AddEntry(h_NLO_data_ct14,  "CT14NLO",  "pl");
+    l_pdf->AddEntry(h_NLO_data,       "CT18NLO",  "pl");
+    l_pdf->AddEntry(h_NLO_data_nnpdf, "NNPDF3.1", "pl");
+    l_pdf->Draw("same");
 
     std::string outputname = Form("figures/final_%s.pdf", tune.data());
 
