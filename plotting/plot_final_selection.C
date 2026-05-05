@@ -938,7 +938,7 @@ void plot_final_selection(string tune = "bdt_nom")
     TH1F *frame_ratio_phenix = new TH1F("frame_ratio_phenix", "", 1, lowerx, upperx);
     frame_ratio_phenix->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
     frame_ratio_phenix->SetYTitle("PHENIX / Data");
-    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.4, 1.8);
+    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.4, 2.4);
     frame_ratio_phenix->GetYaxis()->SetNdivisions(505);
     // Match the c1 lower-panel font scaling (6/4 = 1.5) for visual parity.
     const double k_p2bot_scale = 6.0 / 4.0;
