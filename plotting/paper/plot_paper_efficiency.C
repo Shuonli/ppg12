@@ -74,8 +74,11 @@ void plot_paper_efficiency(const std::string &tune = "bdt_nom")
 
     TCanvas *c6 = new TCanvas("c6_paper_eff", "", 600, 600);
     frame_et_truth->SetYTitle("Efficiency");
-    frame_et_truth->GetYaxis()->SetRangeUser(0.35, 1.1);
-    frame_et_truth->GetXaxis()->SetRangeUser(10, 32);
+    // y from 0 so the lower-left legend sits comfortably below the
+    // lowest curve (eps_reco*ID*iso ~ 0.38 -> NDC ~0.39, legend top
+    // NDC ~0.30 -> safe gap). x starts at 12 GeV (analysis range).
+    frame_et_truth->GetYaxis()->SetRangeUser(0.0, 1.10);
+    frame_et_truth->GetXaxis()->SetRangeUser(12, 32);
     frame_et_truth->Draw("axis");
 
     eff_reco->SetMarkerColor(kCol[0]);
@@ -97,15 +100,18 @@ void plot_paper_efficiency(const std::string &tune = "bdt_nom")
     eff_all->SetLineWidth(2);
     eff_all->Draw("same");
 
-    float xpos(0.2), xpos2(0.915), ypos(0.885), ypos2(0.22),
-          dy(0.054), dy1(0.08), fontsize(0.046), fontsize1(0.048);
+    float xpos(0.2), xpos2(0.915), ypos(0.885),
+          dy(0.054), fontsize(0.046), fontsize1(0.048);
     myText(xpos,  ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 0);
     myText(xpos,  ypos - 1 * dy, 1, strleg2.c_str(), fontsize,  0);
     myText(xpos2, ypos - 0 * dy, 1, strMC.c_str(),   fontsize,  1);
     myText(xpos2, ypos - 1 * dy, 1, strleg3.c_str(), fontsize,  1);
 
-    TLegend *l1 = new TLegend(0.45, ypos2, xpos2, ypos2 + 3 * dy1);
-    legStyle(l1, 0.20, 0.06);
+    // Legend at lower-left in the empty band below the lowest curve
+    // (eps_reco*ID*iso ~ 0.38 -> NDC ~0.27 with the new y-range), away
+    // from data points across the whole 12-32 GeV span.
+    TLegend *l1 = new TLegend(0.22, 0.15, 0.62, 0.30);
+    legStyle(l1, 0.20, 0.05);
     l1->AddEntry(eff_reco,           "#varepsilon_{reco}",                                                 "pl");
     l1->AddEntry(g_reco_id_product,  "#varepsilon_{reco}#times#varepsilon_{ID}",                            "pl");
     l1->AddEntry(eff_all,            "#varepsilon_{reco}#times#varepsilon_{ID}#times#varepsilon_{iso}",     "pl");

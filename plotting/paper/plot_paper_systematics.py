@@ -60,7 +60,8 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
     c = ROOT.TCanvas("c_breakdown_paper", "", 900, 600)
 
     ROOT.frame_et_truth.GetYaxis().SetRangeUser(-0.58, 0.5)
-    ROOT.frame_et_truth.GetXaxis().SetRangeUser(ROOT.pTmin, ROOT.pTmax)
+    # Paper x-range: 12 < ETg < 32 GeV (the reported analysis range).
+    ROOT.frame_et_truth.GetXaxis().SetRangeUser(12.0, 32.0)
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
     ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.Draw("axis")

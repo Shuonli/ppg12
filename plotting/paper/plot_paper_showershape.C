@@ -111,6 +111,14 @@ void plot_paper_showershape(const std::string &configsuffix = "showershape")
         myText(x, y - 0.10, 1, kPaperEtaLabel.c_str(),  0.04);
     };
 
+    // ROOT-LaTeX axis label per histogram suffix; matches the paper text.
+    auto axisTitle = [](const TString &xaxisname) -> TString {
+        if (xaxisname == "weta_cogx")  return "#it{w}_{#it{#eta}}";
+        if (xaxisname == "wphi_cogx")  return "#it{w}_{#it{#phi}}";
+        if (xaxisname == "e32_to_e35") return "#it{E}_{3#times2} / #it{E}_{3#times5}";
+        return xaxisname;
+    };
+
     for (const auto &hbase : kPaperVars)
     {
         TString xaxisname = hbase.substr(4, hbase.size() - 4);
@@ -162,7 +170,7 @@ void plot_paper_showershape(const std::string &configsuffix = "showershape")
 
         proj_sig->SetYTitle("normalized counts");
         proj_sig->GetYaxis()->SetTitleOffset(1.5);
-        proj_sig->SetXTitle(xaxisname.Data());
+        proj_sig->SetXTitle(axisTitle(xaxisname));
         proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.3);
         proj_sig->GetXaxis()->SetNdivisions(505);
         proj_sig->SetStats(0);
