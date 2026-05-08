@@ -76,9 +76,11 @@ void plot_paper_efficiency(const std::string &tune = "bdt_nom")
     frame_et_truth->SetYTitle("Efficiency");
     // y from 0 so the lower-left legend sits comfortably below the
     // lowest curve (eps_reco*ID*iso ~ 0.38 -> NDC ~0.39, legend top
-    // NDC ~0.30 -> safe gap). x starts at 12 GeV (analysis range).
+    // NDC ~0.30 -> safe gap). x covers the full unfolding range
+    // (10 < ETg < 36 GeV), wider than the reported analysis range
+    // (12-32) so the truth-spectrum overflow bins are visible.
     frame_et_truth->GetYaxis()->SetRangeUser(0.0, 1.10);
-    frame_et_truth->GetXaxis()->SetRangeUser(12, 32);
+    frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
     frame_et_truth->Draw("axis");
 
     eff_reco->SetMarkerColor(kCol[0]);
