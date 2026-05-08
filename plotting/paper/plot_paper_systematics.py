@@ -68,23 +68,8 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
 
     keep_alive = []  # PyROOT GC guard
 
-    h_stat_rel = _build_stat_rel(args)
-    h_stat_rel_neg = None
-    if h_stat_rel is not None:
-        h_stat_rel.SetLineColor(ROOT.kGray + 2)
-        h_stat_rel.SetLineStyle(2)
-        h_stat_rel.SetLineWidth(2)
-        h_stat_rel.SetMarkerSize(0)
-        keep_alive.append(h_stat_rel)
-        h_stat_rel_neg = h_stat_rel.Clone("h_stat_rel_neg")
-        h_stat_rel_neg.SetDirectory(0)
-        h_stat_rel_neg.Scale(-1.0)
-        keep_alive.append(h_stat_rel_neg)
-        h_stat_rel.Draw("same ][ HIST")
-        h_stat_rel_neg.Draw("same ][ HIST")
-        ROOT.myMarkerLineText(0.25, 0.41, 0, ROOT.kGray + 2, 0,
-                              ROOT.kGray + 2, 2,
-                              "Stat (#pm#sigma)", 0.05, True)
+    # Stat-uncertainty band intentionally NOT drawn on the paper figure --
+    # the journal draft shows the systematic envelope only.
 
     h_rl_tot, h_rh_tot = total[2], total[3]
     h_rl_tot_plot = h_rl_tot.Clone("h_rl_tot_plot")
@@ -102,11 +87,31 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
     ROOT.myMarkerLineText(0.25, 0.36, 0, ROOT.kBlack, 20, ROOT.kBlack, 0,
                           "Total", 0.05, True)
 
+    # Paper legend order and human-readable labels. Drawing order is
+    # decoupled from legend order so that escale stays on top of the
+    # other bands (drawn last) while the legend reads in the order
+    # the user wants.
+    GROUP_ORDER = ["escale", "eres", "purity", "efficiency",
+                   "di_fraction", "npb", "unfolding"]
+    GROUP_LABELS = {
+        "escale":      "Energy scale",
+        "eres":        "Energy resolution",
+        "purity":      "Purity",
+        "efficiency":  "Efficiency",
+        "di_fraction": "Pileup",
+        "npb":         "Non-collisional background",
+        "unfolding":   "Unfolding",
+    }
+    legend_index = {grp: i for i, grp in enumerate(GROUP_ORDER)}
+
+    present = [g for g in GROUP_ORDER if g in group_results]
+    # escale drawn last so its band sits on top of the others.
+    draw_order = [g for g in present if g != "escale"] + \
+                 [g for g in present if g == "escale"]
+
     switchover = 3
-    legend_entries = list(group_results.items())
-    draw_order = [e for e in legend_entries if e[0] != "escale"] + \
-                 [e for e in legend_entries if e[0] == "escale"]
-    for isys, (grp, (h_al, h_ah, h_rl, h_rh)) in enumerate(draw_order):
+    for grp in draw_order:
+        h_al, h_ah, h_rl, h_rh = group_results[grp]
         col = GROUP_COLORS.get(grp, ROOT.kGray)
 
         h_rl_plot = h_rl.Clone(f"h_rl_plot_{grp}")
@@ -129,11 +134,15 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
         h_rh.Draw("same ][ HIST")
         h_rl_plot.Draw("same ][ HIST")
 
-        xshift = 0.33 if isys >= switchover else 0.0
-        yshift = 0.05 * (switchover + 1) if isys >= switchover else 0.0
-        ROOT.myMarkerLineText(0.25 + xshift, 0.31 - 0.05 * isys + yshift,
+        # Text position uses the user-requested legend order, NOT draw
+        # order, so escale stays at the top of the legend.
+        idx = legend_index[grp]
+        xshift = 0.33 if idx >= switchover else 0.0
+        yshift = 0.05 * (switchover + 1) if idx >= switchover else 0.0
+        label  = GROUP_LABELS.get(grp, grp.replace("_", " "))
+        ROOT.myMarkerLineText(0.25 + xshift, 0.31 - 0.05 * idx + yshift,
                               0, col, 20, col, 0,
-                              grp.replace("_", " "), 0.05, True)
+                              label, 0.05, True)
 
     ROOT.myText(0.20, 0.88, 1, ROOT.strleg1.c_str(), 0.05)
     ROOT.myText(0.20, 0.83, 1, ROOT.strleg2.c_str(), 0.05)
