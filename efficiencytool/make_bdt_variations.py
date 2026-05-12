@@ -62,6 +62,14 @@ VARIANTS = [
     # mixes pedestal+width with escale/eres, so we use _no_shift only.
     dict(name="mciso_no_shift",  mc_iso_shift=0.0,
          syst_type="iso_resolution", syst_role="one_sided"),
+    # Generator-driven iso-eff systematic (HERWIG7 vs PYTHIA8 Detroit, 1.5 mrad).
+    # The variant cross-section file Photon_final_bdt_iso_generator.root is NOT
+    # produced by oneforall.sh; it is built post-hoc by
+    # plotting/build_iso_generator_variant.C, which scales the nominal sigma by
+    # eps_iso_P / eps_iso_H bin-by-bin. Hence no config keys are emitted here.
+    dict(name="iso_generator",
+         syst_type="iso_generator", syst_role="one_sided",
+         aggregate_only=True),
     dict(name="mciso_no_scale",  mc_iso_scale=1.0,
          syst_type=None, syst_role=None),
     # Flat-threshold BDT partitions (cross-checks).  Tight is flat [T, 1.0];
@@ -190,10 +198,23 @@ VARIANTS = [
     # Nominal cluster_eres = 0.04 (4% extra Gaussian smearing applied per-cluster
     # in RecoEffCalculator_TTreeReader.C). Two-sided eres systematic brackets
     # nominal with 0% (no extra smearing) and 8% (twice nominal).
-    dict(name="energyscale26up",   clusterescale=1.026,
+    # Energy-scale envelope: placeholder at +/-1.1% pending the final
+    # EMCal calibration. The +/-1.5% and +/-2.6% pairs are kept alongside
+    # as cross-checks but the active journal-text systematic is taken from
+    # the 1.1% pair (mapped to syst_type="escale"); the 1.5% and 2.6%
+    # pairs have syst_type=None so they do not enter the syst aggregator.
+    dict(name="energyscale11up",   clusterescale=1.011,
          syst_type="escale", syst_role="down"),
-    dict(name="energyscale26down", clusterescale=0.974,
+    dict(name="energyscale11down", clusterescale=0.989,
          syst_type="escale", syst_role="up"),
+    dict(name="energyscale15up",   clusterescale=1.015,
+         syst_type=None,     syst_role=None),
+    dict(name="energyscale15down", clusterescale=0.985,
+         syst_type=None,     syst_role=None),
+    dict(name="energyscale26up",   clusterescale=1.026,
+         syst_type=None,     syst_role=None),
+    dict(name="energyscale26down", clusterescale=0.974,
+         syst_type=None,     syst_role=None),
     # Role labels follow the *output* (cross-section) direction, matching the
     # escale convention above: less smearing → unfolded yield goes up,
     # more smearing → unfolded yield goes down. Without this convention the
@@ -214,10 +235,14 @@ VARIANTS = [
     # single bare-name config rather than auto-expanding into period
     # feeders — the iteration count is period-independent.
     # ----------------------------------------------------------
+    # iter=1 is unconverged (Bayes regularization too strong), so it
+    # inflates the iter-scan envelope. Demoted to cross-check only —
+    # variant is still produced for the closure-overlay plot in the
+    # unfolding appendix but is excluded from the systematic envelope.
     dict(name="unfold_iter1", resultit=1,
          run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
-         syst_type="unfold_iter", syst_role="max"),
+         syst_type=None, syst_role=None),
     dict(name="unfold_iter3", resultit=3,
          run_min=47289, run_max=54000, lumi=64.3718, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
@@ -369,8 +394,13 @@ SYST_TYPES = {
     # ---- NPB cut: standalone group (not part of purity) per analysis-note
     #     structure. Pearson r(npb03, npb07) = -0.998 (clean two-sided).
     "npb_cut":      {"mode": "two_sided",   "group": "npb"},
-    # ---- detector iso resolution / pedestal: efficiency group (single member) ----
+    # ---- detector iso resolution / pedestal: efficiency group ----
     "iso_resolution": {"mode": "one_sided", "group": "efficiency"},
+    # ---- generator-driven iso-eff systematic: HERWIG7 vs PYTHIA8 Detroit
+    #     1.5 mrad cross-check propagated as sigma_nom × eps_iso_P / eps_iso_H
+    #     (built by plotting/build_iso_generator_variant.C). Documented in
+    #     systematics.tex §5.4.2 and Appendix sec:appendix:herwig_xcheck.
+    "iso_generator": {"mode": "one_sided", "group": "efficiency"},
     # ---- tower acceptance (phi-symmetry mask envelope) ----
     # Demoted to a cross-check (no quadrature contribution) on 2026-04-27;
     # phi-symmetry residuals are absorbed into the photon-ID response chain.
@@ -407,7 +437,7 @@ SYST_GROUPS = {
     "purity":      ["photon_id_tight", "photon_id_nontight",
                     "noniso", "purity_fit", "purity_fit_ci",
                     "mc_purity_correction"],
-    "efficiency":  ["iso_resolution"],
+    "efficiency":  ["iso_resolution", "iso_generator"],
     "unfolding":   ["reweight", "unfold_iter"],
     "di_fraction": ["di_fraction"],
     "npb":         ["npb_cut"],
@@ -497,7 +527,7 @@ OVERRIDE_MAP = {
 }
 
 
-_METADATA_KEYS = {"name", "syst_type", "syst_role"}
+_METADATA_KEYS = {"name", "syst_type", "syst_role", "aggregate_only"}
 _ROLE_BUCKETS = {"up", "down", "one_sided", "max"}
 _MODE_TO_ALLOWED_ROLES = {
     "two_sided": {"up", "down"},
@@ -619,6 +649,11 @@ def generate_variants(base_config: str, outdir: str) -> None:
 
     for variant in VARIANTS:
         name = variant["name"]
+        # aggregate_only variants are registered for calc_syst_bdt.py's variant
+        # map but produce no config file (e.g. synthetic variants whose result
+        # ROOT file is built post-hoc by a separate macro).
+        if variant.get("aggregate_only", False):
+            continue
         overrides = {k: v for k, v in variant.items() if k not in _METADATA_KEYS}
 
         # Always write the bare-name config (all-range if not period-pinned,
