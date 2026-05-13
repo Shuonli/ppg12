@@ -240,10 +240,10 @@ VARIANTS = [
     # "down" variant (cE_0p08 data fit): wider data → ~6% extra smearing.
     dict(name="eres_smear_none",
          cluster_eres_data_p0=0.0,  cluster_eres_data_p1=0.0,  cluster_eres_data_p2=0.0,
-         syst_type="eres", syst_role="up"),
+         syst_type="eres", syst_role="max"),
     dict(name="eres_smear_cE0p08",
          cluster_eres_data_p0=0.13, cluster_eres_data_p1=0.08, cluster_eres_data_p2=0.08,
-         syst_type="eres", syst_role="down"),
+         syst_type="eres", syst_role="max"),
 
     # ----------------------------------------------------------
     # T1: Unfolding regularization scan (Bayes iteration count).
@@ -428,7 +428,7 @@ SYST_TYPES = {
     # ---- energy scale and resolution ----
     "escale":       {"mode": "two_sided",   "group": "escale"},
     "escale_nl":    {"mode": "one_sided",   "group": "escale"},
-    "eres":         {"mode": "two_sided",   "group": "eres"},
+    "eres":         {"mode": "max",         "group": "eres"},
     # ---- DI blending fraction: data-driven envelope from chi^2 fit at the
     #     preselection cut. Two period-pinned variants at f_best (0.290 at
     #     0 mrad, 0.000 at 1.5 mrad), each syst_role="one_sided"; calc_syst_bdt
