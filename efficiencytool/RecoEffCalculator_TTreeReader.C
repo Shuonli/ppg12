@@ -547,7 +547,27 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(); // 0 for no reweighting, 1 for reweighting
 
     float clusterescale = configYaml["analysis"]["cluster_escale"].as<float>(1.0);
+    // Legacy multiplicative MC smearing (retired). Read only for backward compatibility
+    // with older configs; the new scheme below ignores it.
     float clustereres = configYaml["analysis"]["cluster_eres"].as<float>(0.0);
+
+    // New additive ET-dependent smearing on the response-matrix arm only.
+    // sigma_extra(pT_truth) = sqrt( max(0, sigma_data^2(pT) - sigma_MC^2(pT)) )
+    // where each sigma(pT) follows  sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2).
+    // The smear is added to cluster_Et only at the response-matrix fill sites
+    // (not in cluster_Et[] used for ABCD yields, cuts, or other histograms).
+    float eres_data_p0 = configYaml["analysis"]["cluster_eres_data_p0"].as<float>(0.0);
+    float eres_data_p1 = configYaml["analysis"]["cluster_eres_data_p1"].as<float>(0.0);
+    float eres_data_p2 = configYaml["analysis"]["cluster_eres_data_p2"].as<float>(0.0);
+    float eres_mc_p0   = configYaml["analysis"]["cluster_eres_mc_p0"  ].as<float>(0.0);
+    float eres_mc_p1   = configYaml["analysis"]["cluster_eres_mc_p1"  ].as<float>(0.0);
+    float eres_mc_p2   = configYaml["analysis"]["cluster_eres_mc_p2"  ].as<float>(0.0);
+    auto sigma_extra_frac = [&](double pt) -> double {
+        if (pt <= 0) return 0.0;
+        double sd2 = (eres_data_p0*eres_data_p0)/pt + (eres_data_p1*eres_data_p1)/(pt*pt) + eres_data_p2*eres_data_p2;
+        double sm2 = (eres_mc_p0  *eres_mc_p0  )/pt + (eres_mc_p1  *eres_mc_p1  )/(pt*pt) + eres_mc_p2  *eres_mc_p2;
+        return (sd2 > sm2) ? std::sqrt(sd2 - sm2) : 0.0;
+    };
 
     // ------------------------------------------------------------
     // Tower-mask config: veto clusters whose center tower is flagged
@@ -873,6 +893,12 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_only_north;
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_only_south;
     std::vector<TH1D *> h_truth_pT_vertexcut_mbd_neither;
+    // Reco-eff cumulative breakdown (cluster cuts: trkID → Et → eta → mask).
+    // Differences (h_truth_pT - h_truth_pT_match), (h_truth_pT_match - h_truth_pT_match_et), ...
+    // give the per-step inefficiency that sums to N_truth - N_passed = total reco loss.
+    std::vector<TH1D *> h_truth_pT_match;        // any cluster with cluster_truthtrkID == particle_trkid
+    std::vector<TH1D *> h_truth_pT_match_et;     // + cluster_Et >= reco_min_ET
+    std::vector<TH1D *> h_truth_pT_match_et_eta; // + cluster |eta| in eta_bins
 
     std::vector<TH1D *> h_tight_iso_cluster_signal;
     std::vector<TH1D *> h_tight_noniso_cluster_signal;
@@ -979,6 +1005,8 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
     // energy resolution
     std::vector<TH2D *> h_pT_truth_reco;
+    // Tight+iso-gated response for the analysis cluster-response/resolution study
+    std::vector<TH2D *> h_pT_truth_reco_tightiso;
 
     // xjgamma, why not?
     // this is for sim only
@@ -1156,6 +1184,16 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                                             Form("Truth pT %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                             n_pT_bins_truth, pT_bin_edges_truth));
 
+        h_truth_pT_match.push_back(new TH1D(Form("h_truth_pT_match_%d", ieta),
+                                            Form("Truth pT after cluster trkID match %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                            n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_match_et.push_back(new TH1D(Form("h_truth_pT_match_et_%d", ieta),
+                                               Form("Truth pT after trkID + Et %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                               n_pT_bins_truth, pT_bin_edges_truth));
+        h_truth_pT_match_et_eta.push_back(new TH1D(Form("h_truth_pT_match_et_eta_%d", ieta),
+                                                   Form("Truth pT after trkID + Et + eta %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                   n_pT_bins_truth, pT_bin_edges_truth));
+
         h_tight_iso_cluster_signal.push_back(new TH1D(Form("h_tight_iso_cluster_signal_%d", ieta),
                                                       Form("Tight Iso Cluster %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                                       n_pT_bins, pT_bin_edges));
@@ -1332,6 +1370,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         h_pT_truth_reco.push_back(new TH2D(Form("h_pT_truth_reco_%d", ieta),
                                            Form("Truth Reco %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                            400, 5, 40, 150, 0, 1.5));
+
+        h_pT_truth_reco_tightiso.push_back(new TH2D(Form("h_pT_truth_reco_tightiso_%d", ieta),
+                                                    Form("Tight+Iso Truth Reco %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                                    450, 5, 50, 400, 0, 2.0));
 
         h_direct_pT_truth_isoET.push_back(new TH2D(Form("h_direct_pT_truth_isoET_%d", ieta),
                                                    Form("Direct Photon pT vs Truth Iso ET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
@@ -1657,6 +1699,10 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
         std::map<int, bool> photon_converts;
         // map for photon reco eff
         std::map<int, bool> photon_reco;
+        // cumulative-breakdown flags (trkID → Et → eta; the final + mask stage IS photon_reco)
+        std::map<int, bool> photon_has_trkid;
+        std::map<int, bool> photon_has_trkid_et;
+        std::map<int, bool> photon_has_trkid_et_eta;
         // map for iso eff
         std::map<int, bool> photon_iso;
         std::map<int, float> photon_iso_ET;
@@ -1713,6 +1759,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                             photon_id[iparticle] = false;
                             // initialize iso to false
                             photon_iso[iparticle] = false;
+
+                            // cumulative-breakdown flags (trkID → Et → eta → mask)
+                            photon_has_trkid[iparticle]        = false;
+                            photon_has_trkid_et[iparticle]     = false;
+                            photon_has_trkid_et_eta[iparticle] = false;
 
                             photon_ncluster[iparticle] = 0;
 
@@ -2065,10 +2116,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             if (issim)
             {
                 cluster_Et[icluster] = cluster_Et[icluster] * clusterescale;
-                if (clustereres > 0)
-                {
-                    cluster_Et[icluster] = cluster_Et[icluster] * rand->Gaus(1, clustereres);
-                }
+                // No multiplicative smearing here anymore. Additive ET-dependent
+                // smearing is applied only at the response-matrix fill sites in the
+                // tight+iso truth-matched block (search: cluster_Et_smear).
             }
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
@@ -2834,10 +2884,20 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
                     photon_reco[iparticle] = true;
 
+                    // Additive ET-dependent smearing for the response-matrix arm.
+                    // Computed once per matched cluster so all response fills share the
+                    // same random draw. The unsmeared cluster_Et[icluster] is still used
+                    // for ABCD yields, cuts, h_pT_truth_reco, h_pT_truth_reco_tightiso,
+                    // etc. — only the response-matrix and isoET-response fills consume
+                    // cluster_Et_smear.
+                    double sigma_extra_GeV = sigma_extra_frac(particle_Pt[iparticle]) * particle_Pt[iparticle];
+                    double cluster_Et_smear = cluster_Et[icluster]
+                        + ((sigma_extra_GeV > 0) ? rand->Gaus(0, sigma_extra_GeV) : 0.0);
+
                     h_pT_truth_reco[etabin]->Fill(particle_Pt[iparticle], cluster_Et[icluster] / particle_Pt[iparticle], weight);
                     if (pTbin != -1)
                     {
-                        h_response_isoET[etabin][pTbin]->Fill(cluster_Et[icluster] / particle_Pt[iparticle], recoisoET, weight);
+                        h_response_isoET[etabin][pTbin]->Fill(cluster_Et_smear / particle_Pt[iparticle], recoisoET, weight);
                     }
                     if (iso)
                     {
@@ -2858,6 +2918,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
                     if (tight)
                     {
+                        // Response fill is intentionally OUTSIDE the analysis pT-range
+                        // gate (cluster_Et > pTmin && cluster_Et < pTmax) so the
+                        // [8,10) and [36,45) truth bins are not biased by the
+                        // histogram-fill cuts that downstream ABCD histograms use.
+                        if (iso)
+                        {
+                            h_pT_truth_reco_tightiso[etabin]->Fill(particle_Pt[iparticle], cluster_Et[icluster] / particle_Pt[iparticle], weight);
+                        }
                         if (particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth && cluster_Et[icluster] > pTmin && cluster_Et[icluster] < pTmax)
                         {
                             h_tight_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
@@ -2868,8 +2936,19 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 h_tight_iso_xjgamma_signal[etabin]->Fill(xjgamma, cluster_Et[icluster], weight);
                                 h_tight_iso_truthjet_xjgamma_signal[etabin]->Fill(xjgamma_truthjet, cluster_Et[icluster], weight);
                                 h_vertex_tight_iso_cluster_signal_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
-                                // fill the response matrix
-
+                            }
+                        }
+                        // Response-matrix fills use a SEPARATE gate on the SMEARED
+                        // cluster_Et — mirrors how the data pT-range cut would apply
+                        // to data with the additional resolution. Prevents events
+                        // from leaking into the underflow/overflow when smearing
+                        // moves them across the analysis bin edges and biasing the
+                        // unfolded yield (observed Apr 2026: cE_0p08 + unsmeared
+                        // gate caused +19% inflation in the [10,12) truth bin).
+                        if (iso &&
+                            particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth &&
+                            cluster_Et_smear > pTmin && cluster_Et_smear < pTmax)
+                        {
                                 float response_reweight = 1.0;
                                 if (reweight)
                                 {
@@ -2879,24 +2958,23 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                     response_reweight = f_reweight->Eval(pt_clamped);
                                 }
                                 h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight*response_reweight);
-                                h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight*response_reweight);
-                                responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
-                                h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                                h_pT_reco_response[etabin]->Fill(cluster_Et_smear, weight*response_reweight);
+                                responses_full[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
+                                h_response_full_list[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
                                 if (ientry < (nentries / 2))
                                 {
                                     h_pT_truth_half_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                    h_pT_reco_half_response[etabin]->Fill(cluster_Et[icluster], weight);
-                                    responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
-                                    h_response_half_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                                    h_pT_reco_half_response[etabin]->Fill(cluster_Et_smear, weight);
+                                    responses_half[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
+                                    h_response_half_list[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
                                 }
                                 else
                                 {
                                     h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
+                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et_smear, weight);
                                 }
-                            }
-                        }
-                    }
+                        }  // close response-matrix gate (smeared)
+                    }      // close if(tight)
                     if (tight && noniso)
                     {
                         h_tight_noniso_cluster_signal[etabin]->Fill(cluster_Et[icluster], weight);
@@ -2929,6 +3007,40 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             h_cluster_common_leading_Et->Fill(leading_common_cluster_ET, weight);
         }
 
+        // --- Reco-eff cumulative breakdown ---
+        // Walks ALL clusters without early continue so each truth photon is tagged
+        // with the cumulative stages: trkID match → cluster_Et >= reco_min_ET
+        // → cluster |eta| in eta_bins → not tower-masked. The final stage is
+        // photon_reco (already set by the main loop). Differences of the resulting
+        // h_truth_pT_match* histograms vs h_truth_pT and the eff_reco numerator
+        // give the per-step inefficiency that sums to the total reco loss by
+        // construction.
+        if (issim)
+        {
+            for (int icluster = 0; icluster < *ncluster; icluster++)
+            {
+                if (particle_trkidmap.find(cluster_truthtrkID[icluster]) == particle_trkidmap.end())
+                    continue;
+                int iparticle_dbg = particle_trkidmap[cluster_truthtrkID[icluster]];
+                if (photon_has_trkid.find(iparticle_dbg) == photon_has_trkid.end())
+                    continue; // not a fiducial direct/frag photon
+                photon_has_trkid[iparticle_dbg] = true;
+
+                if (cluster_Et[icluster] < reco_min_ET) continue;
+                photon_has_trkid_et[iparticle_dbg] = true;
+
+                bool in_eta_fid_dbg = false;
+                for (int ieta = 0; ieta < (int)eta_bins.size() - 1; ieta++)
+                {
+                    if (cluster_Eta[icluster] > eta_bins[ieta] && cluster_Eta[icluster] < eta_bins[ieta + 1])
+                    { in_eta_fid_dbg = true; break; }
+                }
+                if (!in_eta_fid_dbg) continue;
+                photon_has_trkid_et_eta[iparticle_dbg] = true;
+                // The final + tower-mask stage is captured by photon_reco itself.
+            }
+        }
+
         // go over the map and fill the TEfficiency
         for (auto it = photon_reco.begin(); it != photon_reco.end(); ++it)
         {
@@ -2956,6 +3068,14 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             eff_reco_eta[etabin]->FillWeighted(photon_reco[it->first], weight, photon_pT);
             h_vertex_efficiency_denominator[vertex_bin]->Fill(photon_pT, photon_eta, weight);
             if(photon_reco[it->first]) h_vertex_efficiency_reco[vertex_bin]->Fill(photon_pT, photon_eta, weight);
+
+            // Cumulative-breakdown fills (same weight + binning as eff_reco_eta).
+            if (photon_has_trkid[it->first])
+                h_truth_pT_match[etabin]->Fill(photon_pT, weight);
+            if (photon_has_trkid_et[it->first])
+                h_truth_pT_match_et[etabin]->Fill(photon_pT, weight);
+            if (photon_has_trkid_et_eta[it->first])
+                h_truth_pT_match_et_eta[etabin]->Fill(photon_pT, weight);
 
 
             bool totalpass = photon_reco[it->first] && photon_iso[it->first] && photon_id[it->first];

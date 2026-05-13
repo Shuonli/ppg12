@@ -195,9 +195,16 @@ VARIANTS = [
 
 
     # Energy scale and resolution  →  syst: escale, eres
-    # Nominal cluster_eres = 0.04 (4% extra Gaussian smearing applied per-cluster
-    # in RecoEffCalculator_TTreeReader.C). Two-sided eres systematic brackets
-    # nominal with 0% (no extra smearing) and 8% (twice nominal).
+    # eres scheme (May 2026): additive ET-dependent smearing keyed off the
+    # truth-photon pT, applied ONLY to the response-matrix fills in
+    # RecoEffCalculator_TTreeReader.C. The sigma_extra(pT) curve is the
+    # quadrature difference between an external data-resolution fit
+    # (function_compare_wide.root) and the PPG12 PYTHIA sigma_MC fit
+    # (q0=0.185, q2=0.04 from fit_sigma_mc.py). Nominal data fit is
+    # f_energy_example_cE_0p05 → sigma_extra ~ 2% at high ET. Two-sided
+    # eres systematic: down = cE_0p08 (~6%), up = no extra smearing (data
+    # params all zero). The legacy multiplicative `cluster_eres` field is
+    # retired but kept in field-map for backward compatibility.
     # Energy-scale envelope: placeholder at +/-1.1% pending the final
     # EMCal calibration. The +/-1.5% and +/-2.6% pairs are kept alongside
     # as cross-checks but the active journal-text systematic is taken from
@@ -220,9 +227,16 @@ VARIANTS = [
     # more smearing → unfolded yield goes down. Without this convention the
     # breakdown plot would draw the eres band with sign flipped relative to
     # the per-type signed plot.
-    dict(name="energyresolution0", clustereres=0.00,
+    # New additive-smearing eres variants. Nominal lives in the base config
+    # (cluster_eres_data_p* = cE_0p05 params, cluster_eres_mc_p* = PYTHIA fit).
+    # "up" variant (no extra smearing): zero out the data params; lambda
+    # returns 0 when sigma_data^2 < sigma_MC^2.
+    # "down" variant (cE_0p08 data fit): wider data → ~6% extra smearing.
+    dict(name="eres_smear_none",
+         cluster_eres_data_p0=0.0,  cluster_eres_data_p1=0.0,  cluster_eres_data_p2=0.0,
          syst_type="eres", syst_role="up"),
-    dict(name="energyresolution8", clustereres=0.08,
+    dict(name="eres_smear_cE0p08",
+         cluster_eres_data_p0=0.13, cluster_eres_data_p1=0.08, cluster_eres_data_p2=0.08,
          syst_type="eres", syst_role="down"),
 
     # ----------------------------------------------------------
@@ -512,6 +526,13 @@ OVERRIDE_MAP = {
     "lumi": (["analysis"],                              "lumi"),
     "clusterescale": (["analysis"],                              "cluster_escale"),
     "clustereres": (["analysis"],                              "cluster_eres"),
+    # Additive ET-dependent smearing: 3 data params + 3 MC params
+    "cluster_eres_data_p0": (["analysis"],                       "cluster_eres_data_p0"),
+    "cluster_eres_data_p1": (["analysis"],                       "cluster_eres_data_p1"),
+    "cluster_eres_data_p2": (["analysis"],                       "cluster_eres_data_p2"),
+    "cluster_eres_mc_p0":   (["analysis"],                       "cluster_eres_mc_p0"),
+    "cluster_eres_mc_p1":   (["analysis"],                       "cluster_eres_mc_p1"),
+    "cluster_eres_mc_p2":   (["analysis"],                       "cluster_eres_mc_p2"),
     "mbd_avg_sigma_max": (["analysis"],                              "mbd_avg_sigma_max"),
     "mbd_avg_sigma_min": (["analysis"],                              "mbd_avg_sigma_min"),
     "reweight": (["analysis", "unfold"],                              "reweight"),

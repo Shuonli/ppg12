@@ -93,7 +93,18 @@ analysis:
   truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
   fit_option: 1
   cluster_escale: 1.0
-  cluster_eres: 0.04
+  cluster_eres: 0.0   # legacy multiplicative smear (retired); see additive eres_data/_mc params below
+  # Additive ET-dependent smearing on the response-matrix arm only.
+  # sigma_extra(pT) = sqrt(max(0, sigma_data^2(pT) - sigma_MC^2(pT)));
+  # each sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2); smear added in GeV = sigma_extra * pT_truth.
+  # Nominal data fit: f_energy_example_cE_0p05 (from function_compare_wide.root).
+  cluster_eres_data_p0: 0.15
+  cluster_eres_data_p1: 0.05
+  cluster_eres_data_p2: 0.05
+  # MC fit: PPG12 PYTHIA tight+iso prompt-photon sigma vs ET (smearing OFF), 2-param form.
+  cluster_eres_mc_p0: 0.185
+  cluster_eres_mc_p1: 0.000
+  cluster_eres_mc_p2: 0.040
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 

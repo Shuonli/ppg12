@@ -19,7 +19,7 @@ output:
   eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
   response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
   data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
-  var_type: "bdt_energyresolution8_0rad"
+  var_type: "bdt_eres_smear_cE0p08"
   final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
 
 analysis:
@@ -44,6 +44,14 @@ analysis:
   #reco_iso_max_s: 0.0
   reco_noniso_min_shift: 0.8
   reco_noniso_max: 20.0
+
+  # L1 trigger-efficiency correction on data clusters: weight *= 1/eps_L1(ET^reco)
+  # Gumbel-CDF parametrization eps_L1(ET) = p0 * exp(-exp(-(ET - mu)/beta))
+  # measured in plot_trigger_bit30.C with scaled[10]/live[30].
+  apply_trigger_eff_correction: 1
+  trigger_eff_p0: 1.000
+  trigger_eff_mu: -2.04
+  trigger_eff_beta: 3.33
   reco_min_ET: 5.0
   cone_size: 3
   eff_dR: 0.1
@@ -81,11 +89,22 @@ analysis:
   # off and applies w(z_h) (single MC) or w(z_h)*w(z_mb) (double MC) per event.
   # Flip truth_vertex_reweight_on to 1 to switch the nominal 1.5 mrad
   # analysis from the f(z_r) reco-level reweight to the truth-level one.
-  truth_vertex_reweight_on: 1
-  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root"
+  truth_vertex_reweight_on: 0
+  truth_vertex_reweight_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root"
   fit_option: 1
   cluster_escale: 1.0
-  cluster_eres: 0.08
+  cluster_eres: 0.0   # legacy multiplicative smear (retired); see additive eres_data/_mc params below
+  # Additive ET-dependent smearing on the response-matrix arm only.
+  # sigma_extra(pT) = sqrt(max(0, sigma_data^2(pT) - sigma_MC^2(pT)));
+  # each sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2); smear added in GeV = sigma_extra * pT_truth.
+  # Nominal data fit: f_energy_example_cE_0p05 (from function_compare_wide.root).
+  cluster_eres_data_p0: 0.13
+  cluster_eres_data_p1: 0.08
+  cluster_eres_data_p2: 0.08
+  # MC fit: PPG12 PYTHIA tight+iso prompt-photon sigma vs ET (smearing OFF), 2-param form.
+  cluster_eres_mc_p0: 0.185
+  cluster_eres_mc_p1: 0.000
+  cluster_eres_mc_p2: 0.040
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 
@@ -252,26 +271,27 @@ analysis:
 
   # Run range for data processing (-1 = no bound)
   run_min: 47289
-  run_max: 51274
+  run_max: 54000
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
   # Total luminosity (pb^-1) for the selected run range.
   # Nominal switched to all-z (beam-delivered) 64.3718 pb^-1 on 2026-04-22;
   # paired with vertex_cut_truth=9999 to widen the MBD-eff truth denominator.
-  lumi: 47.2076
+  lumi: 64.3718
 
   unfold:
     resultit: 2
     resultleak: 1
     reweight: 1
-    # Truth-pT reweight for unfolding response prior. Re-derived 2026-04-25
-    # from R_flat = data_unfolded / mc_truth on allz nominal, fit range [10,36] GeV,
-    # rational(2,2) form, chi2/ndf=0.11. clamp_pT_min/max bracket the fit range so
-    # f_reweight is never evaluated below the dropped lowest reco bin or above the
-    # high-pT statistical cutoff. Loader: RecoEffCalculator_TTreeReader.C ~line 574.
+    # Truth-pT reweight for unfolding response prior. Re-derived 2026-04-27
+    # from R = (data unfolded with iter=1, no-truth-reweight variant) / mc_truth_prior
+    # (both unit-area normalized) on allz nominal with iso 0.490+0.037*ET and the
+    # L1 trigger-efficiency correction enabled. Fit range [8,35] GeV, rational(2,2)
+    # form (parameter-bounded). Iter=1 captures the prior-bias correction on the
+    # first round of iterative-prior reweighting. Loader: RecoEffCalculator_TTreeReader.C ~line 606.
     truth_reweight:
       formula: "([0] + [1]*x + [3]*x*x) / (1 + [2]*x + [4]*x*x)"
-      params: [-0.215115, -0.043400, -0.232349, 0.007216, 0.015592]
+      params: [4.05592, -0.984728, -0.478818, 0.0723232, 0.0522681]
       xmin: 0
       xmax: 100
       clamp_pT_min: 10
