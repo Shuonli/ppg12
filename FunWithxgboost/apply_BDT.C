@@ -195,7 +195,7 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
     const int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);
 
     // NPB training phase-space (match `config_npb_training.yaml`)
-    const float npb_et_min = 6.0;
+    const float npb_et_min = 5.0;
     const float npb_et_max = 40.0;
     const float npb_eta_max = 0.7;
 
@@ -508,7 +508,7 @@ void apply_BDT(const std::string &configname = "config_nom.yaml", const std::str
 
                 for (size_t i = 0; i < kModelNames.size(); i++)
                 {
-                    if (cluster_Et_BDT > 7)
+                    if (cluster_Et_BDT > 4)
                     {
                         var.cluster_bdt[i][icluster] = var.bdt_list[i].Compute(x_list[i])[0];
                     }
