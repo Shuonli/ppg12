@@ -222,6 +222,12 @@ VARIANTS = [
          syst_type=None,     syst_role=None),
     dict(name="energyscale26down", clusterescale=0.974,
          syst_type=None,     syst_role=None),
+    # ET-dependent residual escale non-linearity (May 2026). Linear slope
+    # 5e-4 /GeV gives 0% correction at ET=10 GeV and +1% at ET=30 GeV
+    # (motivated by ATLAS Run-2 photon-performance paper, arXiv:2003.13685).
+    # Symmetrized as a one-sided variation inside the escale group.
+    dict(name="escale_nl", cluster_escale_nl_slope=5e-4, cluster_escale_nl_ref_ET=10.0,
+         syst_type="escale_nl", syst_role="one_sided"),
     # Role labels follow the *output* (cross-section) direction, matching the
     # escale convention above: less smearing → unfolded yield goes up,
     # more smearing → unfolded yield goes down. Without this convention the
@@ -421,6 +427,7 @@ SYST_TYPES = {
     # The mask_phisymm_or variant now carries syst_type=None.
     # ---- energy scale and resolution ----
     "escale":       {"mode": "two_sided",   "group": "escale"},
+    "escale_nl":    {"mode": "one_sided",   "group": "escale"},
     "eres":         {"mode": "two_sided",   "group": "eres"},
     # ---- DI blending fraction: data-driven envelope from chi^2 fit at the
     #     preselection cut. Two period-pinned variants at f_best (0.290 at
@@ -446,7 +453,7 @@ SYST_TYPES = {
 # tight/non-tight ID + noniso + fit form + MC closure; NPB and efficiency
 # are stand-alone groups; unfolding combines reweight + iter scan).
 SYST_GROUPS = {
-    "escale":      ["escale"],
+    "escale":      ["escale", "escale_nl"],
     "eres":        ["eres"],
     "purity":      ["photon_id_tight", "photon_id_nontight",
                     "noniso", "purity_fit", "purity_fit_ci",
@@ -526,6 +533,8 @@ OVERRIDE_MAP = {
     "lumi": (["analysis"],                              "lumi"),
     "clusterescale": (["analysis"],                              "cluster_escale"),
     "clustereres": (["analysis"],                              "cluster_eres"),
+    "cluster_escale_nl_slope":  (["analysis"],                   "cluster_escale_nl_slope"),
+    "cluster_escale_nl_ref_ET": (["analysis"],                   "cluster_escale_nl_ref_ET"),
     # Additive ET-dependent smearing: 3 data params + 3 MC params
     "cluster_eres_data_p0": (["analysis"],                       "cluster_eres_data_p0"),
     "cluster_eres_data_p1": (["analysis"],                       "cluster_eres_data_p1"),

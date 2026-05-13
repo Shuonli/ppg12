@@ -105,6 +105,10 @@ analysis:
   cluster_eres_mc_p0: 0.185
   cluster_eres_mc_p1: 0.000
   cluster_eres_mc_p2: 0.040
+  # ET-dependent residual escale non-linearity: cluster_Et *= 1 + slope*(ET - ref_ET).
+  # Nominal slope = 0 (no NL applied); syst variant uses slope = 5e-4 /GeV.
+  cluster_escale_nl_slope: 0.0
+  cluster_escale_nl_ref_ET: 10.0
   mc_purity_correction: 0
   mc_purity_correction_file: ""
 

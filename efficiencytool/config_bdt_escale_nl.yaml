@@ -19,7 +19,7 @@ output:
   eff_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency"
   response_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response"
   data_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo"
-  var_type: "bdt_nom"
+  var_type: "bdt_escale_nl"
   final_outfile: "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final"
 
 analysis:
@@ -107,7 +107,7 @@ analysis:
   cluster_eres_mc_p2: 0.040
   # ET-dependent residual escale non-linearity: cluster_Et *= 1 + slope*(ET - ref_ET).
   # Nominal slope = 0 (no NL applied); syst variant uses slope = 5e-4 /GeV.
-  cluster_escale_nl_slope: 0.0
+  cluster_escale_nl_slope: 0.0005
   cluster_escale_nl_ref_ET: 10.0
   mc_purity_correction: 0
   mc_purity_correction_file: ""

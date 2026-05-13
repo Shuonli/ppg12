@@ -547,6 +547,13 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(); // 0 for no reweighting, 1 for reweighting
 
     float clusterescale = configYaml["analysis"]["cluster_escale"].as<float>(1.0);
+    // ET-dependent residual escale non-linearity (May 2026). Scales cluster_Et by
+    //   1 + slope * (cluster_Et - ref_ET)
+    // applied AFTER the flat clusterescale. Slope = 5e-4 /GeV in the nominal
+    // syst variant gives 0% correction at ET=10 GeV and +1% at ET=30 GeV.
+    // Slope = 0 disables the correction.
+    float cluster_escale_nl_slope  = configYaml["analysis"]["cluster_escale_nl_slope" ].as<float>(0.0);
+    float cluster_escale_nl_ref_ET = configYaml["analysis"]["cluster_escale_nl_ref_ET"].as<float>(10.0);
     // Legacy multiplicative MC smearing (retired). Read only for backward compatibility
     // with older configs; the new scheme below ignores it.
     float clustereres = configYaml["analysis"]["cluster_eres"].as<float>(0.0);
@@ -2116,6 +2123,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
             if (issim)
             {
                 cluster_Et[icluster] = cluster_Et[icluster] * clusterescale;
+                if (cluster_escale_nl_slope != 0.0)
+                {
+                    cluster_Et[icluster] *= 1.0 + cluster_escale_nl_slope *
+                                            (cluster_Et[icluster] - cluster_escale_nl_ref_ET);
+                }
                 // No multiplicative smearing here anymore. Additive ET-dependent
                 // smearing is applied only at the response-matrix fill sites in the
                 // tight+iso truth-matched block (search: cluster_Et_smear).
