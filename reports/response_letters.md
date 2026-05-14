@@ -32,7 +32,7 @@ Held pending expert consultation on the canonical ISR/FSR field-theoretic phrasi
 
 > line 30 - ref [1] inside period
 
-Not changed because the .tex source already places `\cite{Aurenche:2006vj}` before the period at L72. The PDF appears to render the citation after the period due to the bibstyle's hyperref/natbib treatment; once the venue switch to REVTeX 4-2 with apsrev4-2 is applied for submission, this rendering will normalize.
+Addressed: the citation now renders inside the period in the current draft ("partons into photons [1]." instead of "partons into photons. [1]"). The .tex source places `\cite{Aurenche:2006vj}` before the period at main.tex L72, and the rebuilt PDF reflects this.
 
 > line 34 - "cross section" / "cross-section" — I prefer no hyphen; what's the official rule?
 
