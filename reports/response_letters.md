@@ -227,7 +227,7 @@ Held pending the plot cosmetic fixes. The proposed change replaces the current p
 
 > First sentence of the abstract is borderline run-on. Suggest splitting after "200 GeV".
 
-Addressed: the abstract has been rewritten. The first sentence now reads "We report a measurement of the differential cross section of isolated prompt photon production at midrapidity in $p+p$ collisions at $\sqrt{s}=200$ GeV." and a second sentence carries the dataset and luminosity information. The new abstract is at L60-62 of the current draft.
+Addressed: the abstract first sentence has been split at "200 GeV" as suggested. The opening now reads "The differential cross section of isolated prompt-photon production is measured as a function of photon transverse energy in proton--proton collisions at $\sqrt{s}=200$ GeV. The data were recorded in 2024 with the sPHENIX detector at the Relativistic Heavy Ion Collider, corresponding to an integrated luminosity of $64.4$ pb$^{-1}$."
 
 > Last sentence of the abstract: "sensitive to" → "dependence on" the gluon PDF, unless a sensitivity study has been performed.
 
@@ -271,7 +271,7 @@ The $N^C/N^D$ ratio is wrapped in parentheses and the terminating period has bee
 
 > L225 equation 3: remove the dot, it's not needed.
 
-Held pending interpretation. The current Eq. 3 (eq:purity_leak) already ends with a comma rather than a period, so the literal "dot" at the end of the equation has already been removed. If the reviewer's "dot" refers instead to the `\cdot` multiplication symbol between the $B$-factor and the parenthesized $C/D$ ratio inside the equation, that can also be deleted for parallelism with Eq. 2 (now that the ratio is in parentheses). The comment is marked in the current draft as a red TODO marker at L222 for visibility, and the intent will be confirmed with the reviewer in the next round.
+Addressed: the multiplication `\cdot` between the $B$-factor and the parenthesized $C/D$ ratio in Eq. 3 (eq:purity_leak) has been removed for parallelism with Eq. 2 (where the ratio is also in parentheses).
 
 > L229 / Figure 4 caption: "an Pade fit" → "a Pade fit"
 
