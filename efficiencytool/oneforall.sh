@@ -48,7 +48,23 @@ case "$CONFIGNAME" in
     PERIOD0="${base}_0rad.yaml"
     PERIOD1="${base}_1p5mrad.yaml"
     if [ -f "$PERIOD0" ] && [ -f "$PERIOD1" ]; then
+      # 2026-05-14: run merge_periods.sh under a guard so its failure does
+      # NOT abort this script before the data hadd. The 2026-05-13 variant
+      # Phase 2 hit a TFileMerger silent partial-merge inside merge_periods.C
+      # for ~43 configs; with set -eo pipefail the data hadd below never
+      # ran for those configs → all-range data_histo stayed stale (from a
+      # previous run) for ~11 hours, silently inflating systematic
+      # deviations until the next audit. Always running the data hadd
+      # gives a consistent all-range data even when MC merge had problems
+      # (the audit catches MC issues separately).
+      set +e
       bash merge_periods.sh "$PERIOD0" "$PERIOD1" "$CONFIGNAME"
+      mp_rc=$?
+      set -e
+      if [ $mp_rc -ne 0 ]; then
+        echo "[oneforall] WARN: merge_periods.sh exited ${mp_rc} for ${CONFIGNAME};" \
+             "continuing to data hadd + CalcPhotonYield. Audit MC merges manually."
+      fi
       # Data was processed per-period in Phase 1; hadd to build all-range.
       # Replaces the earlier RecoEffCalculator_TTreeReader(..., "data") re-read,
       # which was redundant (per-period run ranges are disjoint + their union =
