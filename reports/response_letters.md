@@ -139,7 +139,7 @@ Held pending a cosmetic fix in the plot macro. The vertical lines are horizontal
 
 > line 324 - I do not understand what is meant by HERWIG ... mentioned at line 109 of the MC section but absent from the systematics.
 
-Addressed: the HERWIG cross-check is now folded into the isolation-efficiency systematic in §IV. The MC-section sentence at L109 is tightened to limit the HERWIG cross-check to the isolation efficiency. The efficiency-uncertainty paragraph at L319 reads "The isolation efficiency uncertainty is taken from variations of the empirical $E_T^\mathrm{iso}$ correction described in Sec.~III.B and from the comparison of the isolation efficiency between PYTHIA and HERWIG (Sec.~III.A), together with a separate envelope assigned to the MBD-vertex efficiency...". The per-bin envelope from the HERWIG comparison is carried by the analysis note (`systematics.tex` L191-194, L305).
+Addressed in two places. (a) In the MC-sample section at L109, the HERWIG sentence now states it is used as a cross-check on the isolation efficiency. (b) In the systematics section at L319, the HERWIG vs PYTHIA isolation-efficiency comparison is now listed as part of the isolation-efficiency systematic uncertainty.
 
 > line 338 - it would be useful in the text to walk through what each of the panels in figure 7 shows. For example, "The middle panel shows...". Right now, the discussion is focused on the upper panel.
 
