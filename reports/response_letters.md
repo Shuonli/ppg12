@@ -12,11 +12,10 @@ Each item below quotes the reviewer's comment verbatim with a `>` blockquote, fo
 
 > Abstract - often abstracts avoid too many defined acronyms and save that for the main text. That often helps readability.
 
-Addressed: the abstract has been rewritten so that only "sPHENIX" appears as an acronym in the abstract itself. EMCal, NLO, pQCD, JETPHOX, MC, PYTHIA-8, and BDT have been pushed to first use in the body. The new abstract is at L60-62 of the current draft.
+Addressed: the redundant acronym definitions have been removed from the abstract while preserving the original sentence structure. The "(EMCal)" definition was dropped (the abstract now uses "electromagnetic calorimeter" inline, and the later mention reads "electromagnetic and hadronic calorimeters"); the "(pQCD)" definition was dropped in favour of writing out "perturbative-QCD" at both occurrences. The new abstract is at L60-62 of the current draft.
 
 > line 10 - should we quote 64.37 pb^-1 or just 64.4 pb^-1 as is done in the figures? Good to be consistent.
 
-Addressed: the luminosity is now quoted uniformly as 64.4 pb⁻¹ throughout the paper, with the asymmetric uncertainty rounded to matching 1-decimal-place precision ($64.4^{+5.9}_{-4.3}$ pb⁻¹) at the single definition point in Sec. III.E. All five sites (abstract, intro, luminosity definition, systematics paragraph, summary) now share the same 1-dp form.
 
 > line 17 - A comparison with the previous PHENIX measurement of direct photons at the same collision energy is also presented.
 
