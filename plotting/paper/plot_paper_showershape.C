@@ -196,7 +196,7 @@ void plot_paper_showershape(const std::string &configsuffix = "showershape")
             leg->SetTextSize(0.045);
             leg->AddEntry(proj_data, "Data",         "lep");
             leg->AddEntry(proj_sig,  "Signal MC",    "l");
-            leg->AddEntry(proj_bkg,  "Inclusive MC", "l");
+            leg->AddEntry(proj_bkg,  "Inclusive jet MC", "l");
             leg->Draw();
         }
 
