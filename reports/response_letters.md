@@ -111,7 +111,7 @@ Held pending the new plotting macro. The side-by-side Fig. 3 (left = current sch
 
 > line 236-237 - I am not sure all of this needs to be said since it just restates what the figure shows.
 
-Addressed: the redundant restatement-of-figure sentence at L255 has been trimmed. The paragraph now retains only the quantitative range — "The signal leakage-corrected purity ranges from approximately 0.5 at 10 GeV to approximately 0.9 around 30 GeV" — and the wider commentary about the leakage-correction size has been removed.
+Addressed: the redundant restatement of the figure has been removed at L255. The 0.1–0.2 leakage-correction commentary and the "0.5 at 10 GeV to 0.9 around 30 GeV" range are both dropped, since the values are read directly from Fig.~\ref{fig:purity}. The paragraph now retains only the figure reference and the Padé-fit description.
 
 > Padé equation - I would explicitly write out the equation P[1,1](x) so reader knows what it is.
 
