@@ -179,7 +179,7 @@ Addressed: the previously inconsistent "direct-photon measurement by PHENIX" phr
 
 > Section 2 - reference to PPG03 paper with calorimeter calibration details would help.
 
-Addressed: a new bibtex entry `sPHENIX:2025dET` (arXiv 2504.02242, Phys. Rev. C 112, 024908) has been added to references.bib for the sPHENIX measurement that establishes the EMCal energy-scale calibration via iterative $\pi^0$-mass fitting. The citation is inserted in Sec. III "MC simulation" near the energy-resolution smearing sentence. No paper with the literal "PPG03" tag exists; this is the closest published EMCal-calibration reference.
+Addressed: the bibtex entry `sPHENIX:2025dET` (arXiv 2504.02242, Phys. Rev. C 112, 024908) has been added to references.bib, and the citation is inserted in Sec. III "MC simulation" at the smearing sentence backing the "resolution measured in data via in-situ $\pi^0$ and $\eta$ mass-peak fits" claim. No paper with the literal "PPG03" tag exists; this is the closest published EMCal-calibration reference.
 
 > L46: "Run 24" → "RHIC Run 24"
 
