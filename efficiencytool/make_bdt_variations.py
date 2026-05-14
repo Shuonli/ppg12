@@ -149,15 +149,19 @@ VARIANTS = [
     dict(name="no_unfolding_reweighting", reweight=0,
          syst_type="reweight", syst_role="one_sided"),
 
-    # Photon-ID systematics — BDT cut placement (2026-04-25 locked).
-    # tightup_p05: tight_bdt_min_intercept += 0.05 (slope unchanged).
-    #   Nominal intercept = 0.8333..., new = 0.8833... Tightens the signal
-    #   selection at all ET; effect is dominantly an efficiency loss in A.
+    # Photon-ID systematics — BDT cut placement (2026-04-25 locked;
+    # nominal BDT lines re-derived 2026-05-13 to move tight/non-tight
+    # parametric crossover from ET=25 to ET=42, preserving values at ET=10).
+    # tightup_p05: tight_bdt_min_intercept += 0.05 (slope inherited from
+    #   nominal = -0.0015625). Nominal intercept = 0.815625, new = 0.865625.
+    #   Tightens the signal selection by a uniform +0.05 shift across all
+    #   ET; effect is dominantly an efficiency loss in A.
     # ntdown_m10: nt_bdt_min_intercept -= 0.10 (slope unchanged).
-    #   Nominal intercept = 0.7333..., new = 0.6333... Loosens the non-tight
-    #   inner edge so C/D widen; tests bkg-template-shape stability.
+    #   Non-tight LOWER edge intercept = 0.7333..., new = 0.6333...
+    #   (independent of the tight/non-tight crossover fix). Loosens the
+    #   non-tight inner edge so C/D widen; tests bkg-template-shape stability.
     dict(name="tightup_p05",
-         tight_bdt_min_intercept=0.8833333333333334,
+         tight_bdt_min_intercept=0.865625,
          syst_type="photon_id_tight", syst_role="one_sided"),
     dict(name="ntdown_m10",
          nt_bdt_min_intercept=0.6333333333333333,
