@@ -105,6 +105,14 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TFile *fin_NLO_cteq_dn  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_cteq_20_chunked.root");
     TFile *fin_NLO_msht_up  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_05_chunked.root");
     TFile *fin_NLO_msht_dn  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_20_chunked.root");
+
+    // Per-PDF Hessian uncertainty bands (used in the bottom pad).
+    TFile *fin_pdfunc = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_pdfunc.root");
+    TGraphAsymmErrors *g_pdf_band_ct18_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_ct18");
+    TGraphAsymmErrors *g_pdf_band_nnpdf4_abs = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_nnpdf4");
+    TGraphAsymmErrors *g_pdf_band_cteq_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_cteq");
+    TGraphAsymmErrors *g_pdf_band_msht_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_msht");
+
     TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
@@ -159,6 +167,36 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     h_NLO_data_cteq->Divide(h_data);
     TH1F *h_NLO_data_msht = (TH1F *)h_NLO_msht->Clone("h_NLO_data_msht");
     h_NLO_data_msht->Divide(h_data);
+
+    // Build per-PDF Hessian uncertainty bands in JETPHOX/Data form. The
+    // bands in fin_pdfunc are cross-section absolute values; the relative
+    // uncertainty (eyhigh/y, eylow/y) is applied to each PDF's nominal
+    // ratio (h_NLO_data_<pdf>) so the band sits around each central line
+    // in the bottom-pad ratio plot.
+    auto build_pdf_band_ratio = [&](TGraphAsymmErrors *g_band_abs, TH1F *h_ratio) {
+        TGraphAsymmErrors *g_out = new TGraphAsymmErrors();
+        int n = g_band_abs->GetN();
+        for (int i = 0; i < n; i++) {
+            double x = g_band_abs->GetX()[i];
+            double y_abs = g_band_abs->GetY()[i];
+            if (y_abs <= 0) continue;
+            double eyhi_rel  = g_band_abs->GetErrorYhigh(i) / y_abs;
+            double eylow_rel = g_band_abs->GetErrorYlow(i)  / y_abs;
+            int bin = h_ratio->FindBin(x);
+            double ratio = h_ratio->GetBinContent(bin);
+            if (ratio <= 0) continue;
+            double ex = 0.5 * h_ratio->GetBinWidth(bin);
+            int p = g_out->GetN();
+            g_out->SetPoint(p, x, ratio);
+            g_out->SetPointError(p, ex, ex, ratio * eylow_rel, ratio * eyhi_rel);
+        }
+        return g_out;
+    };
+
+    TGraphAsymmErrors *g_pdfband_ct18  = build_pdf_band_ratio(g_pdf_band_ct18_abs,   h_NLO_data);
+    TGraphAsymmErrors *g_pdfband_nnpdf = build_pdf_band_ratio(g_pdf_band_nnpdf4_abs, h_NLO_data_nnpdf);
+    TGraphAsymmErrors *g_pdfband_cteq  = build_pdf_band_ratio(g_pdf_band_cteq_abs,   h_NLO_data_cteq);
+    TGraphAsymmErrors *g_pdfband_msht  = build_pdf_band_ratio(g_pdf_band_msht_abs,   h_NLO_data_msht);
 
     // Up/down scale variations -> theory/data ratios for NNPDF/CTEQ/MSHT.
     auto load_NLO = [&](TFile *f) {
@@ -818,6 +856,27 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_syst_rel_msht  ->SetFillColorAlpha(mkcolpdf[3], kPdfBandAlpha);
     g_syst_rel_msht  ->SetLineColor(mkcolpdf[3]);
     // g_syst_rel_msht  ->Draw("2 same");
+
+    // Per-PDF Hessian uncertainty bands, drawn first so the central lines
+    // render on top. Filled box per ET bin in each PDF's color, low alpha
+    // so the four bands remain readable when they overlap.
+    const float kPdfHessAlpha = 0.30;
+    g_pdfband_ct18 ->SetFillColorAlpha(mkcolpdf[0], kPdfHessAlpha);
+    g_pdfband_ct18 ->SetLineColor(mkcolpdf[0]);
+    g_pdfband_ct18 ->SetLineWidth(0);
+    g_pdfband_ct18 ->Draw("5 same");
+    g_pdfband_nnpdf->SetFillColorAlpha(mkcolpdf[1], kPdfHessAlpha);
+    g_pdfband_nnpdf->SetLineColor(mkcolpdf[1]);
+    g_pdfband_nnpdf->SetLineWidth(0);
+    g_pdfband_nnpdf->Draw("5 same");
+    g_pdfband_cteq ->SetFillColorAlpha(mkcolpdf[2], kPdfHessAlpha);
+    g_pdfband_cteq ->SetLineColor(mkcolpdf[2]);
+    g_pdfband_cteq ->SetLineWidth(0);
+    g_pdfband_cteq ->Draw("5 same");
+    g_pdfband_msht ->SetFillColorAlpha(mkcolpdf[3], kPdfHessAlpha);
+    g_pdfband_msht ->SetLineColor(mkcolpdf[3]);
+    g_pdfband_msht ->SetLineWidth(0);
+    g_pdfband_msht ->Draw("5 same");
 
     lineone->SetLineColor(kBlack);
     lineone->SetLineStyle(2);
