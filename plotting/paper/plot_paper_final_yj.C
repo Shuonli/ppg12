@@ -1251,12 +1251,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     frame_ratio_phenix->Draw("axis");
 
     TGraphAsymmErrors *g_ratio_phenix       = new TGraphAsymmErrors();
-    TGraphAsymmErrors *g_ratio_phenix_pstat = new TGraphAsymmErrors();
-    TGraphAsymmErrors *g_ratio_phenix_dstat = new TGraphAsymmErrors();
+    TGraphAsymmErrors *g_ratio_phenix_stat  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_ratio_phenix_psys  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_data_sys_band      = new TGraphAsymmErrors();
-
-    const double kStatOffset = 0.25;  // small horizontal offset to separate the two stat bars
 
     int rp_idx = 0;
     for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
@@ -1311,13 +1308,11 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         g_ratio_phenix->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, 0.0, 0.0);
 
-        // PHENIX stat: vertical bar at slight left offset
-        g_ratio_phenix_pstat->SetPoint(rp_idx, pT_c - kStatOffset, r);
-        g_ratio_phenix_pstat->SetPointError(rp_idx, 0.0, 0.0, r_pstat_lo, r_pstat_hi);
-
-        // sPHENIX stat: vertical bar at slight right offset
-        g_ratio_phenix_dstat->SetPoint(rp_idx, pT_c + kStatOffset, r);
-        g_ratio_phenix_dstat->SetPointError(rp_idx, 0.0, 0.0, r_dstat, r_dstat);
+        // Combined stat: quadrature sum of PHENIX-corrected and sPHENIX-data stats
+        double r_stat_lo = std::sqrt(r_pstat_lo * r_pstat_lo + r_dstat * r_dstat);
+        double r_stat_hi = std::sqrt(r_pstat_hi * r_pstat_hi + r_dstat * r_dstat);
+        g_ratio_phenix_stat->SetPoint(rp_idx, pT_c, r);
+        g_ratio_phenix_stat->SetPointError(rp_idx, 0.0, 0.0, r_stat_lo, r_stat_hi);
 
         g_ratio_phenix_psys->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix_psys->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_psys_lo, r_psys_hi);
@@ -1346,17 +1341,11 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_ratio_phenix_psys->SetFillColorAlpha(kViolet + 1, 0.30);
     g_ratio_phenix_psys->Draw("2 same");
 
-    // Layer 3a: PHENIX stat bar (violet, left of marker)
-    g_ratio_phenix_pstat->SetMarkerStyle(0);
-    g_ratio_phenix_pstat->SetLineColor(kViolet + 1);
-    g_ratio_phenix_pstat->SetLineWidth(2);
-    g_ratio_phenix_pstat->Draw("Z same");
-
-    // Layer 3b: sPHENIX stat bar (azure, right of marker)
-    g_ratio_phenix_dstat->SetMarkerStyle(0);
-    g_ratio_phenix_dstat->SetLineColor(col[0]);
-    g_ratio_phenix_dstat->SetLineWidth(2);
-    g_ratio_phenix_dstat->Draw("Z same");
+    // Layer 3: combined stat bar (quadrature sum, centred on the ratio marker)
+    g_ratio_phenix_stat->SetMarkerStyle(0);
+    g_ratio_phenix_stat->SetLineColor(kViolet + 1);
+    g_ratio_phenix_stat->SetLineWidth(2);
+    g_ratio_phenix_stat->Draw("Z same");
 
     // Layer 4 (front): markers with bin-width horizontal bars only
     g_ratio_phenix->SetMarkerStyle(PHENIXcorrMarker);

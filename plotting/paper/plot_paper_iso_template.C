@@ -124,7 +124,7 @@ void plot_paper_iso_template(const std::string &tune = "bdt_nom")
     h_tight_isoET->Draw("same axis");
 
     h_tight_isoET->SetYTitle("Counts / Bin Width");
-    h_tight_isoET->SetXTitle("#it{E}_{T}^{iso} [GeV]");
+    h_tight_isoET->SetXTitle("#it{E}_{T}^{iso,reco} [GeV]");
     h_tight_isoET->GetXaxis()->SetTitleOffset(1.2);
 
     std::string st_etbin = Form("%0.0f < #kern[-0.25]{#it{E}_{T}^{#gamma}} < %0.0f GeV",
