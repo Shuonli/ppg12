@@ -174,17 +174,13 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // ratio (h_NLO_data_<pdf>) so the band sits around each central line
     // in the bottom-pad ratio plot.
     // Horizontal errors set to 0 so the filled band edges interpolate
-    // between bin centers. Restricted to the reported analysis range
-    // 12 < ETg < 32 GeV; the band starts and ends at the fiducial
-    // boundaries via edge-extrapolation points (copy of the nearest
-    // bin's relative uncertainty) so the band terminates sharply at
-    // ETg = 12 and ETg = 32 without the JETPHOX-stat divergence in
-    // the outer bins inflating the envelope.
+    // between bin centers, matching the central-line draws (which also
+    // pass through bin centers). Restricted to the reported analysis
+    // range 12 < ETg < 32 GeV so the band starts/ends at the same bin
+    // centers as the central lines.
     auto build_pdf_band_ratio = [&](TGraphAsymmErrors *g_band_abs, TH1F *h_ratio) {
         TGraphAsymmErrors *g_out = new TGraphAsymmErrors();
         int n = g_band_abs->GetN();
-        double first_y = -1, first_eyhi = 0, first_eylow = 0;
-        double last_y = -1,  last_eyhi  = 0, last_eylow  = 0;
         for (int i = 0; i < n; i++) {
             double x = g_band_abs->GetX()[i];
             if (x < 12.0 || x > 32.0) continue;
@@ -196,22 +192,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
             double ratio = h_ratio->GetBinContent(bin);
             if (ratio <= 0) continue;
             int p = g_out->GetN();
-            if (p == 0) {
-                // Left edge: anchor at x=12 with first bin's uncertainty.
-                g_out->SetPoint(0, 12.0, ratio);
-                g_out->SetPointError(0, 0.0, 0.0, ratio * eylow_rel, ratio * eyhi_rel);
-                p = 1;
-                first_y = ratio; first_eyhi = ratio * eyhi_rel; first_eylow = ratio * eylow_rel;
-            }
             g_out->SetPoint(p, x, ratio);
             g_out->SetPointError(p, 0.0, 0.0, ratio * eylow_rel, ratio * eyhi_rel);
-            last_y = ratio; last_eyhi = ratio * eyhi_rel; last_eylow = ratio * eylow_rel;
-        }
-        // Right edge: anchor at x=32 with the last bin's uncertainty.
-        if (last_y > 0) {
-            int p = g_out->GetN();
-            g_out->SetPoint(p, 32.0, last_y);
-            g_out->SetPointError(p, 0.0, 0.0, last_eylow, last_eyhi);
         }
         return g_out;
     };
