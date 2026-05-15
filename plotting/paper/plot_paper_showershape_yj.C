@@ -39,7 +39,7 @@
 
 namespace
 {
-const std::vector<std::string> kPaperVars = {"h2d_weta_cogx", "h2d_e32_to_e35"};
+const std::vector<std::string> kPaperVars = {"h2d_weta_cogx", "h2d_bdt"};
 constexpr int kEtaBin = 0;
 constexpr int kPtBin  = 1;     // pT_bins = [10,14,18,22,28,30]; pt1 = 14-18 GeV
 constexpr int kCutBin = 1;     // 1 = preselection applied
@@ -116,6 +116,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         if (xaxisname == "weta_cogx")  return "#it{w}_{#it{#eta}}";
         if (xaxisname == "wphi_cogx")  return "#it{w}_{#it{#phi}}";
         if (xaxisname == "e32_to_e35") return "#it{E}_{3#times2} /#it{E}_{3#times5}";
+        if (xaxisname == "bdt")        return "Photon-ID BDT score";
         return xaxisname;
     };
 
