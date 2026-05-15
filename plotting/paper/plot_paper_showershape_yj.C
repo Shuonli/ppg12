@@ -39,7 +39,7 @@
 
 namespace
 {
-const std::vector<std::string> kPaperVars = {"h2d_weta_cogx", "h2d_bdt"};
+const std::vector<std::string> kPaperVars = {"h2d_weta_cogx", "h2d_e32_to_e35", "h2d_bdt"};
 constexpr int kEtaBin = 0;
 constexpr int kPtBin  = 1;     // pT_bins = [10,14,18,22,28,30]; pt1 = 14-18 GeV
 constexpr int kCutBin = 1;     // 1 = preselection applied
