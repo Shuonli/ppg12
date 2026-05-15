@@ -94,7 +94,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // Alternative-PDF central-scale JETPHOX productions for the PDF
     // comparison panel (Lower-most pad of the final figure).
     TFile *fin_NLO_ct14  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10_chunked.root");
-    TFile *fin_NLO_nnpdf = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_10_chunked.root");
+    TFile *fin_NLO_nnpdf = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf4_10_chunked.root");
     TFile *fin_NLO_cteq  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_cteq_10_chunked.root");
     TFile *fin_NLO_msht  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_10_chunked.root");
     // Scale variations for the additional PDFs (used by the bottom-pad
@@ -175,11 +175,14 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // in the bottom-pad ratio plot.
     // Horizontal errors set to 0 so the filled band edges interpolate
     // smoothly between bin centers (matching the "C hist" central lines).
+    // Restrict to the reported analysis range 12 < ETg < 32 GeV; outside
+    // that the JETPHOX sample stats inflate the Hessian envelope.
     auto build_pdf_band_ratio = [&](TGraphAsymmErrors *g_band_abs, TH1F *h_ratio) {
         TGraphAsymmErrors *g_out = new TGraphAsymmErrors();
         int n = g_band_abs->GetN();
         for (int i = 0; i < n; i++) {
             double x = g_band_abs->GetX()[i];
+            if (x < 12.0 || x > 32.0) continue;
             double y_abs = g_band_abs->GetY()[i];
             if (y_abs <= 0) continue;
             double eyhi_rel  = g_band_abs->GetErrorYhigh(i) / y_abs;
@@ -864,19 +867,19 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     const float kPdfHessAlpha = 0.30;
     g_pdfband_ct18 ->SetFillColorAlpha(mkcolpdf[0], kPdfHessAlpha);
     g_pdfband_ct18 ->SetLineColor(mkcolpdf[0]);
-    g_pdfband_ct18 ->SetLineWidth(0);
+    g_pdfband_ct18 ->SetLineWidth(2);
     g_pdfband_ct18 ->Draw("4 same");
     g_pdfband_nnpdf->SetFillColorAlpha(mkcolpdf[1], kPdfHessAlpha);
     g_pdfband_nnpdf->SetLineColor(mkcolpdf[1]);
-    g_pdfband_nnpdf->SetLineWidth(0);
+    g_pdfband_nnpdf->SetLineWidth(2);
     g_pdfband_nnpdf->Draw("4 same");
     g_pdfband_cteq ->SetFillColorAlpha(mkcolpdf[2], kPdfHessAlpha);
     g_pdfband_cteq ->SetLineColor(mkcolpdf[2]);
-    g_pdfband_cteq ->SetLineWidth(0);
+    g_pdfband_cteq ->SetLineWidth(2);
     g_pdfband_cteq ->Draw("4 same");
     g_pdfband_msht ->SetFillColorAlpha(mkcolpdf[3], kPdfHessAlpha);
     g_pdfband_msht ->SetLineColor(mkcolpdf[3]);
-    g_pdfband_msht ->SetLineWidth(0);
+    g_pdfband_msht ->SetLineWidth(2);
     g_pdfband_msht ->Draw("4 same");
 
     lineone->SetLineColor(kBlack);
@@ -895,10 +898,12 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     l_pdf->SetTextFont(42);
     l_pdf->SetTextSize(0.085);
     l_pdf->SetNColumns(4);
-    l_pdf->AddEntry(h_NLO_data,       "CT18NLO",  "l");
-    l_pdf->AddEntry(h_NLO_data_nnpdf, "NNPDF3.1", "l");
-    l_pdf->AddEntry(h_NLO_data_cteq,  "CTEQ6.6",  "l");
-    l_pdf->AddEntry(h_NLO_data_msht,  "MSHT20NLO","l");
+    // Use the band+line composite (filled rectangle around the central
+    // line) so the legend marker conveys the Hessian uncertainty band too.
+    l_pdf->AddEntry(g_pdfband_ct18,  "CT18NLO",  "lf");
+    l_pdf->AddEntry(g_pdfband_nnpdf, "NNPDF4.0", "lf");
+    l_pdf->AddEntry(g_pdfband_cteq,  "CTEQ6.6",  "lf");
+    l_pdf->AddEntry(g_pdfband_msht,  "MSHT20NLO","lf");
     l_pdf->Draw("same");
 
     // Paper Fig. final.pdf -- 3-pad cross-section + theory ratios.
