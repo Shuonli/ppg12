@@ -173,114 +173,110 @@ Addressed: six entries in references.bib have been normalized to the `"{XXX Coll
 
 ## Response to Virginia
 
-> L51: PHENIX measurement is really prompt (direct + fragmentation), not "direct" — be consistent across the document.
+> As discussed in the context of the photon+jet paper, I wonder if it would be useful to show the BDT distribution in this paper where the BDT is described in much more detail than in that one where it is currently included
 
-Addressed: the previously inconsistent "direct-photon measurement by PHENIX" phrasing at L79 has been changed to "previous inclusive prompt-photon measurement by PHENIX", consistent with the L75 wording. The PHENIX paper arXiv 1205.5533 defines "direct photons" to include both quark-line bremsstrahlung and fragmentation contributions, which corresponds to "prompt" in the PPG12 terminology.
+Held pending the new plotting macro. The proposed figure parallels Fig. 1 of the current draft (data vs signal MC vs inclusive-jet MC, $14<\etg<18$~GeV slice) but shows the photon-identification BDT score with the tight-BDT threshold drawn as a vertical line. This overlaps with Jamie's L179 request and is scoped for the next revision using the existing `cut1` shower-shape plotting infrastructure.
 
-> Section 2 - reference to PPG03 paper with calorimeter calibration details would help.
+> 46- Run 24 -> RHIC Run 24
 
-Addressed: the bibtex entry `sPHENIX:2025dET` (arXiv 2504.02242, Phys. Rev. C 112, 024908) has been added to references.bib, and the citation is inserted in Sec. III "MC simulation" at the smearing sentence backing the "resolution measured in data via in-situ $\pi^0$ and $\eta$ mass-peak fits" claim. No paper with the literal "PPG03" tag exists; this is the closest published EMCal-calibration reference.
+Addressed: the `\RunOne` macro in `defs.sty` L11 was redefined to expand to "RHIC Run 24", which propagates to all body-text occurrences (main.tex L80 intro, L115 MC pile-up paragraph, L117 mixing prose, L375 summary). The remaining "in 2024" wording in the abstract at L61 is intentional plain-English context (calendar year), separate from the dataset-name shorthand carried by `\RunOne`.
 
-> L46: "Run 24" → "RHIC Run 24"
+> 51- I think we decided based on the definitions in this paper that the PHENIX measurement is really prompt (direct + fragmentation) photons, right? It would be good to be consistent in this paper even if PHENIX calls it direct
 
-Addressed: the `\RunOne` macro in `defs.sty` has been redefined to expand to "RHIC Run 24". All occurrences in the body text (intro L80, MC section L114, summary L368) update automatically through the macro.
+Addressed: the intro L75 wording is now "the PHENIX and STAR experiments reported prompt photon cross sections without an isolation requirement~\cite{PHENIX:2012jgx, STAR:2009ojw}", and the L80 closing sentence uses "previous inclusive prompt-photon measurement by PHENIX". Both phrasings use "prompt" consistently with the L70 definition of the term (direct + fragmentation).
 
-> L92: extra smearing 4% specific number odd; add detail on data/MC resolution matching or remove specific 4%.
+> section 2- would be useful to have a reference to the PPG03 paper with details on the calorimeter calibrations
 
-Addressed together with Jamie's L92 comment: the 4% specific number has been removed in favor of a description of the physics intent. L110 now reads "To account for residual differences between data and simulation in the single-particle EMCal energy resolution, an additional \etg{}-dependent Gaussian smearing is applied to the simulated cluster \et{} when filling the unfolding response matrix, with a width derived such that the simulated single-particle resolution matches the resolution measured in data. The unsmeared cluster \et{} is used for the photon-identification and isolation selections so that the additional resolution affects only the unfolding response." The detailed $\sigma_\mathrm{extra}(p_T)$ parametrization is documented in the analysis note.
+Addressed: the closest published EMCal-calibration reference is `sPHENIX:2025dET` (arXiv 2504.02242, Phys. Rev. C 112, 024908), added to `references.bib` at L1060. It is cited in Sec. III MC simulation at L111, backing the in-situ $\pi^0$ and $\eta$ mass-peak resolution match. No sPHENIX-tagged "PPG03" paper exists; this 2025 paper is the canonical pi-zero mass-peak calibration reference.
 
-> L108-116: pileup fractions are calculated, but there is no explicit statement that you combine SI + DI samples using these fractions.
+> 92- it seems a bit odd to discuss the specific extra smearing that is used since this is based entirely on what our internal simulations produce by default (and I don't think we show anywhere). I would add more detail on how this matching of the resolution between data and MC is done and/or remove the specific 4% number
 
-Addressed: L116 now ends with "The simulation sample used in this analysis is constructed within each crossing-angle period by combining the single-interaction and pile-up samples weighted by $(1-f_{\mathrm{PU}})$ and $f_{\mathrm{PU}}$ respectively, and the two crossing-angle periods are then combined by their integrated luminosities." The mixing weights and the per-period combination are now both explicit.
+Addressed: the smearing sentence at L111 has been simplified to "an additional \etg{}-dependent Gaussian smearing is applied to the simulated cluster \et{}, with a width derived such that the simulated resolution matches the one measured in data via in-situ $\pi^0$ and $\eta$ mass-peak fits~\cite{sPHENIX:2025dET}". The 4\% literal and the $\sigma_\mathrm{extra}(\etg)$ parametrization are no longer in the paper body. The wider-data and no-smearing brackets at L321 retain "$\approx 6\%$" only as a systematic-variation envelope, not as the nominal extra smearing.
 
-> L137: "relative to the physics signal at the analysis ET" → "relative to the physics signal in the kinematic range of this analysis"
+> 108-116- you discuss how the pileup fractions are calculated but I think no where do you say explicitly that you combine the single and double interaction simulation samples based on these fractions
 
-Addressed: L151 now reads "They fire the photon trigger at a rate that is non-negligible relative to the physics signal in the kinematic range of this analysis." The earlier "at the analysis $\etg{}$" wording has been replaced with the reviewer's preferred phrasing.
+Addressed: the sentence at L117 now reads "The simulation sample used in this analysis is constructed within each crossing-angle period by combining the single-interaction and pile-up samples weighted by $(1-f_{\mathrm{PU}})$ and $f_{\mathrm{PU}}$ respectively, and the two crossing-angle periods are then combined by their integrated luminosities." The mixing weights and the per-period luminosity combination are both stated explicitly.
 
-> L144: what other shower-shape variables (same comment as Jamie)?
+> 137- 'relative to the physics signal at the analysis ET' -> 'relative to the physics signal in the kinematic range of this analysis'
 
-Addressed together with Jamie's L144 comment. The full list of 17 additional NCB-BDT features is given in the Jamie response above and in `FunWithxgboost/config.yaml`; the paper retains the compact "together with additional shower-shape observables" wording to keep the methodology section focused.
+Addressed: the NCB-trigger sentence at L159 now reads "They fire the photon trigger at a rate that is non-negligible relative to the physics signal in the kinematic range of this analysis." The earlier "at the analysis \etg{}" wording has been replaced with the reviewer's preferred phrasing.
 
-> BDT distribution figure — useful here vs the photon+jet paper?
+> 144- what other shower shape variables?
 
-Held pending the new plotting macro. The BDT score data-vs-MC distribution figure overlaps with Jamie's L179 request and will land as one new figure paralleling Fig. 1, with the tight-BDT threshold drawn as a vertical line at one representative $p_T$ slice.
+Addressed: Table~\ref{tab:bdt_features} at main.tex L131-156 now lists the additional NCB-BDT features explicitly below the double horizontal rule, namely $w_{n\times 2}$ for $n=3,5,7$ (L146), $E_{1\times 1}/E_{1\times n}$ and $E_{1\times 1}/E_{m\times 1}$ for $n,m=3,5,7$ (L147-148), $E_{1\times 1}/E_{2\times 2}$ (L149), and $E_{2\times 2}/E_{m\times n}$ with $(m,n)\in\{(3,3),(3,5),(3,7),(5,3)\}$ (L150). The body text at L161 retains "together with additional shower-shape observables" and refers the reader to the table.
 
-> L308: specify the number of iteration variations you do.
+> 308- specify the number of iteration variations you do
 
-Addressed: L318 now reads "The unfolding uncertainty is evaluated by repeating the unfolding without the prior reweighting and by varying the number of Bayesian iterations to three and four (the nominal is two)." The specific iteration values used in the variations are now stated.
+Addressed: the unfolding-uncertainty sentence at L325 now reads "The unfolding uncertainty is evaluated by repeating the unfolding without the prior reweighting and by varying the number of Bayesian iterations to three and four (the nominal is two)." The specific iteration values are now stated.
 
-> L315-320: three treatments mentioned, but only two listed. Is luminosity the third?
+> 315-320- you mention three treatments but only list two (I guess the other is the luminosity uncertainty?)
 
-Addressed: the L323 sentence now lists three treatments explicitly, with the unfolding iteration uncertainty as the third (max-symmetrized) group. L320 reads "Each variation falls into one of three treatments. Two-sided sources (energy scale, energy resolution, non-isolation boundary, NCB cut, purity 68\% confidence interval, luminosity) yield asymmetric up and down deviations that are kept separate per \etg{} bin. One-sided sources (tight \gid{} threshold, non-tight \gid{} threshold, fit functional form, MC closure correction, isolation efficiency, unfolding reweighting, pile-up fraction) yield a single deviation that is symmetrized about the nominal. The unfolding iteration uncertainty is taken as the per-bin maximum of the iter-3 and iter-4 deviations, symmetrized about the nominal." Energy resolution has been moved into the two-sided per-bin group, consistent with the canonical taxonomy in `systematics.tex` L21.
+Addressed: the sentence at L327 now lists three treatments explicitly. The third group is the unfolding iteration uncertainty, taken as the per-bin maximum of the iter-3 and iter-4 deviations symmetrized about the nominal. The two-sided list at L327 also folds energy resolution and luminosity into the per-bin asymmetric group, consistent with the canonical taxonomy in the systematics aggregator.
 
-> L321: is the total systematic uncertainty excluding the global luminosity uncertainty?
+> 321- total systematic uncertainty excluding the global luminosity uncertainty
 
-Addressed: the Fig. 6 caption at L327 now reads "Breakdown of relative systematic uncertainties as a function of \etg. The Total envelope includes the global luminosity uncertainty (added in quadrature, bin-independent at $^{+9.1\%}_{-6.8\%}$) in addition to the seven component groups shown." The treatment of the luminosity in the Total envelope is now explicit.
+Addressed: the Fig.~\ref{fig:syst_sum} caption at main.tex L335 now reads "The Total envelope includes the global luminosity uncertainty (added in quadrature, bin-independent at $^{+9.1\%}_{-6.8\%}$) in addition to the seven component groups shown." The lead sentence at L318 has also been adjusted to "with the luminosity uncertainty added to the per-bin sums". The treatment of luminosity in the Total envelope is explicit.
 
-> Figure 8 — corrected vs uncorrected PHENIX colors hard to distinguish; statistical error-bar style hard to read.
+> Figure 8- its quite hard to see the difference between the corrected and uncorrected PHENIX points, it might be useful to change the colors or plotting style. I'm also not very fond of the way of plotting the statistical error bars in the ratio (I stared at it a long time trying to understand before reading the caption, which won't always come along with the plot in presentations)
 
-Held pending the plot cosmetic fixes. The proposed change replaces the current pink (kPink+5) PHENIX-original color and purple (kViolet+1) corrected color with colorblind-friendlier choices (kRed-4 for original, kOrange+7 for corrected), and the dual vertical-bar stat-error style will be changed so that the sPHENIX statistical uncertainty is drawn as a thin band around unity (mirroring the systematic-band style) and only PHENIX statistical uncertainties remain as per-point vertical bars. These code changes in `plot_paper_final.C` are in scope for the next revision.
+Held pending the plot cosmetic fixes in `plot_paper_final.C`. The proposed change replaces the current near-iso pink (kPink+5) PHENIX-original and purple (kViolet+1) corrected colors with colorblind-friendlier choices (kRed-4 original, kOrange+7 corrected), and the dual vertical-bar statistical-error style in the ratio panel is replaced so that the sPHENIX statistical uncertainty is drawn as a thin band around unity (mirroring the systematic-band style) while only the PHENIX statistical uncertainties remain as per-point vertical bars. These code changes are in scope for the next revision; the figure caption at main.tex L362 will be updated to match.
 
 ---
 
 ## Response to Justin
 
-> First sentence of the abstract is borderline run-on. Suggest splitting after "200 GeV".
+> Line 7+ (first sentence of abstract) It's borderline a run-on sentence. Good place to split: ...at 200 GeV. The data used was recorded by the sPHENIX detector … corresponding to 64 pb-1….
 
-Addressed: the abstract first sentence has been split at "200 GeV" as suggested. The opening now reads "The differential cross section of isolated prompt-photon production is measured as a function of photon transverse energy in proton--proton collisions at $\sqrt{s}=200$ GeV. The data were recorded in 2024 with the sPHENIX detector at the Relativistic Heavy Ion Collider, corresponding to an integrated luminosity of $64.4$ pb$^{-1}$."
+Addressed: the abstract opening is split at "200 GeV" (main.tex L60-61). The first sentence now ends "in proton--proton collisions at \comHEP" and the second sentence begins "The data were recorded in 2024 with the sPHENIX detector at the Relativistic Heavy Ion Collider, corresponding to an integrated luminosity of $64.4\,\pb$. Photons are measured in $|\etag|<0.7$ and $12<\etg<32~\GeV$."
 
-> Last sentence of the abstract: "sensitive to" → "dependence on" the gluon PDF, unless a sensitivity study has been performed.
+> Line 20 (last sentence of abstract) – simply changing "sensitivity to" to "dependence on" could more easily satisfy at least Jamie's concern about true sensitivity of this measurement to g(x). … I don't think presenting such proof is NECESSARY for just including one of the traditional motivations of this measurement.
 
-Addressed: the abstract closing sentence now reads "...and depends on the gluon parton distribution function of the proton in the moderate-$x$ region." The "sensitive to" framing has been replaced with "depends on" throughout (abstract, intro, summary), consistent with the position that we cite the gluon-PDF / direct-photon literature without claiming a sensitivity-study constraint.
+Addressed: the abstract closing at L62 now reads "the result provides a test of pQCD calculations, probes the gluon parton distribution function of the proton, and establishes the \ppp{} baseline…" The "sensitivity to g(x)" phrasing is gone; we are happy to soften "probes" to "depends on" if you prefer that wording in the abstract as well.
 
-> Intro: "making the cross section particularly sensitive to" → softer language, e.g., "traditionally expected to be sensitive to" or "which depends directly on".
+> ~L 42: In this spirit, you could just change "making … particularly sensitive to" --> "[traditionally?] expected to be sensitive to " …OR --> "which depends directly on"
 
-Addressed together with the abstract comment above: L77 now reads "so that the cross section depends directly on the gluon parton distribution function (PDF) of the proton~\cite{Ichou:2010wc}." The Ichou:2010wc reference supports the gluon-PDF / direct-photon sensitivity statement without claiming an in-paper constraint.
+Addressed: L78 now reads "the quark--gluon Compton process gives the dominant contribution to prompt-photon production~\cite{PHENIX:2010vgy}, so that the cross section depends directly on the gluon parton distribution function (PDF) of the proton~\cite{Ichou:2010wc}." This adopts your second suggestion verbatim and adds an explicit citation.
 
-> L44: "Article presents the [first? a first?] sPHENIX measurement of..."
+> L 44: Article presents the_[first? a first?] SPHENIX_ measurement of… COMMENT about that: once tracking is available, and including 2025, I think there is likely to be another sPHENIX measurement of this, we should e.g. be able to improve the pseudo rapidity and ET reach, possibly combining 24-25. Also since this was expected to be a channel sPHENIX is prime for.
 
-Addressed together with Jamie's L44 comment: L80 now reads "This paper presents the first sPHENIX measurement of the differential cross section of isolated prompt-photon production…". The "Article" capitalization has been replaced with "paper" and the "first sPHENIX measurement" framing has been added. No prior sPHENIX isolated-photon paper exists on arXiv as of May 2026.
+Addressed: L80 now reads "This paper presents the first sPHENIX measurement of the differential cross section of isolated prompt-photon production…" We agree this leaves room for a future tracking-enhanced and/or 24+25-combined measurement, which is exactly why "first" (rather than "the sPHENIX measurement") is the right framing.
 
-> L47: "truth-level" bad here if just describing what's done to the data; if MC, change the word order; describe E_cone / cut on data.
+> L 47 : "truth-level" bad HERE (at least IMO) if you are just describing what's done to the data remove it here, if you mean something about MC, change the order of sentences but you should still state explicitly what's the cut (how more about the Econe/how cut is made?) in the data.
 
-Held pending expert consultation on the canonical truth-level fiducial definition, addressed together with Jamie's L48 comment. The intro, Sec. III.A, and the Results-section JETPHOX-comparison sentence are linked through the same fiducial-definition prose and will land as one unified ATLAS-style paragraph once the theory and ATLAS-experienced collaborators return. The comment is marked in the current draft as a red TODO marker at L80 for visibility.
+Addressed: the corresponding sentence in the intro (L80) now reads "Photons are required to satisfy an isolation criterion defined by the total transverse energy of final-state particles within $\DR=0.3$ around the photon, excluding the photon itself, being less than $4~\GeV$." The "truth-level" jargon is removed from this introduction sentence, and the cut is spelled out explicitly. The truth/reco distinction is then made in Sec.~II where it physically belongs (L113 defines the truth-level signal photon, and the reconstruction-level isolation used on data is described in Sec.~III.D).
 
-> L55: "comprises" → "is comprised of"
+> L55: change comprises to "is comprised of" … I didn't like it too much previously I think it was in the note or prelim, now seeing it again, I'm more sure it should be changed.
 
-Held pending Shuonli's preferred wording. "Comprises" used actively (whole-comprises-parts) is correct per Garner's and Strunk & White, while "is comprised of" is a common but grammatically debated form; "consists of" is unambiguous and would satisfy the intent. The comment is marked in the current draft as a red TODO marker at L88 for visibility, and the wording will be finalized in cycle 3.3.
+Addressed: L89 now reads "In order of increasing radius, sPHENIX is comprised of the following subsystems...", applying the "comprises" → "is comprised of" change directly.
 
-> L65: "is a scintillating-fiber calo" — insert "a"
+> L65: ..is _a_ scintt-fiber calo --
 
-Addressed: L89 now reads "The EMCal is a scintillating-fiber tungsten sampling calorimeter with two-dimensional projective geometry in $\eta$-$\phi$ and approximately $0.024 \times 0.024$ $\eta$-$\phi$ segmentation. The towers are grouped into $2\times 2$ superblocks read out by silicon photomultipliers." The missing article was inserted as part of the same edit that absorbed Justin J8 below.
+Addressed: L90 now reads "The EMCal is a scintillating-fiber tungsten sampling calorimeter with two-dimensional projective geometry in $\eta$-$\phi$…" The missing indefinite article is added.
 
-> L66/67: "projective geom" → "η-φ two-dimensional projective geometry"; include testbeam / TDR reference for the EMCal.
+> L66/67…projective geom -->"\eta-\phi two-dimensional projective geometry" (advertising)… include reference to testbeam paper or TDR? (particularly because of the "projective geometry")
 
-Addressed together with J7 above: L89 now uses "two-dimensional projective geometry in $\eta$-$\phi$" and cites `Aidala:2020toz` (the 2-D projective sPHENIX EMCal prototype paper, arXiv 2003.13685) plus `sPHENIX:2017lqb`. Both references are already in references.bib.
+Addressed: same sentence at L90 is rewritten to "two-dimensional projective geometry in $\eta$-$\phi$ and approximately $0.024 \times 0.024$ $\eta-\phi$ segmentation." The testbeam reference (\cite{Aidala:2020toz}) and the EMCal TDR (\cite{sPHENIX:2017lqb}) are both cited one line earlier (L89) on the EMCal subsystem entry. The DAQ-rate sentence appended at the end of L90 still has a few minor typos ("utilize", "khz") that Shuonli will clean up in the next push.
 
-> L70: "[requires] total online-calculated energy to be above 4 GeV"
+> L70: [requires ] total _online-calculated_ energy to be above 4 GeV
 
-Held pending sPHENIX L1 firmware-team confirmation of the "online-calculated" qualifier. The phrase has been inserted at L102 as "Events are selected by a single high-$E_T$ photon trigger that requires the total online-calculated energy in any $8\times 8$ EMCal tower window to exceed 4 GeV", and the comment is marked in the current draft as a red TODO marker for visibility. The 4×4 vs 8×8 tower-window size is also flagged for John Haggerty to confirm before final submission.
+Addressed: L103 now reads "Events are selected by a single high-$E_T$ photon trigger that requires the total online-calculated energy in any $8\times 8$ EMCal tower window to exceed 4~\GeV{}."
 
-> L222 equation 2: ratio should be in parentheses and remove the dot.
+> L222 equation 2: The ratio should be in parentheses and remove the dot
 
-Addressed: Eq. 2 (eq:purity_noleakage) at L213-219 now reads
-$$
-N^{A}_{\text{signal}} = N^{A}_{\text{raw}} - N^{B}_{\text{raw}} \left( \frac{N^{C}_{\text{raw}}}{N^{D}_{\text{raw}}} \right),
-$$
-The $N^C/N^D$ ratio is wrapped in parentheses and the terminating period has been replaced with a comma.
+Addressed: Eq.~\ref{eq:purity_noleakage} (main.tex L221-227) now renders the ratio inside `\left( ... \right)` parentheses and the equation closes with a comma (not a period), as the sentence continues on L228.
 
-> L225 equation 3: remove the dot, it's not needed.
+> L225 equation 3 remove the dot it's not needed.
 
-Addressed: the multiplication `\cdot` between the $B$-factor and the parenthesized $C/D$ ratio in Eq. 3 (eq:purity_leak) has been removed for parallelism with Eq. 2 (where the ratio is also in parentheses).
+Addressed: the multiplication `\cdot` between the $B$-factor and the parenthesized $C/D$ ratio in Eq.~3 (eq:purity_leak) has been removed for parallelism with Eq.~2 (where the ratio is also in parentheses).
 
-> L229 / Figure 4 caption: "an Pade fit" → "a Pade fit"
+> L229 caption for figure 4 right above it _a_ Pade fit (not an)
 
-Addressed: the Fig. 4 caption at L264 now reads "The purity with leakage correction is fitted with a Padé function, and the shaded area shows the 68.3\% confidence interval of the fit." The wording has been changed from "an Padé fit" to "a Padé function" — both fixes the article and replaces the duplicated "fit" word.
+Addressed: the Fig.~\ref{fig:purity} caption (L271) reads "The purity with leakage correction is fitted with a Pad\'e function, and the shaded area shows the 68.3\% confidence interval of the fit." The "an" → "a" fix is applied.
 
-> L358: truth level — if jargon, what does it mean for data?
+> L358 – see previous comment about use of truth level, I don't like this if just meant as jargon-->what does truth level mean for data? IF it actually means something I didn't see it described anywhere (at least not clearly/exactly what was meant)
 
-Held pending expert consultation, addressed together with Jamie's L48 / J5 truth-level comments. The intro and Sec. III.A truth-iso sentences and the Results-section JETPHOX-comparison sentence are linked through the same fiducial-definition prose, and the comment is marked in the current draft as a red TODO marker at L337 (the JETPHOX-comparison sentence in the Results section) for visibility.
+Held: two places still carry the "truth-level isolation requirement" phrasing, namely the Fig.~\ref{fig:final} caption at L350 ("…all with the same truth-level isolation requirement as the data") and the Summary at L376 ("…with a truth-level isolation requirement of $\isoETtruth<4~\GeV$ within $\DR=0.3$"). The phrase is intentional in these two places, where the truth/reco distinction must be made explicit because we are quoting the fiducial isolation definition that the NLO predictions match. We will reword to "particle-level" or to a literal definition ("the total transverse energy of final-state particles within $\DR=0.3$…") if you prefer; the substantive change has been made everywhere it referred only to the data (cf. J5 above).
 
-> L372: "sensitivity to the gluon parton distribution function" in the conclusion — remove unless a sensitivity study has been done.
+> L372 Unless you do the sensitivity study, I DO think you should simply remove the "sensitivity to [g(x)]" from the conclusion, not needed anyway.
 
-Addressed together with the abstract and intro gluon-PDF comments. The summary sentence at L373 now reads "The result provides a test of pQCD, a dependence on the gluon parton distribution function, and a \pp{} baseline for measurements of photon and photon+jet observables in heavy-ion collisions." The "sensitivity to" claim has been softened to "a dependence on" everywhere; the deeper gluon-PDF constraint study (Hessian band, gluon-fraction extraction) is deferred to revision 2.
+Addressed: the conclusion at L380 now reads "The result provides a test of pQCD, a dependence on the gluon parton distribution function, and a \pp{} baseline for measurements of photon and photon+jet observables in heavy-ion collisions." The "sensitivity to g(x)" language is gone, and no sensitivity claim is made. If you prefer to drop the gluon-PDF clause entirely, that is also fine with us.
