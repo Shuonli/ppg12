@@ -173,6 +173,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // uncertainty (eyhigh/y, eylow/y) is applied to each PDF's nominal
     // ratio (h_NLO_data_<pdf>) so the band sits around each central line
     // in the bottom-pad ratio plot.
+    // Horizontal errors set to 0 so the filled band edges interpolate
+    // smoothly between bin centers (matching the "C hist" central lines).
     auto build_pdf_band_ratio = [&](TGraphAsymmErrors *g_band_abs, TH1F *h_ratio) {
         TGraphAsymmErrors *g_out = new TGraphAsymmErrors();
         int n = g_band_abs->GetN();
@@ -185,10 +187,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
             int bin = h_ratio->FindBin(x);
             double ratio = h_ratio->GetBinContent(bin);
             if (ratio <= 0) continue;
-            double ex = 0.5 * h_ratio->GetBinWidth(bin);
             int p = g_out->GetN();
             g_out->SetPoint(p, x, ratio);
-            g_out->SetPointError(p, ex, ex, ratio * eylow_rel, ratio * eyhi_rel);
+            g_out->SetPointError(p, 0.0, 0.0, ratio * eylow_rel, ratio * eyhi_rel);
         }
         return g_out;
     };
@@ -864,19 +865,19 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_pdfband_ct18 ->SetFillColorAlpha(mkcolpdf[0], kPdfHessAlpha);
     g_pdfband_ct18 ->SetLineColor(mkcolpdf[0]);
     g_pdfband_ct18 ->SetLineWidth(0);
-    g_pdfband_ct18 ->Draw("5 same");
+    g_pdfband_ct18 ->Draw("4 same");
     g_pdfband_nnpdf->SetFillColorAlpha(mkcolpdf[1], kPdfHessAlpha);
     g_pdfband_nnpdf->SetLineColor(mkcolpdf[1]);
     g_pdfband_nnpdf->SetLineWidth(0);
-    g_pdfband_nnpdf->Draw("5 same");
+    g_pdfband_nnpdf->Draw("4 same");
     g_pdfband_cteq ->SetFillColorAlpha(mkcolpdf[2], kPdfHessAlpha);
     g_pdfband_cteq ->SetLineColor(mkcolpdf[2]);
     g_pdfband_cteq ->SetLineWidth(0);
-    g_pdfband_cteq ->Draw("5 same");
+    g_pdfband_cteq ->Draw("4 same");
     g_pdfband_msht ->SetFillColorAlpha(mkcolpdf[3], kPdfHessAlpha);
     g_pdfband_msht ->SetLineColor(mkcolpdf[3]);
     g_pdfband_msht ->SetLineWidth(0);
-    g_pdfband_msht ->Draw("5 same");
+    g_pdfband_msht ->Draw("4 same");
 
     lineone->SetLineColor(kBlack);
     lineone->SetLineStyle(2);
