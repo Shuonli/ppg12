@@ -61,7 +61,9 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
 
     ROOT.frame_et_truth.GetYaxis().SetRangeUser(-0.58, 0.5)
     # Paper x-range: 12 < ETg < 32 GeV (the reported analysis range).
-    ROOT.frame_et_truth.GetXaxis().SetRangeUser(12.0, 32.0)
+    # Slight inset (12.1, 31.9) to suppress bin-edge vertical-line artifacts
+    # flagged by Jamie on Fig. 6.
+    ROOT.frame_et_truth.GetXaxis().SetRangeUser(12.1, 31.9)
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
     ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.Draw("axis")
