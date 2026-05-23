@@ -485,7 +485,11 @@ FINAL_SYSTS = [
 # bin in CalculatePhotonYield via the fitted L1 efficiency, so there is no
 # residual systematic to assign.
 LUMI_SYST   = {"down": (25.2 - 23.5) / 25.2, "up": (27.5 - 25.2) / 25.2}  # +9.13/-6.75%
-FLAT_SYSTS  = {"lumi": LUMI_SYST}
+# MBD-vertex-efficiency flat envelope: symmetric +/-6% accounts for MC-Data
+# scale differences in the MBD-coincidence efficiency that are not absorbed
+# elsewhere in the per-bin pipeline. Added 2026-05-15 per user request.
+MBD_VTX_SYST = {"down": 0.06, "up": 0.06}
+FLAT_SYSTS  = {"lumi": LUMI_SYST, "mbd_vertex_eff": MBD_VTX_SYST}
 
 # ---------------------------------------------------------------------------
 # Mapping from flat override key -> (yaml_section_path, yaml_leaf_key)
