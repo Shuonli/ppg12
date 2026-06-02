@@ -55,13 +55,13 @@ void plot_paper_purity(const std::string &tune = "bdt_nom")
     frame_et_rec->Draw("axis");
 
     gpurity->SetMarkerColor(kBlack);
-    gpurity->SetMarkerStyle(20);
+    gpurity->SetMarkerStyle(24);
     gpurity->SetMarkerSize(1.5);
     gpurity->SetLineColor(kBlack);
     gpurity->Draw("P same");
 
     gpurity_leak->SetMarkerColor(kBlue);
-    gpurity_leak->SetMarkerStyle(24);
+    gpurity_leak->SetMarkerStyle(20);
     gpurity_leak->SetMarkerSize(1.5);
     gpurity_leak->SetLineColor(kBlue);
     gpurity_leak->Draw("P same");
