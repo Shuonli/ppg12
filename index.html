@@ -10,7 +10,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PPG12 Analysis">
   <meta property="og:url" content="https://shuonli.github.io/ppg12/">
-  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_cards/vtxreweight_method_comparison.png">
+  <meta property="og:image" content="https://shuonli.github.io/ppg12/reports/_cards/xtscaling_comparison.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="alternate" type="application/rss+xml" title="PPG12 reports" href="feed.xml">
   <link rel="stylesheet" href="style.css">
@@ -21,7 +21,7 @@
     <div class="container">
       <h1><span class="accent">sPHENIX</span> PPG12 Analysis Results</h1>
       <div class="subtitle">Isolated Photon Cross-Section, pp √s = 200 GeV — sPHENIX</div>
-      <div class="subtitle">Last updated: 2026-05-12 22:59 EDT</div>
+      <div class="subtitle">Last updated: 2026-06-02 20:36 EDT</div>
     </div>
   </header>
 
@@ -29,12 +29,20 @@
     <section id="recent" class="recent-rail">
       <h2 class="section-title">Recently updated</h2>
       <div class="recent-grid">
+        <a class="recent-card" href="reports/xtscaling_comparison.html">
+          <img class="recent-thumb" src="reports/_thumbs/xtscaling_comparison.png" alt="" loading="lazy">
+          <div class="recent-body">
+            <div class="recent-tag">Final Cross-Section<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
+            <div class="recent-title">sPHENIX isolated photons on the world xT-scaling curve</div>
+            <div class="recent-date" title="2026-06-02">just now</div>
+          </div>
+        </a>
         <a class="recent-card" href="reports/vtxreweight_method_comparison.html">
           <img class="recent-thumb" src="reports/_thumbs/vtxreweight_method_comparison.png" alt="" loading="lazy">
           <div class="recent-body">
             <div class="recent-tag">Selection &amp; Config Comparisons<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
             <div class="recent-title">Vertex Reweighting Method Comparison: Reco-vertex vs. No-reweight vs. Truth-vertex: Correcting the MBDvertex efficiency for raw-beam luminosity</div>
-            <div class="recent-date" title="2026-05-12">just now</div>
+            <div class="recent-date" title="2026-06-02">just now</div>
           </div>
         </a>
         <a class="recent-card" href="reports/vtxreweight_impact.html">
@@ -42,15 +50,7 @@
           <div class="recent-body">
             <div class="recent-tag">Final Cross-Section<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
             <div class="recent-title">Impact of MC z-Vertex Reweighting on the Nominal Isolated-Photon Cross Section and MBD Efficiency</div>
-            <div class="recent-date" title="2026-05-12">just now</div>
-          </div>
-        </a>
-        <a class="recent-card" href="reports/truth_vertex_reco_check.html">
-          <img class="recent-thumb" src="reports/_thumbs/truth_vertex_reco_check.png" alt="" loading="lazy">
-          <div class="recent-body">
-            <div class="recent-tag">Vertex<span class="new-badge" title="Added within the last 7 days">NEW</span></div>
-            <div class="recent-title">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</div>
-            <div class="recent-date" title="2026-05-12">just now</div>
+            <div class="recent-date" title="2026-06-02">just now</div>
           </div>
         </a>
       </div>
@@ -61,10 +61,10 @@
         <input id="reports-filter" type="search" placeholder="Filter by title, description, topic, date…   (press / to focus)" aria-label="Filter reports">
       </div>
       <div class="tag-chips" role="tablist" aria-label="Filter by topic">
-        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">45</span></button>
-        <button class="tag-chip tag-cross-section" data-topic="cross-section" type="button">Final Cross-Section <span class="chip-count">1</span></button>
+        <button class="tag-chip active" data-topic="all" type="button">All <span class="chip-count">48</span></button>
+        <button class="tag-chip tag-cross-section" data-topic="cross-section" type="button">Final Cross-Section <span class="chip-count">2</span></button>
         <button class="tag-chip tag-double-interaction" data-topic="double-interaction" type="button">Double Interaction / Pileup <span class="chip-count">2</span></button>
-        <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">3</span></button>
+        <button class="tag-chip tag-bdt" data-topic="bdt" type="button">BDT Training &amp; Systematics <span class="chip-count">4</span></button>
         <button class="tag-chip tag-shower-shape" data-topic="shower-shape" type="button">Shower Shape <span class="chip-count">3</span></button>
         <button class="tag-chip tag-efficiency" data-topic="efficiency" type="button">Efficiency &amp; Energy Response <span class="chip-count">3</span></button>
         <button class="tag-chip tag-isolation" data-topic="isolation" type="button">Isolation <span class="chip-count">3</span></button>
@@ -72,16 +72,24 @@
         <button class="tag-chip tag-vertex" data-topic="vertex" type="button">Vertex <span class="chip-count">3</span></button>
         <button class="tag-chip tag-selection" data-topic="selection" type="button">Selection &amp; Config Comparisons <span class="chip-count">3</span></button>
         <button class="tag-chip tag-updates" data-topic="updates" type="button">Status Updates &amp; Summaries <span class="chip-count">1</span></button>
-        <button class="tag-chip tag-other" data-topic="other" type="button">Other <span class="chip-count">20</span></button>
+        <button class="tag-chip tag-other" data-topic="other" type="button">Other <span class="chip-count">21</span></button>
       </div>
       <table class="reports-table">
         <thead>
           <tr><th>Preview</th><th>Date</th><th>Topic</th><th>Title</th><th>Description</th><th>Download</th></tr>
         </thead>
         <tbody>
+          <tr data-topic="cross-section">
+            <td data-label="Preview" class="preview-cell"><a href="reports/xtscaling_comparison.html"><img class="report-thumb" src="reports/_thumbs/xtscaling_comparison.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-cross-section">Final Cross-Section</span></td>
+            <td data-label="Title"><a href="reports/xtscaling_comparison.html">sPHENIX isolated photons on the world xT-scaling curve</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">We place the PPG12 sPHENIX isolated-photon measurement on the world x_T-scaling curve of direct-photon cross sections, reproducing Fig.~1 (left) of arXiv:1901.10950 (Bock, Hard Probes 2018). After sc…</td>
+            <td data-label="Size"><a href="reports/xtscaling_comparison.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.4 MB</a></td>
+          </tr>
           <tr data-topic="selection">
             <td data-label="Preview" class="preview-cell"><a href="reports/vtxreweight_method_comparison.html"><img class="report-thumb" src="reports/_thumbs/vtxreweight_method_comparison.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-selection">Selection &amp; Config Comparisons</span></td>
             <td data-label="Title"><a href="reports/vtxreweight_method_comparison.html">Vertex Reweighting Method Comparison: Reco-vertex vs. No-reweight vs. Truth-vertex: Correcting the MBDvertex efficiency for raw-beam luminosity</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The current ``nominal&#x27;&#x27; reco-vertex reweight (vertex\_reweight\_on: 1) silently drops MC events with z_ reco=-9999 (no global vertex reconstructed, i.e. MBD trigger failed) because they fall outside…</td>
@@ -89,7 +97,7 @@
           </tr>
           <tr data-topic="cross-section">
             <td data-label="Preview" class="preview-cell"><a href="reports/vtxreweight_impact.html"><img class="report-thumb" src="reports/_thumbs/vtxreweight_impact.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-cross-section">Final Cross-Section</span></td>
             <td data-label="Title"><a href="reports/vtxreweight_impact.html">Impact of MC z-Vertex Reweighting on the Nominal Isolated-Photon Cross Section and MBD Efficiency</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">[H] [width=0.98]figures/vtxreweight/vtxreweight_comparison.pdf Left: MBDvertex efficiency (g_ mbd\_eff) from the nominal (bdt\_nom, vertex reweight on) and no-reweight (bdt\_vtxreweight0) configs. Ri…</td>
@@ -97,7 +105,7 @@
           </tr>
           <tr data-topic="vertex">
             <td data-label="Preview" class="preview-cell"><a href="reports/truth_vertex_reco_check.html"><img class="report-thumb" src="reports/_thumbs/truth_vertex_reco_check.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-vertex">Vertex</span></td>
             <td data-label="Title"><a href="reports/truth_vertex_reco_check.html">MC Vertex Reweighting for PPG12: A Data-Driven Iterative Method on the Truth Vertex</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The PPG12 efficiency pipeline must reweight MC to match the measured p+p luminous region, which is very different between the two crossing angles (53 cm at 0 mrad vs 22 cm at 1.5 mrad, Piwinski narro…</td>
@@ -105,7 +113,7 @@
           </tr>
           <tr data-topic="vertex">
             <td data-label="Preview" class="preview-cell"><a href="reports/truth_vertex_closure_nominal.html"><img class="report-thumb" src="reports/_thumbs/truth_vertex_closure_nominal.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-vertex">Vertex</span></td>
             <td data-label="Title"><a href="reports/truth_vertex_closure_nominal.html">-vertex reweight: derivation target and post-pipeline closure sPHENIX Internal — PPG12 isolated-photon cross-section</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Executive summary The postdoc&#x27;s two questions, answered up front:</td>
@@ -113,15 +121,23 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/tower_acceptance_2026-04-22.html"><img class="report-thumb" src="reports/_thumbs/tower_acceptance_2026-04-22.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/tower_acceptance_2026-04-22.html">Tower-Index Acceptance Map Integration: Data-Driven Dead-Tower Masks + Cross-Section Systematic</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Four-level tower-index acceptance maps (h_ etaphi\_tower\_\preselect,common,tight,tight\_iso\\_\mc\_inclusive,data\) are now populated automatically in the official efficiency pipeline and written to…</td>
             <td data-label="Size"><a href="reports/tower_acceptance_2026-04-22.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;2.4 MB</a></td>
           </tr>
+          <tr data-topic="bdt">
+            <td data-label="Preview" class="preview-cell"><a href="reports/tight_bdt_purity_crosscheck.html"><img class="report-thumb" src="reports/_thumbs/tight_bdt_purity_crosscheck.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
+            <td data-label="Title"><a href="reports/tight_bdt_purity_crosscheck.html">Tight-BDT Lower-Bound Crosscheck — Leakage-Corrected ABCD Purity: Nominal parametric tight cut vs. flat BDT&gt;0.70/0.80/0.85/0.90/0.95</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">Summary To probe the sensitivity of the ABCD leakage-corrected purity to the tight-region BDT lower bound, the flat tight-cut crosscheck series (BDT&gt;0.70/0.80/0.85/0.90/0.95) was built out by adding…</td>
+            <td data-label="Size"><a href="reports/tight_bdt_purity_crosscheck.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.3 MB</a></td>
+          </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/sample_combining_check.html"><img class="report-thumb" src="reports/_thumbs/sample_combining_check.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/sample_combining_check.html">Sample Combining Validation: Truth Spectra (signal + background)</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">We validate that the 8 SI/DI MC sample pairs (photon5/10/20 signal, jet8/12/20/30/40 background; each with \_nom + \_double = 16 per-period files) combine correctly into the signal and jet-inclusive…</td>
@@ -129,7 +145,7 @@
           </tr>
           <tr data-topic="efficiency">
             <td data-label="Preview" class="preview-cell"><a href="reports/reco_efficiency_breakdown_2026-05-09.html"><img class="report-thumb" src="reports/_thumbs/reco_efficiency_breakdown_2026-05-09.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-efficiency">Efficiency &amp; Energy Response</span></td>
             <td data-label="Title"><a href="reports/reco_efficiency_breakdown_2026-05-09.html">Photon Reco Efficiency in PPG12 — Value and Inefficiency Breakdown: _reco92%, where the missing 8 % goes</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Headline for direct/fragmentation photons in PPG12 is essentially flat at 92% across the cross-section pT range, with a small drop at the bottom of the spectrum. The remaining 8% inefficiency is shar…</td>
@@ -137,7 +153,7 @@
           </tr>
           <tr data-topic="bdt">
             <td data-label="Preview" class="preview-cell"><a href="reports/purity_nonclosure_ntbdt.html"><img class="report-thumb" src="reports/_thumbs/purity_nonclosure_ntbdt.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">just now</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
             <td data-label="Title"><a href="reports/purity_nonclosure_ntbdt.html">ABCD Purity Non-Closure: Non-Tight BDT Lower Bound and Flat Threshold Partitions</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">We scan the non-tight BDT lower bound (analysis.non\_tight.bdt\_min) from its nominal value of 0.02 to 0.05 and 0.10 and quantify the ABCD purity non-closure against the MC truth purity in each of th…</td>
@@ -145,7 +161,7 @@
           </tr>
           <tr data-topic="purity">
             <td data-label="Preview" class="preview-cell"><a href="reports/purity_bootstrap_uncertainty_2026-05-08.html"><img class="report-thumb" src="reports/_thumbs/purity_bootstrap_uncertainty_2026-05-08.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-purity">Purity</span></td>
             <td data-label="Title"><a href="reports/purity_bootstrap_uncertainty_2026-05-08.html">ABCD Purity Bootstrap — Uncertainty Quantification: Comparison of Gaussian fit, Crystal Ball, and equal-tail percentile (median + 16/84%)</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Question The current PPG12 ABCD purity is reported as the mean and width of a Gaussian fit to a 20 000-throw Poisson bootstrap of the four region yields (A,B,C,D) plus Gaussian smearing of the signal…</td>
@@ -153,7 +169,7 @@
           </tr>
           <tr data-topic="updates">
             <td data-label="Preview" class="preview-cell"><a href="reports/post_preliminary_updates.html"><img class="report-thumb" src="reports/_thumbs/post_preliminary_updates.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">just now</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-updates">Status Updates &amp; Summaries</span></td>
             <td data-label="Title"><a href="reports/post_preliminary_updates.html">Updates Since Preliminary Result: BDT, NPB Removal, Double Interactions, and Shower Shape Comparisons</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">This report summarizes the major analysis updates implemented since the preliminary isolated photon cross-section result in pp collisions at s = 200~ with sPHENIX Run~24 data. Four work streams are c…</td>
@@ -161,7 +177,7 @@
           </tr>
           <tr data-topic="bdt">
             <td data-label="Preview" class="preview-cell"><a href="reports/ntbdtpair_crosscheck.html"><img class="report-thumb" src="reports/_thumbs/ntbdtpair_crosscheck.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
             <td data-label="Title"><a href="reports/ntbdtpair_crosscheck.html">PPG12 Cross-Check: Parametric Tight / Non-Tight BDT-Pair Variants: ABCD Closure Stress Test at Extreme BDT Cut Combinations</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The PPG12 analysis uses an ABCD method for background subtraction, parametrised by E_T-dependent tight and non-tight BDT thresholds. To probe the stability of the background estimate under simultaneo…</td>
@@ -169,7 +185,7 @@
           </tr>
           <tr data-topic="purity">
             <td data-label="Preview" class="preview-cell"><a href="reports/mc_purity_correction_investigation.html"><img class="report-thumb" src="reports/_thumbs/mc_purity_correction_investigation.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-purity">Purity</span></td>
             <td data-label="Title"><a href="reports/mc_purity_correction_investigation.html">Investigation: MC Purity Correction Factor in PPG12</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The PPG12 isolated photon cross-section measurement employs the ABCD method to estimate photon purity from data. The four ABCD regions are defined by two axes: a BDT-based tight/non-tight classificat…</td>
@@ -177,7 +193,7 @@
           </tr>
           <tr data-topic="isolation">
             <td data-label="Preview" class="preview-cell"><a href="reports/isolation_ET_comparison.html"><img class="report-thumb" src="reports/_thumbs/isolation_ET_comparison.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-isolation">Isolation</span></td>
             <td data-label="Title"><a href="reports/isolation_ET_comparison.html">Isolation E_T Definition Comparison: 60 MeV Tower Threshold vs. 120 MeV vs. Topo-Cluster R=0.4</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The isolated photon cross-section measurement relies on a reconstruction-level isolation energy cut to define the signal region in the ABCD method. Three isolation definitions are available in the sl…</td>
@@ -185,7 +201,7 @@
           </tr>
           <tr data-topic="isolation">
             <td data-label="Preview" class="preview-cell"><a href="reports/iso_cone_fix.html"><img class="report-thumb" src="reports/_thumbs/iso_cone_fix.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">1m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-isolation">Isolation</span></td>
             <td data-label="Title"><a href="reports/iso_cone_fix.html">Isolation cone centering fix: |v_z|-dependent mis-centering between cluster COG and tower centers, and an ownership-excluded iso variant</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">The manual tower-based and topo-cluster isolation computations in anatreemaker/source/CaloAna24.cc used RawClusterUtility::GetPseudorapidity(cluster, vertex) as the cone axis. That projects the clust…</td>
@@ -193,7 +209,7 @@
           </tr>
           <tr data-topic="double-interaction">
             <td data-label="Preview" class="preview-cell"><a href="reports/double_interaction_shower_shape_comparison.html"><img class="report-thumb" src="reports/_thumbs/double_interaction_shower_shape_comparison.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-double-interaction">Double Interaction / Pileup</span></td>
             <td data-label="Title"><a href="reports/double_interaction_shower_shape_comparison.html">Shower Shape Comparison: Nominal vs Double-Interaction Mixed MC: 0 mrad (22.4% DI) and 1.5 mrad (7.9% DI) Crossing Angles</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">In pp collisions at RHIC, two independent collisions can occur in the same bunch crossing (double interaction / pileup), distorting reconstructed cluster kinematics and shower shapes. To quantify thi…</td>
@@ -201,7 +217,7 @@
           </tr>
           <tr data-topic="double-interaction">
             <td data-label="Preview" class="preview-cell"><a href="reports/double_interaction_note.html"><img class="report-thumb" src="reports/_thumbs/double_interaction_note.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-double-interaction">Double Interaction / Pileup</span></td>
             <td data-label="Title"><a href="reports/double_interaction_note.html">Double-Interaction (Pileup) Effects in PPG12: Efficiency, Shower Shapes, Truth-Vertex Reweighting, Cluster Size, and Energy Response</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Run-24 pp data at s = 200 contain two crossing-angle periods (0 mrad and 1.5 mrad) with very different pileup conditions, where two independent collisions in the same bunch crossing shift the reconst…</td>
@@ -209,15 +225,15 @@
           </tr>
           <tr data-topic="purity">
             <td data-label="Preview" class="preview-cell"><a href="reports/donut_iso_variants.html"><img class="report-thumb" src="reports/_thumbs/donut_iso_variants.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">1m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-purity">Purity</span></td>
             <td data-label="Title"><a href="reports/donut_iso_variants.html">Donut iso variants: inner-R truth-purity scan and ABCD closure: All-calo 120 MeV donut with R_outer=0.4 (cross-check)</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Two new reco-isolation definitions were added as cross-check variants (syst\_type=None, syst\_role=None): donutFull (use\_topo\_iso=4): cluster\_iso\_04 - cluster\_iso\_\005,0075,02\. All-calo 120 Me…</td>
-            <td data-label="Size"><a href="reports/donut_iso_variants.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.6 MB</a></td>
+            <td data-label="Size"><a href="reports/donut_iso_variants.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;1.7 MB</a></td>
           </tr>
           <tr data-topic="shower-shape">
             <td data-label="Preview" class="preview-cell"><a href="reports/converted_photon_study.html"><img class="report-thumb" src="reports/_thumbs/converted_photon_study.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">2m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-shower-shape">Shower Shape</span></td>
             <td data-label="Title"><a href="reports/converted_photon_study.html">Converted vs. Unconverted Photons: Shower Shape, Isolation, and Energy Response in photon10 MC</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">We study the impact of photon conversions (pre-EMCal pair production in detector material) on reconstruction observables used by the PPG12 isolated-photon cross-section measurement in pp at s=200~GeV…</td>
@@ -225,7 +241,7 @@
           </tr>
           <tr data-topic="shower-shape">
             <td data-label="Preview" class="preview-cell"><a href="reports/cluster_size_vs_et.html"><img class="report-thumb" src="reports/_thumbs/cluster_size_vs_et.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">2m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-shower-shape">Shower Shape</span></td>
             <td data-label="Title"><a href="reports/cluster_size_vs_et.html">Cluster Size vs E_T^γ: Data vs MC, Split vs No-Split, Single vs Double Interaction</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">Cluster size (the number of EMCal towers associated with a cluster and the transverse extent of that set of towers) is a basic shape property that underlies every shower-shape-based background discri…</td>
@@ -233,7 +249,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/cluster_response_tightiso.html"><img class="report-thumb" src="reports/_thumbs/cluster_response_tightiso.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">2m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/cluster_response_tightiso.html">Cluster E_T Response and Resolution for Tight + Isolated Prompt Photons: Double-interaction mixed MC, 0 mrad + 1.5 mrad + lumi-weighted combined</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">[H] [width=0.95]/resp_grid_0rad.pdf Cluster E_T response distributions for the tight + iso prompt-photon arm, 0 mrad (22.4 % DI) blended MC. One panel per truth E_T bin. Black: histogram projection.…</td>
@@ -241,7 +257,7 @@
           </tr>
           <tr data-topic="bdt">
             <td data-label="Preview" class="preview-cell"><a href="reports/bdt_training_audit.html"><img class="report-thumb" src="reports/_thumbs/bdt_training_audit.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">2m ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-bdt">BDT Training &amp; Systematics</span></td>
             <td data-label="Title"><a href="reports/bdt_training_audit.html">BDT Training Pipeline Audit: Reweighting flatness, training outputs, feature sync, NPB</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">A five-agent audit of the PPG12 XGBoost photon-ID training pipeline (FunWithxgboost/) was run to verify that (a) the E_T^γ reweighting actually produces flat E_T^γ spectra for signal and background,…</td>
@@ -249,103 +265,111 @@
           </tr>
           <tr data-topic="efficiency">
             <td data-label="Preview" class="preview-cell"><a href="reports/deltaR_matching_study.html"><img class="report-thumb" src="reports/_thumbs/deltaR_matching_study.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">4h ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">4m ago</span><span class="date-absolute">2026-06-02</span></td>
             <td data-label="Topic"><span class="tag-pill tag-efficiency">Efficiency &amp; Energy Response</span></td>
             <td data-label="Title"><a href="reports/deltaR_matching_study.html">Study of the ΔR Truth-Matching Requirement in Single-Interaction MC</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
             <td data-label="Description">This note documents a study of the ΔR &lt; 0.1 geometric truth-matching requirement used in the reconstruction efficiency calculation for the sPHENIX isolated photon cross-section measurement (PPG12). W…</td>
             <td data-label="Size"><a href="reports/deltaR_matching_study.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.3 MB</a></td>
           </tr>
+          <tr data-topic="other">
+            <td data-label="Preview" class="preview-cell"><a href="reports/iso_correction_ct18nlo.html"><img class="report-thumb" src="reports/_thumbs/iso_correction_ct18nlo.png" alt="" loading="lazy"></a></td>
+            <td data-label="Date" title="2026-06-02"><span class="date-relative">2h ago</span><span class="date-absolute">2026-06-02</span></td>
+            <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
+            <td data-label="Title"><a href="reports/iso_correction_ct18nlo.html">Iso Correction Ct18Nlo</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Description">From reports</td>
+            <td data-label="Size"><a href="reports/iso_correction_ct18nlo.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;16 KB</a></td>
+          </tr>
           <tr data-topic="efficiency">
             <td data-label="Preview" class="preview-cell"><a href="reports/efficiency_deltaR_comparison.html"><img class="report-thumb" src="reports/_thumbs/efficiency_deltaR_comparison.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-12"><span class="date-relative">4h ago</span><span class="date-absolute">2026-05-12</span></td>
+            <td data-label="Date" title="2026-05-14"><span class="date-relative">18d ago</span><span class="date-absolute">2026-05-14</span></td>
             <td data-label="Topic"><span class="tag-pill tag-efficiency">Efficiency &amp; Energy Response</span></td>
-            <td data-label="Title"><a href="reports/efficiency_deltaR_comparison.html">Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/efficiency_deltaR_comparison.html">Photon Efficiency and Energy Response with ΔR Truth-Matching Removed: Single, Double, and Mixed Interaction MC</a></td>
             <td data-label="Description">Building on the companion study~dr_study that demonstrated the ΔR &lt; 0.1 truth-matching cut rejects 3.5% of correctly track-ID-matched truth photons in single-interaction MC, this note quantifies the…</td>
             <td data-label="Size"><a href="reports/efficiency_deltaR_comparison.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;0.2 MB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/iter1_unfolded_target_overlay.html"><img class="report-thumb" src="reports/_thumbs/iter1_unfolded_target_overlay.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">25d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/iter1_unfolded_target_overlay.html">Iter1 Unfolded Target Overlay</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/iter1_unfolded_target_overlay.html">Iter1 Unfolded Target Overlay</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/iter1_unfolded_target_overlay.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;25 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/reweight_apples_to_apples.html"><img class="report-thumb" src="reports/_thumbs/reweight_apples_to_apples.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">25d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/reweight_apples_to_apples.html">Reweight Apples To Apples</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/reweight_apples_to_apples.html">Reweight Apples To Apples</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/reweight_apples_to_apples.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;29 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_reweight_proper.html"><img class="report-thumb" src="reports/_thumbs/herwig_reweight_proper.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">25d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/herwig_reweight_proper.html">Herwig Reweight Proper</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/herwig_reweight_proper.html">Herwig Reweight Proper</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/herwig_reweight_proper.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;27 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/at_fixed_truth_pT.html"><img class="report-thumb" src="reports/_thumbs/at_fixed_truth_pT.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">25d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/at_fixed_truth_pT.html">At Fixed Truth Pt</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/at_fixed_truth_pT.html">At Fixed Truth Pt</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/at_fixed_truth_pT.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;35 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_reweight_derivation.html"><img class="report-thumb" src="reports/_thumbs/herwig_reweight_derivation.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">26d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/herwig_reweight_derivation.html">Herwig Reweight Derivation</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/herwig_reweight_derivation.html">Herwig Reweight Derivation</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/herwig_reweight_derivation.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;22 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/response_matrix_visualization.html"><img class="report-thumb" src="reports/_thumbs/response_matrix_visualization.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-07"><span class="date-relative">5d ago</span><span class="date-absolute">2026-05-07</span></td>
+            <td data-label="Date" title="2026-05-07"><span class="date-relative">26d ago</span><span class="date-absolute">2026-05-07</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/response_matrix_visualization.html">Response Matrix Visualization</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/response_matrix_visualization.html">Response Matrix Visualization</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/response_matrix_visualization.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;40 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/photon_class_fractions.html"><img class="report-thumb" src="reports/_thumbs/photon_class_fractions.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-06"><span class="date-relative">6d ago</span><span class="date-absolute">2026-05-06</span></td>
+            <td data-label="Date" title="2026-05-06"><span class="date-relative">27d ago</span><span class="date-absolute">2026-05-06</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/photon_class_fractions.html">Photon Class Fractions</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/photon_class_fractions.html">Photon Class Fractions</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/photon_class_fractions.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;36 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_vs_pythia_truth_iso_overlay.html"><img class="report-thumb" src="reports/_thumbs/herwig_vs_pythia_truth_iso_overlay.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-06"><span class="date-relative">6d ago</span><span class="date-absolute">2026-05-06</span></td>
+            <td data-label="Date" title="2026-05-06"><span class="date-relative">27d ago</span><span class="date-absolute">2026-05-06</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/herwig_vs_pythia_truth_iso_overlay.html">Herwig Vs Pythia Truth Iso Overlay</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/herwig_vs_pythia_truth_iso_overlay.html">Herwig Vs Pythia Truth Iso Overlay</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/herwig_vs_pythia_truth_iso_overlay.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;42 KB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_vs_pythia_xsec_1p5mrad.html"><img class="report-thumb" src="reports/_thumbs/herwig_vs_pythia_xsec_1p5mrad.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-06"><span class="date-relative">6d ago</span><span class="date-absolute">2026-05-06</span></td>
+            <td data-label="Date" title="2026-05-06"><span class="date-relative">27d ago</span><span class="date-absolute">2026-05-06</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
-            <td data-label="Title"><a href="reports/herwig_vs_pythia_xsec_1p5mrad.html">Herwig Vs Pythia Xsec 1P5Mrad</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/herwig_vs_pythia_xsec_1p5mrad.html">Herwig Vs Pythia Xsec 1P5Mrad</a></td>
             <td data-label="Description">From reports</td>
             <td data-label="Size"><a href="reports/herwig_vs_pythia_xsec_1p5mrad.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;17 KB</a></td>
           </tr>
           <tr data-topic="selection">
             <td data-label="Preview" class="preview-cell"><a href="reports/comparison_report.html"><img class="report-thumb" src="reports/_thumbs/comparison_report.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-06"><span class="date-relative">6d ago</span><span class="date-absolute">2026-05-06</span></td>
+            <td data-label="Date" title="2026-05-06"><span class="date-relative">27d ago</span><span class="date-absolute">2026-05-06</span></td>
             <td data-label="Topic"><span class="tag-pill tag-selection">Selection &amp; Config Comparisons</span></td>
-            <td data-label="Title"><a href="reports/comparison_report.html">Selection Plots: Config Comparisons</a><span class="new-badge" title="Added within the last 7 days">NEW</span></td>
+            <td data-label="Title"><a href="reports/comparison_report.html">Selection Plots: Config Comparisons</a></td>
             <td data-label="Description">difffile— config\_bdt\_nom.yaml difffile+++ config\_bdt\_tightbdt50.yaml diffhunk@@ -1,293 +0,0 @@ diffdel-\#config.yaml diffdel-\#bdt nominal diffdel-input: diffdel- photon\_jet\_file\_root\_dir: &quot;/…</td>
             <td data-label="Size"><a href="reports/comparison_report.pdf" target="_blank" rel="noopener" class="pdf-link">PDF&nbsp;·&nbsp;3.7 MB</a></td>
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_leading_photon_overlay.html"><img class="report-thumb" src="reports/_thumbs/herwig_leading_photon_overlay.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-04"><span class="date-relative">8d ago</span><span class="date-absolute">2026-05-04</span></td>
+            <td data-label="Date" title="2026-05-04"><span class="date-relative">29d ago</span><span class="date-absolute">2026-05-04</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_leading_photon_overlay.html">Herwig Leading Photon Overlay</a></td>
             <td data-label="Description">From reports</td>
@@ -353,7 +377,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_combined_spectrum.html"><img class="report-thumb" src="reports/_thumbs/herwig_combined_spectrum.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-05-04"><span class="date-relative">8d ago</span><span class="date-absolute">2026-05-04</span></td>
+            <td data-label="Date" title="2026-05-04"><span class="date-relative">29d ago</span><span class="date-absolute">2026-05-04</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_combined_spectrum.html">Herwig Combined Spectrum</a></td>
             <td data-label="Description">From reports</td>
@@ -361,7 +385,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_shape_proof.html"><img class="report-thumb" src="reports/_thumbs/herwig_shape_proof.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_shape_proof.html">Herwig Shape Proof</a></td>
             <td data-label="Description">From reports</td>
@@ -369,7 +393,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_stitch_fitted.html"><img class="report-thumb" src="reports/_thumbs/herwig_stitch_fitted.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_stitch_fitted.html">Herwig Stitch Fitted</a></td>
             <td data-label="Description">From reports</td>
@@ -377,7 +401,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_stitch_corrected.html"><img class="report-thumb" src="reports/_thumbs/herwig_stitch_corrected.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_stitch_corrected.html">Herwig Stitch Corrected</a></td>
             <td data-label="Description">From reports</td>
@@ -385,7 +409,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/pythia_stitch_reference.html"><img class="report-thumb" src="reports/_thumbs/pythia_stitch_reference.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/pythia_stitch_reference.html">Pythia Stitch Reference</a></td>
             <td data-label="Description">From reports</td>
@@ -393,7 +417,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_stitch_user_x1000.html"><img class="report-thumb" src="reports/_thumbs/herwig_stitch_user_x1000.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_stitch_user_x1000.html">Herwig Stitch User X1000</a></td>
             <td data-label="Description">From reports</td>
@@ -401,7 +425,7 @@
           </tr>
           <tr data-topic="other">
             <td data-label="Preview" class="preview-cell"><a href="reports/herwig_stitch_user_pb.html"><img class="report-thumb" src="reports/_thumbs/herwig_stitch_user_pb.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-30"><span class="date-relative">12d ago</span><span class="date-absolute">2026-04-30</span></td>
+            <td data-label="Date" title="2026-04-30"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-30</span></td>
             <td data-label="Topic"><span class="tag-pill tag-other">Other</span></td>
             <td data-label="Title"><a href="reports/herwig_stitch_user_pb.html">Herwig Stitch User Pb</a></td>
             <td data-label="Description">From reports</td>
@@ -409,7 +433,7 @@
           </tr>
           <tr data-topic="selection">
             <td data-label="Preview" class="preview-cell"><a href="reports/selection_report.html"><img class="report-thumb" src="reports/_thumbs/selection_report.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-27"><span class="date-relative">14d ago</span><span class="date-absolute">2026-04-27</span></td>
+            <td data-label="Date" title="2026-04-27"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-27</span></td>
             <td data-label="Topic"><span class="tag-pill tag-selection">Selection &amp; Config Comparisons</span></td>
             <td data-label="Title"><a href="reports/selection_report.html">Selection Plots: BDT Variations</a></td>
             <td data-label="Description">\#config.yaml \#bdt nominal input: photon\_jet\_file\_root\_dir: &quot;/sphenix/user/shuhangli/ppg12/FunWithxgboost/&quot; photon\_jet\_file\_branch\_dir: &quot;/bdt\_split.root&quot; \#photon\_jet\_file\_branch\_dir: &quot;…</td>
@@ -417,7 +441,7 @@
           </tr>
           <tr data-topic="shower-shape">
             <td data-label="Preview" class="preview-cell"><a href="reports/showershape_report.html"><img class="report-thumb" src="reports/_thumbs/showershape_report.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-21"><span class="date-relative">21d ago</span><span class="date-absolute">2026-04-21</span></td>
+            <td data-label="Date" title="2026-04-21"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-21</span></td>
             <td data-label="Topic"><span class="tag-pill tag-shower-shape">Shower Shape</span></td>
             <td data-label="Title"><a href="reports/showershape_report.html">Shower Shape Distributions: Configuration Variations</a></td>
             <td data-label="Description">Shower Shape Distributions: Configuration Variations</td>
@@ -425,7 +449,7 @@
           </tr>
           <tr data-topic="vertex">
             <td data-label="Preview" class="preview-cell"><a href="reports/vertex_distribution_study.html"><img class="report-thumb" src="reports/_thumbs/vertex_distribution_study.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-20"><span class="date-relative">22d ago</span><span class="date-absolute">2026-04-20</span></td>
+            <td data-label="Date" title="2026-04-20"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-20</span></td>
             <td data-label="Topic"><span class="tag-pill tag-vertex">Vertex</span></td>
             <td data-label="Title"><a href="reports/vertex_distribution_study.html">Vertex Distribution and Δ z in Single vs. Double-Interaction MC</a></td>
             <td data-label="Description">This note characterizes the vertex distributions and vertex displacement (Δ z = z_vtx^reco - z_vtx^truth) in single-interaction and full GEANT double-interaction Monte Carlo samples used for the sPHE…</td>
@@ -433,7 +457,7 @@
           </tr>
           <tr data-topic="isolation">
             <td data-label="Preview" class="preview-cell"><a href="reports/iso_topo_containment_study.html"><img class="report-thumb" src="reports/_thumbs/iso_topo_containment_study.png" alt="" loading="lazy"></a></td>
-            <td data-label="Date" title="2026-04-19"><span class="date-relative">23d ago</span><span class="date-absolute">2026-04-19</span></td>
+            <td data-label="Date" title="2026-04-19"><span class="date-relative">1mo ago</span><span class="date-absolute">2026-04-19</span></td>
             <td data-label="Topic"><span class="tag-pill tag-isolation">Isolation</span></td>
             <td data-label="Title"><a href="reports/iso_topo_containment_study.html">Topo-cluster isolation distributions and photon-energy containment vs inner-R</a></td>
             <td data-label="Description">The nominal PPG12 isolation variable is the R = 0.4 topo-cluster energy around the seed cluster: recoiso_ET^nom = cluster\_iso\_topo\_04, which by construction in CaloAna24 equals _R&lt;0.4 E_T^topo - E…</td>
@@ -1516,7 +1540,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      Auto-generated by <code>deploy_pages.py</code> &middot; Built from <code>main@<a href="https://github.com/Shuonli/ppg12/commit/9eadd83" target="_blank" rel="noopener">9eadd83</a></code> &middot;
+      Auto-generated by <code>deploy_pages.py</code> &middot; Built from <code>main@<a href="https://github.com/Shuonli/ppg12/commit/1b568b1" target="_blank" rel="noopener">1b568b1</a></code> &middot;
       PPG12 &middot;
       <a href="https://github.com/Shuonli/ppg12">sPHENIX Collaboration</a> &middot;
       <a href="feed.xml">RSS</a>
