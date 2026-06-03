@@ -50,6 +50,29 @@ hadd -f "${JET_OUT}" \
 echo "[hadd_showershape_di] wrote ${SIGNAL_OUT}"
 echo "[hadd_showershape_di] wrote ${JET_OUT}"
 
+# Background-only jet hadd: jet samples filled with doinclusive=false (truth-
+# matched signal photons removed via the background_set veto in
+# ShowerShapeCheck.C). Inputs are the per-sample files WITHOUT the _inclusive
+# infix (produced by the showershape_di_jobs_*_bkgonly.list condor jobs).
+# Used to overlay a "Background only" curve on Fig. 1 and Fig. 2 of the paper.
+JET_BKGONLY="${RESULTS_DIR}/MC_efficiencyshower_shape_jet_background_only_combined_${SUFFIX}.root"
+if ls "${RESULTS_DIR}/MC_efficiencyshower_shape_jet8_nom_${SUFFIX}.root" >/dev/null 2>&1; then
+    hadd -f "${JET_BKGONLY}" \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet8_nom_${SUFFIX}.root"     \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet8_double_${SUFFIX}.root"  \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet12_nom_${SUFFIX}.root"    \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet12_double_${SUFFIX}.root" \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet20_nom_${SUFFIX}.root"    \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet20_double_${SUFFIX}.root" \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet30_nom_${SUFFIX}.root"    \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet30_double_${SUFFIX}.root" \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet40_nom_${SUFFIX}.root"    \
+        "${RESULTS_DIR}/MC_efficiencyshower_shape_jet40_double_${SUFFIX}.root"
+    echo "[hadd_showershape_di] wrote ${JET_BKGONLY}"
+else
+    echo "[hadd_showershape_di] skipping background-only hadd (per-sample inputs not found; run showershape_di_jobs_${SUFFIX#showershape_}_bkgonly.list first)"
+fi
+
 # SI-only reference hadds (no DI blending) — consumed by
 # plot_showershapes_variations.C when use_mixed=false (the `dis_*` prefix).
 # Each _nom sample still carries mix_weight = SINGLE_FRAC, so per-bin shape

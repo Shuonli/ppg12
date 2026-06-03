@@ -53,6 +53,18 @@ hadd -f "${JET_OUT}" \
     "${RESULTS_DIR}/MC_efficiencyshower_shape_jet_inclusive_combined_${SUFFIX1}.root"
 
 echo
+echo "--- jet_background_only_combined (all-range) ---"
+JET_BKGONLY_OUT="${RESULTS_DIR}/MC_efficiencyshower_shape_jet_background_only_combined_${SUFFIXO}.root"
+JET_BKGONLY_0="${RESULTS_DIR}/MC_efficiencyshower_shape_jet_background_only_combined_${SUFFIX0}.root"
+JET_BKGONLY_1="${RESULTS_DIR}/MC_efficiencyshower_shape_jet_background_only_combined_${SUFFIX1}.root"
+if [[ -f "${JET_BKGONLY_0}" && -f "${JET_BKGONLY_1}" ]]; then
+    hadd -f "${JET_BKGONLY_OUT}" "${JET_BKGONLY_0}" "${JET_BKGONLY_1}"
+    echo "[merge_periods_showershape] wrote ${JET_BKGONLY_OUT}"
+else
+    echo "[merge_periods_showershape] skipping jet_background_only merge (per-period inputs not found)"
+fi
+
+echo
 echo "--- data hadd cross-check (.merged) ---"
 hadd -f "${DATA_MERGED}" \
     "${RESULTS_DIR}/data_histoshower_shape_${SUFFIX0}.root" \
