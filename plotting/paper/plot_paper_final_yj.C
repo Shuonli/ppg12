@@ -411,10 +411,13 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     }
 
     // ---------------------------------------------------------------
-    // PHENIX corrected to |eta|<0.7: undo bin-width via modified power
-    // law fit, then rescale by 1/R where R = (dN/deta)_{|eta|<0.25} /
-    // (dN/deta)_{|eta|<0.7} from truth_eta_ratio_inclusive.root
-    // (Pythia truth, NO isolation — matches PHENIX inclusive fiducial).
+    // PHENIX corrected to the PPG12 fiducial: undo bin-width via modified
+    // power law fit, then rescale by (i) 1/R for the rapidity acceptance,
+    // R = (dN/deta)_{|eta|<0.25}/(dN/deta)_{|eta|<0.7} from
+    // truth_eta_ratio_inclusive.root (Pythia truth, no isolation), and
+    // (ii) the isolation factor sigma_iso/sigma_incl (CT18NLO JETPHOX,
+    // cone R=0.3, ET_iso<4 GeV) from iso_correction_ct18nlo.root, which
+    // accounts for the absence of an isolation requirement in PHENIX.
     // Fit form A*(1+pT^2/b)^c (PHENIX 1405.3940) lifted to differential
     // d^2sigma/(deta dpT) by the 2*pi*pT factor. Fit window 10-26 GeV
     // to focus on the pT region overlapping PPG12.
@@ -440,6 +443,13 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_eta_ratio_inclusive.root");
     TH1D *h_eta_ratio = (TH1D *) f_eta_ratio->Get("h_ratio_central_over_full");
 
+    // Isolation correction sigma_iso/sigma_incl (CT18NLO JETPHOX): PHENIX is
+    // inclusive (no iso), PPG12 is isolated, so each PHENIX point is multiplied
+    // by this factor (~0.93-0.99) to bring it onto the isolated fiducial.
+    TFile *f_iso_corr = TFile::Open(
+        "/sphenix/user/shuhangli/ppg12/NLO/rootFiles/iso_correction_ct18nlo.root");
+    TH1D *h_iso_corr = (TH1D *) f_iso_corr->Get("h_iso_over_incl");
+
     TGraphAsymmErrors *gStat_PHENIX_corr = new TGraphAsymmErrors(n);
     gStat_PHENIX_corr->SetName("gStat_PHENIX_corr");
     TGraphAsymmErrors *gSys_PHENIX_corr = new TGraphAsymmErrors(n);
@@ -459,9 +469,17 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         double R = h_eta_ratio->GetBinContent(rb);
         if (R <= 0.0) R = 1.0;
 
+        // isolation factor sigma_iso/sigma_incl (same edge clamping as R;
+        // the PHENIX overlap 8-25 GeV is fully covered by the JETPHOX bins)
+        int ib = h_iso_corr->FindBin(pT);
+        if (ib < 1) ib = 1;
+        if (ib > h_iso_corr->GetNbinsX()) ib = h_iso_corr->GetNbinsX();
+        double iso_corr = h_iso_corr->GetBinContent(ib);
+        if (iso_corr <= 0.0) iso_corr = 1.0;
+
         double sf = pT * factorCommon;
         double y_pub = y[i] * sf;
-        double total_scale = bin_shape / R;
+        double total_scale = bin_shape / R * iso_corr;
         double y_corr = y_pub * total_scale;
 
         double exl = pT - xLow[i];
@@ -474,6 +492,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
             sysDown[i] * sf * total_scale, sysUp[i] * sf * total_scale);
     }
     f_eta_ratio->Close();
+    f_iso_corr->Close();
 
     // getting a different NLO
     ifstream myfile;
@@ -1219,7 +1238,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // l2->AddEntry((TObject*)0, "#scale[0.93]{#it{PRD 86 072008}}", "");
     l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX}", "fpl");
     // l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, (corrected for bin-avg, |#eta^{#gamma}|<0.7)}", "fpl");
-    l2->AddEntry((TObject*)0, "#lower[-0.35]{#scale[0.93]{corrected for bin-avg and |#eta^{#gamma}|<0.7}}", "");
+    l2->AddEntry((TObject*)0, "#lower[-0.35]{#scale[0.93]{corrected for bin-avg, |#eta^{#gamma}|<0.7, iso}}", "");
     // l2->AddEntry((TObject*)0, "#scale[0.93]{(no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", "");
     l2->Draw("same");
     myText(xpos+0.02, ypos2 - 0.04, 1, "#scale[0.93]{(PHENIX #kern[-0.05]{#it{PRD 86 072008}}: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
@@ -1254,6 +1273,43 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TGraphAsymmErrors *g_ratio_phenix_stat  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_ratio_phenix_psys  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_data_sys_band      = new TGraphAsymmErrors();
+    // Full-range sPHENIX stat error bars at y=1 (independent of PHENIX
+    // overlap, so the reader sees the sPHENIX uncertainty even at high pT
+    // where PHENIX has no measurement).
+    TGraphAsymmErrors *g_data_stat_full     = new TGraphAsymmErrors();
+
+    // Pre-pass: build the sPHENIX-only stat + syst graphs at y=1 over the
+    // FULL sPHENIX pT range (lowerx..upperx). The main ratio loop below
+    // restricts to the PHENIX overlap (pT < 26 GeV) for the PHENIX/data
+    // ratio markers, but the y=1 bands extend across the whole panel.
+    int rp_full_idx = 0;
+    for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
+    {
+        double pT_c = h_data->GetBinCenter(i);
+        if (pT_c < lowerx || pT_c > upperx) continue;
+        double y_d = h_data->GetBinContent(i);
+        double e_d = h_data->GetBinError(i);
+        if (y_d <= 0.0) continue;
+        double sys_d_lo = 0.0, sys_d_hi = 0.0;
+        for (Int_t j = 0; j < g_syst->GetN(); ++j)
+        {
+            double x_s = 0.0, y_s = 0.0;
+            g_syst->GetPoint(j, x_s, y_s);
+            if (std::abs(x_s - pT_c) < 0.1) {
+                sys_d_lo = g_syst->GetErrorYlow(j);
+                sys_d_hi = g_syst->GetErrorYhigh(j);
+                break;
+            }
+        }
+        double bin_w = h_data->GetBinWidth(i);
+        g_data_sys_band->SetPoint(rp_full_idx, pT_c, 1.0);
+        g_data_sys_band->SetPointError(rp_full_idx, bin_w / 2.0, bin_w / 2.0,
+                                       sys_d_lo / y_d, sys_d_hi / y_d);
+        g_data_stat_full->SetPoint(rp_full_idx, pT_c, 1.0);
+        g_data_stat_full->SetPointError(rp_full_idx, 0.0, 0.0,
+                                        e_d / y_d, e_d / y_d);
+        ++rp_full_idx;
+    }
 
     int rp_idx = 0;
     for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
@@ -1294,39 +1350,39 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         double stat_p_hi = gStat_PHENIX_corr->GetErrorYhigh(p_idx);
 
         double r          = y_p / y_d;
-        // Per-source stat propagated to the ratio
+        // Per-source stat propagated to the ratio (PHENIX only; sPHENIX
+        // stat is drawn separately as a y=1 band layer below).
         double r_pstat_lo = r * (stat_p_lo / y_p);
         double r_pstat_hi = r * (stat_p_hi / y_p);
-        double r_dstat    = r * (e_d / y_d);
         double r_psys_lo  = sys_p_lo / y_d;
         double r_psys_hi  = sys_p_hi / y_d;
-        double r_dsys_lo  = sys_d_lo / y_d;
-        double r_dsys_hi  = sys_d_hi / y_d;
         double bin_w      = h_data->GetBinWidth(i);
 
         // Marker at the bin centre with bin-width horizontal bars only
         g_ratio_phenix->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, 0.0, 0.0);
 
-        // Combined stat: quadrature sum of PHENIX-corrected and sPHENIX-data stats
-        double r_stat_lo = std::sqrt(r_pstat_lo * r_pstat_lo + r_dstat * r_dstat);
-        double r_stat_hi = std::sqrt(r_pstat_hi * r_pstat_hi + r_dstat * r_dstat);
+        // PHENIX-only stat propagated to the ratio
         g_ratio_phenix_stat->SetPoint(rp_idx, pT_c, r);
-        g_ratio_phenix_stat->SetPointError(rp_idx, 0.0, 0.0, r_stat_lo, r_stat_hi);
+        g_ratio_phenix_stat->SetPointError(rp_idx, 0.0, 0.0, r_pstat_lo, r_pstat_hi);
 
         g_ratio_phenix_psys->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix_psys->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_psys_lo, r_psys_hi);
 
-        g_data_sys_band->SetPoint(rp_idx, pT_c, 1.0);
-        g_data_sys_band->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_dsys_lo, r_dsys_hi);
-
         ++rp_idx;
     }
 
-    // Layer 1 (back): data sys band centred on y=1
+    // Layer 1 (back): sPHENIX systematic band centred on y=1 (full pT range)
     g_data_sys_band->SetFillColorAlpha(col[0], trans[0]);
     g_data_sys_band->SetLineColor(col[0]);
     g_data_sys_band->Draw("2 same");
+
+    // Layer 2: sPHENIX statistical error bars at y=1 (full pT range)
+    g_data_stat_full->SetMarkerStyle(1);
+    g_data_stat_full->SetMarkerSize(0);
+    g_data_stat_full->SetLineColor(col[0]);
+    g_data_stat_full->SetLineWidth(2);
+    g_data_stat_full->Draw("Z same");
 
     // Unity reference line
     lineone->SetLineColor(kBlack);
