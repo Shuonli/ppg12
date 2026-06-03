@@ -414,7 +414,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // PHENIX corrected to the PPG12 fiducial: undo bin-width via modified
     // power law fit, then rescale by (i) 1/R for the rapidity acceptance,
     // R = (dN/deta)_{|eta|<0.25}/(dN/deta)_{|eta|<0.7} from
-    // truth_eta_ratio_inclusive.root (Pythia truth, no isolation), and
+    // truth_eta_ratio_jetphox.root (CT18NLO JETPHOX truth, no isolation;
+    // see NLO/compute_eta_correction.py), and
     // (ii) the isolation factor sigma_iso/sigma_incl (CT18NLO JETPHOX,
     // cone R=0.3, ET_iso<4 GeV) from iso_correction_ct18nlo.root, which
     // accounts for the absence of an isolation requirement in PHENIX.
@@ -440,7 +441,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     gFit_PHENIX->Fit(f_phenix_mpl, "QRN");
 
     TFile *f_eta_ratio = TFile::Open(
-        "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_eta_ratio_inclusive.root");
+        "/sphenix/user/shuhangli/ppg12/NLO/rootFiles/truth_eta_ratio_jetphox.root");
     TH1D *h_eta_ratio = (TH1D *) f_eta_ratio->Get("h_ratio_central_over_full");
 
     // Isolation correction sigma_iso/sigma_incl (CT18NLO JETPHOX): PHENIX is
