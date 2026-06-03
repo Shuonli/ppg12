@@ -704,7 +704,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     int nEntry = 6;
     TLegend *l1 = new TLegend(xpos, ypos2, 0.5, ypos2 + nEntry * dy1);
     legStyle(l1, 0.20, fontsize);
-    l1->AddEntry(htemp_data, "Data", "fpl");
+    l1->AddEntry(htemp_data, "sPHENIX", "fpl");
     l1->AddEntry(h_pythia, "PYTHIA8", "pl");
     l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX", "fpl");
 
@@ -1234,7 +1234,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     nEntry = 4;
     TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
     legStyle(l2, 0.21, fontsize);
-    l2->AddEntry(htemp_data, "Data", "fpl");
+    l2->AddEntry(htemp_data, "sPHENIX", "fpl");
     l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX |#eta^{#gamma}|<0.25}", "fpl");
     // l2->AddEntry((TObject*)0, "#scale[0.93]{#it{PRD 86 072008}}", "");
     l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX}", "fpl");
@@ -1256,7 +1256,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     TH1F *frame_ratio_phenix = new TH1F("frame_ratio_phenix", "", 1, lowerx, upperx);
     frame_ratio_phenix->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_ratio_phenix->SetYTitle("PHENIX / Data");
+    frame_ratio_phenix->SetYTitle("PHENIX / sPHENIX");
     frame_ratio_phenix->GetYaxis()->SetRangeUser(0.6, 2.3);
     frame_ratio_phenix->GetYaxis()->SetNdivisions(505);
     // Match the c1 lower-panel font scaling (6/4 = 1.5) for visual parity.
@@ -1568,7 +1568,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
         TLegend *l_s = new TLegend(xpos_s, 0.25, 0.55, 0.34);
         legStyle(l_s, 0.21, fs);
-        l_s->AddEntry(htemp_data, "Data", "fpl");
+        l_s->AddEntry(htemp_data, "sPHENIX", "fpl");
         l_s->Draw("same");
     }
 
