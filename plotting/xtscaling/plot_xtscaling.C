@@ -118,9 +118,9 @@ void plot_xtscaling() {
     }
   }
 
-  TLegend *leg = new TLegend(0.175, 0.115, 0.43, 0.55);
-  leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.022);
-  leg->SetNColumns(1);
+  TLegend *leg = new TLegend(0.175, 0.115, 0.75, 0.43);
+  leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.026);
+  leg->SetNColumns(2); leg->SetColumnSeparation(0.02);
   for (auto &pr : drawn) if (pr.first->ours)
     leg->AddEntry(pr.second, ("#bf{" + pr.first->label + "}").c_str(), "p");
   for (auto &pr : drawn) if (!pr.first->ours)
