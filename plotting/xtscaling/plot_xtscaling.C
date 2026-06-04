@@ -47,25 +47,28 @@ void plot_xtscaling() {
   gStyle->SetOptStat(0);
 
   // style table; only ids present on disk are drawn. order = legend order after PPG12.
+  // marker styles match Bock HP2018 Fig.1 (1901.10950) as closely as practical.
   std::vector<DS> all = {
-    {"ATLAS_13TeV",           "ATLAS (13 TeV)",   kViolet+1, 27, 1.2, false, {}},
-    {"ATLAS_8TeV",            "ATLAS (8 TeV)",    kBlue+1,   33, 1.3, false, {}},
-    {"ATLAS_7TeV",            "ATLAS (7 TeV)",    kAzure+2,  26, 1.1, false, {}},
-    {"CMS_7TeV",              "CMS (7 TeV)",      kGreen+2,  22, 1.1, false, {}},
-    {"CDF_1800",              "CDF (1.8 TeV)",    kCyan+2,   20, 1.0, false, {}},
-    {"D0_1800",               "D0 (1.8 TeV)",     kMagenta+2,24, 1.0, false, {}},
-    {"UA1_630",               "UA1 (630 GeV)",    kOrange+7, 21, 1.0, false, {}},
-    {"UA2_630",               "UA2 (630 GeV)",    kViolet-4, 25, 1.0, false, {}},
-    {"PHENIX_200GeV",         "PHENIX (200 GeV)", kBlack,    21, 1.1, false, {}},
-    {"PHENIX_510GeV_isolated","PHENIX iso. (510 GeV)", kAzure+2, 22, 1.1, false, {}},
-    {"R110_63",               "R110 (63 GeV)",    kYellow+3, 33, 1.1, false, {}},
-    {"E706_38p8GeV",          "E706 (38.8 GeV)",  kOrange+8, 23, 1.1, false, {}},
-    {"E706_31p6GeV",          "E706 (31.6 GeV)",  kOrange+1, 32, 1.1, false, {}},
-    {"NA24_23p8",             "NA24 (23.8 GeV)",  kPink+6,   28, 1.0, false, {}},
-    {"UA6_24p3",              "UA6 (24.3 GeV)",   kSpring-6, 34, 1.1, false, {}},
-    {"WA70_23",               "WA70 (23 GeV)",    kTeal+3,   27, 1.0, false, {}},
-    {"E704_19p4",             "E704 (19.4 GeV)",  kGray+1,   20, 0.9, false, {}},
-    {"PPG12_200GeV",          "sPHENIX (200 GeV)",kRed,      29, 2.4, true,  {}},
+    {"ALICE_13TeV",           "ALICE (13 TeV)",   kPink+8,    20, 1.0, false, {}},  // filled circle
+    {"ALICE_7TeV",            "ALICE (7 TeV)",    kViolet-6,  21, 1.0, false, {}},  // filled square
+    {"ATLAS_13TeV",           "ATLAS (13 TeV)",   kViolet+1,  21, 1.0, false, {}},  // Bock: filled purple square
+    {"ATLAS_8TeV",            "ATLAS (8 TeV)",    kGreen+2,   27, 1.1, false, {}},  // Bock: open green diamond
+    {"ATLAS_7TeV",            "ATLAS (7 TeV)",    kBlue,      24, 1.0, false, {}},  // Bock: open blue circle
+    {"CMS_7TeV",              "CMS (7 TeV)",      kAzure+1,   25, 1.0, false, {}},  // Bock: open blue square
+    {"CDF_1800",              "CDF (1.8 TeV)",    kTeal+3,    34, 1.1, false, {}},  // Bock: filled teal plus
+    {"D0_1800",               "D0 (1.8 TeV)",     kTeal-1,    33, 1.1, false, {}},  // Bock: filled teal diamond
+    {"UA1_630",               "UA1 (630 GeV)",    kOrange+1,  29, 1.2, false, {}},  // Bock: filled orange star
+    {"UA2_630",               "UA2 (630 GeV)",    kOrange+7,  25, 1.0, false, {}},  // Bock: open orange square
+    {"PHENIX_200GeV",         "PHENIX (200 GeV)", kViolet-1,  20, 1.1, false, {}},  // Bock: filled purple circle
+    {"PHENIX_510GeV_isolated","PHENIX iso. (510 GeV)", kAzure+2, 22, 1.0, false, {}},
+    {"R110_63",               "R110 (63 GeV)",    kGray+2,    5,  1.2, false, {}},  // Bock R807: gray cross
+    {"E706_38p8GeV",          "E706 (38.8 GeV)",  kGray+2,    30, 1.1, false, {}},  // Bock: gray open star
+    {"E706_31p6GeV",          "E706 (31.6 GeV)",  kGray+2,    25, 1.0, false, {}},  // Bock: gray open square
+    {"NA24_23p8",             "NA24 (23.8 GeV)",  kGray+2,    20, 0.9, false, {}},  // Bock: gray filled circle
+    {"UA6_24p3",              "UA6 (24.3 GeV)",   kGray+2,    28, 1.0, false, {}},  // Bock: gray filled plus
+    {"WA70_23",               "WA70 (23 GeV)",    kGray+2,    21, 0.9, false, {}},  // Bock: gray filled square
+    {"E704_19p4",             "E704 (19.4 GeV)",  kBlack,     24, 0.9, false, {}},  // Bock: black open circle
+    {"PPG12_200GeV",          "sPHENIX (200 GeV)",kRed,       29, 2.4, true,  {}},
   };
 
   std::vector<DS> ds;
@@ -82,8 +85,8 @@ void plot_xtscaling() {
   }
   if (ds.empty()) { printf("no datasets found\n"); return; }
 
-  double xlo = std::max(0.006, xmin * 0.65), xhi = std::min(1.0, xmax * 1.4);
-  double ylo = ymin * 1e-3, yhi = ymax * 8.0;
+  double xlo = std::max(8e-4, xmin * 0.65), xhi = std::min(1.0, xmax * 1.4);
+  double ylo = ymin * 1e-3, yhi = ymax * 20.0;
 
   TCanvas *c = new TCanvas("c_xt", "", 820, 840);
   c->SetLogx(); c->SetLogy(); c->SetTicks(1, 1);

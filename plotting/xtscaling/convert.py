@@ -154,6 +154,28 @@ def load_phenix_isolated():
     d["experiment"] = "PHENIX (isolated)"; d["isolated"] = True; d["points"] = pts
     return d
 
+def load_alice7tev():
+    """ALICE 7 TeV isolated photon (arXiv:1906.01371). d2sigma/(dpT deta) [nb/GeV/c], |eta|<0.27."""
+    pts = []
+    for a in load_csv_points("alice7tev.csv"):
+        ctr, val, stm, stp, sy = map(float, a[:5])
+        pts.append({"x_ctr": ctr, "central": val, "stat": 0.5*(stm+stp), "syst": sy})
+    return {"dataset_id": "ALICE_7TeV", "experiment": "ALICE (7 TeV)",
+            "sqrt_s_GeV": 7000.0, "isolated": True, "observable": "d2sigma_dET_deta_per_eta",
+            "x_variable": "pT", "units": "nb/GeV", "eta_range": "|eta|<0.27", "delta_eta": 0.54,
+            "uncertainty_type": "absolute", "points": pts}
+
+def load_alice13tev():
+    """ALICE 13 TeV isolated photon (arXiv:2407.01165). d2sigma/(dpT deta) [nb/GeV/c], |eta|<0.67, charged-only iso."""
+    pts = []
+    for a in load_csv_points("alice13tev.csv"):
+        ctr, val, stm, stp, sy = map(float, a[:5])
+        pts.append({"x_ctr": ctr, "central": val, "stat": 0.5*(stm+stp), "syst": sy})
+    return {"dataset_id": "ALICE_13TeV", "experiment": "ALICE (13 TeV)",
+            "sqrt_s_GeV": 13000.0, "isolated": True, "observable": "d2sigma_dET_deta_per_eta",
+            "x_variable": "pT", "units": "nb/GeV", "eta_range": "|eta|<0.67", "delta_eta": 1.34,
+            "uncertainty_type": "absolute", "points": pts}
+
 def load_phenix510_iso():
     """PHENIX 510 GeV isolated direct photon (PRL 130, 251901). HEPData ins2033856 Fig 1 iso column."""
     pts = []
@@ -166,7 +188,8 @@ def load_phenix510_iso():
             "uncertainty_type": "absolute", "points": pts}
 
 def main():
-    datasets = [load_ppg12(), load_phenix_incl(), load_phenix510_iso()]
+    datasets = [load_ppg12(), load_phenix_incl(), load_phenix510_iso(),
+                load_alice7tev(), load_alice13tev()]
     extfn = os.path.join(DATA, "external_datasets.json")
     if os.path.exists(extfn):
         ext = json.load(open(extfn))
