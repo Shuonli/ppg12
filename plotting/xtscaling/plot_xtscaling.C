@@ -83,7 +83,7 @@ void plot_xtscaling() {
   if (ds.empty()) { printf("no datasets found\n"); return; }
 
   double xlo = std::max(0.006, xmin * 0.65), xhi = std::min(1.0, xmax * 1.4);
-  double ylo = ymin * 0.15, yhi = ymax * 8.0;
+  double ylo = ymin * 1e-3, yhi = ymax * 8.0;
 
   TCanvas *c = new TCanvas("c_xt", "", 820, 840);
   c->SetLogx(); c->SetLogy(); c->SetTicks(1, 1);
@@ -118,9 +118,9 @@ void plot_xtscaling() {
     }
   }
 
-  TLegend *leg = new TLegend(0.175, 0.115, 0.78, 0.515);
-  leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.028);
-  leg->SetNColumns(2); leg->SetColumnSeparation(0.03);
+  TLegend *leg = new TLegend(0.175, 0.115, 0.43, 0.55);
+  leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.022);
+  leg->SetNColumns(1);
   for (auto &pr : drawn) if (pr.first->ours)
     leg->AddEntry(pr.second, ("#bf{" + pr.first->label + "}").c_str(), "p");
   for (auto &pr : drawn) if (!pr.first->ours)
