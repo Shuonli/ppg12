@@ -235,7 +235,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
             leg->AddEntry(proj_data, "Data",         "lep");
             leg->AddEntry(proj_sig,  "Signal MC",    "l");
             leg->AddEntry(proj_bkg,  "Inclusive MC", "l");
-            if (proj_bkgonly) leg->AddEntry(proj_bkgonly, "Background only", "l");
+            if (proj_bkgonly) leg->AddEntry(proj_bkgonly, "Background MC", "l");
             leg->Draw();
         }
 
