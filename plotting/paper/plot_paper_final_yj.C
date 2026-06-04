@@ -693,10 +693,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
-    myText(xpos2, ypos - 1 * dy, 1, strleg2.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 2 * dy, 1, strleg_lumi_line2.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 3 * dy, 1, strleg3.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 4 * dy, 1, strleg4.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 1 * dy, 1, strleg_lumi.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
     // myText(xpos2,ypos-1*dy,1,strleg2_1.c_str(),fontsize,1);
     // myText(xpos2,ypos-2*dy,1,strleg3.c_str(),fontsize,1);
     // myText(xpos2,ypos-3*dy,1,strleg4.c_str(),fontsize,1);
