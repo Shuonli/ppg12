@@ -1216,7 +1216,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     xpos2 = 0.87;
     fontsize = 0.053;
-    fontsize1 = 0.047;
+    fontsize1 = 0.060;
     dy = 0.065;
     xpos = 0.16;
     ypos2 = 0.09;
