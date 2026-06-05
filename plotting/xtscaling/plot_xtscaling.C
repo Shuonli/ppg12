@@ -85,9 +85,8 @@ void plot_xtscaling() {
   }
   if (ds.empty()) { printf("no datasets found\n"); return; }
 
-  // Match Bock HP2018 (arXiv 1901.10950) axis range exactly for side-by-side check
-  double xlo = 1e-4, xhi = 1.5;
-  double ylo = 1e4,  yhi = 1e29;
+  double xlo = std::max(8e-4, xmin * 0.65), xhi = std::min(1.0, xmax * 1.4);
+  double ylo = ymin * 1e-3,                 yhi = ymax * 20.0;
 
   TCanvas *c = new TCanvas("c_xt", "", 820, 840);
   c->SetLogx(); c->SetLogy(); c->SetTicks(1, 1);
