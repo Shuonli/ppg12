@@ -176,19 +176,19 @@ def load_alice13tev():
             "x_variable": "pT", "units": "nb/GeV", "eta_range": "|eta|<0.67", "delta_eta": 1.34,
             "uncertainty_type": "absolute", "points": pts}
 
-def load_phenix510_iso():
-    """PHENIX 510 GeV isolated direct photon (PRL 130, 251901). HEPData ins2033856 Fig 1 iso column."""
+def load_phenix510_inc():
+    """PHENIX 510 GeV INCLUSIVE direct photon (PRL 130, 251901). HEPData ins2033856 Fig 1 inclusive column."""
     pts = []
     for a in load_csv_points("phenix510_fig1.csv"):
         ctr, val, stm, stp, sy = map(float, a[:5])
         pts.append({"x_ctr": ctr, "central": val, "stat": 0.5*(stm+stp), "syst": sy})
-    return {"dataset_id": "PHENIX_510GeV_isolated", "experiment": "PHENIX iso. (510 GeV)",
-            "sqrt_s_GeV": 510.0, "isolated": True, "observable": "invariant_Ed3sigma_dp3",
+    return {"dataset_id": "PHENIX_510GeV", "experiment": "PHENIX (510 GeV)",
+            "sqrt_s_GeV": 510.0, "isolated": False, "observable": "invariant_Ed3sigma_dp3",
             "x_variable": "pT", "units": "pb/GeV^2", "eta_range": "|eta|<0.25", "delta_eta": 1.0,
             "uncertainty_type": "absolute", "points": pts}
 
 def main():
-    datasets = [load_ppg12(), load_phenix_incl(), load_phenix510_iso(),
+    datasets = [load_ppg12(), load_phenix_incl(), load_phenix510_inc(),
                 load_alice7tev(), load_alice13tev()]
     extfn = os.path.join(DATA, "external_datasets.json")
     if os.path.exists(extfn):

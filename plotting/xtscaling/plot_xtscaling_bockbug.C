@@ -65,7 +65,7 @@ void plot_xtscaling_bockbug() {
     {"UA1_630",               "UA1 (630 GeV)",    kOrange+1,  29, 1.2, false,   630,    0.0, {}},
     {"UA2_630",               "UA2 (630 GeV)",    kOrange+7,  25, 1.0, false,   630,    0.0, {}},
     {"PHENIX_200GeV",         "PHENIX (200 GeV)", kViolet-1,  20, 1.1, false,   200,    0.0, {}},
-    {"PHENIX_510GeV_isolated","PHENIX iso. (510 GeV)", kAzure+2, 22, 1.0, false, 510,   0.0, {}},
+    {"PHENIX_510GeV",         "PHENIX (510 GeV)", kAzure+2, 22, 1.0, false, 510,   0.0, {}},
     {"R110_63",               "R110 (63 GeV)",    kGray+2,    5,  1.2, false,    63,    0.0, {}},
     {"E706_38p8GeV",          "E706 (38.8 GeV)",  kGray+2,    30, 1.1, false,  38.8,    0.0, {}},
     {"E706_31p6GeV",          "E706 (31.6 GeV)",  kGray+2,    25, 1.0, false,  31.6,    0.0, {}},

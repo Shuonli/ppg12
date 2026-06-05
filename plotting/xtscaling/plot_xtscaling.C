@@ -60,7 +60,7 @@ void plot_xtscaling() {
     {"UA1_630",               "UA1 (630 GeV)",    kOrange+1,  29, 1.2, false, {}},  // Bock: filled orange star
     {"UA2_630",               "UA2 (630 GeV)",    kOrange+7,  25, 1.0, false, {}},  // Bock: open orange square
     {"PHENIX_200GeV",         "PHENIX (200 GeV)", kViolet-1,  20, 1.1, false, {}},  // Bock: filled purple circle
-    {"PHENIX_510GeV_isolated","PHENIX iso. (510 GeV)", kAzure+2, 22, 1.0, false, {}},
+    {"PHENIX_510GeV",         "PHENIX (510 GeV)", kAzure+2, 22, 1.0, false, {}},
     {"R110_63",               "R110 (63 GeV)",    kGray+2,    5,  1.2, false, {}},  // Bock R807: gray cross
     {"E706_38p8GeV",          "E706 (38.8 GeV)",  kGray+2,    30, 1.1, false, {}},  // Bock: gray open star
     {"E706_31p6GeV",          "E706 (31.6 GeV)",  kGray+2,    25, 1.0, false, {}},  // Bock: gray open square
@@ -85,8 +85,9 @@ void plot_xtscaling() {
   }
   if (ds.empty()) { printf("no datasets found\n"); return; }
 
-  double xlo = std::max(8e-4, xmin * 0.65), xhi = std::min(1.0, xmax * 1.4);
-  double ylo = ymin * 1e-3, yhi = ymax * 20.0;
+  // Match Bock HP2018 (arXiv 1901.10950) axis range exactly for side-by-side check
+  double xlo = 1e-4, xhi = 1.5;
+  double ylo = 1e4,  yhi = 1e29;
 
   TCanvas *c = new TCanvas("c_xt", "", 820, 840);
   c->SetLogx(); c->SetLogy(); c->SetTicks(1, 1);
