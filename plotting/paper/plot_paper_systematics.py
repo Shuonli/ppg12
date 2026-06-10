@@ -59,7 +59,7 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
 
     c = ROOT.TCanvas("c_breakdown_paper", "", 900, 600)
 
-    ROOT.frame_et_truth.GetYaxis().SetRangeUser(-0.58, 0.5)
+    ROOT.frame_et_truth.GetYaxis().SetRangeUser(-0.45, 0.35)
     # Paper x-range: 12 < ETg < 32 GeV (the reported analysis range).
     # Slight inset (12.1, 31.9) to suppress bin-edge vertical-line artifacts
     # flagged by Jamie on Fig. 6.
