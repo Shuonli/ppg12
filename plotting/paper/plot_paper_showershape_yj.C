@@ -64,6 +64,11 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
     TFile *f_data = TFile::Open(Form("%s/data_histoshower_shape_%s.root",                          resdir.c_str(), configsuffix.c_str()), "READ");
     TFile *f_sig  = TFile::Open(Form("%s/MC_efficiencyshower_shape_signal_combined_%s.root",       resdir.c_str(), configsuffix.c_str()), "READ");
     TFile *f_bkg  = TFile::Open(Form("%s/MC_efficiencyshower_shape_jet_inclusive_combined_%s.root", resdir.c_str(), configsuffix.c_str()), "READ");
+    // Optional fourth curve: jet MC with truth-matched signal photons vetoed
+    // (produced by submit_showershape_di.sub with doinclusive=false). The
+    // macro falls through cleanly to 3-curve mode when the file is absent.
+    TFile *f_bkgonly = TFile::Open(Form("%s/MC_efficiencyshower_shape_jet_background_only_combined_%s.root", resdir.c_str(), configsuffix.c_str()), "READ");
+    const bool hasBkgOnly = (f_bkgonly && !f_bkgonly->IsZombie());
 
     if (!f_data || f_data->IsZombie() ||
         !f_sig  || f_sig->IsZombie()  ||
@@ -151,6 +156,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         TH2F *h2_data = dynamic_cast<TH2F *>(f_data->Get(histNameFull));
         TH2F *h2_sig  = dynamic_cast<TH2F *>(f_sig ->Get(histNameFull));
         TH2F *h2_bkg  = dynamic_cast<TH2F *>(f_bkg ->Get(histNameFull));
+        TH2F *h2_bkgonly = hasBkgOnly ? dynamic_cast<TH2F *>(f_bkgonly->Get(histNameFull)) : nullptr;
         if (!h2_data || !h2_sig || !h2_bkg)
         {
             std::cerr << "[plot_paper_showershape] missing " << histNameFull << " in one or more files; skipping." << std::endl;
@@ -161,21 +167,30 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
             h->RebinX(nrebin);
             h->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
         }
+        if (h2_bkgonly)
+        {
+            h2_bkgonly->RebinX(nrebin);
+            h2_bkgonly->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+        }
 
         TH1D *proj_data = h2_data->ProjectionX(Form("%s_px_data", histNameFull.Data()));
         TH1D *proj_sig  = h2_sig ->ProjectionX(Form("%s_px_sig",  histNameFull.Data()));
         TH1D *proj_bkg  = h2_bkg ->ProjectionX(Form("%s_px_bkg",  histNameFull.Data()));
+        TH1D *proj_bkgonly = h2_bkgonly ? h2_bkgonly->ProjectionX(Form("%s_px_bkgonly", histNameFull.Data())) : nullptr;
 
         scaleToUnit(proj_data);
         scaleToUnit(proj_sig);
         scaleToUnit(proj_bkg);
+        if (proj_bkgonly) scaleToUnit(proj_bkgonly);
         styleData(proj_data);
         styleMC(proj_sig, kRed);
         styleMC(proj_bkg, kBlue);
+        if (proj_bkgonly) styleMC(proj_bkgonly, kGreen + 2);
 
         float maxy = std::max({proj_data->GetMaximum(),
                                proj_sig ->GetMaximum(),
                                proj_bkg ->GetMaximum()});
+        if (proj_bkgonly) maxy = std::max(maxy, static_cast<float>(proj_bkgonly->GetMaximum()));
 
         // Single-pad canvas (paper draft -- no diff pad).
         TCanvas *c_proj = new TCanvas(Form("c_paper_%s", histNameFull.Data()),
@@ -193,8 +208,10 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         proj_sig->SetStats(0);
         proj_sig->Draw("HIST");
         proj_bkg->Draw("HIST SAME");
+        if (proj_bkgonly) proj_bkgonly->Draw("HIST SAME");
         overlayVerticalErrors(proj_sig);
         overlayVerticalErrors(proj_bkg);
+        if (proj_bkgonly) overlayVerticalErrors(proj_bkgonly);
         proj_data->Draw("ex0 SAME");
 
         float xx=0.21;
@@ -209,7 +226,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         myText(xx, yy-dyy*4, 1, kCutLabel.c_str(), fontsize);
         {
             const double y_top = 0.90;
-            const double y_bot = 0.74;
+            const double y_bot = hasBkgOnly ? 0.69 : 0.74;
             TLegend *leg = new TLegend(0.60, y_bot, 0.90, y_top);
             leg->SetBorderSize(0);
             leg->SetFillStyle(0);
@@ -218,6 +235,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
             leg->AddEntry(proj_data, "Data",         "lep");
             leg->AddEntry(proj_sig,  "Signal MC",    "l");
             leg->AddEntry(proj_bkg,  "Inclusive MC", "l");
+            if (proj_bkgonly) leg->AddEntry(proj_bkgonly, "Background MC", "l");
             leg->Draw();
         }
 
@@ -227,4 +245,5 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
     f_data->Close();
     f_sig ->Close();
     f_bkg ->Close();
+    if (f_bkgonly) f_bkgonly->Close();
 }

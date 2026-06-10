@@ -21,12 +21,12 @@ mkdir -p "$PAPER_FIGDIR"
 # target_name -> shell command. Keep in sync with the .C / .py files in
 # this directory.
 declare -A TARGETS=(
-    [showershape]='root -l -b -q plot_paper_showershape.C'
+    [showershape]='root -l -b -q plot_paper_showershape_yj.C'
     [iso_template]='root -l -b -q plot_paper_iso_template.C'
     [purity]='root -l -b -q plot_paper_purity.C'
-    [efficiency]='root -l -b -q plot_paper_efficiency.C'
+    [efficiency]='root -l -b -q plot_paper_efficiency_yj.C'
     [systematics]='python plot_paper_systematics.py'
-    [final]='root -l -b -q plot_paper_final.C'
+    [final]='root -l -b -q plot_paper_final_yj.C'
 )
 
 # Order matters only for log readability; macros are independent.
