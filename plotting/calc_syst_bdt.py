@@ -365,6 +365,8 @@ def _yrange_from_hists(hists, padding=0.3, x_min=12.0, x_max=32.0):
 # ---------------------------------------------------------------------------
 VARIANT_LABELS = {
     # Energy scale / resolution
+    "energyscale148up":   "#it{E}_{T} scale #times 1.0148",
+    "energyscale148down": "#it{E}_{T} scale #times 0.9852",
     "energyscale26up":   "#it{E}_{T} scale #times 1.026",
     "energyscale26down": "#it{E}_{T} scale #times 0.974",
     "energyresolution0": "no extra smearing (#sigma_{E}/E = 0%)",

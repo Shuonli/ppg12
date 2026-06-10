@@ -209,15 +209,19 @@ VARIANTS = [
     # eres systematic: down = cE_0p08 (~6%), up = no extra smearing (data
     # params all zero). The legacy multiplicative `cluster_eres` field is
     # retired but kept in field-map for backward compatibility.
-    # Energy-scale envelope: placeholder at +/-1.1% pending the final
-    # EMCal calibration. The +/-1.5% and +/-2.6% pairs are kept alongside
-    # as cross-checks but the active journal-text systematic is taken from
-    # the 1.1% pair (mapped to syst_type="escale"); the 1.5% and 2.6%
-    # pairs have syst_type=None so they do not enter the syst aggregator.
-    dict(name="energyscale11up",   clusterescale=1.011,
+    # Energy-scale envelope: +/-1.48% (final EMCal calibration, 2026-06-08).
+    # The active journal-text systematic is the 1.48% pair (energyscale148,
+    # mapped to syst_type="escale"); the +/-1.1%, 1.5% and 2.6% pairs are
+    # kept alongside as cross-checks (syst_type=None) so they do not enter
+    # the syst aggregator.
+    dict(name="energyscale148up",   clusterescale=1.0148,
          syst_type="escale", syst_role="down"),
-    dict(name="energyscale11down", clusterescale=0.989,
+    dict(name="energyscale148down", clusterescale=0.9852,
          syst_type="escale", syst_role="up"),
+    dict(name="energyscale11up",   clusterescale=1.011,
+         syst_type=None,     syst_role=None),
+    dict(name="energyscale11down", clusterescale=0.989,
+         syst_type=None,     syst_role=None),
     dict(name="energyscale15up",   clusterescale=1.015,
          syst_type=None,     syst_role=None),
     dict(name="energyscale15down", clusterescale=0.985,
