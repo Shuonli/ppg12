@@ -24,29 +24,40 @@ void plot_combine_jet()
     // 5 orders of magnitude below the curve. The cross-section weights are
     // applied at fill time in RecoEffCalculator_TTreeReader.C; this plotter
     // just stacks the per-sample histograms unchanged.
+    // June 2026 production: per-sample MC exists as the four merge-feeder
+    // outputs (SI "_nom" and DI "_double", 0 mrad and 1.5 mrad). Each is
+    // pre-scaled by lumi_weight and mix_weight at fill time, so the plain sum
+    // of the four is the all-range SI/DI-blended MC used in the analysis.
     struct Sample {
         std::string name;
-        std::string file;
         int color;
         float pt_lo;
         float pt_hi;       // events with ptj >= pt_hi rejected
     };
     std::vector<Sample> samples = {
-        {"jet8",  base + "MC_efficiency_jet8_bdt_nom.root",  kPink + 5,    9.0f, 14.0f},
-        {"jet12", base + "MC_efficiency_jet12_bdt_nom.root", kGreen - 2,  14.0f, 21.0f},
-        {"jet20", base + "MC_efficiency_jet20_bdt_nom.root", kAzure + 7,  21.0f, 32.0f},
-        {"jet30", base + "MC_efficiency_jet30_bdt_nom.root", kOrange + 7, 32.0f, 42.0f},
-        {"jet40", base + "MC_efficiency_jet40_bdt_nom.root", kMagenta + 1,42.0f, 1e6f},
+        {"jet8",  kPink + 5,     9.0f, 14.0f},
+        {"jet12", kGreen - 2,   14.0f, 21.0f},
+        {"jet20", kAzure + 7,   21.0f, 32.0f},
+        {"jet30", kOrange + 7,  32.0f, 42.0f},
+        {"jet40", kMagenta + 1, 42.0f, 1e6f},
     };
+    const std::vector<std::string> parts = {"_nom_bdt_nom_0rad", "_nom_bdt_nom_1p5mrad",
+                                           "_double_bdt_nom_0rad", "_double_bdt_nom_1p5mrad"};
 
     int rebinx = 10;
 
     std::vector<TH1F*> h_per_sample;
     for (auto &s : samples) {
-        TFile *f = TFile::Open(s.file.c_str(), "READ");
-        if (!f || f->IsZombie()) { printf("missing %s\n", s.file.c_str()); return; }
-        TH1F *h = dynamic_cast<TH1F*>(f->Get("h_max_truth_jet_pT"));
-        if (!h) { printf("missing h_max_truth_jet_pT in %s\n", s.file.c_str()); return; }
+        TH1F *h = nullptr;
+        for (const auto &part : parts) {
+            const std::string file = base + "MC_efficiency_" + s.name + part + ".root";
+            TFile *f = TFile::Open(file.c_str(), "READ");
+            if (!f || f->IsZombie()) { printf("missing %s\n", file.c_str()); return; }
+            TH1F *hp = dynamic_cast<TH1F*>(f->Get("h_max_truth_jet_pT"));
+            if (!hp) { printf("missing h_max_truth_jet_pT in %s\n", file.c_str()); return; }
+            if (!h) { h = (TH1F*) hp->Clone(("h_max_truth_jet_pT_" + s.name).c_str()); h->SetDirectory(nullptr); }
+            else h->Add(hp);
+        }
 
         // Zero out bins whose center falls outside the declared truth-pT window
         // (handles float-precision leak at the upper boundary).
