@@ -119,3 +119,21 @@ plotting/showershape_report/
 # Tarballs
 *.tar
 *.tar.gz
+
+# /ask-shuonli run-state markers (hook gates); never committed
+.claude/state/
+
+# Large study outputs and local state (never committed) -- 2026-09-08 audit G13
+efficiencytool/truth_vertex_reweight/output/cache/
+efficiencytool/results_test/
+efficiencytool/photonjet/chunks/
+efficiencytool/photonjet/figures/
+FunWithxgboost/binned_models_lr/
+NLO/madgraph_nlo/
+PPG12-Paper/
+.claude/agent-memory/
+*.bak
+*.pre_herwig_fix
+*.orig_buggy
+*.blair_embed_backup
+*.zip

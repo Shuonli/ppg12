@@ -1131,7 +1131,10 @@ class BinnedTrainingPipeline:
             "correlation_results": self.correlation_results,
         }
         
-        metadata_path = self.output_dir / "training_metadata.json"
+        # One record per training run, named by the model prefix so a later run
+        # (e.g. a dimix20 or lr-scan study) does not overwrite the nominal record.
+        root_prefix = self.config['output'].get('root_file_prefix', 'model')
+        metadata_path = self.output_dir / f"training_metadata_{root_prefix}.json"
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2, default=str)
         print(f"Saved metadata: {metadata_path}")
@@ -1271,8 +1274,13 @@ class BinnedTrainingPipeline:
 
 def main():
     """Main function to run the training pipeline."""
-    config_path = "config.yaml"
-    
+    import argparse
+    parser = argparse.ArgumentParser(description="Run shower-shape BDT training pipeline")
+    parser.add_argument("--config", default="config.yaml",
+                        help="Path to YAML configuration file (default: config.yaml)")
+    args = parser.parse_args()
+    config_path = args.config
+
     if not os.path.exists(config_path):
         print(f"Configuration file not found: {config_path}")
         return
