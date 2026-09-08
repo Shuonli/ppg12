@@ -26,7 +26,8 @@ constexpr float herwig_photon20cross = 5.34010e+01f;  // run 28 type 47 (Photonj
 
 // QCD jet samples
 constexpr float jet5cross  = 1.3878e+08f;
-constexpr float jet8cross  = 4.929e+06f;
+constexpr float jet8cross  = 1.15e+07f;    // restored 2026-09-08: 4.929e6 (used 2026-05-14..09-08) left a x2.5 step
+                                             // in the leading-truth-jet spectrum at the jet8/jet12 boundary
 constexpr float jet10cross = 3.997e+06f;
 constexpr float jet12cross = 1.4903e+06f;
 constexpr float jet15cross = 4.073e+05f;
