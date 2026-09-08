@@ -23,24 +23,39 @@
 #include "paper_style.h"
 #include <yaml-cpp/yaml.h>
 #include <TSystem.h>
+#include <fstream>
+#include <sstream>
 
 namespace {
 // 0: our data, 1: PHENIX, 2: JETPHOX, 3: PYTHIA, 4: Werner
-const int col[] = {kAzure + 2, kPink + 5, kPink + 5, kOrange + 7, kYellow + 2, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
-const int mkcol[] = {kAzure + 2, kPink + 5, kPink + 5, kOrange + 7, kTeal+4, kSpring +4, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
-const float trans[] = {0.35, 0.5, 0.40, 1.0, 0.0};
+const int col[] = {kAzure + 2, kPink + 5, kYellow+2, kOrange + 7, kPink + 5, kYellow + 2, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+// const int col[] = {kAzure + 2, kPink + 5, kPink + 5, kOrange + 7, kYellow + 2, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+const int mkcol[] = {kAzure + 2, kPink + 5, kYellow+2, kOrange + 7, kTeal+4, kPink + 5, kSpring +4, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+// const int mkcol[] = {kAzure + 2, kPink + 5, kPink + 5, kOrange + 7, kTeal+4, kSpring +4, kSpring - 7,kCyan + 4, kRed - 4, kBlack, kBlue - 3, kPink - 5, kGreen + 3, kBlue - 3};
+const float trans[] = {0.25, 0.5, 0.0, 1.0, 0.0};
+// const float trans[] = {0.25, 0.5, 0.40, 1.0, 0.0};
 const float boxlinewidth[] = {0., 0., 0., 0.0, 1.0};
-const int mkStyle[] = {20, 21, 25, 47, 27, 33, 25, 27, 28, 24, 29, 28, 22};
-const float mkSize[] = {1.4, 1.4, 1.2, 1.5, 2.0, 1, 1, 1, 1, 1, 1, 1, 1};
+const int mkStyle[] = {20, 21, 21, 47, 33, 33, 25, 27, 28, 24, 29, 28, 22};
+// const int mkStyle[] = {20, 21, 25, 47, 27, 33, 25, 27, 28, 24, 29, 28, 22};
+const float mkSize[] = {1.4, 1.4, 1.5, 1.7, 2.5, 1, 1, 1, 1, 1, 1, 1, 1};
 const int lineWidth[] = {2, 2, 2, 2, 2};
 const int fillStyle[] = {1, 1, 1001, 1, 0};
 // const int fillStyle[] = {1, 1, 1001, 1, 1001};
 // 0: CT18, 1: NNPDF, 2: CTEQ, 3: MSHT, 4: CT14
 const float mkSizepdf[] = {1.4, 1.4, 1.7, 1.5, 1.0, 1.0, 1.0};
 const float mkcolpdf[] = {kPink + 5, kRed - 4, kSpring -7, kBlue+1, kOrange + 7, kAzure - 4};
+// NNLOJET (GJfrag) predictions overlaid on the final figure: violet for the
+// NLO comparison curve (kept clear of the green Vogelsang band), red for the
+// headline NNLO curve. Scale-variation bands drawn semi-transparent so the
+// JETPHOX boxes / Vogelsang band stay readable underneath.
+const int   kNNLOJETnloCol   = kViolet + 1;
+// const int   kNNLOJETnnloCol  = kOrange -2;
+const int   kNNLOJETnnloCol  = kPink + 5;
+// const int   kNNLOJETnnloCol  = kYellow + 2;
+const float kNNLOJETbandAlpha = 0.20;
 }  // namespace
 
-void plot_paper_final_yj(string tune = "bdt_nom")
+void plot_paper_final_yj_v2(string tune = "bdt_nom")
 {
     paper_init(0);
 
@@ -68,9 +83,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // Build luminosity legend strings from the loaded value (#1: fixed broken
     // 2-line lumi label — leading-space hack collapsed and made "= 64.4 pb^{-1}"
     // look like a syntactically broken assignment).
-    std::string strleg_lumi = "#it{p}+#it{p} #kern[-0.10]{#sqrt{#it{s}} = 200 GeV}";
-    std::string strleg_lumi_line2 = Form("= %.1f pb^{-1}", datalumi);
-    // std::string strleg_lumi = Form("#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, %.1f pb^{-1}}", datalumi);
+    std::string strleg_lumi = Form("#it{p}+#it{p} #kern[-0.05]{#sqrt{#it{s}} = 200 GeV, %.1f pb^{-1}}", datalumi);
+    std::string strleg_lumi_line2 = Form(" = %.1f pb^{-1}", datalumi);
     // std::string strleg_lumi_line2 = Form("#it{L} = %.1f pb^{-1}", datalumi);
     // std::string strleg_lumi_line2 = Form("#int #it{L} d#it{t} = %.1f pb^{-1}", datalumi);
 
@@ -83,7 +97,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     float deta = 1.4;
 
-    float lowery = 0.2;
+    float lowery = 0.07;
     float lowerx = 12;
     float upperx = 32;
 
@@ -148,8 +162,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TH1F *h_data_NLO = (TH1F *)h_data->Clone("h_data_NLO");
     h_data_NLO->Divide(h_NLO);
 
+    float scaleFactor = 1.0;
     TH1F *h_NLO_data = (TH1F *)h_NLO->Clone("h_NLO_data");
-    h_NLO_data->Divide(h_data);
+    h_NLO_data->Divide(h_NLO_data, h_data, 1., scaleFactor);
     TH1F *h_NLO_data_up = (TH1F *)h_NLO_up->Clone("h_NLO_data_up");
     h_NLO_data_up->Divide(h_data);
     TH1F *h_NLO_data_down = (TH1F *)h_NLO_down->Clone("h_NLO_data_down");
@@ -161,17 +176,17 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TH1F *h_NLO_nnpdf = (TH1F *)fin_NLO_nnpdf->Get("h_truth_pT");
     h_NLO_nnpdf->Scale(1.0 / deta);
     TH1F *h_NLO_data_ct14  = (TH1F *)h_NLO_ct14 ->Clone("h_NLO_data_ct14");
-    h_NLO_data_ct14 ->Divide(h_data);
+    h_NLO_data_ct14 ->Divide(h_NLO_data_ct14, h_data, 1., scaleFactor);
     TH1F *h_NLO_data_nnpdf = (TH1F *)h_NLO_nnpdf->Clone("h_NLO_data_nnpdf");
-    h_NLO_data_nnpdf->Divide(h_data);
+    h_NLO_data_nnpdf->Divide(h_NLO_data_nnpdf, h_data, 1., scaleFactor);
     TH1F *h_NLO_cteq = (TH1F *)fin_NLO_cteq->Get("h_truth_pT");
     h_NLO_cteq->Scale(1.0 / deta);
     TH1F *h_NLO_msht = (TH1F *)fin_NLO_msht->Get("h_truth_pT");
     h_NLO_msht->Scale(1.0 / deta);
     TH1F *h_NLO_data_cteq = (TH1F *)h_NLO_cteq->Clone("h_NLO_data_cteq");
-    h_NLO_data_cteq->Divide(h_data);
+    h_NLO_data_cteq->Divide(h_NLO_data_cteq, h_data, 1., scaleFactor);
     TH1F *h_NLO_data_msht = (TH1F *)h_NLO_msht->Clone("h_NLO_data_msht");
-    h_NLO_data_msht->Divide(h_data);
+    h_NLO_data_msht->Divide(h_NLO_data_msht, h_data, 1., scaleFactor);
 
     // Build per-PDF Hessian uncertainty bands in JETPHOX/Data form. The
     // bands in fin_pdfunc are cross-section absolute values; the relative
@@ -266,6 +281,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TGraphAsymmErrors *g_syst = new TGraphAsymmErrors(h_data);
     TGraphAsymmErrors *g_syst_rel_pythia = new TGraphAsymmErrors(h_pythia_data);
     TGraphAsymmErrors *g_syst_rel = new TGraphAsymmErrors(h_data);
+    TGraphAsymmErrors *g_stat_rel = new TGraphAsymmErrors(h_data);
 
     for (int i = 0; i < h_data->GetNbinsX(); i++)
     {
@@ -289,7 +305,17 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
         // float x_data = h_data->GetBinContent(i + 1);
         g_syst_rel->SetPoint(i, g_syst_rel->GetX()[i], 1);
-        g_syst_rel->SetPointError(i, xlowerror, xuperror, abs(h_syst_rel_low->GetBinContent(i + 1)), h_syst_rel_high->GetBinContent(i + 1));
+        g_syst_rel->SetPointError(i, xlowerror, xuperror, abs(h_syst_rel_low->GetBinContent(i + 1))/scaleFactor, h_syst_rel_high->GetBinContent(i + 1)/scaleFactor);
+
+        // Data statistical uncertainty as a vertical line at the bin centre at
+        // y=1 (symmetric = bin stat error / content). x-errors set to 0 so it
+        // renders as a centred vertical bar, not a box. Scale-invariant, so
+        // unaffected by the later 1/deta and lumi rescalings of h_data.
+        double rel_stat = (h_data->GetBinContent(i + 1) > 0)
+                              ? h_data->GetBinError(i + 1) / h_data->GetBinContent(i + 1)
+                              : 0.0;
+        g_stat_rel->SetPoint(i, g_stat_rel->GetX()[i], 1.0);
+        g_stat_rel->SetPointError(i, 0.0, 0.0, rel_stat, rel_stat);
     }
 
     TGraphAsymmErrors *g_syst_NLO = new TGraphAsymmErrors(h_NLO);
@@ -324,8 +350,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     frame_et_rec->GetXaxis()->SetRangeUser(lowerx, upperx);
 
     frame_et_rec->GetXaxis()->SetTitleOffset(1.05);
-    frame_et_rec->GetYaxis()->SetTitleOffset(1.05);
-    frame_et_rec->GetYaxis()->SetTitleSize(0.053);
+    frame_et_rec->GetYaxis()->SetTitleOffset(0.92);
+    frame_et_rec->GetYaxis()->SetTitleSize(0.061);
     frame_et_rec->GetXaxis()->SetLabelSize(0.05);  // top-panel x-labels hidden (ratio panel below has them) — #6
     // frame_et_rec->GetXaxis()->SetLabelSize(0);  // top-panel x-labels hidden (ratio panel below has them) — #6
     frame_et_rec->GetYaxis()->SetLabelSize(0.050);
@@ -416,14 +442,10 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     }
 
     // ---------------------------------------------------------------
-    // PHENIX corrected to the PPG12 fiducial: undo bin-width via modified
-    // power law fit, then rescale by (i) 1/R for the rapidity acceptance,
-    // R = (dN/deta)_{|eta|<0.25}/(dN/deta)_{|eta|<0.7} from
-    // truth_eta_ratio_jetphox.root (CT18NLO JETPHOX truth, no isolation;
-    // see NLO/compute_eta_correction.py), and
-    // (ii) the isolation factor sigma_iso/sigma_incl (CT18NLO JETPHOX,
-    // cone R=0.3, ET_iso<4 GeV) from iso_correction_ct18nlo.root, which
-    // accounts for the absence of an isolation requirement in PHENIX.
+    // PHENIX corrected to |eta|<0.7: undo bin-width via modified power
+    // law fit, then rescale by 1/R where R = (dN/deta)_{|eta|<0.25} /
+    // (dN/deta)_{|eta|<0.7} from truth_eta_ratio_inclusive.root
+    // (Pythia truth, NO isolation — matches PHENIX inclusive fiducial).
     // Fit form A*(1+pT^2/b)^c (PHENIX 1405.3940) lifted to differential
     // d^2sigma/(deta dpT) by the 2*pi*pT factor. Fit window 10-26 GeV
     // to focus on the pT region overlapping PPG12.
@@ -446,15 +468,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     gFit_PHENIX->Fit(f_phenix_mpl, "QRN");
 
     TFile *f_eta_ratio = TFile::Open(
-        "/sphenix/user/shuhangli/ppg12/NLO/rootFiles/truth_eta_ratio_jetphox.root");
+        "/sphenix/user/shuhangli/ppg12/efficiencytool/truth_eta_ratio_inclusive.root");
     TH1D *h_eta_ratio = (TH1D *) f_eta_ratio->Get("h_ratio_central_over_full");
-
-    // Isolation correction sigma_iso/sigma_incl (CT18NLO JETPHOX): PHENIX is
-    // inclusive (no iso), PPG12 is isolated, so each PHENIX point is multiplied
-    // by this factor (~0.93-0.99) to bring it onto the isolated fiducial.
-    TFile *f_iso_corr = TFile::Open(
-        "/sphenix/user/shuhangli/ppg12/NLO/rootFiles/iso_correction_ct18nlo.root");
-    TH1D *h_iso_corr = (TH1D *) f_iso_corr->Get("h_iso_over_incl");
 
     TGraphAsymmErrors *gStat_PHENIX_corr = new TGraphAsymmErrors(n);
     gStat_PHENIX_corr->SetName("gStat_PHENIX_corr");
@@ -475,17 +490,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         double R = h_eta_ratio->GetBinContent(rb);
         if (R <= 0.0) R = 1.0;
 
-        // isolation factor sigma_iso/sigma_incl (same edge clamping as R;
-        // the PHENIX overlap 8-25 GeV is fully covered by the JETPHOX bins)
-        int ib = h_iso_corr->FindBin(pT);
-        if (ib < 1) ib = 1;
-        if (ib > h_iso_corr->GetNbinsX()) ib = h_iso_corr->GetNbinsX();
-        double iso_corr = h_iso_corr->GetBinContent(ib);
-        if (iso_corr <= 0.0) iso_corr = 1.0;
-
         double sf = pT * factorCommon;
         double y_pub = y[i] * sf;
-        double total_scale = bin_shape / R * iso_corr;
+        double total_scale = bin_shape / R;
         double y_corr = y_pub * total_scale;
 
         double exl = pT - xLow[i];
@@ -498,7 +505,6 @@ void plot_paper_final_yj(string tune = "bdt_nom")
             sysDown[i] * sf * total_scale, sysUp[i] * sf * total_scale);
     }
     f_eta_ratio->Close();
-    f_iso_corr->Close();
 
     // getting a different NLO
     ifstream myfile;
@@ -613,11 +619,86 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         g_syst_NLO_werner->SetPointError(i, xlow, xup, y_yield - y_yield02, y_yield05 - y_yield);
 
         g_rel_NLO_werner->SetPoint(i, x, ratio);
-        g_rel_NLO_werner->SetPointError(i, xlow, xup, ratio_err, ratio_err);
+        g_rel_NLO_werner->SetPointError(i, xlow, xup, 0,0);
+        // g_rel_NLO_werner->SetPointError(i, xlow, xup, ratio_err, ratio_err);
 
         g_syst_rel_NLO_werner->SetPoint(i, x, ratio);
         g_syst_rel_NLO_werner->SetPointError(i, xlow, xup, ratio - ratio20, ratio05 - ratio);
     }
+
+    // ---------------------------------------------------------------
+    // NNLOJET (GJfrag) predictions from plotting/theory/*.txt.
+    // File columns: bin_low bin_high y_val y_SV_min y_SV_max, with
+    // y_val already in d^2sigma/(deta dE_T) [pb/GeV] bin-averaged
+    // (verified: matches JETPHOX h_NLO/deta bin-for-bin), so the
+    // values are plotted directly with NO extra 1/deta scaling.
+    // y_SV_min/max are the 7-point scale-variation envelope -> an
+    // asymmetric band around y_val. The bins (centres 11,13,...,25)
+    // share the analysis binning; only centres inside [lowerx,upperx]
+    // are kept. Theory/Data ratio uses h_data (already 1/deta).
+    // ---------------------------------------------------------------
+    auto load_nnlojet = [&](const char *path,
+                            TGraph *&g_cen, TGraphAsymmErrors *&g_band,
+                            TGraph *&g_cen_ratio, TGraphAsymmErrors *&g_band_ratio) {
+        g_cen        = new TGraph();
+        g_band       = new TGraphAsymmErrors();
+        g_cen_ratio  = new TGraph();
+        g_band_ratio = new TGraphAsymmErrors();
+        std::ifstream fin(path);
+        if (!fin) { std::cerr << "[plot] WARNING: NNLOJET file not found: " << path << std::endl; return; }
+        std::string line;
+        while (std::getline(fin, line)) {
+            if (line.empty() || line[0] == '#') continue;
+            std::istringstream iss(line);
+            double blo, bhi, yval, ymin, ymax;
+            if (!(iss >> blo >> bhi >> yval >> ymin >> ymax)) continue;
+            double xc = 0.5 * (blo + bhi);
+            if (xc < lowerx || xc > upperx) continue;
+            double exl = xc - blo, exh = bhi - xc;
+            int pc = g_cen->GetN();
+            g_cen->SetPoint(pc, xc, yval);
+            g_band->SetPoint(pc, xc, yval);
+            g_band->SetPointError(pc, exl, exh, yval - ymin, ymax - yval);
+            int bd = h_data->FindBin(xc);
+            double yd = h_data->GetBinContent(bd);
+            if (yd > 0) {
+                int pr = g_cen_ratio->GetN();
+                g_cen_ratio->SetPoint(pr, xc, yval / yd);
+                g_band_ratio->SetPoint(pr, xc, yval / yd);
+                g_band_ratio->SetPointError(pr, exl, exh, (yval - ymin) / yd, (ymax - yval) / yd);
+            }
+        }
+    };
+
+    TGraph *g_nnlo_nlo = nullptr, *g_nnlo_nlo_ratio = nullptr;
+    TGraph *g_nnlo_nnlo = nullptr, *g_nnlo_nnlo_ratio = nullptr;
+    TGraphAsymmErrors *g_nnlo_nlo_band = nullptr, *g_nnlo_nlo_band_ratio = nullptr;
+    TGraphAsymmErrors *g_nnlo_nnlo_band = nullptr, *g_nnlo_nnlo_band_ratio = nullptr;
+    // Path is relative to plotting/paper/ (the CWD set by make_paper_figures.sh
+    // and the manual `cd plotting/paper && root ...` invocation); the GJfrag
+    // tables are repo-tracked under plotting/theory/.
+    load_nnlojet("../theory/NNLOJET_GJfrag_sPHENIX_NLO_prediction.txt",
+                 g_nnlo_nlo, g_nnlo_nlo_band, g_nnlo_nlo_ratio, g_nnlo_nlo_band_ratio);
+    load_nnlojet("../theory/NNLOJET_GJfrag_sPHENIX_NNLO_prediction.txt",
+                 g_nnlo_nnlo, g_nnlo_nnlo_band, g_nnlo_nnlo_ratio, g_nnlo_nnlo_band_ratio);
+
+    // Cosmetics: NLO dashed green, NNLO solid red; semi-transparent
+    // scale-variation bands behind the central lines ("3" = contour band).
+    auto style_nnlojet = [&](TGraph *g_cen, TGraphAsymmErrors *g_band,
+                             int color, int lineStyle) {
+        g_band->SetFillColorAlpha(color, kNNLOJETbandAlpha);
+        g_band->SetLineColor(color);
+        g_band->SetLineStyle(lineStyle);
+        g_band->SetLineWidth(3);  // legend-only swatch; "3" fill draws no border
+        g_cen->SetLineColor(color);
+        g_cen->SetLineWidth(2);
+        g_cen->SetLineStyle(lineStyle);
+        g_cen->SetMarkerColor(color);
+    };
+    style_nnlojet(g_nnlo_nlo,       g_nnlo_nlo_band,        kNNLOJETnloCol,  7);
+    style_nnlojet(g_nnlo_nlo_ratio, g_nnlo_nlo_band_ratio,  kNNLOJETnloCol,  7);
+    style_nnlojet(g_nnlo_nnlo,      g_nnlo_nnlo_band,       kNNLOJETnnloCol, 1);
+    style_nnlojet(g_nnlo_nnlo_ratio,g_nnlo_nnlo_band_ratio, kNNLOJETnnloCol, 1);
 
     tphoton->SetMarkerColor(mkcol[4]);
     tphoton->SetLineColor(mkcol[4]);
@@ -644,19 +725,40 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_syst_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
     g_syst_NLO_werner->Draw("5 same");
 
+
+    // Flatten the two out-of-range edge bins of a PYTHIA histogram onto their
+    // in-range neighbours so the "hist" draw shows no vertical riser at the
+    // x-axis limits [lo, hi]: the 10-12 GeV bin := the first visible bin
+    // (12-14), and the bin above hi (32-36) := the last visible bin (28-32).
+    auto flatten_pythia_edges = [](TH1F *h, double lo, double hi) {
+        int b_lo = h->FindBin(lo + 0.5);   // first visible bin (lower edge = lo)
+        int b_hi = h->FindBin(hi - 0.5);   // last visible bin (upper edge = hi)
+        if (b_lo - 1 >= 1)
+            h->SetBinContent(b_lo - 1, h->GetBinContent(b_lo));
+        if (b_hi + 1 <= h->GetNbinsX())
+            h->SetBinContent(b_hi + 1, h->GetBinContent(b_hi));
+    };
+
     // Data syst
     g_syst->SetMarkerStyle(mkStyle[0]);
     g_syst->SetMarkerColor(col[0]);
     g_syst->SetLineColor(col[0]);
-    g_syst->SetFillColorAlpha(col[0], trans[0]);
+    g_syst->SetFillColorAlpha(col[0], 0.50);
+    // g_syst->SetFillColorAlpha(col[0], 0.45);
     g_syst->Draw("2 same");
 
-    // JETPHOX syst
+    // JETPHOX syst -- hollow box outline (lines around the box, no shading),
+    // matching the Werner box style above ("5" draws the box border; trans[4]=0
+    // keeps the fill transparent).
     g_syst_NLO->SetMarkerStyle(mkStyle[2]);
     g_syst_NLO->SetMarkerColor(col[2]);
     g_syst_NLO->SetLineColor(col[2]);
     g_syst_NLO->SetFillColorAlpha(col[2], trans[2]);
-    g_syst_NLO->Draw("2 same");
+    g_syst_NLO->Draw("5 same");
+
+    // NNLOJET scale-variation bands (behind the central lines / data markers)
+    // g_nnlo_nlo_band->Draw("3 same");
+    g_nnlo_nnlo_band->Draw("3 same");
 
     // Werner points
     g_NLO_werner->SetMarkerStyle(mkStyle[4]);
@@ -675,16 +777,22 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     h_NLO->SetLineWidth(lineWidth[2]);
     h_NLO->Draw("same");
 
+    // NNLOJET central lines (NLO dashed green, NNLO solid red)
+    // g_nnlo_nlo->Draw("L same");
+    g_nnlo_nnlo->Draw("L same");
+
     h_pythia->SetMarkerStyle(mkStyle[3]);
     h_pythia->SetMarkerSize(mkSize[3]);
     h_pythia->SetMarkerColor(col[3]);
     h_pythia->SetLineColor(col[3]);
     h_pythia->SetLineWidth(lineWidth[3]);
+    flatten_pythia_edges(h_pythia, lowerx, upperx);
     h_pythia->Draw("same");
 
     h_data->SetMarkerStyle(mkStyle[0]);
     h_data->SetMarkerSize(mkSize[0]);
-    h_data->SetMarkerColor(col[0]);
+    h_data->SetMarkerColor(kBlack);
+    // h_data->SetMarkerColor(col[0]);
     h_data->SetLineColor(col[0]);
     h_data->SetLineWidth(lineWidth[0]);
     h_data->Draw("same");
@@ -692,43 +800,58 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TH1F *htemp_data = (TH1F *)h_data->Clone("htemp");
     htemp_data->SetFillColorAlpha(col[0], trans[0]);
     TH1F *htemp_NLO = (TH1F *)h_NLO->Clone("htemp_NLO");
-    htemp_NLO->SetFillColorAlpha(col[2], trans[2]);
+    // Transparent fill (no shaded swatch) to match the hollow-box JETPHOX syst.
+    htemp_NLO->SetFillColorAlpha(col[2], trans[4]);
 
     //--------------------------------------------------lower panel
 
     float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
-    myText(xpos2, ypos - 1 * dy, 1, strleg_lumi.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 1 * dy, 1, strleg2.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 2 * dy, 1, strleg_lumi_line2.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 3 * dy, 1, strleg3.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 4 * dy, 1, strleg4.c_str(), fontsize, 1);
     // myText(xpos2,ypos-1*dy,1,strleg2_1.c_str(),fontsize,1);
     // myText(xpos2,ypos-2*dy,1,strleg3.c_str(),fontsize,1);
     // myText(xpos2,ypos-3*dy,1,strleg4.c_str(),fontsize,1);
 
     int nEntry = 6;
-    TLegend *l1 = new TLegend(xpos, ypos2, 0.5, ypos2 + nEntry * dy1);
-    legStyle(l1, 0.20, fontsize);
-    l1->AddEntry(htemp_data, "sPHENIX", "fpl");
+    TLegend *l1 = new TLegend(xpos, ypos2 -0.07, 0.5, ypos2 + nEntry * dy1 -0.07);
+    legStyle(l1, 0.20, fontsize*0.9);
+    l1->AddEntry(htemp_data, "Data", "fpl");
     l1->AddEntry(h_pythia, "PYTHIA8", "pl");
-    l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX", "fpl");
+    // l1->AddEntry(g_nnlo_nlo_band,  "NLO pQCD NNLOJET",  "lf");
+    l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX #kern[-0.15]{#scale[0.80]{(BFG II FF)}}", "fp");
+    // l1->AddEntry(htemp_NLO, "NLO pQCD JETPHOX", "fpl");
+    // l1->AddEntry((TObject *)0, "#scale[0.93]{BFG II FF}", "");
+    // l1->AddEntry((TObject *)0, "#scale[0.93]{CT18NLO PDF / BFG II FF}", "");
 
     // #2: shared scale-choice annotation for ALL theory predictions (was
     // previously duplicated in two places — once after JETPHOX line, once
     // after Vogelsang). Keep PDF/FF info on the JETPHOX line; combine the
     // common scale choice into a single sub-caption below the legend.
     string st_thScale = "#kern[-0.55]{#it{#mu}_{f}} = #kern[-0.55]{#it{#mu}_{F}} = #kern[-0.55]{#it{#mu}_{R}} = #kern[-0.55]{#it{E}_{T}^{#gamma}}";
-    l1->AddEntry((TObject *)0, "#scale[0.93]{BFG II FF}", "");
-    // l1->AddEntry((TObject *)0, "#scale[0.93]{CT18NLO PDF / BFG II FF}", "");
-    l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fp");
+    l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang #kern[-0.15]{#scale[0.80]{(GRV FF)}}", "fp");
+    // l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fp");
     // l1->AddEntry(g_syst_NLO_werner, "NLO pQCD by W. Vogelsang", "fpl");
-    l1->AddEntry((TObject *)0, "#scale[0.93]{GRV FF}", "");
+    // l1->AddEntry((TObject *)0, "#scale[0.93]{GRV FF}", "");
+    l1->AddEntry((TObject *)0, Form("#scale[0.80]{All NLO pQCD: CT18NLO PDF / %s}", st_thScale.data()), "");
+
+    //////////////
+    string st_thScale2 = "#kern[-0.55]{#it{#mu}_{F}} = #kern[-0.55]{#it{#mu}_{R}} = #kern[-0.55]{#it{E}_{T}^{#gamma}}, #kern[-0.55]{#it{#mu}_{f}} = #kern[-0.19]{#sqrt{#it{E}_{T}^{#gamma}}}";
+    l1->AddEntry(g_nnlo_nnlo_band, "NNLO pQCD NNLOJET #kern[-0.15]{#scale[0.80]{(BFG II FF)}}", "lf");
+    l1->AddEntry((TObject *)0, Form("#scale[0.80]{PDF4LHC21 PDF / %s}", st_thScale2.data()), "");
+    // l1->AddEntry(g_nnlo_nnlo_band, "NNLO pQCD NNLOJET", "lf");
+    // l1->AddEntry((TObject *)0, Form("#scale[0.80]{BFG II FF / PDF4LHC21 PDF / %s}", st_thScale2.data()), "");
+
+
     l1->Draw("same");
     // Single shared scale-choice line below the legend (replaces the two
     // floating myText calls that previously sat between the legend rows).
-    myText(xpos, ypos2 - 0.06, 1, Form("#scale[0.93]{All NLO pQCD: CT18NLO PDF / %s}", st_thScale.data()), fontsize, 0);
+    // myText(xpos, ypos2 - 0.06, 1, Form("#scale[0.93]{All NLO pQCD: CT18NLO PDF / %s}", st_thScale.data()), fontsize*0.8, 0);
 
     TPad *pad_2 = (TPad *)c1->cd(2);
-    pad_2->SetPad(0, 0.25, 1, 0.5);
+    pad_2->SetPad(0, 0.29, 1, 0.5);
     pad_2->SetTopMargin(0.023);
     pad_2->SetLeftMargin(0.13);
     pad_2->SetBottomMargin(0.002);
@@ -739,19 +862,19 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     frame_et_truth->SetXTitle("");
     frame_et_truth->GetXaxis()->SetLabelSize(0);
     frame_et_truth->GetYaxis()->SetNdivisions(509);
-    frame_et_truth->GetYaxis()->SetRangeUser(0.61, 1.79);  // #8: widen so band doesn't clip; 0.5 lower edge avoids "0.4" label clipping at the pad seam
+    frame_et_truth->GetYaxis()->SetRangeUser(0.66, 1.44);  // #8: widen so band doesn't clip; 0.5 lower edge avoids "0.4" label clipping at the pad seam
     // frame_et_truth->GetYaxis()->SetRangeUser(0.5, 2.2);  // #8: widen so band doesn't clip; 0.5 lower edge avoids "0.4" label clipping at the pad seam
     frame_et_truth->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_truth->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4 / 6. * 1.4);
-    frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6. * 0.7);
+    frame_et_truth->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4 / 6. * 0.58);
     frame_et_truth->GetYaxis()->SetLabelOffset(frame_et_rec->GetYaxis()->GetLabelOffset() * 4 / 6.);
     // Derive the ratio-panel x-label size from the *y*-axis label of the top
     // panel (which is preserved at 0.050). The top-panel x-label is hidden
     // (size=0) per the two-pad layout, so reading from it would yield 0.
     frame_et_truth->GetXaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4.);
-    frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4. * 1.1);
-    frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4. * 1.25);
-    frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4. * 1.25);
+    frame_et_truth->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6 / 4. * 1.1*1.4);
+    frame_et_truth->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6 / 4. * 1.25*1.1);
+    frame_et_truth->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6 / 4. * 1.25*1.3);
     frame_et_truth->GetXaxis()->SetNdivisions(505);  // 5 primary divisions, optimized — matches top panel; gives 15/20/25/30 labels
     frame_et_truth->Draw("axis");
 
@@ -761,6 +884,18 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_syst_rel->SetFillColorAlpha(col[0], trans[0]);
 
     g_syst_rel->Draw("2 same");
+    // Data statistical uncertainty as a vertical line at each bin centre at
+    // y=1 (option "Z" = error bars, no end caps), sitting inside the solid
+    // systematic box: solid box = syst, central vertical line = stat. Mirrors
+    // the top panel, where the data marker carries a stat error bar inside the
+    // syst box. Style set once here; reused in pad_3.
+    g_stat_rel->SetMarkerSize(0);
+    g_stat_rel->SetMarkerStyle(20);
+    g_stat_rel->SetLineColor(col[0]);
+    g_stat_rel->SetLineWidth(3);
+    g_stat_rel->Draw("PZ same");
+
+
     // #9: unity reference drawn AFTER the band so it is not overpainted; also
     // bumped to width=2 dashed black so it stays the dominant eyeline.
     lineone->SetLineColor(kBlack);
@@ -776,58 +911,89 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_syst_rel_NLO_werner->SetFillColorAlpha(col[4], trans[4]);
     g_syst_rel_NLO_werner->Draw("5 same");
 
-    // JETPHOX syst
+    // JETPHOX syst -- hollow box outline (lines around the box, no shading),
+    // matching the Werner box style above ("5" draws the box border; trans[4]=0
+    // keeps the fill transparent).
     g_syst_rel_NLO->SetMarkerStyle(mkStyle[2]);
     g_syst_rel_NLO->SetMarkerColor(col[2]);
     g_syst_rel_NLO->SetLineColor(col[2]);
     g_syst_rel_NLO->SetLineWidth(lineWidth[2]);
     g_syst_rel_NLO->SetFillColorAlpha(col[2], trans[2]);
-    g_syst_rel_NLO->Draw("2 same");
+    // g_syst_rel_NLO->SetFillColorAlpha(col[2], trans[4]);
+    g_syst_rel_NLO->Draw("5 same");
 
+    // NNLOJET Theory/Data scale-variation bands
+    // g_nnlo_nlo_band_ratio->Draw("3 same");
+    g_nnlo_nnlo_band_ratio->Draw("3 same");
 
     // Werner/Data
     g_rel_NLO_werner->SetMarkerStyle(mkStyle[4]);
     g_rel_NLO_werner->SetMarkerSize(mkSize[4]);
     g_rel_NLO_werner->SetMarkerColor(mkcol[4]);
     g_rel_NLO_werner->SetLineColor(mkcol[4]);
-    g_rel_NLO_werner->SetLineWidth(lineWidth[4]);
+    g_rel_NLO_werner->SetLineWidth(0);
+    // g_rel_NLO_werner->SetLineWidth(lineWidth[4]);
     g_rel_NLO_werner->Draw("p same");
 
+    for (int i = 1; i <= h_NLO_data->GetNbinsX(); ++i) {
+      double relT = (h_NLO->GetBinContent(i) > 0)
+        ? h_NLO->GetBinError(i) / h_NLO->GetBinContent(i) : 0.0;
+      h_NLO_data->SetBinError(i, h_NLO_data->GetBinContent(i) * relT);
+    }
+
+    for (int i = 1; i <= h_pythia_data->GetNbinsX(); ++i) {
+      double relP = (h_pythia->GetBinContent(i) > 0)
+        ? h_pythia->GetBinError(i) / h_pythia->GetBinContent(i) : 0.0;
+      h_pythia_data->SetBinError(i, h_pythia_data->GetBinContent(i) * relP);
+    }
     // Pythia/Data
     h_pythia_data->SetMarkerStyle(mkStyle[3]);
-    h_pythia_data->SetMarkerColor(col[3]);
+    h_pythia_data->SetMarkerColorAlpha(col[3],0.7);
+    // h_pythia_data->SetMarkerColor(col[3]);
     h_pythia_data->SetLineColor(col[3]);
     h_pythia_data->SetMarkerSize(mkSize[3]);
-    h_pythia_data->SetLineWidth(lineWidth[3]);
-    h_pythia_data->Draw("same");
+    h_pythia_data->SetLineWidth(0);
+    // h_pythia_data->SetLineWidth(lineWidth[3]);
+    flatten_pythia_edges(h_pythia_data, lowerx, upperx);
+    h_pythia_data->Draw("p same");
     // JETPHOX/Data
     h_NLO_data->SetMarkerStyle(mkStyle[2]);
     h_NLO_data->SetMarkerSize(mkSize[2]);
     h_NLO_data->SetMarkerColor(mkcol[2]);
     h_NLO_data->SetLineColor(mkcol[2]);
-    h_NLO_data->SetLineWidth(lineWidth[2]);
+    h_NLO_data->SetLineWidth(0);
+    // h_NLO_data->SetLineWidth(lineWidth[2]);
     // h_NLO_data->SetFillColorAlpha(col[2], trans[2]);
-    h_NLO_data->Draw("same");
+    h_NLO_data->DrawCopy("same");
+
+    // NNLOJET Theory/Data central lines (NLO dashed green, NNLO solid red)
+    // g_nnlo_nlo_ratio->Draw("L same");
+    g_nnlo_nnlo_ratio->Draw("L same");
+
 
     // ----------------------------------------------------------------
     // Third pad: JETPHOX/Data ratio for three NLO PDF sets
     // (CT18NLO, CT14NLO, NNPDF3.1) at the central scale mu=pT.
     // ----------------------------------------------------------------
     TPad *pad_3 = (TPad *)c1->cd(3);
-    pad_3->SetPad(0, 0, 1, 0.25);
+    pad_3->SetPad(0, 0, 1, 0.29);
     pad_3->SetTopMargin(0.023);
     pad_3->SetLeftMargin(0.13);
     pad_3->SetBottomMargin(0.30);
     pad_3->SetRightMargin(0.08);
 
     TH1F *frame_pdf = (TH1F *)frame_et_truth->Clone("frame_pdf");
+    // frame_pdf->SetYTitle("JETPHOX / Data / 1.1");
     frame_pdf->SetYTitle("JETPHOX / Data");
     frame_pdf->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_pdf->GetYaxis()->SetRangeUser(0.71, 1.6);
+    frame_pdf->GetYaxis()->SetRangeUser(0.71, 1.39);
+    // frame_pdf->GetYaxis()->SetRangeUser(0.71, 1.49);
     // frame_pdf->GetYaxis()->SetRangeUser(0.4, 2.0);
     frame_pdf->GetYaxis()->SetNdivisions(505);
     frame_pdf->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * 6.0 / 4.0 * 1.1);
     frame_pdf->GetXaxis()->SetLabelSize(frame_et_rec->GetXaxis()->GetLabelSize() * 6.0 / 4.0 * 1.1);
+    frame_pdf->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * 6.0 / 4.0 * 1.1);
+    frame_pdf->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4.0 / 6.0 * 0.86);
     frame_pdf->GetXaxis()->SetTitleSize(frame_et_rec->GetXaxis()->GetTitleSize() * 6.0 / 4.0 * 1.4);
     frame_pdf->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4.0 / 6.0 * 1.2);
     frame_pdf->Draw("axis");
@@ -874,7 +1040,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // PDF's nominal ratio. Drawn first so the PDF markers render on top.
     const float kPdfBandAlpha = 0.25;
     g_syst_rel       ->Draw("2 same");
-    g_syst_rel_NLO   ->SetFillColorAlpha(col[2],   kPdfBandAlpha);
+    g_stat_rel       ->Draw("Z same");
+    // g_syst_rel_NLO   ->SetFillColorAlpha(col[2],   kPdfBandAlpha);
     // g_syst_rel_NLO   ->Draw("2 same");
     g_syst_rel_nnpdf ->SetFillColorAlpha(mkcolpdf[1], kPdfBandAlpha);
     g_syst_rel_nnpdf ->SetLineColor(mkcolpdf[1]);
@@ -917,11 +1084,11 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     h_NLO_data_cteq ->Draw("C hist same");
     h_NLO_data_msht ->Draw("C hist same");
 
-    TLegend *l_pdf = new TLegend(0.14, 0.85, 0.92, 0.96);
+    TLegend *l_pdf = new TLegend(0.139, 0.85, 0.92, 0.96);
     l_pdf->SetBorderSize(0);
     l_pdf->SetFillStyle(0);
     l_pdf->SetTextFont(42);
-    l_pdf->SetTextSize(0.085);
+    l_pdf->SetTextSize(0.079);
     l_pdf->SetNColumns(4);
     // Use the band+line composite (filled rectangle around the central
     // line) so the legend marker conveys the Hessian uncertainty band too.
@@ -933,7 +1100,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     // Paper Fig. final.pdf -- 3-pad cross-section + theory ratios.
     std::string outputname = Form("%s/final.pdf", paperdir.c_str());
-    // c1->SaveAs(outputname.c_str());
+    c1->SaveAs(outputname.c_str());
 
     pad_1->cd();
     frame_et_rec->GetYaxis()->SetRangeUser(1, 2e4);
@@ -977,7 +1144,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     h_common_cluster_data_ratio->Draw("same");
 
-    c1->SaveAs(Form("%s/final_common_cluster_%s.pdf", scratch.c_str(), tune.data()));
+    // c1->SaveAs(Form("%s/final_common_cluster_%s.pdf", scratch.c_str(), tune.data()));
 
     pad_1->cd();
     frame_et_rec->GetYaxis()->SetRangeUser(0.1, 1e3);
@@ -1021,7 +1188,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     h_tight_iso_cluster_data_ratio->Draw("same");
 
-    c1->SaveAs(Form("%s/final_tight_iso_cluster_%s.pdf", scratch.c_str(), tune.data()));
+    // c1->SaveAs(Form("%s/final_tight_iso_cluster_%s.pdf", scratch.c_str(), tune.data()));
 
     /*
     TCanvas *c2 = new TCanvas("can", "", 800, 900);
@@ -1125,7 +1292,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     h_unfold_ratio->SetMarkerSize(marker_sizes[3]);
     h_unfold_ratio->Draw("same");
 
-    c1->SaveAs(Form("%s/final_all_%s.pdf", scratch.c_str(), tune.data()));
+    // c1->SaveAs(Form("%s/final_all_%s.pdf", scratch.c_str(), tune.data()));
 
     //-----------------------------------------------------------------
     // only compare to PHENIX
@@ -1221,15 +1388,14 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     // float xpos(0.15), xpos2(0.875), ypos(0.87), ypos2(0.1), dy(0.065), dy1(0.078), fontsize(0.052), fontsize1(0.055);
     xpos2 = 0.87;
     fontsize = 0.053;
-    fontsize1 = 0.062;
-    dy = 0.069;
+    fontsize1 = 0.047;
+    dy = 0.065;
     xpos = 0.16;
     ypos2 = 0.09;
     myText(xpos2, ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 1);
     myText(xpos2, ypos - 1 * dy, 1, strleg_lumi.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 2 * dy, 1, strleg_lumi_line2.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 3 * dy, 1, strleg3.c_str(), fontsize, 1);
-    myText(xpos2, ypos - 4 * dy, 1, strleg4.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 2 * dy, 1, strleg3.c_str(), fontsize, 1);
+    myText(xpos2, ypos - 3 * dy, 1, strleg4.c_str(), fontsize, 1);
     // myText(xpos2,ypos-1*dy,1,strleg2.c_str(),fontsize,1);
     // myText(xpos2,ypos-2*dy,1,strleg5.c_str(),fontsize,1);
     // myText(xpos2,ypos-3*dy,1,strleg3.c_str(),fontsize,1);
@@ -1237,20 +1403,17 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     dy1 = 0.083;
     nEntry = 4;
-    TLegend *l2 = new TLegend(xpos, ypos2-dy1, 0.6, ypos2 + nEntry * dy1);
+    TLegend *l2 = new TLegend(xpos, ypos2, 0.6, ypos2 + nEntry * dy1);
     legStyle(l2, 0.21, fontsize);
-    l2->AddEntry(htemp_data, "sPHENIX", "fpl");
-    l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX #kern[-0.05]{(#it{PRD 86 072008})}}", "fpl");
-    l2->AddEntry((TObject*)0, "#scale[0.93]{|#it{#eta}^{#gamma}|<0.25, no #kern[-0.3]{#it{E}_{T}^{iso}}}", "");
-    // l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX |#eta^{#gamma}|<0.25, no #kern[-0.2]{#it{E}_{T}^{iso}}}", "fpl");
+    l2->AddEntry(htemp_data, "Data", "fpl");
+    l2->AddEntry(htemp_PHENIX, "#scale[0.93]{PHENIX |#eta^{#gamma}|<0.25}", "fpl");
     // l2->AddEntry((TObject*)0, "#scale[0.93]{#it{PRD 86 072008}}", "");
     l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX}", "fpl");
     // l2->AddEntry(htemp_PHENIX_corr, "#scale[0.93]{PHENIX, (corrected for bin-avg, |#eta^{#gamma}|<0.7)}", "fpl");
-    l2->AddEntry((TObject*)0, "#lower[-0.35]{#scale[0.93]{corrected for bin-avg, |#it{#eta}^{#gamma}|<0.7, with #kern[-0.3]{#it{E}_{T}^{iso}}}}", "");
+    l2->AddEntry((TObject*)0, "#lower[-0.35]{#scale[0.93]{corrected for bin-avg and |#eta^{#gamma}|<0.7}}", "");
     // l2->AddEntry((TObject*)0, "#scale[0.93]{(no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", "");
     l2->Draw("same");
-    // myText(xpos+0.02, ypos2 - 0.04, 1, "#scale[0.93]{(PHENIX #kern[-0.05]{#it{PRD 86 072008}})}", fontsize, 0);
-    // myText(xpos+0.02, ypos2 - 0.04, 1, "#scale[0.93]{(PHENIX #kern[-0.05]{#it{PRD 86 072008}}: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
+    myText(xpos+0.02, ypos2 - 0.04, 1, "#scale[0.93]{(PHENIX #kern[-0.05]{#it{PRD 86 072008}}: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
     // myText(xpos + 0.08, ypos2 - 0.03, 1, "#scale[0.93]{(PHENIX: no #kern[-0.2]{#it{E}_{T}^{iso}} requirement)}", fontsize, 0);
 
     // -----------------------------------------------------------------
@@ -1264,15 +1427,15 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     TH1F *frame_ratio_phenix = new TH1F("frame_ratio_phenix", "", 1, lowerx, upperx);
     frame_ratio_phenix->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame_ratio_phenix->SetYTitle("PHENIX / sPHENIX");
-    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.5, 1.7);
+    frame_ratio_phenix->SetYTitle("PHENIX / Data");
+    frame_ratio_phenix->GetYaxis()->SetRangeUser(0.6, 2.3);
     frame_ratio_phenix->GetYaxis()->SetNdivisions(505);
     // Match the c1 lower-panel font scaling (6/4 = 1.5) for visual parity.
     const double k_p2bot_scale = 6.0 / 4.0;
     frame_ratio_phenix->GetXaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * k_p2bot_scale * 1.0);
     frame_ratio_phenix->GetYaxis()->SetLabelSize(frame_et_rec->GetYaxis()->GetLabelSize() * k_p2bot_scale * 1.0);
     frame_ratio_phenix->GetXaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * k_p2bot_scale * 1.0);
-    frame_ratio_phenix->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * k_p2bot_scale * 0.9);
+    frame_ratio_phenix->GetYaxis()->SetTitleSize(frame_et_rec->GetYaxis()->GetTitleSize() * k_p2bot_scale);
     frame_ratio_phenix->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4.0 / 6.0 * 1.0);
     frame_ratio_phenix->GetYaxis()->SetTitleOffset(frame_et_rec->GetYaxis()->GetTitleOffset() * 4.0 / 6.0);
     frame_ratio_phenix->GetXaxis()->SetNdivisions(505);
@@ -1282,43 +1445,6 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TGraphAsymmErrors *g_ratio_phenix_stat  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_ratio_phenix_psys  = new TGraphAsymmErrors();
     TGraphAsymmErrors *g_data_sys_band      = new TGraphAsymmErrors();
-    // Full-range sPHENIX stat error bars at y=1 (independent of PHENIX
-    // overlap, so the reader sees the sPHENIX uncertainty even at high pT
-    // where PHENIX has no measurement).
-    TGraphAsymmErrors *g_data_stat_full     = new TGraphAsymmErrors();
-
-    // Pre-pass: build the sPHENIX-only stat + syst graphs at y=1 over the
-    // FULL sPHENIX pT range (lowerx..upperx). The main ratio loop below
-    // restricts to the PHENIX overlap (pT < 26 GeV) for the PHENIX/data
-    // ratio markers, but the y=1 bands extend across the whole panel.
-    int rp_full_idx = 0;
-    for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
-    {
-        double pT_c = h_data->GetBinCenter(i);
-        if (pT_c < lowerx || pT_c > upperx) continue;
-        double y_d = h_data->GetBinContent(i);
-        double e_d = h_data->GetBinError(i);
-        if (y_d <= 0.0) continue;
-        double sys_d_lo = 0.0, sys_d_hi = 0.0;
-        for (Int_t j = 0; j < g_syst->GetN(); ++j)
-        {
-            double x_s = 0.0, y_s = 0.0;
-            g_syst->GetPoint(j, x_s, y_s);
-            if (std::abs(x_s - pT_c) < 0.1) {
-                sys_d_lo = g_syst->GetErrorYlow(j);
-                sys_d_hi = g_syst->GetErrorYhigh(j);
-                break;
-            }
-        }
-        double bin_w = h_data->GetBinWidth(i);
-        g_data_sys_band->SetPoint(rp_full_idx, pT_c, 1.0);
-        g_data_sys_band->SetPointError(rp_full_idx, bin_w / 2.0, bin_w / 2.0,
-                                       sys_d_lo / y_d, sys_d_hi / y_d);
-        g_data_stat_full->SetPoint(rp_full_idx, pT_c, 1.0);
-        g_data_stat_full->SetPointError(rp_full_idx, 0.0, 0.0,
-                                        e_d / y_d, e_d / y_d);
-        ++rp_full_idx;
-    }
 
     int rp_idx = 0;
     for (Int_t i = 1; i <= h_data->GetNbinsX(); ++i)
@@ -1359,39 +1485,39 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         double stat_p_hi = gStat_PHENIX_corr->GetErrorYhigh(p_idx);
 
         double r          = y_p / y_d;
-        // Per-source stat propagated to the ratio (PHENIX only; sPHENIX
-        // stat is drawn separately as a y=1 band layer below).
+        // Per-source stat propagated to the ratio
         double r_pstat_lo = r * (stat_p_lo / y_p);
         double r_pstat_hi = r * (stat_p_hi / y_p);
+        double r_dstat    = r * (e_d / y_d);
         double r_psys_lo  = sys_p_lo / y_d;
         double r_psys_hi  = sys_p_hi / y_d;
+        double r_dsys_lo  = sys_d_lo / y_d;
+        double r_dsys_hi  = sys_d_hi / y_d;
         double bin_w      = h_data->GetBinWidth(i);
 
         // Marker at the bin centre with bin-width horizontal bars only
         g_ratio_phenix->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, 0.0, 0.0);
 
-        // PHENIX-only stat propagated to the ratio
+        // Combined stat: quadrature sum of PHENIX-corrected and sPHENIX-data stats
+        double r_stat_lo = std::sqrt(r_pstat_lo * r_pstat_lo + r_dstat * r_dstat);
+        double r_stat_hi = std::sqrt(r_pstat_hi * r_pstat_hi + r_dstat * r_dstat);
         g_ratio_phenix_stat->SetPoint(rp_idx, pT_c, r);
-        g_ratio_phenix_stat->SetPointError(rp_idx, 0.0, 0.0, r_pstat_lo, r_pstat_hi);
+        g_ratio_phenix_stat->SetPointError(rp_idx, 0.0, 0.0, r_stat_lo, r_stat_hi);
 
         g_ratio_phenix_psys->SetPoint(rp_idx, pT_c, r);
         g_ratio_phenix_psys->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_psys_lo, r_psys_hi);
 
+        g_data_sys_band->SetPoint(rp_idx, pT_c, 1.0);
+        g_data_sys_band->SetPointError(rp_idx, bin_w / 2.0, bin_w / 2.0, r_dsys_lo, r_dsys_hi);
+
         ++rp_idx;
     }
 
-    // Layer 1 (back): sPHENIX systematic band centred on y=1 (full pT range)
+    // Layer 1 (back): data sys band centred on y=1
     g_data_sys_band->SetFillColorAlpha(col[0], trans[0]);
     g_data_sys_band->SetLineColor(col[0]);
     g_data_sys_band->Draw("2 same");
-
-    // Layer 2: sPHENIX statistical error bars at y=1 (full pT range)
-    g_data_stat_full->SetMarkerStyle(1);
-    g_data_stat_full->SetMarkerSize(0);
-    g_data_stat_full->SetLineColorAlpha(col[0], 0.8);
-    g_data_stat_full->SetLineWidth(3);
-    g_data_stat_full->Draw("Z same");
 
     // Unity reference line
     lineone->SetLineColor(kBlack);
@@ -1408,8 +1534,8 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     // Layer 3: combined stat bar (quadrature sum, centred on the ratio marker)
     g_ratio_phenix_stat->SetMarkerStyle(0);
-    g_ratio_phenix_stat->SetLineColorAlpha(kViolet + 1, 0.7);
-    g_ratio_phenix_stat->SetLineWidth(3);
+    g_ratio_phenix_stat->SetLineColor(kViolet + 1);
+    g_ratio_phenix_stat->SetLineWidth(2);
     g_ratio_phenix_stat->Draw("Z same");
 
     // Layer 4 (front): markers with bin-width horizontal bars only
@@ -1420,7 +1546,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     g_ratio_phenix->Draw("P same");
 
     // Paper Fig. final_phenix.pdf -- 2-pad PHENIX overlay + ratio.
-    c2->SaveAs(Form("%s/final_phenix.pdf", paperdir.c_str()));
+    // c2->SaveAs(Form("%s/final_phenix.pdf", paperdir.c_str()));
 
     //-----------------------------------------------------------------
     // PHENIX fit + pull diagnostic
@@ -1517,7 +1643,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     l_pull0->SetLineColor(kGray + 2);
     l_pull0->Draw();
 
-    c3->SaveAs(Form("%s/final_phenix_fit_%s.pdf", scratch.c_str(), tune.data()));
+    // c3->SaveAs(Form("%s/final_phenix_fit_%s.pdf", scratch.c_str(), tune.data()));
 
     //-----------------------------------------------------------------
     // Paper Fig. final_sphenix.pdf -- single-pad sPHENIX-only cross-section.
@@ -1533,14 +1659,14 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     init_plot();
     h_data = h_data_cp;
 
-    TCanvas *c4 = new TCanvas("c4_paper_sphenix", "", 750, 700);
+    TCanvas *c4 = new TCanvas("c4_paper_sphenix", "", 800, 700);
     c4->SetLogy();
 
-    frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#it{#sigma}/d#it{#eta} d#it{E}_{T}^{#gamma} [pb/GeV]");
+    frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#it{#sigma}/(d#it{#eta} d#it{E}_{T}^{#gamma}) [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(lowery, 500);
     frame_et_rec->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_rec->GetXaxis()->SetTitleOffset(1.0);
-    frame_et_rec->GetYaxis()->SetTitleOffset(1.3);
+    frame_et_rec->GetYaxis()->SetTitleOffset(1.0);
     frame_et_rec->GetYaxis()->SetTitleSize(0.05);
     frame_et_rec->GetYaxis()->SetLabelSize(0.045);
     frame_et_rec->GetXaxis()->SetLabelSize(0.045);
@@ -1561,12 +1687,11 @@ void plot_paper_final_yj(string tune = "bdt_nom")
 
     {
         const float xpos_s = 0.20, xpos2_s = 0.91, ypos_s = 0.87,
-                    dy_s = 0.058, fs1 = 0.047, fs = 0.043;
+                    dy_s = 0.055, fs1 = 0.047, fs = 0.043;
         myText(xpos2_s, ypos_s - 0 * dy_s, 1, strleg1.c_str(),     fs1, 1);
         myText(xpos2_s, ypos_s - 1 * dy_s, 1, strleg_lumi.c_str(), fs,  1);
-        myText(xpos2_s, ypos_s - 2 * dy_s, 1, strleg_lumi_line2.c_str(), fs,  1);
-        myText(xpos2_s, ypos_s - 3 * dy_s, 1, strleg3.c_str(),     fs,  1);
-        myText(xpos2_s, ypos_s - 4 * dy_s, 1, strleg4.c_str(),     fs,  1);
+        myText(xpos2_s, ypos_s - 2 * dy_s, 1, strleg3.c_str(),     fs,  1);
+        myText(xpos2_s, ypos_s - 3 * dy_s, 1, strleg4.c_str(),     fs,  1);
 
         TH1F *htemp_data = (TH1F *)h_data->Clone("htemp_data_sphenix");
         htemp_data->SetMarkerStyle(mkStyle[0]);
@@ -1575,12 +1700,11 @@ void plot_paper_final_yj(string tune = "bdt_nom")
         htemp_data->SetLineColor(col[0]);
         htemp_data->SetFillColorAlpha(col[0], trans[0]);
 
-        TLegend *l_s = new TLegend(xpos_s, 0.25, 0.55, 0.38);
+        TLegend *l_s = new TLegend(xpos_s, 0.25, 0.55, 0.34);
         legStyle(l_s, 0.21, fs);
-        l_s->SetTextSize(0.050);
         l_s->AddEntry(htemp_data, "Data", "fpl");
         l_s->Draw("same");
     }
 
-    c4->SaveAs(Form("%s/final_sphenix.pdf", paperdir.c_str()));
+    // c4->SaveAs(Form("%s/final_sphenix.pdf", paperdir.c_str()));
 }

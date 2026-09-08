@@ -45,8 +45,10 @@ from calc_syst_bdt import (  # noqa: E402
 )
 
 # Paper-specific output location and filename.
+# POL1 WORKING COPY: repointed to plotting/figures_pol1/ so the canonical
+# PPG12-Paper/figures is never touched.
 _PAPER_FIGDIR = os.path.normpath(
-    os.path.join(_PARENT_DIR, "..", "PPG12-Paper", "figures"))
+    os.path.join(_PARENT_DIR, "figures_pol1"))
 _PAPER_NAME = "syst_sum_rel.pdf"
 
 
@@ -114,7 +116,7 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
     # flagged by Jamie on Fig. 6.
     ROOT.frame_et_truth.GetXaxis().SetRangeUser(12.0, 31.9)
     ROOT.frame_et_truth.SetXTitle("#it{E}_{T}^{#gamma} [GeV]")
-    ROOT.frame_et_truth.SetYTitle("Relative Uncertainty")
+    ROOT.frame_et_truth.SetYTitle("Relative difference")
     ROOT.frame_et_truth.GetYaxis().SetTitleOffset(1.1)
     ROOT.frame_et_truth.GetXaxis().SetTitleOffset(1.0)
     ROOT.frame_et_truth.GetYaxis().SetTitleSize(0.058)
@@ -224,9 +226,8 @@ def plot_breakdown_paper(group_results: dict, total: tuple,
         _legend_line_text(0.25 + xshift, 0.31 - 0.05 * idx + yshift,
                           col, lw, label, 0.05, keep_alive, lstyle=ls)
 
-    ROOT.myText(0.20, 0.86, 1, "#bf{#it{sPHENIX}}", 0.062)
-    # ROOT.myText(0.20, 0.88, 1, ROOT.strleg1.c_str(), 0.05)
-    ROOT.myText(0.91, 0.88, 1, ROOT.strleg2.c_str(), 0.05, 1)
+    ROOT.myText(0.20, 0.88, 1, ROOT.strleg1.c_str(), 0.05)
+    ROOT.myText(0.92, 0.88, 1, ROOT.strleg2.c_str(), 0.05, 1)
     # ROOT.myText(0.20, 0.83, 1, ROOT.strleg2.c_str(), 0.05)
 
     out = os.path.join(_PAPER_FIGDIR, _PAPER_NAME)
@@ -239,9 +240,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--results",
-                   default="/sphenix/u/yeonjugo/SE/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_safeguard_mirror")
-                   # default="/sphenix/u/yeonjugo/SE/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror")
-                   # default="/sphenix/user/shuhangli/ppg12/efficiencytool/results")
+                   default="/sphenix/user/shuhangli/ppg12/efficiencytool/results")
     p.add_argument("--outdir",
                    default=os.path.join(_PARENT_DIR, "rootFiles"),
                    help="Working dir for syst ROOT files (intermediate).")

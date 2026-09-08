@@ -33,7 +33,7 @@ const float kMkSize[] = {1.2f,    1.2f,      1.6f};
 
 void plot_paper_efficiency_yj(const std::string &tune = "bdt_nom")
 {
-    paper_init();
+    paper_init(0);
 
     const std::string resdir = "/sphenix/user/shuhangli/ppg12/efficiencytool/results";
     TFile *fmc   = TFile::Open(Form("%s/MC_efficiency_%s.root", resdir.c_str(), tune.c_str()));
@@ -79,7 +79,7 @@ void plot_paper_efficiency_yj(const std::string &tune = "bdt_nom")
     // NDC ~0.30 -> safe gap). x covers the full unfolding range
     // (10 < ETg < 36 GeV), wider than the reported analysis range
     // (12-32) so the truth-spectrum overflow bins are visible.
-    frame_et_truth->GetYaxis()->SetRangeUser(0.0, 1.15);
+    frame_et_truth->GetYaxis()->SetRangeUser(0.0, 1.17);
     frame_et_truth->GetXaxis()->SetRangeUser(10, 36);
     frame_et_truth->Draw("axis");
 
@@ -102,17 +102,18 @@ void plot_paper_efficiency_yj(const std::string &tune = "bdt_nom")
     eff_all->SetLineWidth(2);
     eff_all->Draw("same");
 
-    float xpos(0.2), xpos2(0.915), ypos(0.885),
-          dy(0.054), fontsize(0.046), fontsize1(0.048);
-    myText(xpos,  ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 0);
-    myText(xpos,  ypos - 1 * dy, 1, strleg2.c_str(), fontsize,  0);
+    float xpos(0.2), xpos2(0.915), ypos(0.880),
+          dy(0.054), fontsize(0.046), fontsize1(0.052);
+    myText(xpos,  ypos - 0 * dy, 1, "#bf{#it{sPHENIX}} #kern[-0.12]{#scale[0.97]{Simulation}}", fontsize1, 0);
+    // myText(xpos,  ypos - 0 * dy, 1, strleg1.c_str(), fontsize1, 0);
+    myText(xpos,  ypos - 1 * dy*1.03, 1, strleg2.c_str(), fontsize,  0);
     myText(xpos2, ypos - 0 * dy, 1, strMC.c_str(),   fontsize,  1);
     myText(xpos2, ypos - 1 * dy, 1, strleg3.c_str(), fontsize,  1);
 
     // Legend at lower-left in the empty band below the lowest curve
     // (eps_reco*ID*iso ~ 0.38 -> NDC ~0.27 with the new y-range), away
     // from data points across the whole 12-32 GeV span.
-    TLegend *l1 = new TLegend(0.22, 0.25, 0.62, 0.50);
+    TLegend *l1 = new TLegend(0.20, 0.22, 0.60, 0.47);
     legStyle(l1, 0.20, 0.058);
     l1->AddEntry(eff_reco,           "#varepsilon_{reco}",                                                 "pl");
     l1->AddEntry(g_reco_id_product,  "#varepsilon_{reco}#times#varepsilon_{ID}",                            "pl");

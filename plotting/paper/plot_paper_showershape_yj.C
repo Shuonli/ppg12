@@ -45,16 +45,16 @@ constexpr int kPtBin  = 1;     // pT_bins = [10,14,18,22,28,30]; pt1 = 14-18 GeV
 constexpr int kCutBin = 1;     // 1 = preselection applied
 constexpr float kPtLow  = 14.f;
 constexpr float kPtHigh = 18.f;
-const std::string kCutLabel = "w/ NCB & Pre-selection";
+const std::string kCutLabel = "w/ NCB cut & pre-selection";
 
 // Paper-specific eta label: drop the gamma superscript present in
 // plotcommon.h's strleg3 ("|#it{#eta^{#gamma}}| < 0.7").
-const std::string kPaperEtaLabel = "|#it{#eta}| < 0.7";
+const std::string kPaperEtaLabel = "|#it{#eta^{#gamma}}| < 0.7";
 }  // namespace
 
 void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
 {
-    paper_init();
+    paper_init(0);
 
     // DI-blended outputs (single-pass truth-vertex pipeline). When
     // combine_double=false the parent macro just clones the nominal SI
@@ -121,14 +121,14 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         if (xaxisname == "weta_cogx")  return "#it{w}_{#it{#eta}}";
         if (xaxisname == "wphi_cogx")  return "#it{w}_{#it{#phi}}";
         if (xaxisname == "e32_to_e35") return "#it{E}_{3#times2} /#it{E}_{3#times5}";
-        if (xaxisname == "bdt")        return "Photon-ID BDT score";
+        if (xaxisname == "bdt")        return "Photon Identification BDT score";
         return xaxisname;
     };
 
     auto axisMin = [](const TString &xaxisname) -> float {
         if (xaxisname == "weta_cogx")  return 0;
         if (xaxisname == "wphi_cogx")  return 0;
-        if (xaxisname == "e32_to_e35") return 0.8;
+        if (xaxisname == "e32_to_e35") return 0.81;
         return 0.f;
     };
 
@@ -202,7 +202,7 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         proj_sig->GetYaxis()->SetTitleOffset(1.6);
         proj_sig->GetXaxis()->SetTitleSize(0.05);
         proj_sig->SetXTitle(axisTitle(xaxisname));
-        proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.55);
+        proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.57);
         proj_sig->GetXaxis()->SetRangeUser(axisMin(xaxisname),axisMax(xaxisname));
         proj_sig->GetXaxis()->SetNdivisions(505);
         proj_sig->SetStats(0);
@@ -214,20 +214,20 @@ void plot_paper_showershape_yj(const std::string &configsuffix = "showershape")
         if (proj_bkgonly) overlayVerticalErrors(proj_bkgonly);
         proj_data->Draw("ex0 SAME");
 
-        float xx=0.21;
+        float xx=0.195;
         float yy=0.88;
-      float dyy=0.050;
+      float dyy=0.052;
       float fontsize=0.043;
         drawLabels(xx, yy, dyy, fontsize);
         // Two-line bin label so it stays clear of the legend on the right.
         myText(xx, yy-dyy*3, 1,
-               Form("%.0f < #it{E}_{T} < %.0f GeV", kPtLow, kPtHigh),
+               Form("%.0f < #kern[-0.08]{#it{E}_{T}^{#gamma} < %.0f GeV}", kPtLow, kPtHigh),
                fontsize);
         myText(xx, yy-dyy*4, 1, kCutLabel.c_str(), fontsize);
         {
-            const double y_top = 0.90;
-            const double y_bot = hasBkgOnly ? 0.69 : 0.74;
-            TLegend *leg = new TLegend(0.60, y_bot, 0.90, y_top);
+            const double y_top = 0.92;
+            const double y_bot = hasBkgOnly ? 0.71 : 0.74;
+            TLegend *leg = new TLegend(0.56, y_bot, 0.90, y_top);
             leg->SetBorderSize(0);
             leg->SetFillStyle(0);
             leg->SetTextFont(42);

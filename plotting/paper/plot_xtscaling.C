@@ -9,7 +9,7 @@
 // Run from the plotting/ directory:
 //   cd plotting && root -l -b -q 'xtscaling/plot_xtscaling.C'
 
-#include "plotcommon.h"
+#include "../plotcommon.h"
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -68,7 +68,7 @@ void plot_xtscaling() {
     {"UA6_24p3",              "UA6 (24.3 GeV)",   kGray+2,    28, 1.0, false, {}},  // Bock: gray filled plus
     {"WA70_23",               "WA70 (23 GeV)",    kGray+2,    21, 0.9, false, {}},  // Bock: gray filled square
     {"E704_19p4",             "E704 (19.4 GeV)",  kBlack,     24, 0.9, false, {}},  // Bock: black open circle
-    {"PPG12_200GeV",          "sPHENIX (200 GeV)",kRed,       29, 2.4, true,  {}},
+    {"PPG12_200GeV",          "sPHENIX (200 GeV)",kRed,       20, 1.5, true,  {}},
   };
 
   std::vector<DS> ds;
@@ -91,11 +91,13 @@ void plot_xtscaling() {
   TCanvas *c = new TCanvas("c_xt", "", 820, 840);
   c->SetLogx(); c->SetLogy(); c->SetTicks(1, 1);
   c->SetLeftMargin(0.165); c->SetRightMargin(0.04);
-  c->SetTopMargin(0.05); c->SetBottomMargin(0.115);
+  c->SetTopMargin(0.05); c->SetBottomMargin(0.145);
 
   TH2F *fr = new TH2F("fr_xt", "", 100, xlo, xhi, 100, ylo, yhi);
-  fr->GetXaxis()->SetTitle("#it{x}_{T} = 2#it{p}_{T} / #sqrt{#it{s}}");
-  fr->GetYaxis()->SetTitle("(#sqrt{#it{s}}/GeV)^{#it{n}} #it{E} d^{3}#it{#sigma}/d#it{p}^{3}  [pb GeV^{-2} #it{c}^{3}]");
+  fr->GetXaxis()->SetTitle("#it{x}_{T} = 2^{}#it{E}_{T}^{#gamma} /#kern[-0.05]{#sqrt{#it{s}}}");
+  // fr->GetYaxis()->SetTitle("(#sqrt{#it{s}}/GeV)^{#it{n}}#it{E} d^{3}#it{#sigma}/d#it{p}^{3} [pb GeV^{-2}#kern[+0.25])]");
+  fr->GetYaxis()->SetTitle("(#sqrt{#it{s}}/GeV)^{#it{n}}#it{E} d^{3}#it{#sigma}/d#it{p}^{3} [pb/GeV^{2}]");
+
   fr->GetXaxis()->SetTitleOffset(1.15);
   fr->GetYaxis()->SetTitleOffset(1.7);
   // decade-only x labels (avoid 6e-3 colliding with 1e-2 at the low end)
@@ -113,7 +115,8 @@ void plot_xtscaling() {
         g->SetPoint(i, p.x, p.y);
         g->SetPointError(i, 0, 0, std::max(0.0, p.y - p.ylo), std::max(0.0, p.yhi - p.y));
       }
-      g->SetMarkerColor(d.color); g->SetLineColor(d.color);
+      g->SetMarkerColorAlpha(d.color, d.ours ? 1.0 : 0.8); g->SetLineColorAlpha(d.color, d.ours ? 1.0 : 0.8);
+      // g->SetMarkerColor(d.color); g->SetLineColor(d.color);
       g->SetMarkerStyle(d.marker); g->SetMarkerSize(d.msize);
       g->SetLineWidth(d.ours ? 2 : 1);
       g->Draw("P SAME");
@@ -121,7 +124,8 @@ void plot_xtscaling() {
     }
   }
 
-  TLegend *leg = new TLegend(0.175, 0.115, 0.75, 0.43);
+  TLegend *leg = new TLegend(0.175, 0.165, 0.75, 0.48);
+  // TLegend *leg = new TLegend(0.175, 0.115, 0.75, 0.43);
   leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.026);
   leg->SetNColumns(2); leg->SetColumnSeparation(0.02);
   for (auto &pr : drawn) if (pr.first->ours)
@@ -131,14 +135,17 @@ void plot_xtscaling() {
   leg->Draw();
 
   TLatex tl; tl.SetNDC(); tl.SetTextFont(42);
-  tl.SetTextSize(0.041); tl.DrawLatex(0.585, 0.885, "#bf{#it{sPHENIX}} Internal");
-  tl.SetTextSize(0.032);
-  tl.DrawLatex(0.585, 0.840, "#it{p}+#it{p}(#bar{#it{p}}) #rightarrow #it{#gamma} + X");
-  tl.DrawLatex(0.585, 0.804, "#it{y} #approx 0,  #it{n} = 4.5");
+  tl.SetTextSize(0.041); tl.DrawLatex(0.585, 0.885, "#bf{#it{sPHENIX}}");
+  tl.SetTextSize(0.035);
+  tl.DrawLatex(0.585, 0.840, "#it{p}+#it{p}(#bar{#it{p}}) #kern[-0.05]{#rightarrow #it{#gamma} + X}");
+  tl.DrawLatex(0.585, 0.790, "#it{y}#kern[-0.35]{ #approx 0}, #it{n} = 4.5");
 
-  gSystem->mkdir("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures", true);
-  c->SaveAs("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures/xtscaling_compilation.pdf");
-  c->SaveAs(Form("%s/xtscaling_compilation.pdf", XDIR));
+  // const std::string paperdir = paper_savepath();
+  // gSystem->mkdir("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures", true);
+  c->SaveAs("../../PPG12-Paper/figures/xtscaling_compilation.pdf");
+  // gSystem->mkdir("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures", true);
+  // c->SaveAs("/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/plotting/figures/xtscaling_compilation.pdf");
+  // c->SaveAs(Form("%s/xtscaling_compilation.pdf", XDIR));
   printf("saved xtscaling_compilation.pdf  (x[%.3f,%.3f] y[%.1e,%.1e], %zu datasets)\n",
          xlo, xhi, ylo, yhi, ds.size());
 }

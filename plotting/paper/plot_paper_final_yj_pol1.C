@@ -40,15 +40,15 @@ const float mkSizepdf[] = {1.4, 1.4, 1.7, 1.5, 1.0, 1.0, 1.0};
 const float mkcolpdf[] = {kPink + 5, kRed - 4, kSpring -7, kBlue+1, kOrange + 7, kAzure - 4};
 }  // namespace
 
-void plot_paper_final_yj(string tune = "bdt_nom")
+void plot_paper_final_yj_pol1(string tune = "bdt_nom")
 {
-    paper_init(0);
+    paper_init();
 
-    // Output paths. Stored as locals (not as repeated paper_savepath().c_str()
-    // calls inline) because Cling occasionally hands back a dangling/stale
-    // c_str() when the function-local static is read mid-function -- both
-    // paths and the canvas titles share the same overflow string buffer.
-    const std::string paperdir = paper_savepath();
+    // POL1 WORKING COPY: outputs redirected to plotting/figures_pol1/ instead
+    // of the canonical PPG12-Paper/figures. Central values are identical to the
+    // production figure; only the systematic band (read from the pol1
+    // syst_sum.root below) differs.
+    const std::string paperdir = "../figures_pol1";
     const std::string scratch  = paperdir + "/_unused";
     gSystem->mkdir(scratch.c_str(), kTRUE);
 
@@ -87,11 +87,9 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     float lowerx = 12;
     float upperx = 32;
 
-    TFile *fin_data = new TFile(Form("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s.root", tune.data()));
-    // TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
+    TFile *fin_data = new TFile(Form("/gpfs/mnt/gpfs02/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s.root", tune.data()));
 
-    TFile *fin_syst = new TFile("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/plotting/rootFiles_pol1/syst_sum.root");
-    // TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
+    TFile *fin_syst = new TFile("/gpfs/mnt/gpfs02/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/plotting/rootFiles_pol1/syst_sum.root");
     TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10_chunked.root");
     TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05_chunked.root");
     TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20_chunked.root");
@@ -117,8 +115,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TGraphAsymmErrors *g_pdf_band_cteq_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_cteq");
     TGraphAsymmErrors *g_pdf_band_msht_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_msht");
 
-    TFile *fin_mc = new TFile(Form("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s_mc.root", tune.data()));
-    // TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
+    TFile *fin_mc = new TFile(Form("/gpfs/mnt/gpfs02/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
     h_data->Scale(1.0 / deta);
@@ -316,7 +313,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     pad_1->SetRightMargin(0.08);
     pad_1->SetLogy();
 
-    frame_et_rec->SetYTitle("d^{2}#it{#sigma}/d#it{#eta} d#it{E}_{T}^{#gamma} [pb/GeV]");
+    frame_et_rec->SetYTitle("d^{2}#it{#sigma}/(d#it{#eta} d#it{E}_{T}^{#gamma}) [pb/GeV]");
     // frame_et_rec->SetYTitle("d#sigma/d#eta/dE_{T} [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(lowery, 500);
     // frame_et_rec->GetYaxis()->SetRangeUser(lowery, 1500);
@@ -1536,7 +1533,7 @@ void plot_paper_final_yj(string tune = "bdt_nom")
     TCanvas *c4 = new TCanvas("c4_paper_sphenix", "", 750, 700);
     c4->SetLogy();
 
-    frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#it{#sigma}/d#it{#eta} d#it{E}_{T}^{#gamma} [pb/GeV]");
+    frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];d^{2}#it{#sigma}/(d#it{#eta} d#it{E}_{T}^{#gamma}) [pb/GeV]");
     frame_et_rec->GetYaxis()->SetRangeUser(lowery, 500);
     frame_et_rec->GetXaxis()->SetRangeUser(lowerx, upperx);
     frame_et_rec->GetXaxis()->SetTitleOffset(1.0);

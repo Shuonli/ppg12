@@ -25,11 +25,14 @@
 
 #include "paper_style.h"
 
-void plot_paper_purity(const std::string &tune = "bdt_nom")
+void plot_paper_purity_pol1(const std::string &tune = "bdt_nom")
 {
-    paper_init(0);
+    paper_init();
 
-    const std::string resdir = "/sphenix/user/shuhangli/ppg12/efficiencytool/results";
+    // POL1 WORKING COPY: resdir -> results_pol1mirror; output -> figures_pol1.
+    // Nominal purity correction is OFF so this figure is expected IDENTICAL
+    // to the canonical purity_nom.pdf (reference render only).
+    const std::string resdir = "/gpfs/mnt/gpfs02/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror";
     TFile *fdata = TFile::Open(Form("%s/Photon_final_%s.root", resdir.c_str(), tune.c_str()));
     if (!fdata || fdata->IsZombie())
     {
@@ -83,13 +86,11 @@ void plot_paper_purity(const std::string &tune = "bdt_nom")
     int nEntry = 3;
     TLegend *l1 = new TLegend(xpos, ypos2, xpos2, ypos2 + nEntry * dy1);
     legStyle(l1, 0.14, fontsize);
-    l1->AddEntry(gpurity_leak,    "w/ signal leakage correction",  "pl");
-    l1->AddEntry(gpurity,         "w/o signal leakage correction", "pl");
-    // l1->AddEntry(gpurity_leak,    "w/ sig. leak. corr.",  "pl");
-    // l1->AddEntry(gpurity,         "w/o sig. leak. corr.", "pl");
+    l1->AddEntry(gpurity_leak,    "w/ sig. leak. corr.",  "pl");
+    l1->AddEntry(gpurity,         "w/o sig. leak. corr.", "pl");
     l1->AddEntry(grFineConf_leak, "fit w/ 68% C.L.",      "fl");
     l1->Draw("same");
 
     // Canonical paper name (no tune suffix) for main.tex stability.
-    c1->SaveAs(Form("%s/purity_nom.pdf", paper_savepath().c_str()));
+    c1->SaveAs("../figures_pol1/purity_nom.pdf");
 }
