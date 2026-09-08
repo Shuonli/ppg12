@@ -99,11 +99,9 @@ void plot_paper_final_yj_v3(string tune = "bdt_nom")
     float lowerx = 12;
     float upperx = 32;
 
-    TFile *fin_data = new TFile(Form("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s.root", tune.data()));
-    // TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
+    TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
-    TFile *fin_syst = new TFile("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/plotting/rootFiles_pol1/syst_sum.root");
-    // TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
+    TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
     TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10_chunked.root");
     TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05_chunked.root");
     TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20_chunked.root");
@@ -129,8 +127,7 @@ void plot_paper_final_yj_v3(string tune = "bdt_nom")
     TGraphAsymmErrors *g_pdf_band_cteq_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_cteq");
     TGraphAsymmErrors *g_pdf_band_msht_abs   = (TGraphAsymmErrors*)fin_pdfunc->Get("g_pdf_band_msht");
 
-    TFile *fin_mc = new TFile(Form("/sphenix/user/yeonjugo/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror/Photon_final_%s_mc.root", tune.data()));
-    // TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
+    TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
     h_data->Scale(1.0 / deta);

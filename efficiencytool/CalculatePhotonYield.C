@@ -114,6 +114,9 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
     bool mc_purity_correction = configYaml["analysis"]["mc_purity_correction"].as<int>(0) != 0;
     std::string mc_purity_correction_file = configYaml["analysis"]["mc_purity_correction_file"].as<std::string>("");
+    // Polynomial order of the smooth fit to the MC purity nonclosure ratio.
+    // Default 1 (pol1, linear); set to 2 to recover the legacy pol2 smoothing.
+    int mc_purity_corr_fitorder = configYaml["analysis"]["mc_purity_corr_fitorder"].as<int>(1);
 
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
@@ -788,8 +791,8 @@ std::cout << "p-value = " << pvalue << "\n";
 
         // Bin-by-bin closure correction = (raw truth purity) / (raw leakage-corrected ABCD purity),
         // computed at the same per-ET-bin sampling as the underlying TGraphs. Then fit with a
-        // smooth function (pol2 by default) over [xMin, xMax] so applying the correction on data
-        // is robust against per-bin statistical noise.
+        // smooth function (order = analysis.mc_purity_corr_fitorder, default pol1) over
+        // [xMin, xMax] so applying the correction on data is robust against per-bin noise.
         g_mc_purity_fit_ratio_out = new TGraphErrors(g_purity_truth->GetN());
         g_mc_purity_fit_ratio_out->SetName("g_mc_purity_fit_ratio");
         for (int i = 0; i < g_purity_truth->GetN(); ++i)
@@ -815,9 +818,13 @@ std::cout << "p-value = " << pvalue << "\n";
             g_mc_purity_fit_ratio_out->SetPointError(i, 0, err);
         }
         // Smooth fit over the analysis range; saved separately (named f_mc_purity_corr_fit)
-        // and used as the actual correction on the data side.
-        TF1 *f_mc_purity_corr_fit_out = new TF1("f_mc_purity_corr_fit", "pol2", xMin, xMax);
-        f_mc_purity_corr_fit_out->SetParameters(1.0, 0.0, 0.0);
+        // and used as the actual correction on the data side. Polynomial order is
+        // config-driven via analysis.mc_purity_corr_fitorder (default 1 = pol1).
+        TString purity_corr_formula = TString::Format("pol%d", mc_purity_corr_fitorder);
+        TF1 *f_mc_purity_corr_fit_out = new TF1("f_mc_purity_corr_fit", purity_corr_formula, xMin, xMax);
+        f_mc_purity_corr_fit_out->SetParameter(0, 1.0);
+        for (int ip = 1; ip <= mc_purity_corr_fitorder; ++ip)
+            f_mc_purity_corr_fit_out->SetParameter(ip, 0.0);
         g_mc_purity_fit_ratio_out->Fit(f_mc_purity_corr_fit_out, "REMN", "", xMin, xMax);
         g_mc_purity_fit_ratio_out->Fit(f_mc_purity_corr_fit_out, "REMN", "", xMin, xMax);
         // Stash the fit in a global so the writer block can persist it.
@@ -846,6 +853,20 @@ std::cout << "p-value = " << pvalue << "\n";
             {
                 NA_purity = pusity_fit_high;
             }
+            // Purity is a signal fraction and cannot exceed unity by
+            // construction. Some systematic variations push the fitted ABCD
+            // purity (or its +1sigma CI edge) slightly above 1, which would
+            // imply more signal than data in region A. Clamp to the physical
+            // ceiling so the variant cross-section (and hence the purity
+            // systematic) is not inflated by an unphysical value. No-op for
+            // nominal, whose purity is below 1 in every bin.
+            if (NA_purity > 1.0)
+            {
+                std::cout << "[purity-clamp][noleak] ibin=" << ibin
+                          << " ET=" << h_tight_iso_cluster_signal_data->GetBinCenter(ibin)
+                          << " raw purity=" << NA_purity << " -> 1.0" << std::endl;
+                NA_purity = 1.0;
+            }
             double NA_sig_count = NA_count * NA_purity;
             double NA_sig_err = NA_err * NA_purity;
 
@@ -864,8 +885,8 @@ std::cout << "p-value = " << pvalue << "\n";
             double mc_corr_ratio = 1.0;
             if (!isMC && mc_purity_correction && f_mc_purity_corr_fit)
             {
-                // Evaluate the smooth fit (pol2) of the bin-by-bin truth/ABCD ratio, NOT the
-                // raw TGraph. This avoids piecewise-linear interpolation noise.
+                // Evaluate the smooth fit (config-driven order, default pol1) of the bin-by-bin
+                // truth/ABCD ratio, NOT the raw TGraph. This avoids interpolation noise.
                 mc_corr_ratio = f_mc_purity_corr_fit->Eval(x_center);
                 if (mc_corr_ratio <= 0 || std::isnan(mc_corr_ratio) || std::isinf(mc_corr_ratio))
                 {
@@ -885,6 +906,22 @@ std::cout << "p-value = " << pvalue << "\n";
                 NA_purity = pusity_fit_high;
             }
 
+            // Purity is a signal fraction and cannot exceed unity by
+            // construction. Some systematic variations push the leakage-
+            // corrected ABCD purity (or its +1sigma CI edge, optionally scaled
+            // by the MC closure ratio) slightly above 1, which would imply more
+            // signal than data in region A. Clamp to the physical ceiling so the
+            // variant cross-section (and hence the purity systematic) is not
+            // inflated by an unphysical value. No-op for nominal, whose purity
+            // is below 1 in every bin. This is the leakage-corrected path that
+            // feeds the nominal cross-section.
+            if (NA_purity > 1.0)
+            {
+                std::cout << "[purity-clamp][leak] ibin=" << ibin
+                          << " ET=" << x_center
+                          << " raw purity=" << NA_purity << " -> 1.0" << std::endl;
+                NA_purity = 1.0;
+            }
 
             double NA_sig_count = NA_count * NA_purity;
             double NA_sig_err = NA_err * NA_purity;

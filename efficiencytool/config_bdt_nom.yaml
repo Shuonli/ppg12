@@ -113,6 +113,10 @@ analysis:
   cluster_escale_nl_ref_ET: 10.0
   mc_purity_correction: 0
   mc_purity_correction_file: ""
+  # Polynomial order of the smooth fit to the MC purity nonclosure ratio
+  # (default 1 = pol1, linear; 2 = legacy pol2). Only used when the
+  # mc_purity_correction variant turns the correction on.
+  mc_purity_corr_fitorder: 1
 
   # Data-driven tower mask (phi-symmetry z<-2 at tight-selection level).
   # Nominal production applies this mask symmetrically to data and MC to

@@ -239,9 +239,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--results",
-                   default="/sphenix/u/yeonjugo/SE/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_safeguard_mirror")
-                   # default="/sphenix/u/yeonjugo/SE/sPHENIX_PPG12/2026Apr9_claude/ppg12/efficiencytool/results_pol1mirror")
-                   # default="/sphenix/user/shuhangli/ppg12/efficiencytool/results")
+                   default="/sphenix/user/shuhangli/ppg12/efficiencytool/results")
     p.add_argument("--outdir",
                    default=os.path.join(_PARENT_DIR, "rootFiles"),
                    help="Working dir for syst ROOT files (intermediate).")

@@ -137,3 +137,11 @@ PPG12-Paper/
 *.orig_buggy
 *.blair_embed_backup
 *.zip
+
+# Local results mirrors and re-run scratch from the purity-safeguard / pol1
+# reruns (Yeonju Go, 2026-06) -- never commit these.
+efficiencytool/results_*mirror/
+efficiencytool/configs_safeguard/
+efficiencytool/logs_safeguard/
+plotting/rootFiles_*_sg*/
+plotting/figures_sg_tmp*/

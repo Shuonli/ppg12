@@ -139,9 +139,17 @@ VARIANTS = [
          syst_type="purity_fit_ci", syst_role="up"),
     dict(name="purity_fit_ci_down", fittingerror=-1,
          syst_type="purity_fit_ci", syst_role="down"),
-    # Use MC-driven purity correction ratio for data purity fit
-    dict(name="mc_purity_correction", mc_purity_correction=1,
+    # Use MC-driven purity correction ratio for data purity fit. The nonclosure
+    # ratio is smoothed with pol1 (analysis.mc_purity_corr_fitorder=1); this is
+    # the official purity-group systematic.
+    dict(name="mc_purity_correction", mc_purity_correction=1, mc_purity_corr_fitorder=1,
          syst_type="mc_purity_correction", syst_role="one_sided"),
+    # pol2 cross-check of the MC purity nonclosure smoothing (legacy fit order).
+    # Kept reproducible as a first-class variant under its own var_type; NOT in
+    # the systematic budget (syst_type=None) so it is not double-counted with the
+    # pol1 mc_purity_correction entry above.
+    dict(name="mc_purity_correction_pol2", mc_purity_correction=1, mc_purity_corr_fitorder=2,
+         syst_type=None, syst_role=None),
 
     # Vertex reweighting off — kept as cross-check only. Demoted 2026-04-25:
     # under the all-z nominal, the legacy reco-vertex reweight is already off
@@ -565,6 +573,7 @@ OVERRIDE_MAP = {
     "fit_option":        (["analysis"],                 "fit_option"),
     "fittingerror":      (["analysis"],                 "fittingerror"),
     "mc_purity_correction": (["analysis"],              "mc_purity_correction"),
+    "mc_purity_corr_fitorder": (["analysis"],           "mc_purity_corr_fitorder"),
     "bdt_et_bin_edges":  (["input"],                              "bdt_et_bin_edges"),
     "bdt_et_bin_models": (["input"],                              "bdt_et_bin_models"),
     "run_min": (["analysis"],                              "run_min"),

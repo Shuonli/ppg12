@@ -26,7 +26,9 @@ declare -A TARGETS=(
     [purity]='root -l -b -q plot_paper_purity.C'
     [efficiency]='root -l -b -q plot_paper_efficiency_yj.C'
     [systematics]='python plot_paper_systematics.py'
-    [final]='root -l -b -q plot_paper_final_yj.C'
+    # final.pdf comes from _v2 (NNLOJET overlay); _v3 writes final_pythia.pdf but also
+    # final.pdf, and the plain _yj writes final_phenix/final_sphenix, so run _v2 last.
+    [final]='root -l -b -q plot_paper_final_yj_v3.C && root -l -b -q plot_paper_final_yj.C && root -l -b -q plot_paper_final_yj_v2.C'
 )
 
 # Order matters only for log readability; macros are independent.
