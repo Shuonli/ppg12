@@ -2319,6 +2319,46 @@ std::pair<int, int> CaloAna24::photon_type(int barcode, int embed_id)
       if (outgoing_pid.find((incoming_particles.at(0)->pdg_id())) != outgoing_pid.end())
       {
         photonclass = 2;
+
+        // Herwig writes the qg->q+gamma matrix element as a 1->2 q->q+gamma
+        // emission whose parent quark's production vertex is a 2->1 ME-merge
+        // (n_in=2, n_out=1). Pythia hard direct photons are caught by the
+        // 2->2 branch above; Pythia fragmentation photons emitted at the
+        // first shower step have parent_q->prod_vtx = the hard 2->2 (n_in=2,
+        // n_out=2 with two outgoing partons, no photon). Requiring n_out==1
+        // distinguishes the Herwig ME-merge from a Pythia hard 2->2 and
+        // keeps the Pythia path's classification untouched.
+        HepMC::GenParticle *q = incoming_particles.at(0);
+        const int kMaxHardWalk = 10;
+        for (int wd = 0; wd < kMaxHardWalk; ++wd)
+        {
+          HepMC::GenVertex *qv = q->production_vertex();
+          if (!qv) break;
+          int n_in = qv->particles_in_size();
+          int n_out = qv->particles_out_size();
+          if (n_in >= 2)
+          {
+            if (n_out == 1)
+            {
+              bool all_partonic = true;
+              for (auto it = qv->particles_in_const_begin();
+                   it != qv->particles_in_const_end(); ++it)
+              {
+                if (abs((*it)->pdg_id()) > 22) { all_partonic = false; break; }
+              }
+              if (all_partonic) photonclass = 1;
+            }
+            break;
+          }
+          if (n_in == 1 && n_out == 1)
+          {
+            // trivial 1->1 status-rewrite, walk through
+            q = *(qv->particles_in_const_begin());
+            continue;
+          }
+          // 1->>=2 splitting (parton shower) or n_in==0 (beam) -> not direct
+          break;
+        }
       }
     }
     if (abs(incoming_particles.at(0)->pdg_id()) > 37)
@@ -2344,6 +2384,52 @@ std::pair<int, int> CaloAna24::photon_type(int barcode, int embed_id)
     }
     std::cout << std::endl;
   }
+
+  // [PPG12 instrumentation] env-gated full-ancestry dump for diagnosing
+  // generator-dependent HepMC topologies (e.g. Herwig vs Pythia). Inactive
+  // unless PPG12_DEBUG_PHOTON=1 is set in the environment.
+  {
+    static int g_dump_count = 0;
+    const char *dbg = getenv("PPG12_DEBUG_PHOTON");
+    if (dbg && std::string(dbg) == "1" && g_dump_count < 30)
+    {
+      std::cout << "[ANCESTRY] barcode=" << barcode
+                << " final_class=" << photonclass
+                << " photon_pT=" << particle->momentum().perp()
+                << " photon_eta=" << particle->momentum().eta() << std::endl;
+      HepMC::GenParticle *p = particle;
+      int d = 0;
+      while (p && d < 15)
+      {
+        std::cout << "  d=" << d << " pdg=" << p->pdg_id()
+                  << " status=" << p->status()
+                  << " barcode=" << p->barcode()
+                  << " pT=" << p->momentum().perp();
+        HepMC::GenVertex *v = p->production_vertex();
+        if (!v)
+        {
+          std::cout << " (no prod vtx)" << std::endl;
+          break;
+        }
+        std::cout << " | vtx_id=" << v->id() << " in={";
+        for (auto it = v->particles_in_const_begin(); it != v->particles_in_const_end(); ++it)
+        {
+          std::cout << (*it)->pdg_id() << "/" << (*it)->status() << ",";
+        }
+        std::cout << "} out={";
+        for (auto it = v->particles_out_const_begin(); it != v->particles_out_const_end(); ++it)
+        {
+          std::cout << (*it)->pdg_id() << "/" << (*it)->status() << ",";
+        }
+        std::cout << "}" << std::endl;
+        if (v->particles_in_size() == 0) break;
+        p = *(v->particles_in_const_begin());
+        d++;
+      }
+      g_dump_count++;
+    }
+  }
+
   photonclasspair = {photonclass, incoming_pid};
   return photonclasspair;
 }

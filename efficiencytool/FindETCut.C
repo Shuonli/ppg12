@@ -155,5 +155,5 @@ void FindETCut(const char* var_type, double target_eff = 0.9)
 void FindETCut()
 {
     // Preserves original no-arg behaviour which opened MC_efficiency_bdt_nom.root
-    FindETCut("nom", 0.9);
+    FindETCut("nom", 0.8);
 }

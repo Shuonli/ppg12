@@ -90,6 +90,16 @@ VARIANTS = [
          nt_bdt_max_intercept=0.85,    nt_bdt_max_slope=0.0,
          nt_bdt_min=0.50,
          syst_type=None, syst_role=None),
+    dict(name="flat_t80_nt50",
+         tight_bdt_min_intercept=0.80, tight_bdt_min_slope=0.0,
+         nt_bdt_max_intercept=0.80,    nt_bdt_max_slope=0.0,
+         nt_bdt_min=0.50,
+         syst_type=None, syst_role=None),
+    dict(name="flat_t70_nt50",
+         tight_bdt_min_intercept=0.70, tight_bdt_min_slope=0.0,
+         nt_bdt_max_intercept=0.70,    nt_bdt_max_slope=0.0,
+         nt_bdt_min=0.50,
+         syst_type=None, syst_role=None),
     dict(name="flat_t95_nt50",
          tight_bdt_min_intercept=0.95, tight_bdt_min_slope=0.0,
          nt_bdt_max_intercept=0.95,    nt_bdt_max_slope=0.0,
@@ -209,15 +219,19 @@ VARIANTS = [
     # eres systematic: down = cE_0p08 (~6%), up = no extra smearing (data
     # params all zero). The legacy multiplicative `cluster_eres` field is
     # retired but kept in field-map for backward compatibility.
-    # Energy-scale envelope: placeholder at +/-1.1% pending the final
-    # EMCal calibration. The +/-1.5% and +/-2.6% pairs are kept alongside
-    # as cross-checks but the active journal-text systematic is taken from
-    # the 1.1% pair (mapped to syst_type="escale"); the 1.5% and 2.6%
-    # pairs have syst_type=None so they do not enter the syst aggregator.
-    dict(name="energyscale11up",   clusterescale=1.011,
+    # Energy-scale envelope: +/-1.48% (final EMCal calibration, 2026-06-08).
+    # The active journal-text systematic is the 1.48% pair (energyscale148,
+    # mapped to syst_type="escale"); the +/-1.1%, 1.5% and 2.6% pairs are
+    # kept alongside as cross-checks (syst_type=None) so they do not enter
+    # the syst aggregator.
+    dict(name="energyscale148up",   clusterescale=1.0148,
          syst_type="escale", syst_role="down"),
-    dict(name="energyscale11down", clusterescale=0.989,
+    dict(name="energyscale148down", clusterescale=0.9852,
          syst_type="escale", syst_role="up"),
+    dict(name="energyscale11up",   clusterescale=1.011,
+         syst_type=None,     syst_role=None),
+    dict(name="energyscale11down", clusterescale=0.989,
+         syst_type=None,     syst_role=None),
     dict(name="energyscale15up",   clusterescale=1.015,
          syst_type=None,     syst_role=None),
     dict(name="energyscale15down", clusterescale=0.985,
@@ -315,6 +329,21 @@ VARIANTS = [
          run_min=51274, run_max=54000, lumi=17.1642, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
+         syst_type=None, syst_role=None),
+
+    # ----------------------------------------------------------
+    # pjlike (2026-09-01): "pj-like" physics reference for certifying the
+    # PhotonJetTrees_v1 histogram maker against PPG12 on the same slimtrees
+    # (wiki/_reports/photonjet_v1_code_plan_2026-09-01.md, sec. 5). Nominal
+    # selection except: |z_vtx| < 30 cm (also drives the MBD/vertex
+    # efficiency at 30 cm), NPB common cut off, tower mask off, reco pT bins
+    # from 16 GeV (pT_bins_truth unchanged). Not period-pinned, so it
+    # auto-expands into the all-range parent + the two merge-feeders.
+    # Cross-check only (syst_type=None): never enters the syst quadrature.
+    # ----------------------------------------------------------
+    dict(name="pjlike",
+         vertex_cut=30.0, common_npb_cut_on=0, tower_mask_on=0,
+         pT_bins=[16, 18, 20, 22, 24, 26, 28, 32, 36],
          syst_type=None, syst_role=None),
 ]
 
@@ -508,6 +537,7 @@ OVERRIDE_MAP = {
     "nt_bdt_min_intercept": (["analysis", "non_tight"], "bdt_min_intercept"),
     "nt_bdt_min_slope": (["analysis", "non_tight"], "bdt_min_slope"),
     "npb_score_cut":         (["analysis", "common"],                 "npb_score_cut"),
+    "common_npb_cut_on":     (["analysis", "common"],                 "npb_cut_on"),
     "common_wr_cogx_bound": (["analysis", "common"],                 "wr_cogx_bound"),
     "mc_iso_scale":          (["analysis"],                           "mc_iso_scale"),
     "reco_iso_max_b":        (["analysis"],                           "reco_iso_max_b"),
@@ -517,6 +547,7 @@ OVERRIDE_MAP = {
     "trigger_eff_mu":        (["analysis"],                           "trigger_eff_mu"),
     "trigger_eff_beta":      (["analysis"],                           "trigger_eff_beta"),
     "vertex_cut":            (["analysis"],                           "vertex_cut"),
+    "pT_bins":               (["analysis"],                           "pT_bins"),
     "vertex_cut_truth":      (["analysis"],                           "vertex_cut_truth"),
     "lumi_target":           (["analysis"],                           "lumi_target"),
     "vertex_reweight_on":    (["analysis"],                           "vertex_reweight_on"),

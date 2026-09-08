@@ -9,14 +9,24 @@
 
 namespace PPG12 {
 
-// Photon-jet samples
+// Photon-jet samples (Pythia)
 constexpr float photon5cross  = 146359.3f;   // canonical window 0-14 GeV (truth max photon pT)
 constexpr float photon10cross = 6944.675f;    // canonical window 14-22 GeV
 constexpr float photon20cross = 130.4461f;    // canonical window 22+ GeV (photon20 sample is fully on by pT=22)
 
+// Photon-jet samples (Herwig, signal-only cross-check)
+// photonjet5 (run 28 type 45) is omitted — generator-level shape mismatch with
+// photonjet10 in their overlap region and an unresolved xsec issue. The
+// effective truth-photon-pT threshold of photon10_herwig (~7 GeV after FSR
+// softening) covers the full PPG12 analysis pT range from 8 GeV upward.
+// Truth-pT split point: 22 GeV (mirrors Pythia photon10/photon20 split).
+// Cross-check: see reports/herwig_xsec_stitch_check.py + herwig_shape_check.py.
+constexpr float herwig_photon10cross = 3.62808e+02f;  // run 28 type 46 (Photonjet pTmin=10 GeV)
+constexpr float herwig_photon20cross = 5.34010e+01f;  // run 28 type 47 (Photonjet pTmin=20 GeV)
+
 // QCD jet samples
 constexpr float jet5cross  = 1.3878e+08f;
-constexpr float jet8cross  = 1.15e+07f;
+constexpr float jet8cross  = 4.929e+06f;
 constexpr float jet10cross = 3.997e+06f;
 constexpr float jet12cross = 1.4903e+06f;
 constexpr float jet15cross = 4.073e+05f;
@@ -72,6 +82,18 @@ inline SampleConfig GetSampleConfig(const std::string &filetype)
         c.weight = photon5cross / photon20cross;
     }
     else if (filetype == "photon20_double" || filetype == "photon20_nom") {
+        c.photon_pt_lower = 22;  c.photon_pt_upper = 200;
+        c.weight = 1.0f;
+    }
+    // --- Herwig photon-jet samples (signal-only cross-check, no Pythia photon5 analog) ---
+    // photon10_herwig fills truth pT [0, 22], photon20_herwig fills [22, 200].
+    // Weights normalized to herwig_photon20cross (HERWIG-internal reference) so
+    // a HERWIG-only run is self-consistent.
+    else if (filetype == "photon10_herwig") {
+        c.photon_pt_lower = 0;   c.photon_pt_upper = 22;
+        c.weight = herwig_photon10cross / herwig_photon20cross;
+    }
+    else if (filetype == "photon20_herwig") {
         c.photon_pt_lower = 22;  c.photon_pt_upper = 200;
         c.weight = 1.0f;
     }

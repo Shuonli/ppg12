@@ -9,7 +9,9 @@
 # bare-name configs.
 
 universe              = vanilla
-request_memory        = 6GB
+# DI pipeline runs 17 ROOT processes per pass (8 SI + 8 DI MC + 1 data);
+# 6 GB triggers held jobs at peak ~6.1 GB. 16 GB matches oneforall_tree_double.sub.
+request_memory        = 16GB
 
 PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
 Notification          = Never

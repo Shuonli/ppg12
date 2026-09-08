@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Combined: RecoEffCalculator_TTreeReader (tree stage) + MergeSim + CalculatePhotonYield (yield stage).
-# One-stop wrapper used by the inner-R scan condor submission.
+# Combined: DI-dispatcher tree stage (per-sample SI+DI with mix_weight) +
+# yield stage (via oneforall.sh: merge_periods.sh + RecoEff(data) +
+# CalcPhotonYield x2 for bare-name; or per-period MergeSim for feeders).
+# Used by the full-variant condor submission.
 
 set -u
 CONFIGNAME="$1"
@@ -9,8 +11,8 @@ cd /sphenix/user/shuhangli/ppg12/efficiencytool
 stamp() { date '+%F %T'; }
 echo "[$(stamp)] START $CONFIGNAME"
 
-echo "[$(stamp)] tree stage begin"
-bash oneforall_tree.sh "$CONFIGNAME"
+echo "[$(stamp)] tree stage begin (DI dispatcher)"
+bash oneforall_tree_double_dispatch.sh "$CONFIGNAME"
 tree_rc=$?
 echo "[$(stamp)] tree stage rc=$tree_rc"
 

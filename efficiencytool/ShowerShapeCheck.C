@@ -311,6 +311,46 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     TChain chain(treename.c_str());
     chain.Add(infilename.c_str());
 
+    // Optional BDT-score friend chain (e.g. dimix20 cross-check). When both
+    // input.bdt_friend_replace_from and input.bdt_friend_replace_to are set,
+    // derive the friend path by substring substitution on the main input
+    // path and AddFriend it to the chain. Default: off, nominal unchanged.
+    //
+    // IMPORTANT: TTree::AddFriend(name, path) does NOT expand wildcards — it
+    // tries to open the literal path as a single file. For data (wildcard
+    // input), we must build a TChain explicitly and AddFriend(TChain*).
+    // Use the TChain pattern uniformly: handles both single-file (MC) and
+    // wildcard (data) cases.
+    TChain friendChain(treename.c_str());
+    if (configYaml["input"]["bdt_friend_replace_from"] &&
+        configYaml["input"]["bdt_friend_replace_to"])
+    {
+        const std::string from = configYaml["input"]["bdt_friend_replace_from"].as<std::string>();
+        const std::string to   = configYaml["input"]["bdt_friend_replace_to"].as<std::string>();
+        std::string friend_path = infilename;
+        size_t pos = friend_path.find(from);
+        if (pos != std::string::npos)
+        {
+            friend_path.replace(pos, from.size(), to);
+            std::cout << "[bdt_friend] adding friend chain: " << friend_path << std::endl;
+            friendChain.Add(friend_path.c_str());
+            chain.AddFriend(&friendChain);
+            std::cout << "[bdt_friend] main entries=" << chain.GetEntries()
+                      << " friend entries=" << friendChain.GetEntries() << std::endl;
+            if (chain.GetEntries() != friendChain.GetEntries())
+            {
+                std::cerr << "WARNING: friend entry count mismatch — "
+                          << "friend chain wiring may be broken." << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "WARNING: bdt_friend_replace_from '" << from
+                      << "' not found in infilename '" << infilename
+                      << "' — skipping AddFriend" << std::endl;
+        }
+    }
+
     std::string clusternodename = configYaml["input"]["cluster_node_name"].as<std::string>();
 
     int iso_threshold = configYaml["analysis"]["iso_threshold"].as<int>(0);

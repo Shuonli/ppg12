@@ -69,6 +69,10 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     //const float photon20cross = 1.571e+05 * 0.000673448;
     float simluminosity = nsimevents / photon20cross;
 
+    // [PPG12] Herwig cross-check: photon20_herwig has 2.787M generated events,
+    // and the reference cross-section is herwig_photon20cross. Detected by
+    // var_type substring; loaded after configYaml below.
+
     // float jetevents = 2194879.0;
     float jetevents = 0.3555 * 1E7;
     const float jetcross = jet50cross;
@@ -79,6 +83,21 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
     YAML::Node configYaml = YAML::LoadFile(configname);
+
+    // [PPG12] Herwig cross-check: signal MC is photon{10,20}_herwig, with the
+    // reference cross-section herwig_photon20cross and N_events=2.787M (run-28
+    // type 47). Override the Pythia-tuned nsimevents/simluminosity here so the
+    // downstream MC luminosity normalization is correct. Pythia path unchanged.
+    {
+        std::string vt_check = configYaml["output"]["var_type"].as<std::string>();
+        if (vt_check.find("herwig") != std::string::npos) {
+            nsimevents = 2.787e+06f;
+            simluminosity = nsimevents / herwig_photon20cross;
+            std::cout << "[CalculatePhotonYield] HERWIG cross-check (var_type=" << vt_check
+                      << "): nsimevents=" << nsimevents
+                      << " simluminosity=" << simluminosity << " pb-1" << std::endl;
+        }
+    }
 
     // luminosity: read from config (pb^-1), default 49.562
     float luminosity = configYaml["analysis"]["lumi"].as<float>(49.562);

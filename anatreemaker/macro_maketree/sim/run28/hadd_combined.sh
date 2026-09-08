@@ -9,6 +9,7 @@
 #   ./hadd_combined.sh si                # 9 SI
 #   ./hadd_combined.sh di                # 9 DI (old + new)
 #   ./hadd_combined.sh di_new            # 7 new DI
+#   ./hadd_combined.sh herwig            # 3 Herwig signal (cross-check)
 
 base_dir="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/sim/run28"
 hadd_tmp="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/hadd_tmp"
@@ -16,14 +17,16 @@ hadd_tmp="/sphenix/user/shuhangli/ppg12/anatreemaker/macro_maketree/hadd_tmp"
 SI=("photon5" "photon10" "photon20" "jet5" "jet8" "jet12" "jet20" "jet30" "jet40")
 DI_OLD=("photon10_double" "jet12_double")
 DI_NEW=("photon5_double" "photon20_double" "jet8_double" "jet20_double" "jet30_double" "jet40_double" "jet50_double")
+HERWIG=("photon5_herwig" "photon10_herwig" "photon20_herwig")
 
 mode="${1:-all}"
 case "$mode" in
     si)     dirs=("${SI[@]}") ;;
     di)     dirs=("${DI_OLD[@]}" "${DI_NEW[@]}") ;;
     di_new) dirs=("${DI_NEW[@]}") ;;
+    herwig) dirs=("${HERWIG[@]}") ;;
     all)    dirs=("${SI[@]}" "${DI_OLD[@]}" "${DI_NEW[@]}") ;;
-    *) echo "Unknown mode '$mode' (use: si | di | di_new | all)"; exit 1 ;;
+    *) echo "Unknown mode '$mode' (use: si | di | di_new | herwig | all)"; exit 1 ;;
 esac
 
 echo "=========================================="
