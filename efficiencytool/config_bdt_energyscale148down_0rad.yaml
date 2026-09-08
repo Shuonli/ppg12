@@ -94,11 +94,9 @@ analysis:
   fit_option: 1
   cluster_escale: 0.9852
   cluster_eres: 0.0   # legacy multiplicative smear (retired); see additive eres_data/_mc params below
-  # Additive ET-dependent smearing applied to all MC clusters at the top of the
-  # cluster loop (after escale + escale_nl). Propagates uniformly to ABCD yields,
-  # photon-ID cuts, isolation, BDT scoring, ET binning, and the response matrix.
+  # Additive ET-dependent smearing on the response-matrix arm only.
   # sigma_extra(pT) = sqrt(max(0, sigma_data^2(pT) - sigma_MC^2(pT)));
-  # each sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2); smear added in GeV = sigma_extra * pT_reco.
+  # each sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2); smear added in GeV = sigma_extra * pT_truth.
   # Nominal data fit: f_energy_example_cE_0p05 (from function_compare_wide.root).
   cluster_eres_data_p0: 0.15
   cluster_eres_data_p1: 0.05

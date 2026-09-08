@@ -1,0 +1,26 @@
+# oneforall_tree_double_syst.sub
+#
+# SCOPED copy of oneforall_tree_double.sub for the energy-scale-148 systematic
+# re-run (2026-06-08). Identical to the parent except the queue reads the
+# explicit syst_configs.list (nominal + 21 syst_type variant feeders/standalones)
+# instead of globbing all config_bdt*.yaml. This skips the cross-check scans
+# (b2bjet/ntbdtpair/flat/donut/innerR) and nomold, per the "systematic
+# variations only" scope.
+#
+# Memory: 16GB (17 parallel ROOT processes per pass, ~8-12 GB peak).
+
+universe              = vanilla
+request_memory        = 16GB
+
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+
+executable            = /bin/bash
+arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
+
+log                   = /tmp/ppg12_tree_double_$(Cluster).log
+output                = logs/$(cfg).tree_double.out
+error                 = logs/$(cfg).tree_double.err
+
+# Queue one job per config listed in syst_configs.list
+queue cfg from syst_configs_rerun.list

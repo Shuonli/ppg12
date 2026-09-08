@@ -599,13 +599,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     // with older configs; the new scheme below ignores it.
     float clustereres = configYaml["analysis"]["cluster_eres"].as<float>(0.0);
 
-    // Additive ET-dependent smearing applied to ALL MC clusters at the top of
-    // the cluster loop (after escale + escale_nl). The smeared cluster_Et[]
-    // propagates uniformly to ABCD yields, photon-ID cuts, isolation, BDT
-    // scoring, ET binning, and the response-matrix fills.
-    // sigma_extra(pT) = sqrt( max(0, sigma_data^2(pT) - sigma_MC^2(pT)) )
+    // New additive ET-dependent smearing on the response-matrix arm only.
+    // sigma_extra(pT_truth) = sqrt( max(0, sigma_data^2(pT) - sigma_MC^2(pT)) )
     // where each sigma(pT) follows  sigma = sqrt(p0^2/pT + p1^2/pT^2 + p2^2).
-    // pT used here is the reco cluster_Et (after escale + escale_nl).
+    // The smear is added to cluster_Et only at the response-matrix fill sites
+    // (not in cluster_Et[] used for ABCD yields, cuts, or other histograms).
     float eres_data_p0 = configYaml["analysis"]["cluster_eres_data_p0"].as<float>(0.0);
     float eres_data_p1 = configYaml["analysis"]["cluster_eres_data_p1"].as<float>(0.0);
     float eres_data_p2 = configYaml["analysis"]["cluster_eres_data_p2"].as<float>(0.0);
@@ -1570,12 +1568,11 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     }
 
     // Fixed seed (42) for reproducibility: this RNG drives the per-cluster MC
-    // additive ET smearing at the top of the cluster loop (inside `if (issim)`),
-    // applied to all MC clusters uniformly (see sigma_extra_frac declaration
-    // above for the parametrisation). Seed 0 (clock) made every Phase-1 run
-    // produce a slightly different MC efficiency file, which propagated as a
-    // few-percent drift in the final cross section between nominally-identical
-    // reruns. Matches the global analysis seed used in CalculatePhotonYield.C.
+    // ET smearing at line ~2064 (cluster_Et *= rand->Gaus(1, clustereres)).
+    // Seed 0 (clock) made every Phase-1 run produce a slightly different MC
+    // efficiency file, which propagated as a few-percent drift in the final
+    // cross section between nominally-identical reruns. Matches the global
+    // analysis seed used in CalculatePhotonYield.C.
     TRandom3 *rand = new TRandom3(42);
     std::set<int> skiprunnumbers = {0};
     int nentries = chain.GetEntries();
@@ -2172,18 +2169,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                     cluster_Et[icluster] *= 1.0 + cluster_escale_nl_slope *
                                             (cluster_Et[icluster] - cluster_escale_nl_ref_ET);
                 }
-                // Additive ET-dependent smearing applied to ALL MC clusters here
-                // (after escale + escale_nl). The smeared cluster_Et[] propagates
-                // to ABCD yields, photon-ID cuts, isolation, BDT scoring, ET
-                // binning, and the response-matrix fills — uniform reco-pipeline
-                // treatment, no truth match required. sigma_extra_frac(pT) clips
-                // to 0 when sigma_data^2 <= sigma_MC^2, in which case we skip the
-                // Gaus draw entirely so the RNG stream is unperturbed.
-                double sigma_extra_GeV = sigma_extra_frac(cluster_Et[icluster]) * cluster_Et[icluster];
-                if (sigma_extra_GeV > 0)
-                {
-                    cluster_Et[icluster] += rand->Gaus(0, sigma_extra_GeV);
-                }
+                // No multiplicative smearing here anymore. Additive ET-dependent
+                // smearing is applied only at the response-matrix fill sites in the
+                // tight+iso truth-matched block (search: cluster_Et_smear).
             }
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
@@ -2949,16 +2937,20 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
 
                     photon_reco[iparticle] = true;
 
-                    // cluster_Et[icluster] is already smeared at the top of the
-                    // cluster loop (see the `if (issim)` block at the start of
-                    // the leading-ET finder). No local re-draw here — that
-                    // would double-smear and break reproducibility of the
-                    // ABCD/response coupling.
+                    // Additive ET-dependent smearing for the response-matrix arm.
+                    // Computed once per matched cluster so all response fills share the
+                    // same random draw. The unsmeared cluster_Et[icluster] is still used
+                    // for ABCD yields, cuts, h_pT_truth_reco, h_pT_truth_reco_tightiso,
+                    // etc. — only the response-matrix and isoET-response fills consume
+                    // cluster_Et_smear.
+                    double sigma_extra_GeV = sigma_extra_frac(particle_Pt[iparticle]) * particle_Pt[iparticle];
+                    double cluster_Et_smear = cluster_Et[icluster]
+                        + ((sigma_extra_GeV > 0) ? rand->Gaus(0, sigma_extra_GeV) : 0.0);
 
                     h_pT_truth_reco[etabin]->Fill(particle_Pt[iparticle], cluster_Et[icluster] / particle_Pt[iparticle], weight);
                     if (pTbin != -1)
                     {
-                        h_response_isoET[etabin][pTbin]->Fill(cluster_Et[icluster] / particle_Pt[iparticle], recoisoET, weight);
+                        h_response_isoET[etabin][pTbin]->Fill(cluster_Et_smear / particle_Pt[iparticle], recoisoET, weight);
                     }
                     if (iso)
                     {
@@ -2999,17 +2991,16 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                 h_vertex_tight_iso_cluster_signal_pt_eta[vertex_bin]->Fill(cluster_Et[icluster], cluster_Eta[icluster], weight);
                             }
                         }
-                        // Response-matrix fills gate on the (already-smeared)
-                        // cluster_Et[icluster] — mirrors how the data pT-range
-                        // cut would apply to data with the additional resolution.
-                        // Prevents events from leaking into the underflow/overflow
-                        // when smearing moves them across the analysis bin edges
-                        // and biasing the unfolded yield (observed Apr 2026:
-                        // cE_0p08 + unsmeared gate caused +19% inflation in the
-                        // [10,12) truth bin).
+                        // Response-matrix fills use a SEPARATE gate on the SMEARED
+                        // cluster_Et — mirrors how the data pT-range cut would apply
+                        // to data with the additional resolution. Prevents events
+                        // from leaking into the underflow/overflow when smearing
+                        // moves them across the analysis bin edges and biasing the
+                        // unfolded yield (observed Apr 2026: cE_0p08 + unsmeared
+                        // gate caused +19% inflation in the [10,12) truth bin).
                         if (iso &&
                             particle_Pt[iparticle] > pTmin_truth && particle_Pt[iparticle] < pTmax_truth &&
-                            cluster_Et[icluster] > pTmin && cluster_Et[icluster] < pTmax)
+                            cluster_Et_smear > pTmin && cluster_Et_smear < pTmax)
                         {
                                 float response_reweight = 1.0;
                                 if (reweight)
@@ -3020,22 +3011,22 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
                                     response_reweight = f_reweight->Eval(pt_clamped);
                                 }
                                 h_pT_truth_response[etabin]->Fill(particle_Pt[iparticle], weight*response_reweight);
-                                h_pT_reco_response[etabin]->Fill(cluster_Et[icluster], weight*response_reweight);
-                                responses_full[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
-                                h_response_full_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                                h_pT_reco_response[etabin]->Fill(cluster_Et_smear, weight*response_reweight);
+                                responses_full[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
+                                h_response_full_list[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
                                 if (ientry < (nentries / 2))
                                 {
                                     h_pT_truth_half_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                    h_pT_reco_half_response[etabin]->Fill(cluster_Et[icluster], weight);
-                                    responses_half[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
-                                    h_response_half_list[etabin]->Fill(cluster_Et[icluster], particle_Pt[iparticle], weight * response_reweight);
+                                    h_pT_reco_half_response[etabin]->Fill(cluster_Et_smear, weight);
+                                    responses_half[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
+                                    h_response_half_list[etabin]->Fill(cluster_Et_smear, particle_Pt[iparticle], weight * response_reweight);
                                 }
                                 else
                                 {
                                     h_pT_truth_secondhalf_response[etabin]->Fill(particle_Pt[iparticle], weight);
-                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et[icluster], weight);
+                                    h_pT_reco_secondhalf_response[etabin]->Fill(cluster_Et_smear, weight);
                                 }
-                        }  // close response-matrix gate (smeared via cluster_Et[icluster])
+                        }  // close response-matrix gate (smeared)
                     }      // close if(tight)
                     if (tight && noniso)
                     {
