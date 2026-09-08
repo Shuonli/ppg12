@@ -923,6 +923,14 @@ void plot_final_selection(string tune = "bdt_nom")
 
     frame->Draw("axis");
     */
+    // final_all is a two-panel figure: give pad_1/pad_2 the full height and
+    // retire the third (JETPHOX/Data) pad left over from the final figure.
+    pad_1->SetPad(0, 0.35, 1, 1);
+    pad_2->SetPad(0, 0, 1, 0.35);
+    pad_2->SetBottomMargin(0.30);
+    pad_2->SetTopMargin(0.02);
+    pad_3->Clear();
+    pad_3->SetPad(0, 0, 0.001, 0.001);
     pad_1->cd();
     // common, tight iso, sub, sub with unfold and final result
     frame_et_rec->GetYaxis()->SetRangeUser(1, 1e5);
@@ -983,7 +991,8 @@ void plot_final_selection(string tune = "bdt_nom")
     myMarkerLineText(0.6, 0.05 + 0.5, 1.5, colors[4], marker_styles[4], colors[4], 1, "efficiency corrected", 0.05, true);
 
     pad_2->cd();
-    frame_et_truth->GetYaxis()->SetRangeUser(0.8, 1.05);
+    // post/pre-unfolding ratio runs from ~1.01 (12-14 GeV) to ~1.19 (26-28 GeV)
+    frame_et_truth->GetYaxis()->SetRangeUser(0.9, 1.3);
     frame_et_truth->GetXaxis()->SetRangeUser(12, 32);
     frame_et_truth->SetYTitle("after/before unfolding");
     frame_et_truth->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
@@ -1003,6 +1012,13 @@ void plot_final_selection(string tune = "bdt_nom")
         {
             h_unfold_ratio->SetBinContent(i, h_sub_data_unfold->GetBinContent(i) / value);
             std::cout << "bincenter: " << centerX << " " << h_sub_data_unfold->GetBinContent(i) << " " << value << std::endl;
+            h_unfold_ratio->SetBinError(i, 0);
+        }
+        else
+        {
+            // no reco-side yield here (truth-grid over/underflow): keep the
+            // point off-frame instead of leaving the raw unfolded content
+            h_unfold_ratio->SetBinContent(i, -10);
             h_unfold_ratio->SetBinError(i, 0);
         }
     }
