@@ -1,0 +1,16 @@
+[submodule "PPG12-analysis-note"]
+	path = PPG12-analysis-note
+	url = https://git.overleaf.com/67472ba398b51a2fcd7c5a3f
+	branch = master
+[submodule "thesis_proposal"]
+	path = thesis_proposal
+	url = https://git.overleaf.com/69d84d41ddbeeb5d9be7f17c
+	branch = master
+[submodule "ppg12_conf_note"]
+	path = ppg12_conf_note
+	url = https://git.overleaf.com/67c1f9f9c81c53acbada8f68
+	branch = master
+[submodule "FunWithxgboost/sPHENIX-Photon-Identification-TF-Analysis-Note"]
+	path = FunWithxgboost/sPHENIX-Photon-Identification-TF-Analysis-Note
+	url = git@github.com:Shuonli/sPHENIX-Photon-Identification-TF-Analysis-Note.git
+	branch = main
