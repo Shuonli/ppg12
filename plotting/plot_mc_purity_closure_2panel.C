@@ -2,7 +2,8 @@
 
 // Two-panel MC-purity-closure figure for the analysis note (fig:syst_mc_purity).
 //   LEFT  : actual closure correction C_MC(E_T^g) = P_truth^MC / P_ABCD^MC
-//           (bin-by-bin points + pol2 fit + unity line), from Photon_final_{tune}_mc.root
+//           (bin-by-bin points + stored polynomial fit + unity line), from the
+//           mc_purity_correction variant's _mc.root
 //   RIGHT : derived systematic = signed (sigma_var - sigma_nom)/sigma_nom per E_T bin,
 //           from h_unfold_sub_result in the mc_purity_correction variant vs nominal.
 // Both panels share one SetsPhenixStyle() and a common 12-32 GeV reported range.
@@ -16,7 +17,10 @@ void plot_mc_purity_closure_2panel(const std::string &tune = "bdt_nom")
     const double xlo = 12.0, xhi = 32.0;
 
     // ---------------- LEFT: C_MC actual values ----------------
-    TString fmc = Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.c_str());
+    // Closure points and the applied fit come from the mc_purity_correction
+    // variant's MC pass (same points as the nominal MC pass; the stored fit is
+    // the one applied as the correction, order = analysis.mc_purity_corr_fitorder).
+    TString fmc = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_mc_purity_correction_mc.root";
     TFile *finL = TFile::Open(fmc, "READ");
     if (!finL || finL->IsZombie()) { std::cerr << "ERROR: cannot open " << fmc << std::endl; return; }
     TGraphErrors *g_ratio = (TGraphErrors *)finL->Get("g_mc_purity_fit_ratio");
@@ -83,7 +87,7 @@ void plot_mc_purity_closure_2panel(const std::string &tune = "bdt_nom")
     TLegend *legL = new TLegend(0.22, 0.19, 0.70, 0.32);
     legStyle(legL, 0.15, 0.042);
     legL->AddEntry(g_ratio, "bin-by-bin ratio", "p");
-    if (f_corr) legL->AddEntry(f_corr, "pol2 fit (applied as correction)", "l");
+    if (f_corr) legL->AddEntry(f_corr, Form("pol%d fit (applied as correction)", f_corr->GetNpar() - 1), "l");
     legL->Draw("same");
 
     // ----- RIGHT panel -----

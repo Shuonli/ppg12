@@ -11,11 +11,12 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
 {
     init_plot();
 
-    // g_mc_purity_fit_ratio is produced only in the MC-closure pass of
-    // CalculatePhotonYield (gated by `if (isMC)` at line ~706). The jet MC
-    // serves as the inclusive-MC reference for this analysis, so the ratio
-    // is read from the _mc.root file.
-    TString infile = Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.c_str());
+    // g_mc_purity_fit_ratio and the smooth fit are produced in the MC-closure
+    // pass of CalculatePhotonYield. Read them from the mc_purity_correction
+    // variant's _mc file: same closure points as the nominal MC pass, and the
+    // stored fit is the one actually applied as the correction (order set by
+    // analysis.mc_purity_corr_fitorder, pol1 since 2026-09-08).
+    TString infile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_mc_purity_correction_mc.root";
     TFile *fin = TFile::Open(infile, "READ");
     if (!fin || fin->IsZombie())
     {
@@ -67,7 +68,7 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
     TLegend *leg = new TLegend(0.22, 0.18, 0.62, 0.30);
     legStyle(leg, 0.15, 0.040);
     leg->AddEntry(g_ratio, "bin-by-bin: P_{truth}^{MC} / P_{ABCD}^{MC}", "pl");
-    if (f_corr) leg->AddEntry(f_corr, "pol2 fit (applied as correction)", "l");
+    if (f_corr) leg->AddEntry(f_corr, Form("pol%d fit (applied as correction)", f_corr->GetNpar() - 1), "l");
     leg->Draw("same");
 
     TString outfile = Form("figures/mc_purity_correction_%s.pdf", tune.c_str());
