@@ -22,7 +22,7 @@ mkdir -p "$PAPER_FIGDIR"
 # this directory.
 declare -A TARGETS=(
     [showershape]='root -l -b -q plot_paper_showershape_yj.C'
-    [iso_template]='root -l -b -q plot_paper_iso_template.C'
+    [iso_template]='root -l -b -q plot_paper_iso_template_yj.C'
     [purity]='root -l -b -q plot_paper_purity.C'
     [efficiency]='root -l -b -q plot_paper_efficiency_yj.C'
     [systematics]='python plot_paper_systematics.py'
