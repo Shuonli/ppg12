@@ -35,17 +35,17 @@ RooUnfoldResponse *make_response(TH2D *h2d, std::string name)
     return response;
 }
 
-void plot_unfold_iter()
+void plot_unfold_iter(const char* suffix = "bdt_nom")
 {
     init_plot();
 
     string savePath = "figures/";
 
-    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root");
+    TFile *fin = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", suffix));
     static const int ntotal_iterations = 10;
-    TFile *fresponsein = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response_bdt_nom.root");
+    TFile *fresponsein = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_response_%s.root", suffix));
 
-    TFile *fresponsehist = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_nom.root");
+    TFile *fresponsehist = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_%s.root", suffix));
 
     // RooUnfoldResponse *response_full = (RooUnfoldResponse *)fresponsein->Get("response_matrix_full_0");
     // RooUnfoldResponse *response_half = (RooUnfoldResponse *)fresponsein->Get("response_matrix_half_0");
@@ -191,7 +191,7 @@ void plot_unfold_iter()
     myMarkerLineText(0.55, 0.68, 1, kBlue,  20, kBlue,  1, leg2.c_str(), 0.04, true);
     myMarkerLineText(0.55, 0.63, 1, kRed,   20, kRed,   1, leg3.c_str(), 0.04, true);
 
-    c1->SaveAs(Form("%s/unfold_iter.pdf", savePath.c_str()));
+    c1->SaveAs(Form("%s/unfold_iter_%s.pdf", savePath.c_str(), suffix));
     
 
     // closure test
@@ -329,7 +329,7 @@ void plot_unfold_iter()
         h_unfolded_ratio_iter->SetLineColor(colors[i]);
         h_unfolded_ratio_iter->Draw("same");
     }
-    c2->SaveAs(Form("%s/closure_full.pdf", savePath.c_str()));
+    c2->SaveAs(Form("%s/closure_full_%s.pdf", savePath.c_str(), suffix));
     TCanvas *c3 = new TCanvas("can3", "", 800, 889);
     c3->Divide(1, 2);
 
@@ -420,5 +420,5 @@ void plot_unfold_iter()
     }
 
     // Optionally save the half closure plot
-    c3->SaveAs(Form("%s/closure_half.pdf", savePath.c_str()));
+    c3->SaveAs(Form("%s/closure_half_%s.pdf", savePath.c_str(), suffix));
 }

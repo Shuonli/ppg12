@@ -1,6 +1,6 @@
 #include "plotcommon.h"
 
-void plot_response()
+void plot_response(const char* suffix = "bdt_nom")
 {
 
     init_plot();
@@ -9,7 +9,7 @@ void plot_response()
 
     string matrix = "response matrix";
 
-    TFile *fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root");
+    TFile *fdata = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", suffix));
     TFile *fdata_nr = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_no_unfolding_reweighting.root");
 
     TH2D* h_response_leak_reweighted = (TH2D*) fdata->Get("h_response_full_0");
@@ -32,7 +32,7 @@ void plot_response()
     myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
     myText(0.3, 0.75, 1, Form("%s  reweighted", matrix.c_str()), 0.04);
 
-    c1->SaveAs(Form("%s/response_reweighted.pdf", savePath.c_str()));
+    c1->SaveAs(Form("%s/response_reweighted_%s.pdf", savePath.c_str(), suffix));
 
 
     TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
@@ -52,7 +52,7 @@ void plot_response()
     myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
     myText(0.5, 0.75, 1, matrix.c_str(), 0.04);
 
-    c2->SaveAs(Form("%s/response.pdf", savePath.c_str()));
+    c2->SaveAs(Form("%s/response_%s.pdf", savePath.c_str(), suffix));
 
 
 }

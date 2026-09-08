@@ -8,9 +8,9 @@ void plot_sideband_sim(){
   string savePath="./figures";
 
 
-  TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_nom.root");
+  TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_jet_bdt_nom.root");
   //TFile* fdata = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histo_nom.root");
-  TFile* fmc   = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_nom.root");
+  TFile* fmc   = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiency_bdt_nom.root");
 
   TH1D* h_tight_iso_cluster       = (TH1D*) fdata->Get("h_tight_iso_cluster_0");
   TH1D* h_tight_noniso_cluster    = (TH1D*) fdata->Get("h_tight_noniso_cluster_0");

@@ -1,15 +1,30 @@
 // chi2_weight_scan.C
-// Scans the double-interaction weight w in combined = (1-w)*nominal + w*double
-// and computes chi2 between data and combined MC for each shower-shape variable.
-// Produces chi2 vs weight plots (total, per-ndf, per-shape) and a summary ROOT file.
+// Scans the physical double-interaction cluster fraction f and computes chi2
+// between data and inclusive MC built from de-baked SI / DI templates:
+//   MC_incl(f) = (1 - f) * SI_truth + f * DI_truth
+//   SI_truth   = SI_total / SINGLE_FRAC_old
+//   DI_truth   = DI_total / DOUBLE_FRAC_old
+// where SI_total / DI_total are pre-hadded over the 8 SI / 8 DI samples
+// (3 signal photon + 5 inclusive jet pT bins). The hadds carry the analytic
+// mix_weight × cross_section × (lumi/lumi_target) × TVW(z_truth) per event,
+// hence the divide-by-f0 step recovers the truth-shape templates so f is
+// the physical DI fraction directly. Round-trip identity at f = DOUBLE_FRAC_old:
+//   MC_incl(f0) == SI_total + DI_total == signal_combined + jet_inclusive_combined
+//
+// DOUBLE_FRAC_old is inferred from the config_suffix:
+//   "*0rad"   / "*0mrad"  → 0.224 (analytic 0  mrad)
+//   "*1p5mrad"/ "*1p5rad" → 0.079 (analytic 1.5 mrad)
+//
+// Produces chi2 vs f plots (total, per-ndf, per-shape) + summary ROOT file
+// + per-pT data/MC overlay PDFs at the analytic and best-fit f. All output
+// names carry the config_suffix to avoid clobbering between crossing angles.
 //
 // Usage:
 //   root -l -b -q 'chi2_weight_scan.C'
-//   root -l -b -q 'chi2_weight_scan.C("config_showershape_0rad.yaml", 21, 0.0, 1.0)'
-//   root -l -b -q 'chi2_weight_scan.C("config_showershape_0rad.yaml", 21, 0.0, 1.0, true)'
-//     (useBdtForBest=true → best weight from BDT score chi2 only)
-//   root -l -b -q 'chi2_weight_scan.C("config_showershape_0rad.yaml", 21, 0.0, 1.0, true, 1, 3)'
-//     (ptBinMin=1, ptBinMax=3 → chi2 uses only pT bins [1,3]; -1 means use all)
+//   root -l -b -q 'chi2_weight_scan.C("config_showershape_0rad.yaml",   61, 0.10, 0.40, false, 0, 4)'
+//   root -l -b -q 'chi2_weight_scan.C("config_showershape_1p5mrad.yaml", 81, 0.00, 0.20, false, 0, 4)'
+//   useBdtForBest=true  → best f from BDT score chi2 only (ignored from total chi2 by default)
+//   ptBinMin / ptBinMax → restrict chi2 to a pT subrange (-1 means use all)
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -56,6 +71,27 @@ void chi2_weight_scan(
     }
     std::cout << "Config suffix: " << config_suffix << std::endl;
 
+    // Resolve the analytic DOUBLE_FRAC that was baked into the per-sample MC
+    // by ShowerShapeCheck.C at fill time (mix_weight argument from
+    // showershape_di_jobs_*.list). De-baking SI by 1/(1-f0) and DI by 1/f0
+    // recovers the truth-shape templates so the scan parameter w is the
+    // physical DI cluster fraction directly.
+    double DOUBLE_FRAC_old;
+    if (config_suffix.find("1p5") != std::string::npos) {
+        DOUBLE_FRAC_old = 0.079;
+    } else if (config_suffix.find("0rad") != std::string::npos ||
+               config_suffix.find("0mrad") != std::string::npos) {
+        DOUBLE_FRAC_old = 0.224;
+    } else {
+        std::cerr << "Error: cannot infer DOUBLE_FRAC from config_suffix '"
+                  << config_suffix << "'. Expected match for 0rad/0mrad/1p5(m)rad."
+                  << std::endl;
+        return;
+    }
+    const double SINGLE_FRAC_old = 1.0 - DOUBLE_FRAC_old;
+    std::cout << "[de-bake] DOUBLE_FRAC_old = " << DOUBLE_FRAC_old
+              << ", SINGLE_FRAC_old = " << SINGLE_FRAC_old << std::endl;
+
     // Load config for pT bins
     YAML::Node config = YAML::LoadFile(("../efficiencytool/" + configname).c_str());
     std::vector<double> pT_bin_edges = config["analysis"]["pT_bins"].as<std::vector<double>>();
@@ -77,11 +113,14 @@ void chi2_weight_scan(
     std::cout << "Chi2 computed over pT bins [" << chi2PtMin << ", " << chi2PtMax << "] = ["
               << pT_bin_edges[chi2PtMin] << ", " << pT_bin_edges[chi2PtMax + 1] << "] GeV" << std::endl;
 
-    // Open files
+    // Open files. SI_total / DI_total are pre-hadded across all 8 SI / 8 DI
+    // samples (photon{5,10,20}_{nom,double} + jet{8,12,20,30,40}_{nom,double}_inclusive)
+    // so each carries the full inclusive MC contribution at the analytic
+    // mix_weight (SINGLE_FRAC_old / DOUBLE_FRAC_old respectively).
     const std::string resultsDir       = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/";
     const std::string dataFile         = resultsDir + "data_histoshower_shape_" + config_suffix + ".root";
-    const std::string bkgInclusiveFile = resultsDir + "MC_efficiencyshower_shape_jet12_nom_inclusive_" + config_suffix + ".root";
-    const std::string bkgDoubleFile    = resultsDir + "MC_efficiencyshower_shape_jet12_double_inclusive_" + config_suffix + ".root";
+    const std::string bkgInclusiveFile = resultsDir + "MC_efficiencyshower_shape_SI_total_" + config_suffix + ".root";
+    const std::string bkgDoubleFile    = resultsDir + "MC_efficiencyshower_shape_DI_total_" + config_suffix + ".root";
 
     TFile *f_data    = TFile::Open(dataFile.c_str(), "READ");
     TFile *f_bkg_nom = TFile::Open(bkgInclusiveFile.c_str(), "READ");
@@ -93,7 +132,7 @@ void chi2_weight_scan(
     }
     if (!f_bkg_nom || f_bkg_nom->IsZombie())
     {
-        std::cerr << "Error: Could not open nominal bkg file: " << bkgInclusiveFile << std::endl;
+        std::cerr << "Error: Could not open SI_total file: " << bkgInclusiveFile << std::endl;
         return;
     }
 
@@ -101,8 +140,8 @@ void chi2_weight_scan(
     bool hasDouble = (f_bkg_dbl && !f_bkg_dbl->IsZombie());
     if (!hasDouble)
     {
-        std::cerr << "Warning: Could not open double-interaction bkg file: " << bkgDoubleFile << std::endl;
-        std::cerr << "         Will scan with nominal only (all weights give same result)." << std::endl;
+        std::cerr << "Warning: Could not open DI_total file: " << bkgDoubleFile << std::endl;
+        std::cerr << "         Will scan with SI only (all weights give same result)." << std::endl;
     }
 
     const std::string sigFile = resultsDir + "MC_efficiencyshower_shape_photon10_nom_" + config_suffix + ".root";
@@ -111,42 +150,14 @@ void chi2_weight_scan(
     if (!hasSig)
         std::cerr << "Warning: Could not open signal file: " << sigFile << " — signal omitted from overlays." << std::endl;
 
-    // Pre-scale double-interaction template to nominal using h_vertexz integral
-    // in the configured vertex window, then apply scan weight on top.
-    double doubleVertexNorm = 1.0;
-    if (hasDouble)
-    {
-        TH1 *h_vtx_nom = dynamic_cast<TH1 *>(f_bkg_nom->Get("h_vertexz"));
-        TH1 *h_vtx_dbl = dynamic_cast<TH1 *>(f_bkg_dbl->Get("h_vertexz"));
-        if (!h_vtx_nom || !h_vtx_dbl)
-        {
-            std::cerr << "Warning: h_vertexz missing in nominal or double file. "
-                      << "Skipping vertex integral pre-normalization (factor=1)." << std::endl;
-        }
-        else
-        {
-            const int binLoNom = h_vtx_nom->GetXaxis()->FindBin(-vertex_cut + 1e-6);
-            const int binHiNom = h_vtx_nom->GetXaxis()->FindBin( vertex_cut - 1e-6);
-            const int binLoDbl = h_vtx_dbl->GetXaxis()->FindBin(-vertex_cut + 1e-6);
-            const int binHiDbl = h_vtx_dbl->GetXaxis()->FindBin( vertex_cut - 1e-6);
-
-            const double intNom = h_vtx_nom->Integral(binLoNom, binHiNom);
-            const double intDbl = h_vtx_dbl->Integral(binLoDbl, binHiDbl);
-            if (intDbl > 1e-12)
-            {
-                doubleVertexNorm = intNom / intDbl;
-                std::cout << "[VertexNorm] Using |z| < " << vertex_cut
-                          << " cm: nominal integral = " << intNom
-                          << ", double integral = " << intDbl
-                          << ", double scale = " << doubleVertexNorm << std::endl;
-            }
-            else
-            {
-                std::cerr << "Warning: double h_vertexz integral in |z| < " << vertex_cut
-                          << " is zero/non-positive. Using factor=1." << std::endl;
-            }
-        }
-    }
+    // doubleVertexNorm is retained as a pass-through factor of 1.0: the prior
+    // vertex-integral workaround compensated partially for the SI/SI_FRAC vs
+    // DI/DI_FRAC bake-in asymmetry. With explicit per-template de-baking
+    // (proj_nom /= SINGLE_FRAC_old and proj_dbl /= DOUBLE_FRAC_old below),
+    // the truth-shape templates are recovered correctly and no further vertex
+    // rescaling is needed (TVR already corrected the per-event vertex shape).
+    const double doubleVertexNorm = 1.0;
+    (void)vertex_cut; // kept for backwards compat; no longer consumed
 
     // Histogram base names
     std::vector<std::string> histNames = {
@@ -240,6 +251,10 @@ void chi2_weight_scan(
                 TH1D *proj_nom = h2n_clone->ProjectionX(Form("%s_px_nom_chi2", histNameFull.Data()));
                 proj_nom->SetDirectory(nullptr);
                 proj_nom->Sumw2();
+                // De-bake the analytic SI mix_weight that was applied per-event
+                // in ShowerShapeCheck.C → SI_truth shape with all xsec / TVW
+                // weighting preserved.
+                proj_nom->Scale(1.0 / SINGLE_FRAC_old);
                 delete h2n_clone;
 
                 TH1D *proj_dbl = nullptr;
@@ -253,6 +268,8 @@ void chi2_weight_scan(
                     proj_dbl = h2db_clone->ProjectionX(Form("%s_px_dbl_chi2", histNameFull.Data()));
                     proj_dbl->SetDirectory(nullptr);
                     proj_dbl->Sumw2();
+                    // De-bake the analytic DI mix_weight → DI_truth shape.
+                    proj_dbl->Scale(1.0 / DOUBLE_FRAC_old);
                     delete h2db_clone;
                 }
 
@@ -459,25 +476,35 @@ void chi2_weight_scan(
     // =========================================================================
     // Output plots
     // =========================================================================
-    // Build TGraphs
+    // Build TGraphs. Y-axis is chi2/ndf (chi2 normalized by per-point ndof).
+    // The selection of which histograms feed the chi2 sum is controlled by
+    // useBdtForBest:
+    //   useBdtForBest=true  → chi2 from BDT-score histogram only (ndof≈250)
+    //   useBdtForBest=false → chi2 summed over 9 shower-shape vars (excl. bdt+npb_score)
+    const char *chi2YTitle = useBdtForBest
+        ? ";Physical DI fraction f;#chi^{2}_{BDT score}/ndf"
+        : ";Physical DI fraction f;#chi^{2}_{shower shapes}/ndf";
     TGraph *gr_chi2_total = new TGraph(nSteps);
     gr_chi2_total->SetName("gr_chi2_total");
-    gr_chi2_total->SetTitle(";Double-interaction weight #it{w};#chi^{2}_{total}");
+    gr_chi2_total->SetTitle(chi2YTitle);
     gr_chi2_total->SetLineWidth(2);
     gr_chi2_total->SetMarkerStyle(20);
     gr_chi2_total->SetMarkerSize(0.8);
 
     TGraph *gr_chi2_ndf = new TGraph(nSteps);
     gr_chi2_ndf->SetName("gr_chi2_ndf");
-    gr_chi2_ndf->SetTitle(";Double-interaction weight #it{w};#chi^{2}_{total}");
+    gr_chi2_ndf->SetTitle(chi2YTitle);
     gr_chi2_ndf->SetLineWidth(2);
     gr_chi2_ndf->SetMarkerStyle(20);
     gr_chi2_ndf->SetMarkerSize(0.8);
 
+    std::vector<double> chi2OverNdf(nSteps, 0.0);
     for (int iw = 0; iw < nSteps; ++iw)
     {
-        gr_chi2_total->SetPoint(iw, weights[iw], chi2Total[iw]);
-        gr_chi2_ndf->SetPoint(iw, weights[iw], chi2Total[iw]);
+        const int ndf = std::max(1, ndofTotal[iw]);
+        chi2OverNdf[iw] = chi2Total[iw] / static_cast<double>(ndf);
+        gr_chi2_total->SetPoint(iw, weights[iw], chi2OverNdf[iw]);
+        gr_chi2_ndf->SetPoint(iw, weights[iw], chi2OverNdf[iw]);
     }
 
     std::vector<TGraph *> gr_per_shape(nShapes);
@@ -498,13 +525,20 @@ void chi2_weight_scan(
             gr_per_shape[is]->SetPoint(iw, weights[iw], chi2PerShape[iw][is]);
     }
 
-    // --- Plot 1: chi2_total vs weight ---
+    // 1-sigma boundary in chi2/ndf units: chi2_min/ndf + 1/ndf where ndf is
+    // evaluated at the best-fit point (the per-point ndof varies negligibly
+    // across the scan since the same histograms feed every f).
+    const int ndfAtBest = std::max(1, ndofTotal[bestIdx]);
+    const double chi2NdfMin       = chi2Min       / static_cast<double>(ndfAtBest);
+    const double chi2NdfAt1Sigma  = chi2At1Sigma  / static_cast<double>(ndfAtBest);
+
+    // --- Plot 1: chi2/ndf vs f ---
     {
-        TCanvas *c = new TCanvas("c_chi2_total", "chi2 total vs weight", 700, 500);
+        TCanvas *c = new TCanvas("c_chi2_total", "chi2/ndf vs f", 700, 500);
         c->cd();
         gr_chi2_total->Draw("APL");
 
-        double yMax_total = *std::max_element(chi2Total.begin(), chi2Total.end()) * 1.2;
+        double yMax_total = *std::max_element(chi2OverNdf.begin(), chi2OverNdf.end()) * 1.2;
         TLine *lbest = new TLine(weights[bestIdx], 0.0,
                                  weights[bestIdx], yMax_total);
         lbest->SetLineStyle(2);
@@ -514,20 +548,21 @@ void chi2_weight_scan(
 
         myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
         myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
-        myText(0.20, 0.80, 1, Form("Best w = %.3f", weights[bestIdx]), 0.035);
+        myText(0.20, 0.80, 1, Form("Best f = %.3f", weights[bestIdx]), 0.035);
+        myText(0.20, 0.75, 1, Form("#chi^{2}_{min}/ndf = %.3f", chi2NdfMin), 0.035);
 
-        c->SaveAs("figures/chi2_weight_scan_total.pdf");
+        c->SaveAs(Form("figures/chi2_weight_scan_total_%s.pdf", config_suffix.c_str()));
         delete lbest;
         delete c;
     }
 
-    // --- Plot 2: chi2 vs weight with 1-sigma interval ---
+    // --- Plot 2: chi2/ndf vs f with 1-sigma interval ---
     {
-        TCanvas *c = new TCanvas("c_chi2_ndf", "chi2 vs weight", 700, 500);
+        TCanvas *c = new TCanvas("c_chi2_ndf", "chi2/ndf vs f", 700, 500);
         c->cd();
         gr_chi2_ndf->Draw("APL");
 
-        double yMax_ndf = *std::max_element(chi2Total.begin(), chi2Total.end()) * 1.2;
+        double yMax_ndf = *std::max_element(chi2OverNdf.begin(), chi2OverNdf.end()) * 1.2;
         TLine *lbest = new TLine(weights[bestIdx], 0.0,
                                  weights[bestIdx], yMax_ndf);
         lbest->SetLineStyle(2);
@@ -535,7 +570,7 @@ void chi2_weight_scan(
         lbest->SetLineWidth(2);
         lbest->Draw("SAME");
 
-        TLine *l1s = new TLine(weights.front(), chi2At1Sigma, weights.back(), chi2At1Sigma);
+        TLine *l1s = new TLine(weights.front(), chi2NdfAt1Sigma, weights.back(), chi2NdfAt1Sigma);
         l1s->SetLineStyle(2);
         l1s->SetLineColor(kGray + 2);
         l1s->SetLineWidth(2);
@@ -555,12 +590,12 @@ void chi2_weight_scan(
 
         myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
         myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
-        myText(0.20, 0.80, 1, Form("Best w = %.3f", weights[bestIdx]), 0.035);
+        myText(0.20, 0.80, 1, Form("Best f = %.3f", weights[bestIdx]), 0.035);
         myText(0.20, 0.75, 1, Form("1#sigma: [%.3f, %.3f] (#Delta#chi^{2}=1)", w1SigmaLow, w1SigmaHigh), 0.035);
         if (!hasLower1Sigma || !hasUpper1Sigma)
             myText(0.20, 0.70, 1, "Note: 1#sigma bound reaches scan edge", 0.03);
 
-        c->SaveAs("figures/chi2_weight_scan_ndf.pdf");
+        c->SaveAs(Form("figures/chi2_weight_scan_ndf_%s.pdf", config_suffix.c_str()));
         delete lhigh;
         delete llow;
         delete l1s;
@@ -596,7 +631,7 @@ void chi2_weight_scan(
         myText(0.20, 0.90, 1, strleg1.c_str(), 0.035);
         myText(0.20, 0.85, 1, strleg2.c_str(), 0.035);
 
-        c->SaveAs("figures/chi2_weight_scan_per_shape.pdf");
+        c->SaveAs(Form("figures/chi2_weight_scan_per_shape_%s.pdf", config_suffix.c_str()));
         // delete c also deletes mg via pad primitive cleanup (fPrimitives->Delete())
         // Do NOT delete mg explicitly — it's a double-free
         delete c;
@@ -604,7 +639,7 @@ void chi2_weight_scan(
 
     // --- Save all TGraphs to ROOT file ---
     {
-        TFile *fout = TFile::Open("figures/chi2_weight_scan.root", "RECREATE");
+        TFile *fout = TFile::Open(Form("figures/chi2_weight_scan_%s.root", config_suffix.c_str()), "RECREATE");
         gr_chi2_total->Write();
         gr_chi2_ndf->Write();
         for (int is = 0; is < nShapes; ++is)
@@ -656,6 +691,9 @@ void chi2_weight_scan(
             {
                 const std::string &hbase = histNames[ishape];
                 TString var = hbase.substr(4);
+                // Skip npb_score in overlays for consistency with per-shape multigraph
+                // (it is also excluded from the total chi2 sum by default).
+                if (var == "npb_score") continue;
 
                 // Sum data and signal projections over eta bins at fixed pT bin
                 TH1D *h_data_sum = nullptr;
@@ -764,24 +802,25 @@ void chi2_weight_scan(
                 if (!firstDrawn) h_data_sum->Draw("ex0");
                 else             h_data_sum->Draw("ex0 SAME");
 
-                // Legend
-                TLegend *leg = new TLegend(0.55, 0.70, 0.88, 0.88);
-                leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.04);
+                // Legend in upper-right; left-side annotations kept short to avoid collision
+                TLegend *leg = new TLegend(0.62, 0.62, 0.92, 0.88);
+                leg->SetBorderSize(0); leg->SetFillStyle(0); leg->SetTextSize(0.035);
                 leg->AddEntry(h_data_sum, "Data", "lep");
                 for (int si = 0; si < (int)selIdx.size(); ++si)
                     if (h_bkg_sums[si])
                         leg->AddEntry(h_bkg_sums[si],
-                            Form("Incl. MC w=%.2f%s", weights[selIdx[si]],
+                            Form("Incl. MC f=%.2f%s", weights[selIdx[si]],
                                  selIdx[si]==bestIdx ? " (best)" : ""), "l");
-                if (h_sig_sum) leg->AddEntry(h_sig_sum, "Signal MC", "l");
+                if (h_sig_sum) leg->AddEntry(h_sig_sum, "Signal MC (SI)", "l");
                 leg->Draw();
 
                 myText(0.20, 0.90, 1, strleg1.c_str(), 0.04);
                 myText(0.20, 0.85, 1, strleg2.c_str(), 0.04);
                 myText(0.20, 0.80, 1, strleg3.c_str(), 0.04);
-                myText(0.20, 0.75, 1, Form("%s, %.0f < p_{T}^{clus} < %.0f GeV, cut1",
-                                            var.Data(), pT_bin_edges[ipt], pT_bin_edges[ipt + 1]), 0.04);
-                myText(0.20, 0.70, 1, Form("Best scan weight: w = %.3f", weights[bestIdx]), 0.04);
+                myText(0.20, 0.75, 1, Form("%s, cut1", var.Data()), 0.04);
+                myText(0.20, 0.70, 1, Form("%.0f < p_{T}^{clus} < %.0f GeV",
+                                           pT_bin_edges[ipt], pT_bin_edges[ipt + 1]), 0.04);
+                myText(0.20, 0.65, 1, Form("Best-fit f = %.3f", weights[bestIdx]), 0.04);
 
                 coverlay->Print(outPdf.Data());
 
@@ -831,5 +870,5 @@ void chi2_weight_scan(
         delete f_sig;
     }
 
-    std::cout << "\nDone. Output in figures/chi2_weight_scan_*.pdf and figures/chi2_weight_scan.root" << std::endl;
+    std::cout << "\nDone. Output in figures/chi2_weight_scan_*_" << config_suffix << ".pdf and figures/chi2_weight_scan_" << config_suffix << ".root" << std::endl;
 }

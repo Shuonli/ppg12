@@ -82,7 +82,8 @@ void plot_sideband(){
   c1->SaveAs(Form("%s/et_sbs.pdf",savePath.c_str()));
 
   TFile* fnpb_scale = new TFile("/sphenix/u/bseidlitz/work/ppg12/plotting/anaOut.root");
-  TH1F* h_npb_norm = (TH1F*) fnpb_scale->Get("h_npb_norm"); 
+  if (fnpb_scale && !fnpb_scale->IsZombie() && fnpb_scale->Get("h_npb_norm")) {
+  TH1F* h_npb_norm = (TH1F*) fnpb_scale->Get("h_npb_norm");
   h_nontight_iso_cluster_npb->Multiply(h_npb_norm);
   h_tight_iso_cluster_npb->Multiply(h_npb_norm);
   h_tight_noniso_cluster_npb->Multiply(h_npb_norm);
@@ -123,6 +124,7 @@ void plot_sideband(){
 
   gPad->SetLogy();
   c5->SaveAs(Form("%s/et_sbs_background.pdf",savePath.c_str()));
+  } // guard: skip NPB-scaled et_sbs_background (not used in note) when external anaOut.root is unavailable
 
     //unset logy
   gPad->SetLogy(0);

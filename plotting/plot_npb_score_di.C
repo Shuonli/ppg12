@@ -103,11 +103,23 @@ void plot_npb_score_di(const std::string &period = "0rad",
     h_si->Draw("HIST");
     h_di->Draw("HIST SAME");
 
-    TLegend *leg = new TLegend(0.55, 0.74, 0.88, 0.88);
+    // Integrated fraction below NPB < 0.5 for SI and DI. The histograms are
+    // already unit-area normalised, so this is a per-mille-level migration
+    // metric for the analysis NPB > 0.5 cut.
+    const int    bin_lo = 1;
+    const int    bin_hi = h_si->FindBin(0.5) - 1;  // strict NPB < 0.5
+    const double frac_si_lo = h_si->Integral(bin_lo, bin_hi);
+    const double frac_di_lo = h_di->Integral(bin_lo, bin_hi);
+    std::cout << "[NPB-DI] integrated fraction with NPB<0.5: SI=" << frac_si_lo
+              << "  DI=" << frac_di_lo
+              << "  delta=" << (frac_di_lo - frac_si_lo) << std::endl;
+
+    TLegend *leg = new TLegend(0.55, 0.66, 0.88, 0.88);
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
-    leg->AddEntry(h_si, "Single Interaction", "l");
-    leg->AddEntry(h_di, "Double Interaction", "l");
+    leg->SetTextFont(42);
+    leg->AddEntry(h_si, Form("Single Interaction (NPB<0.5: %.2g)", frac_si_lo), "l");
+    leg->AddEntry(h_di, Form("Double Interaction (NPB<0.5: %.2g)", frac_di_lo), "l");
     leg->Draw();
 
     TLatex latex;
@@ -119,6 +131,8 @@ void plot_npb_score_di(const std::string &period = "0rad",
     const char *xangle = (period == "0rad") ? "0 mrad crossing"
                                             : "1.5 mrad crossing";
     latex.DrawLatex(0.18, 0.77, xangle);
+    latex.DrawLatex(0.18, 0.72,
+        Form("#Delta(DI#minusSI) below NPB<0.5: %.1g", frac_di_lo - frac_si_lo));
 
     c->SaveAs((savePath + "npb_score_1d_overlay_di.pdf").c_str());
     delete c;

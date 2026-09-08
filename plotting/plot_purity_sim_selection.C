@@ -18,29 +18,15 @@ void plot_purity_sim_selection(const std::string suffix = "bdt_nom")
     TGraphErrors *gpurity = (TGraphErrors *)fdata->Get("gpurity");
     TGraphErrors *gpurity_leak = (TGraphErrors *)fdata->Get("gpurity_leak");
     TGraphAsymmErrors *g_purity_truth = (TGraphAsymmErrors *)fdata->Get("g_purity_truth");
-    TF1 *f_purity_leak_fit = (TF1 *)fdata->Get("f_purity_leak_fit");
-    TGraphErrors *grFineConf_leak = (TGraphErrors *)fdata->Get("grFineConf_leak");
 
     TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
     frame_et_rec->SetYTitle("Purity");
     frame_et_rec->GetYaxis()->SetRangeUser(0.0, 1.2);
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);
     frame_et_rec->Draw("axis");
 
-    if (grFineConf_leak)
-    {
-        grFineConf_leak->SetMarkerColor(kAzure + 2);
-        grFineConf_leak->SetLineColor(kAzure + 2);
-        grFineConf_leak->SetFillColorAlpha(kAzure + 2, 0.2);
-        grFineConf_leak->Draw("e3 same");
-    }
-
-    if (f_purity_leak_fit)
-    {
-        f_purity_leak_fit->SetLineColor(kAzure + 2);
-        f_purity_leak_fit->SetLineWidth(2);
-        f_purity_leak_fit->Draw("same");
-    }
+    // MC closure plot: data-driven (ABCD) purity fit + 68% band intentionally
+    // omitted; show bin-by-bin points only so the comparison to truth is direct.
 
     gpurity->SetMarkerColor(kBlack);
     gpurity->SetMarkerStyle(20);

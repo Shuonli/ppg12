@@ -24,6 +24,7 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
     }
 
     TGraphErrors *g_ratio = (TGraphErrors *)fin->Get("g_mc_purity_fit_ratio");
+    TF1 *f_corr = (TF1 *)fin->Get("f_mc_purity_corr_fit");
     if (!g_ratio)
     {
         std::cerr << "WARNING: g_mc_purity_fit_ratio not found in " << infile
@@ -34,7 +35,7 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
 
     TCanvas *c = new TCanvas("c_mc_purity_corr", "", 700, 600);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];MC purity correction");
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 35);
+    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);
     frame_et_rec->GetYaxis()->SetRangeUser(0.6, 1.4);
     frame_et_rec->Draw("axis");
 
@@ -49,14 +50,24 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
     g_ratio->SetLineWidth(2);
     g_ratio->Draw("P same");
 
+    if (f_corr)
+    {
+        f_corr->SetLineColor(kRed + 1);
+        f_corr->SetLineWidth(3);
+        f_corr->SetLineStyle(1);
+        f_corr->SetNpx(400);
+        f_corr->Draw("L same");
+    }
+
     myText(0.22, 0.89, 1, strleg1.c_str(), 0.042, 0);
     myText(0.22, 0.84, 1, strleg2.c_str(), 0.042, 0);
     myText(0.88, 0.89, 1, strleg3.c_str(), 0.042, 1);
     myText(0.22, 0.78, 1, Form("tune: %s", tune.c_str()), 0.036, 0);
 
-    TLegend *leg = new TLegend(0.22, 0.18, 0.62, 0.26);
-    legStyle(leg, 0.15, 0.045);
-    leg->AddEntry(g_ratio, "g_{mc}^{truth} / f_{purity}^{fit}", "pl");
+    TLegend *leg = new TLegend(0.22, 0.18, 0.62, 0.30);
+    legStyle(leg, 0.15, 0.040);
+    leg->AddEntry(g_ratio, "bin-by-bin: P_{truth}^{MC} / P_{ABCD}^{MC}", "pl");
+    if (f_corr) leg->AddEntry(f_corr, "pol2 fit (applied as correction)", "l");
     leg->Draw("same");
 
     TString outfile = Form("figures/mc_purity_correction_%s.pdf", tune.c_str());

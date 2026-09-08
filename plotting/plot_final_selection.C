@@ -48,13 +48,26 @@ void plot_final_selection(string tune = "bdt_nom")
     TFile *fin_data = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s.root", tune.data()));
 
     TFile *fin_syst = new TFile("/sphenix/user/shuhangli/ppg12/plotting/rootFiles/syst_sum.root");
-    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10.root");
-    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05.root");
-    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20.root");
+    TFile *fin_NLO = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_10_chunked.root");
+    TFile *fin_NLO_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_05_chunked.root");
+    TFile *fin_NLO_down = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_ct18_20_chunked.root");
     // Alternative-PDF central-scale JETPHOX productions for the PDF
     // comparison panel (Lower-most pad of the final figure).
-    TFile *fin_NLO_ct14  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10.root");
-    TFile *fin_NLO_nnpdf = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_10.root");
+    TFile *fin_NLO_ct14  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nlo_10_chunked.root");
+    TFile *fin_NLO_nnpdf = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_10_chunked.root");
+    TFile *fin_NLO_cteq  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_cteq_10_chunked.root");
+    TFile *fin_NLO_msht  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_10_chunked.root");
+    // Scale variations for the additional PDFs (used by the bottom-pad
+    // per-PDF systematic bands).
+    TFile *fin_NLO_nnpdf_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_05_chunked.root");
+    TFile *fin_NLO_nnpdf_dn = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf_20_chunked.root");
+    TFile *fin_NLO_cteq_up  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_cteq_05_chunked.root");
+    TFile *fin_NLO_cteq_dn  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_cteq_20_chunked.root");
+    TFile *fin_NLO_msht_up  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_05_chunked.root");
+    TFile *fin_NLO_msht_dn  = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_msht_20_chunked.root");
+    TFile *fin_NLO_nnpdf4   = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf4_10_chunked.root");
+    TFile *fin_NLO_nnpdf4_up = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf4_05_chunked.root");
+    TFile *fin_NLO_nnpdf4_dn = new TFile("/sphenix/user/shuhangli/ppg12/NLO/rootFiles/jetPHOX_nnpdf4_20_chunked.root");
     TFile *fin_mc = new TFile(Form("/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_%s_mc.root", tune.data()));
 
     TH1F *h_data = (TH1F *)fin_data->Get("h_unfold_sub_result");
@@ -101,6 +114,71 @@ void plot_final_selection(string tune = "bdt_nom")
     h_NLO_data_ct14 ->Divide(h_data);
     TH1F *h_NLO_data_nnpdf = (TH1F *)h_NLO_nnpdf->Clone("h_NLO_data_nnpdf");
     h_NLO_data_nnpdf->Divide(h_data);
+    TH1F *h_NLO_cteq = (TH1F *)fin_NLO_cteq->Get("h_truth_pT");
+    h_NLO_cteq->Scale(1.0 / deta);
+    TH1F *h_NLO_msht = (TH1F *)fin_NLO_msht->Get("h_truth_pT");
+    h_NLO_msht->Scale(1.0 / deta);
+    TH1F *h_NLO_data_cteq = (TH1F *)h_NLO_cteq->Clone("h_NLO_data_cteq");
+    h_NLO_data_cteq->Divide(h_data);
+    TH1F *h_NLO_data_msht = (TH1F *)h_NLO_msht->Clone("h_NLO_data_msht");
+    h_NLO_data_msht->Divide(h_data);
+
+    // Up/down scale variations -> theory/data ratios for NNPDF/CTEQ/MSHT.
+    auto load_NLO = [&](TFile *f) {
+        TH1F *h = (TH1F *)f->Get("h_truth_pT");
+        h->Scale(1.0 / deta);
+        return h;
+    };
+    TH1F *h_NLO_nnpdf_up = load_NLO(fin_NLO_nnpdf_up);
+    TH1F *h_NLO_nnpdf_dn = load_NLO(fin_NLO_nnpdf_dn);
+    TH1F *h_NLO_cteq_up  = load_NLO(fin_NLO_cteq_up);
+    TH1F *h_NLO_cteq_dn  = load_NLO(fin_NLO_cteq_dn);
+    TH1F *h_NLO_msht_up  = load_NLO(fin_NLO_msht_up);
+    TH1F *h_NLO_msht_dn  = load_NLO(fin_NLO_msht_dn);
+    TH1F *h_NLO_nnpdf4    = load_NLO(fin_NLO_nnpdf4);
+    TH1F *h_NLO_nnpdf4_up = load_NLO(fin_NLO_nnpdf4_up);
+    TH1F *h_NLO_nnpdf4_dn = load_NLO(fin_NLO_nnpdf4_dn);
+    TH1F *h_NLO_data_nnpdf4 = (TH1F *)h_NLO_nnpdf4->Clone("h_NLO_data_nnpdf4");
+    h_NLO_data_nnpdf4->Divide(h_data);
+    TH1F *h_NLO_data_nnpdf4_up = (TH1F *)h_NLO_nnpdf4_up->Clone("h_NLO_data_nnpdf4_up");
+    h_NLO_data_nnpdf4_up->Divide(h_data);
+    TH1F *h_NLO_data_nnpdf4_dn = (TH1F *)h_NLO_nnpdf4_dn->Clone("h_NLO_data_nnpdf4_dn");
+    h_NLO_data_nnpdf4_dn->Divide(h_data);
+
+    TH1F *h_NLO_data_nnpdf_up = (TH1F *)h_NLO_nnpdf_up->Clone("h_NLO_data_nnpdf_up");
+    h_NLO_data_nnpdf_up->Divide(h_data);
+    TH1F *h_NLO_data_nnpdf_dn = (TH1F *)h_NLO_nnpdf_dn->Clone("h_NLO_data_nnpdf_dn");
+    h_NLO_data_nnpdf_dn->Divide(h_data);
+    TH1F *h_NLO_data_cteq_up = (TH1F *)h_NLO_cteq_up->Clone("h_NLO_data_cteq_up");
+    h_NLO_data_cteq_up->Divide(h_data);
+    TH1F *h_NLO_data_cteq_dn = (TH1F *)h_NLO_cteq_dn->Clone("h_NLO_data_cteq_dn");
+    h_NLO_data_cteq_dn->Divide(h_data);
+    TH1F *h_NLO_data_msht_up = (TH1F *)h_NLO_msht_up->Clone("h_NLO_data_msht_up");
+    h_NLO_data_msht_up->Divide(h_data);
+    TH1F *h_NLO_data_msht_dn = (TH1F *)h_NLO_msht_dn->Clone("h_NLO_data_msht_dn");
+    h_NLO_data_msht_dn->Divide(h_data);
+
+    TGraphAsymmErrors *g_syst_rel_nnpdf  = new TGraphAsymmErrors(h_NLO_data_nnpdf);
+    TGraphAsymmErrors *g_syst_rel_cteq   = new TGraphAsymmErrors(h_NLO_data_cteq);
+    TGraphAsymmErrors *g_syst_rel_msht   = new TGraphAsymmErrors(h_NLO_data_msht);
+    TGraphAsymmErrors *g_syst_rel_nnpdf4 = new TGraphAsymmErrors(h_NLO_data_nnpdf4);
+    for (int i = 0; i < h_NLO_nnpdf->GetNbinsX(); i++)
+    {
+        float xlow = g_syst_rel_nnpdf->GetErrorXlow(i);
+        float xup  = g_syst_rel_nnpdf->GetErrorXhigh(i);
+        g_syst_rel_nnpdf->SetPointError(i, xlow, xup,
+            h_NLO_data_nnpdf->GetBinContent(i + 1) - h_NLO_data_nnpdf_dn->GetBinContent(i + 1),
+            h_NLO_data_nnpdf_up->GetBinContent(i + 1) - h_NLO_data_nnpdf->GetBinContent(i + 1));
+        g_syst_rel_cteq->SetPointError(i, xlow, xup,
+            h_NLO_data_cteq->GetBinContent(i + 1) - h_NLO_data_cteq_dn->GetBinContent(i + 1),
+            h_NLO_data_cteq_up->GetBinContent(i + 1) - h_NLO_data_cteq->GetBinContent(i + 1));
+        g_syst_rel_msht->SetPointError(i, xlow, xup,
+            h_NLO_data_msht->GetBinContent(i + 1) - h_NLO_data_msht_dn->GetBinContent(i + 1),
+            h_NLO_data_msht_up->GetBinContent(i + 1) - h_NLO_data_msht->GetBinContent(i + 1));
+        g_syst_rel_nnpdf4->SetPointError(i, xlow, xup,
+            h_NLO_data_nnpdf4->GetBinContent(i + 1) - h_NLO_data_nnpdf4_dn->GetBinContent(i + 1),
+            h_NLO_data_nnpdf4_up->GetBinContent(i + 1) - h_NLO_data_nnpdf4->GetBinContent(i + 1));
+    }
 
     TH1F *h_pythia_data = (TH1F *)h_pythia->Clone("h_pythia_data");
     h_pythia_data->Divide(h_data);
@@ -654,6 +732,9 @@ void plot_final_selection(string tune = "bdt_nom")
     frame_pdf->GetXaxis()->SetTitleOffset(frame_et_rec->GetXaxis()->GetTitleOffset() * 4.0 / 6.0 * 1.4);
     frame_pdf->Draw("axis");
 
+    const Color_t kCTEQcol  = kOrange + 7;
+    const Color_t kMSHTcol  = kAzure - 4;
+    const Color_t kNNPDF4col = kViolet + 2;
     const Color_t kCT14col  = kSpring - 7;
     const Color_t kCT18col  = mkcol[2];
     const Color_t kNNPDFcol = kRed - 4;
@@ -676,24 +757,66 @@ void plot_final_selection(string tune = "bdt_nom")
     h_NLO_data_nnpdf->SetLineColor(kNNPDFcol);
     h_NLO_data_nnpdf->SetLineWidth(lineWidth[2]);
 
+    h_NLO_data_cteq->SetMarkerStyle(27);
+    h_NLO_data_cteq->SetMarkerSize(mkSize[2]);
+    h_NLO_data_cteq->SetMarkerColor(kCTEQcol);
+    h_NLO_data_cteq->SetLineColor(kCTEQcol);
+    h_NLO_data_cteq->SetLineWidth(lineWidth[2]);
+
+    h_NLO_data_msht->SetMarkerStyle(28);
+    h_NLO_data_msht->SetMarkerSize(mkSize[2]);
+    h_NLO_data_msht->SetMarkerColor(kMSHTcol);
+    h_NLO_data_msht->SetLineColor(kMSHTcol);
+    h_NLO_data_msht->SetLineWidth(lineWidth[2]);
+
+    h_NLO_data_nnpdf4->SetMarkerStyle(32);
+    h_NLO_data_nnpdf4->SetMarkerSize(mkSize[2]);
+    h_NLO_data_nnpdf4->SetMarkerColor(kNNPDF4col);
+    h_NLO_data_nnpdf4->SetLineColor(kNNPDF4col);
+    h_NLO_data_nnpdf4->SetLineWidth(lineWidth[2]);
+
+    // Bands: data systematic centred on y=1 (azure), plus per-PDF JETPHOX
+    // scale-uncertainty envelopes (pink/red/orange/blue) tracking each
+    // PDF's nominal ratio. Drawn first so the PDF markers render on top.
+    const float kPdfBandAlpha = 0.25;
+    g_syst_rel       ->Draw("2 same");
+    g_syst_rel_NLO   ->SetFillColorAlpha(col[2],   kPdfBandAlpha);
+    g_syst_rel_NLO   ->Draw("2 same");
+    g_syst_rel_nnpdf ->SetFillColorAlpha(kNNPDFcol, kPdfBandAlpha);
+    g_syst_rel_nnpdf ->SetLineColor(kNNPDFcol);
+    g_syst_rel_nnpdf ->Draw("2 same");
+    g_syst_rel_cteq  ->SetFillColorAlpha(kCTEQcol, kPdfBandAlpha);
+    g_syst_rel_cteq  ->SetLineColor(kCTEQcol);
+    g_syst_rel_cteq  ->Draw("2 same");
+    g_syst_rel_msht  ->SetFillColorAlpha(kMSHTcol, kPdfBandAlpha);
+    g_syst_rel_msht  ->SetLineColor(kMSHTcol);
+    g_syst_rel_msht  ->Draw("2 same");
+    g_syst_rel_nnpdf4->SetFillColorAlpha(kNNPDF4col, kPdfBandAlpha);
+    g_syst_rel_nnpdf4->SetLineColor(kNNPDF4col);
+    g_syst_rel_nnpdf4->Draw("2 same");
+
     lineone->SetLineColor(kBlack);
     lineone->SetLineStyle(2);
     lineone->SetLineWidth(2);
     lineone->Draw("L same");
 
-    h_NLO_data_ct14 ->Draw("same");
-    h_NLO_data      ->Draw("same");
-    h_NLO_data_nnpdf->Draw("same");
+    h_NLO_data       ->Draw("same");
+    h_NLO_data_nnpdf ->Draw("same");
+    h_NLO_data_cteq  ->Draw("same");
+    h_NLO_data_msht  ->Draw("same");
+    h_NLO_data_nnpdf4->Draw("same");
 
-    TLegend *l_pdf = new TLegend(0.16, 0.86, 0.92, 0.97);
+    TLegend *l_pdf = new TLegend(0.14, 0.86, 0.94, 0.97);
     l_pdf->SetBorderSize(0);
     l_pdf->SetFillStyle(0);
     l_pdf->SetTextFont(42);
-    l_pdf->SetTextSize(0.075);
-    l_pdf->SetNColumns(3);
-    l_pdf->AddEntry(h_NLO_data_ct14,  "CT14NLO",  "pl");
-    l_pdf->AddEntry(h_NLO_data,       "CT18NLO",  "pl");
-    l_pdf->AddEntry(h_NLO_data_nnpdf, "NNPDF3.1", "pl");
+    l_pdf->SetTextSize(0.067);
+    l_pdf->SetNColumns(5);
+    l_pdf->AddEntry(h_NLO_data,        "CT18NLO",  "pl");
+    l_pdf->AddEntry(h_NLO_data_nnpdf,  "NNPDF3.1", "pl");
+    l_pdf->AddEntry(h_NLO_data_cteq,   "CTEQ6.6",  "pl");
+    l_pdf->AddEntry(h_NLO_data_msht,   "MSHT20NLO","pl");
+    l_pdf->AddEntry(h_NLO_data_nnpdf4, "NNPDF4.0", "pl");
     l_pdf->Draw("same");
 
     std::string outputname = Form("figures/final_%s.pdf", tune.data());

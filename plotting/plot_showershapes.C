@@ -19,6 +19,7 @@ void plot_showershapes(const std::string &configname = "config_showershape.yaml"
     string savePath = "../PPG12-analysis-note/Figures/showershapes/";
 
     // Derive suffix from configname: strip path, "config_" prefix, ".yaml" extension
+    // (the per-config subdir below keeps new-vs-old PDFs from overwriting each other)
     std::string config_suffix = configname;
     {
         size_t slash = config_suffix.rfind('/');
@@ -29,6 +30,11 @@ void plot_showershapes(const std::string &configname = "config_showershape.yaml"
             config_suffix = config_suffix.substr(7);
     }
     std::cout << "Config suffix: " << config_suffix << std::endl;
+
+    // Per-config output subdir so NEW and OLD shower-shape PDFs do not collide.
+    savePath = savePath + config_suffix + "/";
+    gSystem->mkdir(savePath.c_str(), kTRUE);
+    std::cout << "Saving PDFs to: " << savePath << std::endl;
 
     std::vector<double> eta_bins = {-0.7, 0.7};
 
@@ -45,9 +51,12 @@ void plot_showershapes(const std::string &configname = "config_showershape.yaml"
     //------------------------------------------------------------------------------
     // 2) Open your three ROOT files: data, signal, background
     //------------------------------------------------------------------------------
+    // Signal/background read the DI-blended combined showershape files
+    // (signal_combined + jet_inclusive_combined). These carry the same h2d_*
+    // TH2F set as the SI-only files, so the drawing logic below is unchanged.
     TFile *f_data = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_" + config_suffix + ".root").c_str(), "READ");
-    TFile *f_sig  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_" + config_suffix + ".root").c_str(), "READ");
-    TFile *f_bkg  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_" + config_suffix + ".root").c_str(), "READ");
+    TFile *f_sig  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_combined_" + config_suffix + ".root").c_str(), "READ");
+    TFile *f_bkg  = TFile::Open(("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_combined_" + config_suffix + ".root").c_str(), "READ");
 
     if (!f_data || f_data->IsZombie())
     {

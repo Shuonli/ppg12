@@ -1,6 +1,6 @@
 #include "plotcommon.h"
 
-void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_no_unfolding_reweighting.root")
+void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_no_unfolding_reweighting.root", const char *suffix = "bdt_nom")
 {
     init_plot();
     TFile *fin = new TFile(infile);
@@ -122,5 +122,5 @@ void plot_reweight(const char *infile = "/sphenix/user/shuhangli/ppg12/efficienc
 
     fit_ratio->Draw("same");
 
-    c1->SaveAs("figures/response_reweight.pdf");
+    c1->SaveAs(Form("figures/reweight_%s.pdf", suffix));
 }

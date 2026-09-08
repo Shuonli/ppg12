@@ -6,6 +6,8 @@
 #include <TLegend.h>
 #include <TString.h>
 #include <TLine.h>
+#include <TMath.h>
+#include <TPad.h>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -16,9 +18,10 @@
 #include "plotcommon.h"
 
 void plot_showershapes_selections(const std::string &configname = "config_showershape_0rad.yaml",
-                                  bool   combine_double     = true,
+                                  bool   combine_double     = false,
                                   double sig_double_weight  = 0.75,
-                                  double bkg_double_weight  = 0.25)
+                                  double bkg_double_weight  = 0.25,
+                                  bool   use_combined_di    = true)
 {
     init_plot();
     string savePath = "../PPG12-analysis-note/Figures/showershapes_selections/";
@@ -54,10 +57,16 @@ void plot_showershapes_selections(const std::string &configname = "config_shower
     std::cout << "Using " << nPtBins  << " pT bins from config file"  << std::endl;
 
     // Open files
+    // use_combined_di=true: read the single-pass truth-vertex DI-blended files
+    // (signal_combined_<suffix>, jet_inclusive_combined_<suffix>). DI fractions
+    // are already baked in per-event, so combine_double should be false.
+    // use_combined_di=false: read the legacy SI-only files; combine_double=true
+    // overlays the toy-DI pair with hardcoded weights (cross-check only).
     const std::string resultsDir      = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/";
+    const std::string mc_token        = use_combined_di ? "combined_" : "";
     const std::string dataFile        = resultsDir + "data_histoshower_shape_" + config_suffix + ".root";
-    const std::string sigFile         = resultsDir + "MC_efficiencyshower_shape_signal_" + config_suffix + ".root";
-    const std::string bkgInclusiveFile= resultsDir + "MC_efficiencyshower_shape_jet_inclusive_" + config_suffix + ".root";
+    const std::string sigFile         = resultsDir + "MC_efficiencyshower_shape_signal_" + mc_token + config_suffix + ".root";
+    const std::string bkgInclusiveFile= resultsDir + "MC_efficiencyshower_shape_jet_inclusive_" + mc_token + config_suffix + ".root";
     const std::string bkgOnlyFile     = resultsDir + "MC_efficiencyshower_shape_jet_" + config_suffix + ".root";
     const std::string sigDoubleFile   = resultsDir + "MC_efficiencyshower_shape_photon10_double_showershape.root";
     const std::string bkgIncDoubleFile= resultsDir + "MC_efficiencyshower_shape_jet12_double_inclusive_showershape.root";
@@ -415,13 +424,22 @@ void plot_showershapes_selections(const std::string &configname = "config_shower
                         delete c_sub; delete proj_sub;
                     }
 
-                    // --- Main data/MC overlay canvas ---
+                    // --- Main data/MC overlay canvas (upper: overlay, lower: data-incMC diff) ---
                     TCanvas *c_proj = new TCanvas(Form("c_proj_%s", histNameFull.Data()),
-                                                  Form("ProjectionX - %s", histNameFull.Data()), 600, 600);
-                    c_proj->cd();
+                                                  Form("ProjectionX - %s", histNameFull.Data()), 600, 750);
+                    TPad *pad1 = new TPad("pad1", "pad1", 0, 0.3, 1, 1.0);
+                    pad1->SetBottomMargin(0.02);
+                    pad1->Draw();
+                    TPad *pad2 = new TPad("pad2", "pad2", 0, 0.0, 1, 0.3);
+                    pad2->SetTopMargin(0.02);
+                    pad2->SetBottomMargin(0.3);
+                    pad2->Draw();
+
+                    pad1->cd();
                     proj_sig->SetYTitle("normalized counts");
                     proj_sig->GetYaxis()->SetTitleOffset(1.5);
-                    proj_sig->SetXTitle(xaxisname.Data());
+                    proj_sig->SetXTitle("");
+                    proj_sig->GetXaxis()->SetLabelSize(0);
                     proj_sig->GetYaxis()->SetRangeUser(0, maxy * 1.3);
                     proj_sig->GetXaxis()->SetNdivisions(505);
                     proj_sig->SetStats(0);
@@ -437,13 +455,94 @@ void plot_showershapes_selections(const std::string &configname = "config_shower
                     drawLabels(0.20, 0.90);
                     myText(0.2, 0.75, 1, Form("%.0f<p_{T}<%.0fGeV,%s",
                                               pTlow, pThigh, bgcut_labels[icut].c_str()), 0.04);
-                    myMarkerLineText(0.6, 0.90, 1.5, kBlack, 20, kBlack, 1, "Data",        0.05, true);
-                    myMarkerLineText(0.6, 0.85, 0,   kRed,    0, kRed,   1, "Signal MC",   0.05, true);
-                    myMarkerLineText(0.6, 0.80, 0,   kBlue,   0, kBlue,  1, "Inclusive MC",0.05, true);
-                    if (icut == 0)
-                        myMarkerLineText(0.6, 0.75, 0, kGreen+2, 0, kGreen+2, 2, "Data NPB", 0.05, true);
+                    {
+                        const double y_top = 0.90;
+                        const double y_bot = (icut == 0) ? 0.66 : 0.72;
+                        TLegend *leg_panel = new TLegend(0.62, y_bot, 0.92, y_top);
+                        leg_panel->SetBorderSize(0);
+                        leg_panel->SetFillStyle(0);
+                        leg_panel->SetTextFont(42);
+                        leg_panel->SetTextSize(0.045);
+                        leg_panel->AddEntry(proj_data, "Data",            "lep");
+                        leg_panel->AddEntry(proj_sig,  "Signal MC",       "l");
+                        leg_panel->AddEntry(proj_bkg,  "Inclusive MC",    "l");
+                        if (icut == 0 && proj_data_npb)
+                            leg_panel->AddEntry(proj_data_npb, "NPB-tagged data", "l");
+                        leg_panel->Draw();
+                    }
+
+                    // chi^2/ndf between data and inclusive MC over the visible x range
+                    {
+                        double chi2 = 0.0;
+                        int    ndf  = 0;
+                        for (int ib = 1; ib <= proj_data->GetNbinsX(); ++ib) {
+                            double x  = proj_data->GetBinCenter(ib);
+                            if (x < xaxismin || x > xaxismax) continue;
+                            double d  = proj_data->GetBinContent(ib);
+                            double m  = proj_bkg->GetBinContent(ib);
+                            double ed = proj_data->GetBinError(ib);
+                            double em = proj_bkg->GetBinError(ib);
+                            double e2 = ed*ed + em*em;
+                            if (e2 <= 0 || m <= 0) continue;
+                            chi2 += (d - m) * (d - m) / e2;
+                            ndf  += 1;
+                        }
+                        if (ndf > 1) {
+                            ndf -= 1;
+                            double pval = TMath::Prob(chi2, ndf);
+                            myText(0.20, 0.70, 1, Form("#chi^{2}/ndf = %.1f/%d = %.2f",
+                                                       chi2, ndf, chi2 / ndf), 0.035);
+                            myText(0.20, 0.65, 1, Form("p-value = %.4f", pval), 0.035);
+                        }
+                    }
+
+                    pad2->cd();
+                    TH1D *h_diff = (TH1D *)proj_data->Clone(Form("diff_%s", histNameFull.Data()));
+                    h_diff->SetDirectory(nullptr);
+                    h_diff->Add(proj_bkg, -1.0);
+                    for (int ib = 1; ib <= h_diff->GetNbinsX(); ++ib) {
+                        if (proj_bkg->GetBinContent(ib) <= 0) {
+                            h_diff->SetBinContent(ib, -999);
+                            h_diff->SetBinError(ib, 0);
+                        }
+                    }
+                    h_diff->SetStats(0);
+                    h_diff->SetMarkerStyle(20); h_diff->SetMarkerSize(0.8);
+                    h_diff->SetMarkerColor(kBlack); h_diff->SetLineColor(kBlack);
+
+                    double diffMax = 0.0;
+                    for (int ib = 1; ib <= h_diff->GetNbinsX(); ++ib) {
+                        double v = h_diff->GetBinContent(ib);
+                        if (v > -900) {
+                            double av = std::abs(v) + h_diff->GetBinError(ib);
+                            if (av > diffMax) diffMax = av;
+                        }
+                    }
+                    if (diffMax < 1e-12) diffMax = 0.01;
+
+                    const float scaleFactor = 0.7f / 0.3f;
+                    h_diff->SetYTitle("Data #minus Incl. MC");
+                    h_diff->GetYaxis()->SetRangeUser(-1.3 * diffMax, 1.3 * diffMax);
+                    h_diff->GetYaxis()->SetNdivisions(505);
+                    h_diff->GetYaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_diff->GetYaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_diff->GetYaxis()->SetTitleOffset(0.6);
+                    h_diff->GetYaxis()->CenterTitle();
+                    h_diff->SetXTitle(xaxisname.Data());
+                    h_diff->GetXaxis()->SetNdivisions(505);
+                    h_diff->GetXaxis()->SetTitleSize(0.04 * scaleFactor);
+                    h_diff->GetXaxis()->SetLabelSize(0.04 * scaleFactor);
+                    h_diff->GetXaxis()->SetTitleOffset(1.0);
+                    h_diff->GetXaxis()->SetRangeUser(xaxismin, xaxismax);
+                    h_diff->Draw("ep");
+
+                    TLine *zeroLine = new TLine(xaxismin, 0.0, xaxismax, 0.0);
+                    zeroLine->SetLineStyle(2); zeroLine->SetLineColor(kBlack);
+                    zeroLine->Draw();
 
                     c_proj->SaveAs(Form("%s/dis_%s.pdf", savePath.c_str(), histNamesave.Data()));
+
+                    delete zeroLine; delete h_diff; delete pad1; delete pad2;
 
                     // --- Background profile vs ET_iso ---
                     TProfile *pfx_bkg = h2_bkg->ProfileX(Form("%s_pfx_bkg", histNameFull.Data()), 1, -1, "");
@@ -817,12 +916,12 @@ void plot_showershapes_selections(const std::string &configname = "config_shower
         proj_cut1->Draw("HIST SAME"); overlayVerticalErrors(proj_cut1);
 
         drawLabels(0.20, 0.90);
-        myText(0.20, 0.80, 1, "Inclusive MC", 0.04);
-        myText(0.20, 0.75, 1, Form("%.0f < E_{T} < %.0f GeV", pT_bin_edges[ipt], pT_bin_edges[ipt+1]), 0.04);
+        myText(0.20, 0.75, 1, "Inclusive MC", 0.04);
+        myText(0.20, 0.70, 1, Form("%.0f < E_{T} < %.0f GeV", pT_bin_edges[ipt], pT_bin_edges[ipt+1]), 0.04);
 
-        TLegend *leg = makeLegend(0.55, 0.75, 0.88, 0.88);
-        leg->AddEntry(proj_cut0, "no cut",  "l");
-        leg->AddEntry(proj_cut1, "npb cut", "l");
+        TLegend *leg = makeLegend(0.62, 0.75, 0.92, 0.88);
+        leg->AddEntry(proj_cut0, "no cut",          "l");
+        leg->AddEntry(proj_cut1, "preselection cut", "l");
         leg->Draw();
 
         c->SaveAs(Form("%s/cut_comparison_%s_eta%d_pt%d.pdf", savePath.c_str(), xaxisname.Data(), ieta, ipt));

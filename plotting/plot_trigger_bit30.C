@@ -510,6 +510,42 @@ void plot_trigger_bit30()
                         savePath.c_str()));
     }
 
+    // =====================================================================
+    // PDF 4: Single-panel zoom of the photon-4 GeV plateau (no fit).
+    // Used as a 3rd panel of Fig. 6 in the analysis note.
+    // =====================================================================
+    {
+        TCanvas *c4 = new TCanvas("c4_trig_plateau_zoom",
+                                  "Bit-30 plateau zoom", 600, 600);
+        c4->SetLeftMargin(0.17);
+        c4->SetRightMargin(0.04);
+        c4->SetTopMargin(0.06);
+        c4->SetBottomMargin(0.15);
+
+        TH1F *frame_zoom = new TH1F("frame_trig_plateau_zoom", "",
+                                    1, 10, 30);
+        frame_zoom->SetStats(0);
+        frame_zoom->GetXaxis()->SetRangeUser(10, 30);
+        frame_zoom->GetYaxis()->SetRangeUser(0.985, 1.005);
+        frame_zoom->GetXaxis()->SetTitle("#it{E}_{T}^{cluster} [GeV]");
+        frame_zoom->GetYaxis()->SetTitle("#varepsilon_{L1}(Photon 4 GeV | MBD N&S)");
+        frame_zoom->GetYaxis()->SetTitleOffset(1.40);
+        frame_zoom->GetXaxis()->SetTitleOffset(1.15);
+        frame_zoom->GetYaxis()->SetNdivisions(505);
+        frame_zoom->Draw("axis");
+
+        eff_bit30->Draw("same p");
+
+        const float xpos = 0.22, ypos = 0.32;
+        const float dy = 0.050, fontsize = 0.038;
+        myText(xpos, ypos - 0 * dy, 1, strleg1.c_str(),   fontsize, 0);
+        myText(xpos, ypos - 1 * dy, 1, strleg2_1.c_str(), fontsize, 0);
+        myText(xpos, ypos - 2 * dy, 1, strleg3.c_str(),   fontsize, 0);
+
+        c4->SaveAs(Form("%s/Photon_4_GeV_PlateauZoom.pdf",
+                        savePath.c_str()));
+    }
+
     std::cout << "DONE. Plateau = " << plateau_val
               << " +/- " << plateau_err << std::endl;
 }
