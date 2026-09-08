@@ -1,0 +1,27 @@
+# oneforall_syst_parents.sub
+#
+# RACE-FREE Phase-2 re-run: parents ONLY (no _0rad/_1p5mrad feeders in the
+# batch). The 2026-06-08 escale148 Phase 2 hit the known parent-vs-feeder
+# merge race (feeder MergeSim rewriting per-period files while a parent's
+# merge_periods hadds them -> TFileMerger partial merge -> broken all-range
+# MC + CalcPhotonYield crash; energyscale148up Photon_final went missing).
+#
+# Phase 1 already produced good per-period feeders (213 keys each, verified).
+# Running parents only means no feeder MergeSim rewrites them, so each parent
+# reads its own STATIC feeders and writes distinct per-config outputs -> no
+# shared file, no race. queue reads syst_parents.list (21 bare configs).
+
+universe              = vanilla
+
+PeriodicHold                  = (NumJobStarts>=1 && JobStatus == 1)
+Notification                  = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+request_memory        = 2GB
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+queue cfg from syst_parents.list

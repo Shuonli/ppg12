@@ -1,0 +1,22 @@
+# oneforall_syst.sub
+#
+# SCOPED copy of oneforall.sub (Phase 2: merge_periods + data RecoEff +
+# CalculatePhotonYield x2) for the energy-scale-148 systematic re-run
+# (2026-06-08). Queue reads syst_configs.list instead of globbing all
+# config_bdt*.yaml.
+
+universe              = vanilla
+
+PeriodicHold                  = (NumJobStarts>=1 && JobStatus == 1)
+Notification                  = Never
+
+executable            = /bin/bash
+arguments             = "oneforall.sh $(cfg)"
+
+request_memory        = 2GB
+log                   = logs/$(cfg).log
+output                = logs/$(cfg).out
+error                 = logs/$(cfg).err
+
+# Queue one job per config listed in syst_configs.list
+queue cfg from syst_configs.list
