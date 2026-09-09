@@ -36,7 +36,9 @@ void plot_mc_purity_correction(const std::string &tune = "bdt_nom")
 
     TCanvas *c = new TCanvas("c_mc_purity_corr", "", 700, 600);
     frame_et_rec->SetTitle(";#it{E}_{T}^{#gamma} [GeV];MC purity correction");
-    frame_et_rec->GetXaxis()->SetRangeUser(10, 36);
+    // Reported range only: the 10-12 and 32-36 bins are unfolding under/overflow
+    // and are not quoted, so they are not shown.
+    frame_et_rec->GetXaxis()->SetRangeUser(12, 32);
     frame_et_rec->GetYaxis()->SetRangeUser(0.6, 1.4);
     frame_et_rec->Draw("axis");
 
