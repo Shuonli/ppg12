@@ -1,0 +1,11 @@
+universe              = vanilla
+request_memory        = 16GB
+request_cpus          = 1
+PeriodicHold          = (NumJobStarts>=1 && JobStatus == 1)
+Notification          = Never
+executable            = /bin/bash
+arguments             = "run_data_only_job.sh $(cfg)"
+log                   = /tmp/data0rad_$(Cluster).log
+output                = logs/$(cfg).dataonly.out
+error                 = logs/$(cfg).dataonly.err
+queue cfg from data0rad_rerun.list

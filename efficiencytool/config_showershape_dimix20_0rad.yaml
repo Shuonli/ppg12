@@ -243,7 +243,7 @@ analysis:
 
   # Run range for data processing (-1 = no bound)
   run_min: 47289
-  run_max: 51274
+  run_max: 51273
   # Optional run list file (one run number per line). If set, only listed runs are processed.
   run_list_file: ""
   # Total luminosity (pb^-1) for the selected run range (0 mrad 60cm-fiducial)

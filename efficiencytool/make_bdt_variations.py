@@ -632,7 +632,10 @@ PER_PERIOD_OVERRIDES = {
     # history if a 60cm cross-check is needed.
     "0rad": {
         "run_min": 47289,
-        "run_max": 51274,
+        # 51273, not 51274: the run filter is inclusive on both ends, so sharing
+        # the 51274 endpoint with the 1.5 mrad feeder counted that run's data
+        # twice in the all-range hadd while its luminosity was counted once.
+        "run_max": 51273,
         "lumi": 47.2076,
         "lumi_target": 64.3718,
         "vertex_cut_truth": 9999.0,
