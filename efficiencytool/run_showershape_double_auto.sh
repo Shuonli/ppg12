@@ -14,7 +14,7 @@
 #   bash run_showershape_double_auto.sh 0mrad config_showershape_0rad.yaml   # explicit config
 #
 # The crossing-angle argument selects the run range and default config:
-#   0mrad   → runs 47289–51274, config_showershape_0rad.yaml
+#   0mrad   → runs 47289–51273, config_showershape_0rad.yaml
 #   1.5mrad → runs 51274–54000, config_showershape_1p5rad.yaml
 
 #set -euo pipefail
@@ -32,7 +32,7 @@ fi
 case "${ANGLE}" in
     0mrad|0rad)
         RN_MIN=47289
-        RN_MAX=51274
+        RN_MAX=51273
         DEFAULT_CONFIG="config_showershape_0rad.yaml"
         ;;
     1.5mrad|1p5mrad)

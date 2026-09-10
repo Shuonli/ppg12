@@ -10,7 +10,7 @@
 #   bash run_double_auto.sh --mode crosssection 1.5mrad config_bdt_custom.yaml
 #
 # The crossing-angle argument selects the run range and default config:
-#   0mrad   -> runs 47289-51274
+#   0mrad   -> runs 47289-51273
 #   1.5mrad -> runs 51274-54000
 #
 # Default configs per mode:
@@ -48,7 +48,7 @@ fi
 case "${ANGLE}" in
     0mrad|0rad)
         RN_MIN=47289
-        RN_MAX=51274
+        RN_MAX=51273
         ;;
     1.5mrad|1p5mrad)
         RN_MIN=51274

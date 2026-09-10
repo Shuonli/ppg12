@@ -9,7 +9,7 @@
 #   bash oneforall_tree_double_auto.sh 0mrad config_bdt_nom.yaml   # explicit config
 #
 # The crossing-angle argument selects the run range and default config:
-#   0mrad   → runs 47289–51274, config_bdt_nom.yaml
+#   0mrad   → runs 47289–51273, config_bdt_nom.yaml
 #   1.5mrad → runs 51274–54000, config_bdt_nom.yaml
 
 source /sphenix/u/shuhang98/setup.sh
@@ -26,7 +26,7 @@ fi
 case "${ANGLE}" in
     0mrad|0rad)
         RN_MIN=47289
-        RN_MAX=51274
+        RN_MAX=51273
         DEFAULT_CONFIG="config_bdt_nom.yaml"
         ;;
     1.5mrad|1p5mrad)

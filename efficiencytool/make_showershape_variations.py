@@ -42,9 +42,9 @@ VARIANTS = [
     # Sanity-check: identical to base
     dict(name="nom"),
 
-    # Run period: 0rad (run_min: 47289, run_max: 51274, lumi: 32.6574 pb^-1)
+    # Run period: 0rad (run_min: 47289, run_max: 51273, lumi: 32.6574 pb^-1)
     dict(name="0rad",
-         run_min=47289, run_max=51274, lumi=32.6574),
+         run_min=47289, run_max=51273, lumi=32.6574),
 
     # Run period: 1p5rad (run_min: 51274, run_max: 54000, lumi: 16.8588 pb^-1)
     dict(name="1p5rad",
@@ -52,7 +52,7 @@ VARIANTS = [
 
     # 0rad period with tight timing cut (±2 ns cluster-MBD window)
     dict(name="0radt2",
-         run_min=47289, run_max=51274, lumi=32.6574,
+         run_min=47289, run_max=51273, lumi=32.6574,
          cluster_mbd_time_min=-4.0, cluster_mbd_time_max=0.0),
     
     #back to back jet cut
