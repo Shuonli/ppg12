@@ -328,8 +328,12 @@ VARIANTS = [
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=0,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/1p5mrad/reweight.root",
          syst_type="di_fraction", syst_role="one_sided"),
+    # run_max=51273, not 51274: period-pinned variants bypass PER_PERIOD_OVERRIDES,
+    # and the run filter is inclusive on both ends, so sharing the 51274 endpoint
+    # with the 1.5 mrad feeder would count that run's data twice in the all-range
+    # hadd while its luminosity is counted once (same rule as PER_PERIOD_OVERRIDES).
     dict(name="di_frac_fit_0rad", double_frac_override=0.290,
-         run_min=47289, run_max=51274, lumi=47.2076, lumi_target=64.3718,
+         run_min=47289, run_max=51273, lumi=47.2076, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
          syst_type=None, syst_role=None),

@@ -70,7 +70,7 @@ Imports `VARIANTS`, `SYST_TYPES`, `SYST_GROUPS`, `FINAL_SYSTS`, `LUMI_SYST` from
 ### Output
 
 - `rootFiles/syst_bdt_{type}.root` -- per-type (h_dev_low, h_dev_high, h_dev_rel_low, h_dev_rel_high)
-- `rootFiles/syst_bdt_{group}.root` -- per-group
+- `rootFiles/syst_bdt_group_{group}.root` -- per-group (namespaced so groups sharing a type name, e.g. escale, do not overwrite the type file)
 - `rootFiles/syst_sum.root` -- total (consumed by plot_final_selection.C)
 - `figures/syst_bdt_rel_{type}.pdf` -- per-type plots
 - `figures/syst_bdt_breakdown.pdf` -- all groups on one canvas

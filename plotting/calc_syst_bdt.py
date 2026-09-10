@@ -10,7 +10,7 @@ Usage:
 
 Output ROOT files (rootFiles/):
     syst_bdt_{type}.root   — per syst_type  (h_dev_low/high, h_dev_rel_low/high)
-    syst_bdt_{group}.root  — per group      (quadrature sum of member types)
+    syst_bdt_group_{group}.root — per group (quadrature sum of member types)
     syst_bdt_total.root    — total + lumi   (quadrature sum of all FINAL_SYSTS)
 
 Output figures (figures/):
@@ -372,7 +372,7 @@ VARIANT_LABELS = {
     "energyresolution0": "no extra smearing (#sigma_{E}/E = 0%)",
     "energyresolution8": "extra smearing #sigma_{E}/E = 8%",
     # ABCD region
-    "noniso04": "non-iso gap +0.4 GeV",
+    "noniso04": "non-iso gap +0.1 GeV",
     "noniso10": "non-iso gap +1.0 GeV",
     # Photon ID
     "npb03":      "NPB cut = 0.3 (looser)",
@@ -731,7 +731,11 @@ def main():
             print(f"  [SKIP] group:{grp} — no member types computed")
             continue
         group_results[grp] = quadrature_sum(comps)
-        write_syst_root(args.outdir, grp, *group_results[grp])
+        # Namespaced as syst_bdt_group_{grp}.root: three groups (escale, eres,
+        # di_fraction) share their name with a member type, and writing the
+        # group through syst_bdt_{grp}.root overwrote the per-type file written
+        # above (escale: pure-flat 14.53/17.37 % became flat+nl 16.04/18.65 %).
+        write_syst_root(args.outdir, f"group_{grp}", *group_results[grp])
         # Per-group syst plot (the analysis note references these by group
         # rather than by type — e.g. "Photon Identification" combines tight
         # + nontight + npb_cut into a single photon_id band).

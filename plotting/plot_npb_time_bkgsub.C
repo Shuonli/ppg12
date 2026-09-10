@@ -74,7 +74,7 @@ void plot_npb_time_bkgsub()
     gSystem->Exec(Form("mkdir -p %s", savePath.c_str()));
 
     gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    // ShowerShape histograms in data_histoshower_shape_.root are filled with
+    // ShowerShape histograms in the data_histoshower_shape_showershape_{0rad,1p5mrad}.root files are filled with
     // the showershape config's coarser pT binning ([10, 14, 18, 22, 28, 30]),
     // not the analysis pT binning. Read the matching config so the panel
     // labels reflect the actual histogram contents.
@@ -84,12 +84,26 @@ void plot_npb_time_bkgsub()
     const int nPtBins = pT_bin_edges.size() - 1;
     const int nEtaBins = 1;
 
-    const std::string dataFile = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_.root";
-    TFile *f_data = TFile::Open(dataFile.c_str(), "READ");
-    if (!f_data || f_data->IsZombie()) {
-        std::cerr << "Error: Could not open data file!" << std::endl;
+    // All-range data = sum of the two var_type-stamped per-period showershape
+    // outputs (config_showershape_{0rad,1p5mrad}.yaml). The histograms are
+    // plain data counts, so adding the two periods is the all-range result.
+    const std::string dataFile0 = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_showershape_0rad.root";
+    const std::string dataFile1 = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/data_histoshower_shape_showershape_1p5mrad.root";
+    TFile *f_data0 = TFile::Open(dataFile0.c_str(), "READ");
+    TFile *f_data1 = TFile::Open(dataFile1.c_str(), "READ");
+    if (!f_data0 || f_data0->IsZombie() || !f_data1 || f_data1->IsZombie()) {
+        std::cerr << "Error: Could not open per-period data files!" << std::endl;
         return;
     }
+    auto getSummed = [&](const TString &name) -> TH2D * {
+        TH2D *h0 = dynamic_cast<TH2D *>(f_data0->Get(name));
+        TH2D *h1 = dynamic_cast<TH2D *>(f_data1->Get(name));
+        if (!h0 || !h1) return nullptr;
+        TH2D *h = (TH2D *)h0->Clone(name + "_allrange");
+        h->SetDirectory(nullptr);
+        h->Add(h1);
+        return h;
+    };
 
     const double tail_time_cut = -7.0;
     const int rebin_time = 2;
@@ -102,7 +116,7 @@ void plot_npb_time_bkgsub()
         {
             // ========== Original plots using h_npb_score_vs_time ==========
             TString hist_name = Form("h_npb_score_vs_time_eta%d_pt%d", ieta, ipt);
-            TH2D *h2_time = dynamic_cast<TH2D *>(f_data->Get(hist_name));
+            TH2D *h2_time = getSummed(hist_name);
             if (!h2_time) { std::cerr << "Warning: Missing " << hist_name << std::endl; continue; }
 
             auto getYBin = [&](double val) { return h2_time->GetYaxis()->FindBin(val); };
@@ -203,7 +217,7 @@ void plot_npb_time_bkgsub()
 
             // ========== Purity analysis using h_npb_score_vs_time_clean ==========
             TString hist_name_clean = Form("h_npb_score_vs_time_clean_eta%d_pt%d", ieta, ipt);
-            TH2D *h2_clean = dynamic_cast<TH2D *>(f_data->Get(hist_name_clean));
+            TH2D *h2_clean = getSummed(hist_name_clean);
             if (!h2_clean) { std::cerr << "Warning: Missing " << hist_name_clean << std::endl; continue; }
 
             TH1D *h_bkg_template = h2_clean->ProjectionX(Form("%s_bkg", hist_name_clean.Data()), 1, h2_clean->GetYaxis()->FindBin(npb_bkg_max - 1e-6));
@@ -322,6 +336,7 @@ void plot_npb_time_bkgsub()
         }
     }
 
-    f_data->Close();
+    f_data0->Close();
+    f_data1->Close();
     std::cout << "Done. Output saved to: " << savePath << std::endl;
 }

@@ -15,7 +15,7 @@
 #
 # Default configs per mode:
 #   showershape:  0mrad -> config_showershape_0rad.yaml
-#                 1.5mrad -> config_showershape_1p5rad.yaml
+#                 1.5mrad -> config_showershape_1p5mrad.yaml
 #   crosssection: config_bdt_nom.yaml (both angles)
 
 source /sphenix/u/shuhang98/setup.sh
@@ -66,7 +66,7 @@ case "${MODE}" in
         if [[ -z "${CONFIGNAME}" ]]; then
             case "${ANGLE}" in
                 0mrad|0rad)     CONFIGNAME="config_showershape_0rad.yaml" ;;
-                1.5mrad|1p5mrad) CONFIGNAME="config_showershape_1p5rad.yaml" ;;
+                1.5mrad|1p5mrad) CONFIGNAME="config_showershape_1p5mrad.yaml" ;;
             esac
         fi
         # NOTE: This legacy two-pass reco-vertex script was renamed to

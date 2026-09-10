@@ -83,7 +83,7 @@ The cluster-weighted fractions (`cw_double`) are used as `mix_weight` (DI jobs) 
 # Showershape DI (single-pass, truth-vertex reweight):
 cd efficiencytool
 condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub  # 0 mrad (0.224 / 0.776)
-condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub  # 1.5 mrad (0.079 / 0.921)
+condor_submit list_file=showershape_di_jobs_1p5mrad.list submit_showershape_di.sub  # 1.5 mrad (0.079 / 0.921)
 
 # Legacy / retired (reco-vertex two-pass):
 bash run_showershape_double_reco_legacy.sh config.yaml 0.224
@@ -108,7 +108,7 @@ Recompute if the good run list changes or if run range boundaries are revised.
 
 | File | How it enters |
 |------|---------------|
-| `efficiencytool/showershape_di_jobs_{0rad,1p5rad}.list` | Per-row `mix_weight` column (0.224/0.776 or 0.079/0.921) consumed by `submit_showershape_di.sub` |
+| `efficiencytool/showershape_di_jobs_{0rad,1p5mrad}.list` | Per-row `mix_weight` column (0.224/0.776 or 0.079/0.921) consumed by `submit_showershape_di.sub` |
 | `efficiencytool/run_showershape_double_reco_legacy.sh` | Legacy two-pass `DOUBLE_FRAC` default (0.224) — retired |
 | `efficiencytool/oneforall_tree_double.sh` | `DOUBLE_FRAC` default (0.224) |
 | `efficiencytool/run_double_auto.sh` | Computed dynamically from `calc_pileup_range.C` |

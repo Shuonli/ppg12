@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LEGACY two-pass showershape pipeline (reco-vertex reweight). The primary
 # pipeline is now the single-pass truth-vertex-reweighting condor flow via
-# submit_showershape_di.sub + showershape_di_jobs_{0rad,1p5rad}.list; this
+# submit_showershape_di.sub + showershape_di_jobs_{0rad,1p5mrad}.list; this
 # script remains as a reference implementation / cross-check only.
 #
 # Run the full double-interaction showershape pipeline for a crossing angle:
@@ -15,7 +15,7 @@
 #
 # The crossing-angle argument selects the run range and default config:
 #   0mrad   → runs 47289–51273, config_showershape_0rad.yaml
-#   1.5mrad → runs 51274–54000, config_showershape_1p5rad.yaml
+#   1.5mrad → runs 51274–54000, config_showershape_1p5mrad.yaml
 
 #set -euo pipefail
 source /sphenix/u/shuhang98/setup.sh
@@ -38,7 +38,7 @@ case "${ANGLE}" in
     1.5mrad|1p5mrad)
         RN_MIN=51274
         RN_MAX=54000
-        DEFAULT_CONFIG="config_showershape_1p5rad.yaml"
+        DEFAULT_CONFIG="config_showershape_1p5mrad.yaml"
         ;;
     *)
         echo "ERROR: unrecognized crossing angle '${ANGLE}'. Use 0mrad or 1.5mrad."

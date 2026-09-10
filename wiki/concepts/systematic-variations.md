@@ -178,7 +178,7 @@ See [Adding a Systematic](../guides/adding-a-systematic.md) for step-by-step ins
 
 ### Per-group
 
-`plotting/rootFiles/syst_bdt_{group}.root` (same histogram structure)
+`plotting/rootFiles/syst_bdt_group_{group}.root` (same histogram structure)
 
 ### Total
 

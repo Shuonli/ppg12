@@ -33,6 +33,17 @@ This repository contains the complete analysis pipeline for measuring isolated p
 - Python 3.x with: numpy, pandas, matplotlib, scikit-learn, xgboost, PyYAML, uproot
 - Access to sPHENIX computing environment
 - Condor batch system (for parallel processing)
+- yaml-cpp built into `$MYINSTALL` (not shipped by the sPHENIX release, see [`docs/BUILD_yaml-cpp.md`](docs/BUILD_yaml-cpp.md))
+
+**Step 0, environment.** Every interactive shell and every condor job wrapper must first run
+
+```bash
+source /sphenix/user/shuhangli/ppg12/env.sh
+```
+
+`env.sh` at the repo root is the tracked equivalent of `/sphenix/u/shuhang98/setup.sh`, which 60 tracked `*.sh` scripts still source directly. It sources the sPHENIX `new` release (`sphenix_setup.sh -n new`: gcc 14.2.0, ROOT 6.32.06, cmake 3.31.0), puts `$MYINSTALL` on `LD_LIBRARY_PATH` and `ROOT_INCLUDE_PATH` through `setup_local.sh`, activates the analysis python venv, and exports `PPG12_ROOT`. Export `MYINSTALL`, `PPG12_SPHENIX_RELEASE` or `PPG12_VENV` before sourcing to override the defaults.
+
+The ROOT macros read their YAML configs with yaml-cpp. Build it once into `$MYINSTALL` following `docs/BUILD_yaml-cpp.md` (yaml-cpp 0.8.0 at commit `73ef006`, shared library, `lib64/` layout). Caveat: 59 tracked macros, including the whole nominal chain (`RecoEffCalculator_TTreeReader.C`, `MergeSim.C`, `merge_periods.C`, `CalculatePhotonYield.C`, `plot_final_selection.C`, `BDTinput.C`), still call `gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so")` with the literal path. Until those lines are migrated to `$MYINSTALL` (or to a bare `libyaml-cpp.so`, which the `LD_LIBRARY_PATH` set by `env.sh` already resolves), that exact path must exist with `lib64/libyaml-cpp.so` inside it, whatever `MYINSTALL` is set to.
 
 ### Basic Workflow
 
@@ -53,9 +64,9 @@ root -l -b -q 'apply_BDT.C'
 cd ../efficiencytool
 ./oneforall.sh config_nom.yaml
 
-# 5. Generate final plots
+# 5. Generate final plots (argument = var_type of the result to draw)
 cd ../plotting
-root -l -b -q 'plot_final.C'
+root -l -b -q 'plot_final_selection.C("bdt_nom")'
 ```
 
 ## Directory Structure
@@ -122,7 +133,7 @@ root -l -b -q 'plot_final.C'
 **Purpose**: Publication-quality plots and final results.
 
 **Key Macros**:
-- `plot_final.C` - Main results: data vs JETPHOX NLO theory
+- `plot_final_selection.C` - Main results: data vs JETPHOX NLO theory (argument = `var_type`, default `bdt_nom`, writes `figures/final_<var_type>.pdf`). Paper-formatted figures come from `paper/make_paper_figures.sh`
 - `plot_efficiency.C` - Efficiency vs pT
 - `plot_purity_*.C` - Purity estimation (signal fraction)
 - `plot_sideband_*.C` - ABCD method validation
@@ -203,7 +214,7 @@ root -l -b -q 'plot_final.C'
 └──────────────────────┬──────────────────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 9. plotting/plot_final.C                                         │
+│ 9. plotting/plot_final_selection.C                               │
 │    → Data vs theory comparison with systematics                 │
 │    → Publication-ready figures                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -324,8 +335,11 @@ done
 ```bash
 cd plotting
 
-# Main results
-root -l -q 'plot_final.C'
+# Main results (argument = var_type, default bdt_nom; writes figures/final_<var_type>.pdf)
+root -l -b -q 'plot_final_selection.C("bdt_nom")'
+
+# Paper figures (macros in paper/, output to PPG12-Paper/figures/)
+bash paper/make_paper_figures.sh
 
 # All selection plots
 ./make_all_selection.sh

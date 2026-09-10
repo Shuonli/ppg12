@@ -15,8 +15,9 @@
 
 ```bash
 cd anatreemaker/source
-./autogen.sh --prefix=$MYINSTALL
-cd build && make install  # produces libCaloAna24.so
+mkdir -p build && cd build
+../autogen.sh --prefix=$MYINSTALL   # autogen.sh runs configure in the current directory
+make install                        # produces libCaloAna24.so
 ```
 
 ## Running

@@ -15,10 +15,9 @@ ROOT/C++ plotting macros for the sPHENIX direct photon cross section analysis (P
 
 | File | What It Plots | Input Files |
 |------|---------------|-------------|
-| `plot_final.C` | Differential cross section (d sigma / dET) vs ET. Data compared to JETPHOX NLO (with scale-variation band) and PYTHIA8 truth. Ratio panels: data/NLO and NLO/data. | `Photon_final_bdt_base.root`, `syst_sum.root`, `jetPHOX_{05,10,20}.root`, `Photon_final_nom_mc.root` |
-| `plot_final_backup.C` | Backup/earlier version of the final cross section plot. | Same as `plot_final.C` |
-| `plot_final_backup250327_v1.C` | Another archived version of `plot_final.C`. | Same as `plot_final.C` |
-| `plot_final_selection.C` | Cross section plot parameterized by selection suffix, for comparing different cut configurations. | `Photon_final_{suffix}.root` |
+| `plot_final_selection.C` | Final differential cross section (d sigma / dET) vs ET, parameterized by `var_type` (default `bdt_nom`). Data compared to JETPHOX NLO (CT18 central value with scale-variation band, plus an alternative-PDF panel). Writes `figures/final_{var_type}.pdf` and the `final_*_{var_type}.pdf` companions. Paper-formatted versions live in `paper/` (`make_paper_figures.sh`). | `Photon_final_{var_type}.root`, `Photon_final_{var_type}_mc.root`, `rootFiles/syst_sum.root`, `NLO/rootFiles/jetPHOX_*_chunked.root` |
+| `plot_final_backup.C` | Archived earlier version of the final cross section plot (reference only, not run). | legacy inputs |
+| `plot_final_backup250327_v1.C` | Another archived version (reference only, not run). | legacy inputs |
 
 ## Efficiency
 

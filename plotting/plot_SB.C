@@ -24,7 +24,8 @@ void plot_SB()
     h_bg->RebinX(rebinx);
 
     // Project the iso-ET axis up to the parametric reco-iso ceiling
-    // applied in the analysis, reco_iso_max(ET) = 0.502 + 0.0433 ET
+    // applied in the analysis, reco_iso_max(ET) = 0.453194 + 0.0360234 ET
+    // (config_showershape.yaml, the config that produced the input files)
     // (approximated bin-by-bin). Without this projection cut the
     // S/B ratio is dominated by the loose tail of the jet sample
     // and the figure looks empty on a [0, 1] axis.
@@ -33,7 +34,7 @@ void plot_SB()
         h1->Reset();
         for (int ix = 1; ix <= h2->GetNbinsX(); ++ix) {
             double et = h2->GetXaxis()->GetBinCenter(ix);
-            double iso_max = 0.502095 + 0.0433036 * et;
+            double iso_max = 0.453194 + 0.0360234 * et;
             int iy_lo = h2->GetYaxis()->FindBin(-1.0);  // include negative
             int iy_hi = h2->GetYaxis()->FindBin(iso_max);
             double sum = 0, sumw2 = 0;

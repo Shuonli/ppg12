@@ -46,9 +46,16 @@ VARIANTS = [
     dict(name="0rad",
          run_min=47289, run_max=51273, lumi=32.6574),
 
-    # Run period: 1p5rad (run_min: 51274, run_max: 54000, lumi: 16.8588 pb^-1)
+    # Run period: 1p5rad (run_min: 51274, run_max: 54000, lumi: 16.2735 pb^-1).
+    # 16.2735 = Bit30UC sum of lumi/60cmLumi_fromJoey.list over 51274-54000, the
+    # value the on-disk config_showershape_1p5mrad.yaml carries. The base
+    # lumi_target 48.9309 = 32.6574 + 16.2735 is inherited (not overridden), so
+    # the former 16.8588 would over-weight the 1.5 mrad MC by 3.6 % through
+    # lumi/lumi_target. Name deliberately left as 1p5rad: this generator does not
+    # map truth_vertex_reweight_on/_file or lumi_target, so it must not be pointed
+    # at the hand-maintained config_showershape_1p5mrad.yaml (reweight ON there).
     dict(name="1p5rad",
-         run_min=51274, run_max=54000, lumi=16.8588),
+         run_min=51274, run_max=54000, lumi=16.2735),
 
     # 0rad period with tight timing cut (±2 ns cluster-MBD window)
     dict(name="0radt2",

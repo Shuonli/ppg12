@@ -22,10 +22,10 @@ mkdir -p logs
 # 0 mrad
 condor_submit list_file=showershape_di_jobs_0rad.list submit_showershape_di.sub
 # 1.5 mrad
-condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+condor_submit list_file=showershape_di_jobs_1p5mrad.list submit_showershape_di.sub
 # after all jobs finish
 bash hadd_showershape_di.sh config_showershape_0rad.yaml
-bash hadd_showershape_di.sh config_showershape_1p5rad.yaml
+bash hadd_showershape_di.sh config_showershape_1p5mrad.yaml
 ```
 
 The retired two-pass reco-vertex scheme (`run_showershape_double_reco_legacy.sh`)
@@ -127,7 +127,7 @@ truth-vertex shape is sample-invariant at first order, the same reweight file
 is reused across all MC samples — no refit, no vertex-scan pass, no per-run
 `vtxscan_sim_override` wiring. `ShowerShapeCheck.C` already includes and
 applies this machinery unconditionally when `truth_vertex_reweight_on: 1` in
-the YAML (see `config_showershape_0rad.yaml` / `config_showershape_1p5rad.yaml`).
+the YAML (see `config_showershape_0rad.yaml` / `config_showershape_1p5mrad.yaml`).
 
 **Pairs (per crossing angle).** 8 SI/DI sample pairs + 1 data = 17 condor jobs:
 
@@ -146,10 +146,10 @@ SI file does not overwrite the SI-only run from `run_showershape.sh`.
 cd efficiencytool
 mkdir -p logs
 condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub
-condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+condor_submit list_file=showershape_di_jobs_1p5mrad.list submit_showershape_di.sub
 # after all jobs complete
 bash hadd_showershape_di.sh config_showershape_0rad.yaml
-bash hadd_showershape_di.sh config_showershape_1p5rad.yaml
+bash hadd_showershape_di.sh config_showershape_1p5mrad.yaml
 ```
 
 **What each job does.** `run_showershape_di_job.sh` invokes

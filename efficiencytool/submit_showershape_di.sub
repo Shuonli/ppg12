@@ -8,7 +8,7 @@
 #
 # Submit with the list file passed on the command line, e.g.:
 #   condor_submit list_file=showershape_di_jobs_0rad.list   submit_showershape_di.sub
-#   condor_submit list_file=showershape_di_jobs_1p5rad.list submit_showershape_di.sub
+#   condor_submit list_file=showershape_di_jobs_1p5mrad.list submit_showershape_di.sub
 #
 # Pre-flight: ensure `logs/` exists under efficiencytool/ before submitting.
 

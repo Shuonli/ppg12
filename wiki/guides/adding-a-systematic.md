@@ -123,7 +123,7 @@ This will automatically pick up the new type and group from the imported `make_b
 Check the output:
 ```bash
 ls rootFiles/syst_bdt_my_type.root       # Per-type result
-ls rootFiles/syst_bdt_my_group.root      # Per-group result
+ls rootFiles/syst_bdt_group_my_group.root  # Per-group result
 ls figures/syst_bdt_rel_my_type.pdf      # Visualization
 ```
 

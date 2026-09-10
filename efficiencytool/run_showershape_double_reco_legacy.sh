@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LEGACY: two-pass reco-vertex showershape blending. The primary single-pass
 # truth-vertex showershape pipeline is now submit_showershape_di.sub +
-# showershape_di_jobs_{0rad,1p5rad}.list. Kept as a reference / cross-check.
+# showershape_di_jobs_{0rad,1p5mrad}.list. Kept as a reference / cross-check.
 # Renamed from run_showershape_double.sh.
 #
 # Usage: bash run_showershape_double_reco_legacy.sh [config_name] [double_frac]

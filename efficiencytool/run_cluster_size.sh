@@ -10,7 +10,7 @@
 #                      → results/cluster_size_cuts_{PERIOD}_{sample}.root
 #
 # Periods use the showershape configs for selection bounds:
-#   1p5mrad → efficiencytool/config_showershape_1p5rad.yaml
+#   1p5mrad → efficiencytool/config_showershape_1p5mrad.yaml
 #   0mrad   → efficiencytool/config_showershape_0rad.yaml
 #
 # Env vars:
@@ -41,7 +41,7 @@ OUTPREFIX="results/cluster_size"
 LOGPREFIX="logs/cluster_size"
 if [ -n "${PERIOD}" ]; then
   case "${PERIOD}" in
-    1p5mrad) CONFIGNAME="${repo_root}/efficiencytool/config_showershape_1p5rad.yaml" ;;
+    1p5mrad) CONFIGNAME="${repo_root}/efficiencytool/config_showershape_1p5mrad.yaml" ;;
     0mrad)   CONFIGNAME="${repo_root}/efficiencytool/config_showershape_0rad.yaml"   ;;
     *)
       echo "unknown PERIOD=${PERIOD}  (must be 1p5mrad or 0mrad)"
