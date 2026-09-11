@@ -148,19 +148,11 @@ root -l -b -q 'plot_final_selection.C("bdt_nom")'
 
 - `MakeJetPHOXhisto.C` - Converts theory output to ROOT histograms
 
-#### `toymcunfold/`
-**Purpose**: Unfolding validation studies.
-
-- `macro/jet_pt_unfolding.C` - Tests Bayesian unfolding closure
-
 ### Supporting Components
 
-- `dataana/` - Data processing utilities
 - `eventskimmer/` - Event pre-selection
 - `saturationcheck/` - Calorimeter saturation studies
 - `showershapecheck/` - Shower shape validation
-- `sideband/` - Sideband method development
-- `photontruthisopythia/` - Truth isolation studies
 - `simcrosssection/` - Cross-section calculations
 - `PPG12-analysis-note/` - LaTeX documentation
 

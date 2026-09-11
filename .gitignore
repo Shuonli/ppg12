@@ -17,13 +17,6 @@ figures/
 *.out
 *.err
 
-# But keep report sources and PDFs
-!reports/*.pdf
-!reports/*.md
-!reports/*.tex
-!efficiencytool/reports/*.pdf
-!efficiencytool/reports/*.tex
-
 # OS / editor junk
 .DS_Store
 ._*
@@ -58,11 +51,6 @@ _dry_run_index.html
 # Figures everywhere (regenerated from macros)
 *.png
 *.pdf
-
-# Re-include specific PDF exceptions
-!reports/*.pdf
-!efficiencytool/reports/*.pdf
-!wiki/raw/papers/**/*.pdf
 
 # BDT model exports
 FunWithxgboost/bdt_model*.json
@@ -145,3 +133,34 @@ efficiencytool/configs_safeguard/
 efficiencytool/logs_safeguard/
 plotting/rootFiles_*_sg*/
 plotting/figures_sg_tmp*/
+
+# Not part of the analysis: kept locally, never committed (2026-09-11 cleanup)
+reports/
+efficiencytool/reports/
+wiki/raw/papers/**/*.pdf
+anatreemaker/source/build_SL7/
+efficiencytool/config_backup/
+efficiencytool/config_showershape_*_old*.yaml
+plotting/plot_final_backup*.C
+*.bak_*
+*_backup
+ResonancePeakIsoAnalysis/
+run_hcalcosmics.sh
+compare_segments.py
+segment_differences.txt
+waveformsimbackup/
+thesis_proposal/
+FunWithxgboost/sPHENIX-Photon-Identification-TF-Analysis-Note/
+FunWithTMVA/
+toymcunfold/
+sideband/
+dataana/
+photontruthisopythia/
+pythia_reweight/
+calo_code/
+config/config.yaml
+.claude/
+CLAUDE.md
+LLM_HANDOFF.md
+AGENTS.md
+LLM_COLLABORATION.md
