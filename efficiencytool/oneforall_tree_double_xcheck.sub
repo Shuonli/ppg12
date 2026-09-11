@@ -1,11 +1,9 @@
-# oneforall_tree_double_syst.sub
+# oneforall_tree_double_xcheck.sub
 #
-# SCOPED copy of oneforall_tree_double.sub for the energy-scale-148 systematic
-# re-run (2026-06-08). Identical to the parent except the queue reads the
-# explicit syst_configs.list (nominal + 21 syst_type variant feeders/standalones)
-# instead of globbing all config_bdt*.yaml. This skips the cross-check scans
-# (b2bjet/ntbdtpair/flat/donut/innerR) and nomold, per the "systematic
-# variations only" scope.
+# Phase-1 per-period feeders for a listed set of variant configs (appendix
+# cross-checks, single-variant re-runs). Same job as oneforall_tree_double.sub,
+# but it queues only the configs named in the list given on the command line:
+#   condor_submit list_file=xcheck_feeders_20260910.list oneforall_tree_double_xcheck.sub
 #
 # Memory: 16GB (17 parallel ROOT processes per pass, ~8-12 GB peak).
 
@@ -22,5 +20,4 @@ log                   = /tmp/ppg12_xcheck_feeders_$(Cluster).log
 output                = logs/$(cfg).tree_double.out
 error                 = logs/$(cfg).tree_double.err
 
-# Queue one job per config listed in syst_configs.list
-queue cfg from xcheck_feeders_20260910.list
+queue cfg from $(list_file)
