@@ -1005,8 +1005,9 @@ void RecoEffCalculator_TTreeReader(const std::string &configname = "config_bdt_n
     // filled for clusters with ET >= tower_map_et_min (default 10 GeV = analysis
     // cross-section lower edge). Uses the same per-event `weight` as the
     // adjacent fills (MC: cross_section x lumi/lumi_target x vertex_weight x
-    // truth_vertex_reweight; data: prescale). MergeSim plain-hadds these so the
-    // merged MC output is the inclusive (signal + jet background) tower map --
+    // truth_vertex_reweight; data: prescale). MergeSim plain-hadds these per
+    // sample class and CalculatePhotonYield takes the jet merge as the inclusive
+    // MC tower map (the jet MC already contains the prompt photons) --
     // apples-to-apples with data for dead-tower diagnosis.
     const float tower_map_et_min = configYaml["analysis"]["tower_map_et_min"].as<float>(10.0f);
     TH2F *h_etaphi_tower_preselect = new TH2F(

@@ -125,7 +125,7 @@ python calc_syst_bdt.py --results ../efficiencytool/results --outdir rootFiles -
 | Purity | tight BDT threshold +0.05, non-tight BDT threshold −0.10, non-isolated sideband start (0.1 / 1.0 GeV above the cut), Erf instead of Padé purity fit, purity-fit 68% band, MC purity-closure correction |
 | Efficiency | MC isolation pedestal shift off, HERWIG instead of PYTHIA isolation efficiency |
 | Unfolding | unweighted response prior, 3 and 4 iterations |
-| Double interaction | blending fraction at the data χ² fit values (0.200 at 0 mrad, 0.000 at 1.5 mrad), both periods in one variation |
+| Double interaction | blending fraction at the data χ² fit values (0.185 at 0 mrad, 0.000 at 1.5 mrad), both periods in one variation |
 | NPB | NPB score cut 0.3 and 0.7 |
 | Flat | luminosity +9.13% / −6.75%, MBD vertex efficiency ±6% |
 

@@ -73,6 +73,29 @@ else
     echo "[hadd_showershape_di] skipping background-only hadd (per-sample inputs not found; run showershape_di_jobs_${SUFFIX#showershape_}_bkgonly.list first)"
 fi
 
+# SI_total / DI_total for the blending-fraction chi2 scan (chi2_weight_scan.C):
+# the 5 inclusive-jet SI samples and the 5 inclusive-jet DI samples. The jet MC
+# already contains the prompt-photon processes, so the photon samples are not
+# added. The scan divides out the baked-in mix_weight to recover the templates.
+SI_TOTAL="${RESULTS_DIR}/MC_efficiencyshower_shape_SI_total_${SUFFIX}.root"
+DI_TOTAL="${RESULTS_DIR}/MC_efficiencyshower_shape_DI_total_${SUFFIX}.root"
+
+hadd -f "${SI_TOTAL}" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet8_nom_inclusive_${SUFFIX}.root"  \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet12_nom_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet20_nom_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet30_nom_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet40_nom_inclusive_${SUFFIX}.root"
+
+hadd -f "${DI_TOTAL}" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet8_double_inclusive_${SUFFIX}.root"  \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet12_double_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet20_double_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet30_double_inclusive_${SUFFIX}.root" \
+    "${RESULTS_DIR}/MC_efficiencyshower_shape_jet40_double_inclusive_${SUFFIX}.root"
+
+echo "[hadd_showershape_di] wrote ${SI_TOTAL} and ${DI_TOTAL} (chi2 scan totals)"
+
 # SI-only reference hadds (no DI blending) — consumed by
 # plot_showershapes_variations.C when use_mixed=false (the `dis_*` prefix).
 # Each _nom sample still carries mix_weight = SINGLE_FRAC, so per-bin shape

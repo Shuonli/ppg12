@@ -45,7 +45,7 @@ ROOT/C++ plotting macros for the sPHENIX direct photon cross section analysis (P
 | `plot_sideband_sim.C` | ABCD sideband ratios using only MC (jet MC as pseudo-data, signal MC for leakage). | `MC_efficiency_jet_nom.root`, `MC_efficiency_nom.root` |
 | `plot_sideband_sim_selection.C` | Same as `plot_sideband_sim.C` parameterized by suffix. | `MC_efficiency_jet_{suffix}.root`, `MC_efficiency_{suffix}.root` |
 | `plot_sideband_compare_left_right.C` | Compares ABCD histograms between two different analysis configurations (right vs left) to check sideband stability. | Two sets of `Photon_final_{suffix}.root` |
-| `plot_SB.C` | Signal-to-background ratio (S/B) vs ET using signal and jet MC shower-shape files, scaled by cross sections. | `MC_efficiencyshower_shape_signal.root`, `MC_efficiencyshower_shape_jet.root` |
+| `plot_SB.C` | Signal-to-background ratio (S/B) vs ET from the inclusive jet MC alone (signal = clusters matched to isolated prompt photons, background = all other clusters), no isolation or ID selection. | `MC_efficiencyshower_shape_jet_inclusive_combined_showershape.root` (`h_ET_isoET_eta0`, `h_ET_isoET_signal_eta0`) |
 
 ## Unfolding
 

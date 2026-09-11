@@ -1,65 +1,42 @@
 #include "plotcommon.h"
-#include "../efficiencytool/CrossSectionWeights.h"
-#include <yaml-cpp/yaml.h>
-using namespace PPG12;
 
 void plot_SB()
 {
     init_plot();
 
-    // Updated 2026-04 to current shower-shape filename convention.
-    TFile *fin_sig = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_signal_combined_showershape.root", "READ");
-    TFile *fin_bg  = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_combined_showershape.root", "READ");
+    // Signal and background both come from the inclusive jet MC. It already
+    // contains prompt-photon production at the PYTHIA rate, so adding the
+    // photon MC on top would count the prompt photons twice.
+    TFile *fin = new TFile("/sphenix/user/shuhangli/ppg12/efficiencytool/results/MC_efficiencyshower_shape_jet_inclusive_combined_showershape.root", "READ");
 
-    // Convert the bg histogram from jet50-normalised units (the
-    // SampleConfig::weight reference for jet samples) into the same
-    // photon20-normalised units as the signal histogram, so S/B is a
-    // proper physical ratio.
-    float jet_scale = jet50cross / photon20cross;
-
-    TH2D* h_sig = (TH2D *)fin_sig->Get("h_ET_isoET_eta0");
-    TH2D* h_bg = (TH2D *)fin_bg->Get("h_ET_isoET_eta0");
+    // h_ET_isoET: all truth-matched clusters. h_ET_isoET_signal: the subset
+    // matched to a truth signal photon (direct or fragmentation, truth iso
+    // below the fiducial cut). Background is everything else.
+    TH2D* h_all = (TH2D *)fin->Get("h_ET_isoET_eta0");
+    TH2D* h_sig = (TH2D *)fin->Get("h_ET_isoET_signal_eta0");
+    if (!h_all || !h_sig)
+    {
+        std::cerr << "plot_SB: h_ET_isoET_eta0 or h_ET_isoET_signal_eta0 missing in " << fin->GetName() << std::endl;
+        return;
+    }
 
     int rebinx = 16;
+    h_all->RebinX(rebinx);
     h_sig->RebinX(rebinx);
-    h_bg->RebinX(rebinx);
 
-    // Project the iso-ET axis up to the parametric reco-iso ceiling
-    // reco_iso_max(ET) = reco_iso_max_b + reco_iso_max_s * ET, read from
-    // config_showershape.yaml (the config that produced the input files)
-    // (approximated bin-by-bin). Without this projection cut the
-    // S/B ratio is dominated by the loose tail of the jet sample
-    // and the figure looks empty on a [0, 1] axis.
-    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
-    YAML::Node ss_cfg = YAML::LoadFile("/sphenix/user/shuhangli/ppg12/efficiencytool/config_showershape.yaml");
-    const double iso_b = ss_cfg["analysis"]["reco_iso_max_b"].as<double>();
-    const double iso_s = ss_cfg["analysis"]["reco_iso_max_s"].as<double>();
-    auto project_iso = [iso_b, iso_s](TH2D *h2, const char *name) {
-        TH1D *h1 = (TH1D *)h2->ProjectionX(name, 0, 0);  // template
-        h1->Reset();
-        for (int ix = 1; ix <= h2->GetNbinsX(); ++ix) {
-            double et = h2->GetXaxis()->GetBinCenter(ix);
-            double iso_max = iso_b + iso_s * et;
-            int iy_lo = h2->GetYaxis()->FindBin(-1.0);  // include negative
-            int iy_hi = h2->GetYaxis()->FindBin(iso_max);
-            double sum = 0, sumw2 = 0;
-            for (int iy = iy_lo; iy <= iy_hi; ++iy) {
-                sum   += h2->GetBinContent(ix, iy);
-                sumw2 += h2->GetBinError(ix, iy) * h2->GetBinError(ix, iy);
-            }
-            h1->SetBinContent(ix, sum);
-            h1->SetBinError(ix, std::sqrt(sumw2));
-        }
-        return h1;
-    };
-    TH1D *h_sig_proj = project_iso(h_sig, "h_sig_proj");
-    TH1D *h_bg_proj  = project_iso(h_bg,  "h_bg_proj");
+    // No isolation or identification selection: project over the full iso-ET axis.
+    TH1D *h_all_proj = h_all->ProjectionX("h_all_proj");
+    TH1D *h_sig_proj = h_sig->ProjectionX("h_sig_proj");
 
-    h_sig_proj->Sumw2();
-    h_bg_proj->Sumw2();
-
-    //scale background
-    h_bg_proj->Scale(jet_scale);
+    // background = all - signal. The signal clusters are a subset of all
+    // with the same weights, so the background sum of squared weights is
+    // the difference as well.
+    TH1D *h_bg_proj = (TH1D *)h_all_proj->Clone("h_bg_proj");
+    for (int ix = 1; ix <= h_bg_proj->GetNbinsX(); ++ix) {
+        double err2 = std::pow(h_all_proj->GetBinError(ix), 2) - std::pow(h_sig_proj->GetBinError(ix), 2);
+        h_bg_proj->SetBinContent(ix, h_all_proj->GetBinContent(ix) - h_sig_proj->GetBinContent(ix));
+        h_bg_proj->SetBinError(ix, std::sqrt(std::max(err2, 0.0)));
+    }
 
     //calculate s/b
     TH1D* h_sb = (TH1D *)h_sig_proj->Clone("h_sb");
@@ -78,21 +55,14 @@ void plot_SB()
     h_sb->SetMarkerSize(1.5);
     h_sb->SetLineColor(kBlack);
     h_sb->Draw("P same");
-    //h_bg_proj->Draw();
 
     myText(0.5, 0.9, 1, strleg1.c_str(), 0.04);
     myText(0.5, 0.85, 1, strleg2.c_str(), 0.04);
     myText(0.5, 0.80, 1, strMC.c_str(), 0.04);
 
+    for (int ix = h_sb->FindBin(10.01); ix <= h_sb->FindBin(31.99); ++ix)
+        std::cout << "S/B " << h_sb->GetXaxis()->GetBinLowEdge(ix) << "-" << h_sb->GetXaxis()->GetBinUpEdge(ix)
+                  << " GeV: " << h_sb->GetBinContent(ix) << " +- " << h_sb->GetBinError(ix) << std::endl;
+
     c1->SaveAs("figures/SB.pdf");
-
-
-
-
-
-
-
-
-
-
 }

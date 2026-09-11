@@ -738,8 +738,7 @@ Default fraction: 18.7% double (0 mrad). Accepts second argument for 7.2% (1.5 m
 
 Runs `DoubleInteractionCheck.C` for all sample types (10 parallel jobs), then merges:
 - Signal: photon5+10+20 -> `_signal.root`
-- Jet: jet5+8+12+20+30+40 -> `_jet.root`
-- Combined: signal+jet -> `_inclusive.root`
+- Jet: jet5+8+12+20+30+40 -> `_jet.root` (inclusive, the jet MC already contains the prompt photons)
 
 ### `oneforall.sub`
 

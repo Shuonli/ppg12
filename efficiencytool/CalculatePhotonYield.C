@@ -49,18 +49,11 @@ void scale_histogram(TH1 *h, float lumi)
     }
 }
 
-void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pade.yaml", bool isMC = false, bool isMCInclusive = false)
+void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pade.yaml", bool isMC = false)
 {
-    // isMCInclusive=true overrides the default isMC=true behaviour: instead of using
-    // the jet-only merged MC as the "data" side, use the full (photon + jet, cross-
-    // section weighted) inclusive merged MC. This is the proper MC closure test for
-    // the full cocktail that matches the as-taken data composition, whereas the
-    // isMC && !isMCInclusive path is the jet-only self-consistency test.
-    if (isMCInclusive && !isMC)
-    {
-        std::cout << "WARN: isMCInclusive=true requires isMC=true. Forcing isMC=true." << std::endl;
-        isMC = true;
-    }
+    // isMC=true runs the MC closure: the inclusive jet MC (which already contains
+    // the prompt-photon processes at the PYTHIA rate) takes the place of the data,
+    // while the photon MC provides the signal leakage and efficiencies as in the data run.
     float mbdcorr = 25.2/42 / 0.57;
     float solid_angle = 2 * M_PI * 0.7 * 2;
     // lumi times cross section is events
@@ -105,10 +98,8 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     // for mc we can check the actual purity
     if (isMC)
     {
-        // For the jet-only closure (isMCInclusive=false) the jet MC is the "data", so
-        // we use its luminosity. For the inclusive-MC closure the "data" is the same
-        // photon+jet cocktail as the MC itself (siminput), so use simluminosity.
-        luminosity = isMCInclusive ? simluminosity : jetluminosity;
+        // the inclusive jet MC is the "data", so use its luminosity
+        luminosity = jetluminosity;
     }
 
     int fittingerror = configYaml["analysis"]["fittingerror"].as<int>(0);
@@ -120,7 +111,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
 
     std::string var_type = configYaml["output"]["var_type"].as<std::string>();
 
-    std::string mcstring = isMC ? (isMCInclusive ? "_mcincl" : "_mc") : "";
+    std::string mcstring = isMC ? "_mc" : "";
 
     std::string outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + mcstring + ".root";
     std::string mc_outfilename = configYaml["output"]["final_outfile"].as<std::string>() + "_" + var_type + "_mc.root";
@@ -130,15 +121,7 @@ void CalculatePhotonYield(const std::string &configname = "config_bdt_purity_pad
     std::string datainput = configYaml["output"]["data_outfile"].as<std::string>() + "_" + var_type + ".root";
     if (isMC)
     {
-        if (isMCInclusive)
-        {
-            // Inclusive MC = photon + jet cross-section weighted merge, same file as siminput
-            datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
-        }
-        else
-        {
-            datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_jet_" + var_type + ".root";
-        }
+        datainput = configYaml["output"]["eff_outfile"].as<std::string>() + "_jet_" + var_type + ".root";
     }
     std::string siminput = configYaml["output"]["eff_outfile"].as<std::string>() + "_" + var_type + ".root";
 
@@ -1355,9 +1338,9 @@ std::cout << "p-value = " << pvalue << "\n";
 
     // ---------------------------------------------------------------------
     // Tower-index (ietacent x iphicent) acceptance maps:
-    //   - Read 4 TH2s from signal merge (fsimin) and jet merge, sum into the
-    //     inclusive MC tower map (MergeSim already applies xsec x lumi/lumi_target
-    //     weights per sample, so plain Add gives inclusive).
+    //   - Read the 4 TH2s from the jet merge. The jet MC is the inclusive sample
+    //     (it already contains the prompt-photon processes at the PYTHIA rate), so
+    //     it is the inclusive MC tower map on its own. The photon MC is not added.
     //   - Read the 4 TH2s from data (fdatain) as-is.
     //   - Write both with _mc_inclusive / _data suffix into Photon_final_{var_type}.root
     //     for direct downstream plotting (no re-hadd needed).
@@ -1372,18 +1355,13 @@ std::cout << "p-value = " << pvalue << "\n";
     for (const auto &lvl : tower_levels)
     {
         std::string hname = "h_etaphi_tower_" + lvl;
-        TH2F *h_sig = (TH2F *) fsimin->Get(hname.c_str());
-        if (!h_sig) {
-            std::cout << "WARNING: missing " << hname << " in " << siminput << std::endl;
+        TH2F *h_jet = (fjetin && !fjetin->IsZombie()) ? (TH2F *) fjetin->Get(hname.c_str()) : nullptr;
+        if (!h_jet) {
+            std::cout << "WARNING: missing " << hname << " in " << jetinput << std::endl;
             continue;
         }
-        TH2F *h_inc = (TH2F *) h_sig->Clone((hname + "_mc_inclusive").c_str());
+        TH2F *h_inc = (TH2F *) h_jet->Clone((hname + "_mc_inclusive").c_str());
         h_inc->SetDirectory(fout);
-        if (fjetin && !fjetin->IsZombie()) {
-            TH2F *h_jet = (TH2F *) fjetin->Get(hname.c_str());
-            if (h_jet) h_inc->Add(h_jet);
-            else std::cout << "WARNING: missing " << hname << " in " << jetinput << std::endl;
-        }
         h_inc->Write((hname + "_mc_inclusive").c_str(), TObject::kOverwrite);
 
         // Pass data through too (only if fdatain holds real data, not the

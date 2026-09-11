@@ -862,6 +862,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     std::vector<std::vector<TH1D *>> h_background_truth_iso;
     h_background_truth_iso.resize(eta_bins.size() - 1);
     std::vector<TH2D *> h_ET_isoET;
+    // same fill restricted to clusters matched to a truth signal photon (the prompt-photon part of the inclusive jet samples)
+    std::vector<TH2D *> h_ET_isoET_signal;
 
     // NPB score vs cluster-MBD time histograms (2D)
     std::vector<std::vector<TH2D *>> h_npb_score_vs_time;
@@ -900,6 +902,9 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         h_ET_isoET.push_back(new TH2D(Form("h_ET_isoET_eta%d", ieta),
                                       Form("ET vs isoET %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
                                       400, 0, 50, 4400, -5, 50));
+        h_ET_isoET_signal.push_back(new TH2D(Form("h_ET_isoET_signal_eta%d", ieta),
+                                             Form("ET vs isoET, truth signal matched %.1f < eta < %.1f", eta_bins[ieta], eta_bins[ieta + 1]),
+                                             400, 0, 50, 4400, -5, 50));
 
         for (int ipt = 0; ipt < n_pT_bins; ipt++)
         {
@@ -1586,6 +1591,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
             }
 
             //
+            bool truth_signal_match = false;
             if (issim)
             {
                 if (particle_trkidmap.find(cluster_truthtrkID[icluster]) == particle_trkidmap.end())
@@ -1595,6 +1601,7 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
                     continue;
                 }
                 int iparticle = particle_trkidmap[cluster_truthtrkID[icluster]];
+                truth_signal_match = (signal_set.find(iparticle) != signal_set.end());
                 if (!isbackground)
                 {
                     if (signal_set.find(iparticle) == signal_set.end())
@@ -1678,6 +1685,8 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
 
             // fill iso ET and et histogram
             h_ET_isoET[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
+            if (truth_signal_match)
+                h_ET_isoET_signal[etabin]->Fill(cluster_Et[icluster], recoisoET, weight);
 
             // now fill the histograms
             auto fillAllHists = [&](int idx, size_t icl)

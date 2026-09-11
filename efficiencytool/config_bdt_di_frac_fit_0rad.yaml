@@ -306,4 +306,4 @@ analysis:
 
   lumi_target: 64.3718
   vertex_cut_truth: 9999.0
-  double_frac_override: 0.2
+  double_frac_override: 0.185

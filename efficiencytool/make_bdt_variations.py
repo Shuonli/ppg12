@@ -315,8 +315,7 @@ VARIANTS = [
     # ----------------------------------------------------------
     # T3: Double-interaction blending fraction at the data-driven chi^2 f_best.
     # Analytic DOUBLE_FRAC 0.224 / 0.079 (cluster-weighted, triple+ folded into double), fit values:
-    #   0 mrad:   f_best = 0.200 (analytic 0.224, |Δf| = 0.024; 0.290 before the
-    #             2026-09-10 shower-shape config sync)
+    #   0 mrad:   f_best = 0.185 (analytic 0.224, |Δf| = 0.039)
     #   1.5 mrad: f_best = 0.000 (analytic 0.079, |Δf| = 0.079)
     # Manual triplet (bare-name + 2 feeders) so each crossing carries its own
     # f_best while the all-range merge_periods.sh step produces a single
@@ -333,7 +332,7 @@ VARIANTS = [
     # and the run filter is inclusive on both ends, so sharing the 51274 endpoint
     # with the 1.5 mrad feeder would count that run's data twice in the all-range
     # hadd while its luminosity is counted once (same rule as PER_PERIOD_OVERRIDES).
-    dict(name="di_frac_fit_0rad", double_frac_override=0.200,
+    dict(name="di_frac_fit_0rad", double_frac_override=0.185,
          run_min=47289, run_max=51273, lumi=47.2076, lumi_target=64.3718,
          vertex_cut_truth=9999.0, truth_vertex_reweight_on=1,
          truth_vertex_reweight_file="/sphenix/user/shuhangli/ppg12/efficiencytool/truth_vertex_reweight/output/0mrad/reweight.root",
@@ -486,7 +485,7 @@ SYST_TYPES = {
     "eres":         {"mode": "max",         "group": "eres"},
     # ---- DI blending fraction: data-driven envelope from the chi^2 fit at the
     #     preselection cut. One all-range variant (di_frac_fit) whose two
-    #     period-pinned feeders carry f_best (0.200 at 0 mrad, 0.000 at
+    #     period-pinned feeders carry f_best (0.185 at 0 mrad, 0.000 at
     #     1.5 mrad), so both crossings are varied in the same run. Its
     #     syst_role is "one_sided" and calc_syst_bdt takes |Δσ| of that combined
     #     spectrum symmetrically (single-member group, no per-crossing quadrature).

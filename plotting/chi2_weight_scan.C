@@ -4,12 +4,14 @@
 //   MC_incl(f) = (1 - f) * SI_truth + f * DI_truth
 //   SI_truth   = SI_total / SINGLE_FRAC_old
 //   DI_truth   = DI_total / DOUBLE_FRAC_old
-// where SI_total / DI_total are pre-hadded over the 8 SI / 8 DI samples
-// (3 signal photon + 5 inclusive jet pT bins). The hadds carry the analytic
-// mix_weight × cross_section × (lumi/lumi_target) × TVW(z_truth) per event,
-// hence the divide-by-f0 step recovers the truth-shape templates so f is
-// the physical DI fraction directly. Round-trip identity at f = DOUBLE_FRAC_old:
-//   MC_incl(f0) == SI_total + DI_total == signal_combined + jet_inclusive_combined
+// where SI_total / DI_total are pre-hadded over the 5 SI / 5 DI inclusive jet
+// samples (jet{8,12,20,30,40}_{nom,double}_inclusive, built by
+// hadd_showershape_di.sh). The jet MC already contains the prompt-photon
+// processes at the PYTHIA rate, so the photon samples are not added. The hadds
+// carry the analytic mix_weight × cross_section × (lumi/lumi_target) × TVW(z_truth)
+// per event, hence the divide-by-f0 step recovers the truth-shape templates so f
+// is the physical DI fraction directly. Round-trip identity at f = DOUBLE_FRAC_old:
+//   MC_incl(f0) == SI_total + DI_total == jet_inclusive_combined
 //
 // DOUBLE_FRAC_old is inferred from the config_suffix:
 //   "*0rad"   / "*0mrad"  → 0.224 (analytic 0  mrad)
@@ -113,10 +115,10 @@ void chi2_weight_scan(
     std::cout << "Chi2 computed over pT bins [" << chi2PtMin << ", " << chi2PtMax << "] = ["
               << pT_bin_edges[chi2PtMin] << ", " << pT_bin_edges[chi2PtMax + 1] << "] GeV" << std::endl;
 
-    // Open files. SI_total / DI_total are pre-hadded across all 8 SI / 8 DI
-    // samples (photon{5,10,20}_{nom,double} + jet{8,12,20,30,40}_{nom,double}_inclusive)
-    // so each carries the full inclusive MC contribution at the analytic
-    // mix_weight (SINGLE_FRAC_old / DOUBLE_FRAC_old respectively).
+    // Open files. SI_total / DI_total are pre-hadded across the 5 SI / 5 DI
+    // inclusive jet samples (jet{8,12,20,30,40}_{nom,double}_inclusive), so each
+    // carries the full inclusive MC contribution at the analytic mix_weight
+    // (SINGLE_FRAC_old / DOUBLE_FRAC_old respectively).
     const std::string resultsDir       = "/sphenix/user/shuhangli/ppg12/efficiencytool/results/";
     const std::string dataFile         = resultsDir + "data_histoshower_shape_" + config_suffix + ".root";
     const std::string bkgInclusiveFile = resultsDir + "MC_efficiencyshower_shape_SI_total_" + config_suffix + ".root";

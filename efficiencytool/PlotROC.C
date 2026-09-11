@@ -10,6 +10,7 @@
 #include <vector>
 #include <cmath>
 #include <TFile.h>
+#include <algorithm>
 #include <TH1.h>
 #include <TGraph.h>
 #include <TCanvas.h>
@@ -58,8 +59,12 @@ TGraph *BuildROC(TH1D *h_sig, TH1D *h_bg)
     return g;
 }
 
+// n_iso_combined: number of definitions drawn on the combined ROC canvases, in
+// iso_labels order. The analysis note shows the first five (7 adds the two
+// topo-soft variants).
 void PlotROC(const std::string &infile  = "results/roc_isoET_merged_isoroc.root",
-             const std::string &outdir  = "roc_plots")
+             const std::string &outdir  = "roc_plots",
+             int n_iso_combined = 5)
 {
     gSystem->mkdir(outdir.c_str(), kTRUE);
 
@@ -124,7 +129,7 @@ void PlotROC(const std::string &infile  = "results/roc_isoET_merged_isoroc.root"
                  Form("%.0f < #it{E}_{T}^{cluster} < %.0f GeV", pt_lo, pt_hi));
 
         bool first = true;
-        for (int iiso = 0; iiso < 7; iiso++)
+        for (int iiso = 0; iiso < std::min(n_iso_combined, 7); iiso++)
         {
             TH1D *h_sig = dynamic_cast<TH1D*>(fin->Get(Form("h_signal_%s_pt%d", iso_labels[iiso], ipt)));
             TH1D *h_bg  = dynamic_cast<TH1D*>(fin->Get(Form("h_bg_%s_pt%d",     iso_labels[iiso], ipt)));

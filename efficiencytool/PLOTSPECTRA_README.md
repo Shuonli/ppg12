@@ -82,8 +82,7 @@ Examples:
 
 ### Combined Files (after running combine script)
 - `PlotSpectra_photon_combined.root` - All photon samples
-- `PlotSpectra_jet_combined.root` - All jet samples
-- `PlotSpectra_all_combined.root` - All samples
+- `PlotSpectra_jet_combined.root` - All jet samples (the jet MC is inclusive, it already contains the prompt photons, so there is no photon+jet combination)
 
 ## Histograms Created
 

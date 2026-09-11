@@ -4,7 +4,7 @@ Topo-cluster isolation + photon self-energy containment study.
 
 Study A: isolation distributions vs cone radius.
   - Truth-matched isolated direct photons (signal MC only)      [for containment physics]
-  - Inclusive MC (signal + jets, cross-section weighted)        [matches what is compared to data]
+  - Inclusive MC (jet samples, cross-section weighted; the jet MC already holds the prompt photons)  [matches what is compared to data]
   - Data (part_*_with_bdt_split.root, no truth match)
   Each with pre-common and post-common (npb_score > 0.5) selections.
 
@@ -258,12 +258,12 @@ def main():
     t_npb    = np.concatenate(t_npb);    t_w       = np.concatenate(t_w)
     print(f"  truth-matched direct-iso photons: {len(t_clu_Et):,}")
 
-    # ---------- MC: inclusive (signal + jets, cross-section weighted) ----------
+    # ---------- MC: inclusive (jet samples, cross-section weighted; the jet MC already holds the prompt photons) ----------
     mi_iso    = {rs: [] for rs, _ in RADII}
     mi_iso_tw = {rs: [] for rs, _ in RADII_TOWER}
     mi_iso_xtra = {sfx: [] for sfx in TOWER_ISO_EXTRA}
     mi_clu_Et, mi_npb, mi_w = [], [], []
-    for s in SIGNAL_SAMPLES + JET_SAMPLES:
+    for s in JET_SAMPLES:
         w = XSEC[s] / N_EVENTS_NOM
         print(f"MC inclusive {s} (weight {w:.3e})")
         iso, iso_tw, iso_xtra, cEt, np_, ww = read_inclusive(

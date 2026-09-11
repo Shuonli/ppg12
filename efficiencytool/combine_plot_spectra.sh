@@ -35,11 +35,6 @@ if [ -n "$JET_FILES" ]; then
     echo "Created: PlotSpectra_jet_combined.root"
 fi
 
-# Combine all samples
-echo ""
-echo "Combining all samples..."
-hadd -f PlotSpectra_all_combined.root PlotSpectra_photon*.root PlotSpectra_jet*.root
-
 echo ""
 echo "=========================================="
 echo "Combination complete!"
