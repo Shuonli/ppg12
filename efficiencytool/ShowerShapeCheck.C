@@ -6,6 +6,7 @@ using namespace PPG12;
 #include <TTreeReaderArray.h>
 #include <TFile.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <cmath>
 #include <fstream>
 #include <sstream>
@@ -574,6 +575,35 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
     float common_cluster_weta_cogx_bound = configYaml["analysis"]["common"]["cluster_weta_cogx_bound"].as<float>(0.8);
     float mc_iso_shift = configYaml["analysis"]["mc_iso_shift"].as<float>(0.0);
     float mc_iso_scale = configYaml["analysis"]["mc_iso_scale"].as<float>(1.0);
+
+    // Tower-mask veto, mirroring RecoEffCalculator_TTreeReader.C: clusters whose
+    // center tower is flagged in the binary TH2I mask are skipped for data and
+    // MC alike, so the shower-shape distributions use the nominal acceptance.
+    int tower_mask_on = configYaml["analysis"]["tower_mask_on"].as<int>(0);
+    std::string tower_mask_file = configYaml["analysis"]["tower_mask_file"].as<std::string>("");
+    std::string tower_mask_name = configYaml["analysis"]["tower_mask_name"].as<std::string>("");
+    TH2I *h_tower_mask = nullptr;
+    if (tower_mask_on && !tower_mask_file.empty() && !tower_mask_name.empty())
+    {
+        TDirectory *dir_before_mask = gDirectory;
+        TFile *f_tower_mask = TFile::Open(tower_mask_file.c_str(), "READ");
+        if (!f_tower_mask || f_tower_mask->IsZombie())
+        {
+            std::cerr << "[tower-mask] FATAL: cannot open " << tower_mask_file << std::endl;
+            return;
+        }
+        h_tower_mask = dynamic_cast<TH2I *>(f_tower_mask->Get(tower_mask_name.c_str()));
+        if (!h_tower_mask)
+        {
+            std::cerr << "[tower-mask] FATAL: histogram '" << tower_mask_name
+                      << "' not found in " << tower_mask_file << std::endl;
+            return;
+        }
+        h_tower_mask->SetDirectory(nullptr);
+        if (dir_before_mask) dir_before_mask->cd();
+        std::cout << "[tower-mask] loaded " << tower_mask_name << " from " << tower_mask_file
+                  << ": " << (int)h_tower_mask->Integral() << " masked towers" << std::endl;
+    }
 
     int reweight = configYaml["analysis"]["unfold"]["reweight"].as<int>(0); // 0 for no reweighting, 1 for reweighting
     float clusterescale = configYaml["analysis"]["cluster_escale"].as<float>(1.0);
@@ -1416,6 +1446,16 @@ void ShowerShapeCheck(const std::string &configname = "config_showershape.yaml",
         // loop over clusters
         for (int icluster = 0; icluster < *ncluster; icluster++)
         {
+            // tower-mask veto (same center-tower test as RecoEffCalculator_TTreeReader.C)
+            if (h_tower_mask)
+            {
+                int ieta_mask = (int)cluster_ietacent[icluster];
+                int iphi_mask = (int)cluster_iphicent[icluster];
+                if (ieta_mask >= 0 && ieta_mask < h_tower_mask->GetNbinsX() &&
+                    iphi_mask >= 0 && iphi_mask < h_tower_mask->GetNbinsY() &&
+                    h_tower_mask->GetBinContent(ieta_mask + 1, iphi_mask + 1) > 0)
+                    continue;
+            }
             // need ET > 10 GeV
             if (cluster_Et[icluster] < reco_min_ET)
                 continue;

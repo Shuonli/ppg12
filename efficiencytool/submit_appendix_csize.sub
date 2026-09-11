@@ -1,0 +1,10 @@
+universe       = vanilla
+executable     = /bin/bash
+arguments      = "run_appendix_csize_job.sh $(ft)"
+initialdir     = /sphenix/user/shuhangli/ppg12/efficiencytool
+request_memory = 8GB
+log            = /tmp/ppg12_appendix_csize_$(Cluster).log
+output         = logs/appendix_csize_$(ft).out
+error          = logs/appendix_csize_$(ft).err
+Notification   = Never
+queue ft in (jet12_nom, jet12_double, photon10_nom, photon10_double)

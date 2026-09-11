@@ -440,6 +440,15 @@ for _lvl in ("preselect", "common", "tight", "or"):
         syst_type=None, syst_role=None,
     ))
 
+# Mask-off reference for the phi-symmetry acceptance cross-check. The nominal
+# has applied mask_phisymm_tight since 2026-04-23, so the tower-acceptance
+# appendix quotes each mask variant relative to this unmasked run.
+VARIANTS.append(dict(
+    name="mask_phisymm_off",
+    tower_mask_on=0,
+    syst_type=None, syst_role=None,
+))
+
 # ---------------------------------------------------------------------------
 # Systematic type definitions
 # mode: "two_sided" | "one_sided" | "max" | "placeholder"

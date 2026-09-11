@@ -12,7 +12,7 @@ input:
   # bdt_et_bin_edges has N+1 values; bdt_et_bin_models has N values.
   # Clusters outside all bins use bdt_model_name as fallback.
   bdt_et_bin_edges: [8, 15, 35]
-  bdt_et_bin_models: ["base_v1E", "base_v1E"]
+  bdt_et_bin_models: ["base_v3E", "base_v3E"]
   unfold_input: "results/MC_efficiency_photon5.root"
 
 output:
@@ -30,8 +30,8 @@ analysis:
   #vertex_cut: 60.0
   truth_iso_max: 4.0
   reco_iso_min: -20.0
-  reco_iso_max_b: 0.453194
-  reco_iso_max_s: 0.0360234
+  reco_iso_max_b: 0.490
+  reco_iso_max_s: 0.037
   #reco_iso_max_b: 0
   #reco_iso_max_s: 0.0293956
   #reco_iso_max_b: 0.330117
@@ -70,7 +70,10 @@ analysis:
   et3_on: 0
   et4_on: 0
   bdt_on: 1
-  mc_iso_shift: 0.2
+  mc_iso_shift: 0.1
+  tower_mask_on: 1
+  tower_mask_file: "/sphenix/user/shuhangli/ppg12/efficiencytool/tower_masks_bdt_nom.root"
+  tower_mask_name: "mask_phisymm_tight"
   mc_iso_scale: 1.2
   vertex_reweight_on: 1
   use_split_bdt: 1  # 1: use model_{name}_split_single_tmva.root and npb_score_split_tmva.root (matches apply_BDT.C)
@@ -148,8 +151,8 @@ analysis:
     #bdt
     bdt_max: 1.0
     bdt_min: 0.7
-    bdt_min_slope: -0.02
-    bdt_min_intercept: 0.86
+    bdt_min_slope: -0.0015625
+    bdt_min_intercept: 0.815625
 
 
   non_tight:
@@ -204,12 +207,14 @@ analysis:
 
     #bdt
     bdt_max: 0.5
-    bdt_min: 0.00
-    bdt_min_slope: -0.02
-    bdt_min_intercept: 0.86
+    bdt_max_intercept: 0.684375
+    bdt_max_slope: 0.0015625
+    bdt_min: 0.02
+    bdt_min_slope: -0.01333333333333333
+    bdt_min_intercept: 0.7333333333333333
 
   common:
-    wr_cogx_bound: 2.0
+    wr_cogx_bound: 0.0
     cluster_weta_cogx_bound: 2.0
 
     npb_cut_on: 1

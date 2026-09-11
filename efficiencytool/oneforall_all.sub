@@ -27,7 +27,7 @@ Notification          = Never
 executable            = /bin/bash
 arguments             = "oneforall.sh $(cfg)"
 
-log                   = logs/$(cfg).all.log
+log                   = /tmp/$(cfg).all.log
 output                = logs/$(cfg).all.out
 error                 = logs/$(cfg).all.err
 

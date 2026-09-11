@@ -233,20 +233,30 @@ void VertexReweightAltDoubleDiag() {
     tx.SetTextFont(42); tx.SetTextSize(0.048);
     double y = 0.76;
     const double dy = 0.06;
-    tx.DrawLatex(0.05, y, "#bullet  1.5 mrad data reco width:");             tx.DrawLatex(0.78, y, "22.3");
+    // Widths are RMS values of the histograms in this file (previously typed in by hand).
+    TH1D* hTs = (TH1D*)f->Get("hT_single_1p5mrad");
+    const double w_data   = hD->GetRMS();
+    const double w_tsing  = hTs ? hTs->GetRMS() : 0.0;
+    const double w_tdoub  = hR->ProjectionY("_py_truth_double_1p5mrad")->GetRMS();
+    const double w_rdoub  = hR->ProjectionX("_px_reco_double_1p5mrad")->GetRMS();
+    const double w_kernel = hKernel->GetRMS();
+    std::cout << "[diag] widths (cm): data reco " << w_data << ", single truth " << w_tsing
+              << ", double truth " << w_tdoub << ", double reco " << w_rdoub
+              << ", kernel(z_t=0) " << w_kernel << std::endl;
+    tx.DrawLatex(0.05, y, "#bullet  1.5 mrad data reco width:");             tx.DrawLatex(0.78, y, Form("%.1f", w_data));
     y -= dy;
-    tx.DrawLatex(0.05, y, "#bullet  single MC truth width:");                tx.DrawLatex(0.78, y, "57.6");
+    tx.DrawLatex(0.05, y, "#bullet  single MC truth width:");                tx.DrawLatex(0.78, y, Form("%.1f", w_tsing));
     y -= dy;
-    tx.DrawLatex(0.05, y, "#bullet  double MC truth width:");                tx.DrawLatex(0.78, y, "62.7");
+    tx.DrawLatex(0.05, y, "#bullet  double MC truth width:");                tx.DrawLatex(0.78, y, Form("%.1f", w_tdoub));
     y -= dy;
-    tx.DrawLatex(0.05, y, "#bullet  double MC reco width:");                 tx.DrawLatex(0.78, y, "48.6");
+    tx.DrawLatex(0.05, y, "#bullet  double MC reco width:");                 tx.DrawLatex(0.78, y, Form("%.1f", w_rdoub));
     y -= dy;
-    tx.DrawLatex(0.05, y, "#bullet  conditional kernel at #it{z}_{t}=0:");   tx.DrawLatex(0.78, y, "34.1");
+    tx.DrawLatex(0.05, y, "#bullet  conditional kernel at #it{z}_{t}=0:");   tx.DrawLatex(0.78, y, Form("%.1f", w_kernel));
     y -= dy;
     tx.DrawLatex(0.05, y, "#color[4]{Gap between kernel floor and data width:}");
-    tx.DrawLatex(0.78, y, "#color[4]{+11.8}");
+    tx.DrawLatex(0.78, y, Form("#color[4]{%+.1f}", w_kernel - w_data));
     y -= dy;
-    tx.DrawLatex(0.05, y, "#color[2]{No truth reweight can narrow double MC reco below 34 cm.}");
+    tx.DrawLatex(0.05, y, Form("#color[2]{No truth reweight can narrow double MC reco below %.0f cm.}", w_kernel));
     y -= dy;
     tx.DrawLatex(0.05, y, "Expected double-MC reco if generation were correct:");
     y -= dy;

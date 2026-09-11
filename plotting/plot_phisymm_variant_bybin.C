@@ -1,7 +1,7 @@
 #include "plotcommon.h"
 
-// Per-ET-bin σ_mask/σ_nom for the 3 phi-symm mask variants (one per
-// selection level). All three overlaid on a single panel.
+// Per-ET-bin sigma_mask / sigma_no-mask for the four phi-symmetry masks, relative to the
+// unmasked reference run. The tight mask is the nominal selection since 2026-04-23.
 
 void plot_phisymm_variant_bybin()
 {
@@ -13,12 +13,12 @@ void plot_phisymm_variant_bybin()
         h->SetDirectory(nullptr);
         return h;
     };
-    TH1F *h_nom = read("Photon_final_bdt_nom.root");
+    TH1F *h_nom = read("Photon_final_bdt_mask_phisymm_off.root");  // unmasked reference
     struct Var { const char *label; const char *file; int color; int style; };
     std::vector<Var> V = {
         {"preselect", "Photon_final_bdt_mask_phisymm_preselect.root", kAzure - 3, 20},
         {"common",    "Photon_final_bdt_mask_phisymm_common.root",    kGreen + 3, 21},
-        {"tight",     "Photon_final_bdt_mask_phisymm_tight.root",     kOrange + 7, 22},
+        {"tight",     "Photon_final_bdt_nom.root",                    kOrange + 7, 22},  // nominal
         {"OR (common #cup tight)", "Photon_final_bdt_mask_phisymm_or.root", kViolet + 1, 23},
     };
     std::vector<TH1F *> rats;
@@ -41,7 +41,7 @@ void plot_phisymm_variant_bybin()
     TH1F *frame = new TH1F("frame_phi", "", NptBins, ptRanges);
     frame->GetYaxis()->SetRangeUser(0.82, 1.10);
     frame->SetXTitle("#it{E}_{T}^{#gamma} [GeV]");
-    frame->SetYTitle("#sigma_{masked} / #sigma_{nominal}");
+    frame->SetYTitle("#sigma_{masked} / #sigma_{no mask}");
     frame->GetXaxis()->SetTitleSize(0.05);
     frame->GetYaxis()->SetTitleSize(0.05);
     frame->GetXaxis()->SetLabelSize(0.045);

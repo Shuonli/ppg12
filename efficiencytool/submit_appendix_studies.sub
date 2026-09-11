@@ -1,0 +1,10 @@
+universe       = vanilla
+executable     = /bin/bash
+arguments      = "run_appendix_study_job.sh $(study)"
+initialdir     = /sphenix/user/shuhangli/ppg12/efficiencytool
+request_memory = 8GB
+log            = /tmp/ppg12_appendix_studies_$(Cluster).log
+output         = logs/appendix_study_$(study).out
+error          = logs/appendix_study_$(study).err
+Notification   = Never
+queue study in (deltaR, mbdvtx, eresp, vtxalt)

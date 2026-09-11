@@ -1,5 +1,6 @@
 #include "plotcommon.h"
 #include "../efficiencytool/CrossSectionWeights.h"
+#include <yaml-cpp/yaml.h>
 using namespace PPG12;
 
 void plot_SB()
@@ -24,17 +25,21 @@ void plot_SB()
     h_bg->RebinX(rebinx);
 
     // Project the iso-ET axis up to the parametric reco-iso ceiling
-    // applied in the analysis, reco_iso_max(ET) = 0.453194 + 0.0360234 ET
-    // (config_showershape.yaml, the config that produced the input files)
+    // reco_iso_max(ET) = reco_iso_max_b + reco_iso_max_s * ET, read from
+    // config_showershape.yaml (the config that produced the input files)
     // (approximated bin-by-bin). Without this projection cut the
     // S/B ratio is dominated by the loose tail of the jet sample
     // and the figure looks empty on a [0, 1] axis.
-    auto project_iso = [](TH2D *h2, const char *name) {
+    gSystem->Load("/sphenix/u/shuhang98/install/lib64/libyaml-cpp.so");
+    YAML::Node ss_cfg = YAML::LoadFile("/sphenix/user/shuhangli/ppg12/efficiencytool/config_showershape.yaml");
+    const double iso_b = ss_cfg["analysis"]["reco_iso_max_b"].as<double>();
+    const double iso_s = ss_cfg["analysis"]["reco_iso_max_s"].as<double>();
+    auto project_iso = [iso_b, iso_s](TH2D *h2, const char *name) {
         TH1D *h1 = (TH1D *)h2->ProjectionX(name, 0, 0);  // template
         h1->Reset();
         for (int ix = 1; ix <= h2->GetNbinsX(); ++ix) {
             double et = h2->GetXaxis()->GetBinCenter(ix);
-            double iso_max = 0.453194 + 0.0360234 * et;
+            double iso_max = iso_b + iso_s * et;
             int iy_lo = h2->GetYaxis()->FindBin(-1.0);  // include negative
             int iy_hi = h2->GetYaxis()->FindBin(iso_max);
             double sum = 0, sumw2 = 0;

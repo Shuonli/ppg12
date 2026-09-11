@@ -16,7 +16,7 @@ arguments             = "oneforall.sh $(cfg)"
 #when_to_transfer_output = ON_EXIT
 request_memory        = 2GB
 # Log, output, and error will be written per file
-log                   = logs/$(cfg).log
+log                   = /tmp/$(cfg).log
 output                = logs/$(cfg).out
 error                 = logs/$(cfg).err
 

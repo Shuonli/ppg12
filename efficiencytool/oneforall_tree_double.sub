@@ -24,7 +24,7 @@ Notification          = Never
 executable            = /bin/bash
 arguments             = "oneforall_tree_double_dispatch.sh $(cfg)"
 
-log                   = logs/$(cfg).tree_double.log
+log                   = /tmp/$(cfg).tree_double.log
 output                = logs/$(cfg).tree_double.out
 error                 = logs/$(cfg).tree_double.err
 

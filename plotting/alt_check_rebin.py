@@ -26,7 +26,8 @@ def rebin2d(a, n):
     assert nx % n == 0 and ny % n == 0
     return a.reshape(nx // n, n, ny // n, n).sum(axis=(1, 3))
 
-f = uproot.open(f'{RES}/Photon_final_bdt_nom.root')
+# Unmasked reference run: the nominal applies mask_phisymm_tight since 2026-04-23.
+f = uproot.open(f'{RES}/Photon_final_bdt_mask_phisymm_off.root')
 print(f"{'level':<12s} {'grp':>4s} {'nbins':>6s} {'mu_logR':>8s} {'sig_logR':>10s} {'hd':>4s} {'zlt2':>6s} {'zlt5':>6s} {'def_zlt2_%':>10s}")
 for lvl in LEVELS:
     hmc_full = f[f'h_etaphi_tower_{lvl}_mc_inclusive'].values()

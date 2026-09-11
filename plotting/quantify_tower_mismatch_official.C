@@ -151,7 +151,9 @@ static void analyse_level(TH2F *h_mc, TH2F *h_da, const std::string &lvl,
 void quantify_tower_mismatch_official()
 {
     init_plot();
-    const char *infile = "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_nom.root";
+    // The nominal applies mask_phisymm_tight since 2026-04-23, so the occupancy maps the
+    // masks are derived from come from the unmasked reference run.
+    const char *infile = "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/results/Photon_final_bdt_mask_phisymm_off.root";
     TFile *f = TFile::Open(infile, "READ");
     if (!f || f->IsZombie()) { std::cerr << "cannot open " << infile << std::endl; return; }
 

@@ -29,7 +29,8 @@ ETA_GROUP = 2  # group 2 eta rows
 # (since band index b spans eta rows [2b, 2b+1])
 IETA_FID_LO, IETA_FID_HI = 17, 78
 
-f = uproot.open(f'{RES}/Photon_final_bdt_nom.root')
+# Unmasked reference run: the nominal applies mask_phisymm_tight since 2026-04-23.
+f = uproot.open(f'{RES}/Photon_final_bdt_mask_phisymm_off.root')
 
 print(f"{'level':<12s} {'n_dead_z<-2':>14s} {'n_dead_z<-5':>14s} "
       f"{'hd_for_ref':>12s} {'deficit_%':>10s}")

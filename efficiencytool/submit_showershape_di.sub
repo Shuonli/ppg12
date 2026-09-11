@@ -18,9 +18,8 @@ arguments    = $(config) $(sample) $(doinclusive) $(mix_weight)
 
 output       = logs/showershape_di_$(sample)_$(Cluster).$(Process).out
 error        = logs/showershape_di_$(sample)_$(Cluster).$(Process).err
-log          = logs/showershape_di_$(Cluster).log
+log          = /tmp/showershape_di_$(Cluster).log
 
-getenv         = true
 request_memory = 16GB
 request_disk   = 30GB
 request_cpus   = 1

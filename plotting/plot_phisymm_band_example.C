@@ -45,7 +45,7 @@ void plot_phisymm_band_example(int ieta_lo = 64, int ieta_hi = 67)
 
     const std::string inFile  =
         "/gpfs/mnt/gpfs02/sphenix/user/shuhangli/ppg12/efficiencytool/"
-        "results/Photon_final_bdt_nom.root";
+        "results/Photon_final_bdt_mask_phisymm_off.root";  // unmasked reference run (nominal is masked)
     const std::string outFile = "figures/phisymm_band_example.pdf";
 
     TFile *f = TFile::Open(inFile.c_str(), "READ");
